@@ -24,6 +24,7 @@ import {
   addReviewer as addReviewerAction,
   type Reviewer,
 } from "./actions"
+import {useAuth} from "@workos-inc/authkit-nextjs/components";
 
 export default function PRReviewAssignment() {
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
@@ -32,6 +33,10 @@ export default function PRReviewAssignment() {
   const [isLoading, setIsLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState<number>(0)
+
+  // Auth
+
+  const { user, loading } = useAuth();
 
   // Load reviewers from Redis on initial load
   useEffect(() => {
@@ -366,12 +371,34 @@ export default function PRReviewAssignment() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || loading) {
     return (
       <div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Loading...</h2>
           <p className="text-muted-foreground">Fetching reviewer data from database</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user){
+    return (
+      <div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">You are not authenticated</h2>
+          <p className="text-muted-foreground">Please sign in to access this page</p>
+        </div>
+      </div>
+    )
+  }
+
+  if(user && !user.email.endsWith('buk.cl') || user && !user.email.endsWith('buk.pe')){
+    return (
+      <div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">You are not authorized</h2>
+          <p className="text-muted-foreground">Please sign in with a valid email address</p>
         </div>
       </div>
     )
