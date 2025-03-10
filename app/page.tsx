@@ -379,13 +379,12 @@ export default function PRReviewAssignment() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <h1 className="text-3xl font-bold">PR Review Assignment</h1>
+      <h1 className="text-3xl font-bold">Buk PR Review - Remuneraciones Perú</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>Reviewers</CardTitle>
-            <CardDescription>Manage your team of PR reviewers</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
