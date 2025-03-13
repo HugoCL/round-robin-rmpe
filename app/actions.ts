@@ -3,6 +3,7 @@
 import {redis} from "@/lib/redis"
 import {signOut} from '@workos-inc/authkit-nextjs';
 import {notifyClients} from "./api/updates/route";
+import {createSnapshot} from "./backup-actions"
 
 export interface Reviewer {
   id: string
@@ -42,6 +43,10 @@ export async function getReviewers(): Promise<Reviewer[]> {
     // If no reviewers found, initialize with default data
     if (!reviewers) {
       await redis.set(REDIS_KEY, defaultReviewers)
+
+      // Create initial snapshot
+      await createSnapshot(defaultReviewers, "Initial setup")
+
       return defaultReviewers
     }
 
@@ -85,7 +90,14 @@ export async function updateReviewer(reviewer: Reviewer): Promise<boolean> {
     const reviewers = await getReviewers()
     const updatedReviewers = reviewers.map((r) => (r.id === reviewer.id ? reviewer : r))
 
-    return await saveReviewers(updatedReviewers)
+    const success = await saveReviewers(updatedReviewers)
+
+    if (success) {
+      // Create snapshot
+      await createSnapshot(updatedReviewers, `Updated reviewer: ${reviewer.name}`)
+    }
+
+    return success
   } catch (error) {
     console.error("Error updating reviewer in Redis:", error)
     return false
@@ -109,7 +121,14 @@ export async function addReviewer(name: string): Promise<boolean> {
 
     reviewers.push(newReviewer)
 
-    return await saveReviewers(reviewers)
+    const success = await saveReviewers(reviewers)
+
+    if (success) {
+      // Create snapshot
+      await createSnapshot(reviewers, `Added reviewer: ${name}`)
+    }
+
+    return success
   } catch (error) {
     console.error("Error adding reviewer to Redis:", error)
     return false
@@ -119,9 +138,17 @@ export async function addReviewer(name: string): Promise<boolean> {
 export async function removeReviewer(id: string): Promise<boolean> {
   try {
     const reviewers = await getReviewers()
+    const reviewerToRemove = reviewers.find((r) => r.id === id)
     const filteredReviewers = reviewers.filter((r) => r.id !== id)
 
-    return await saveReviewers(filteredReviewers)
+    const success = await saveReviewers(filteredReviewers)
+
+    if (success && reviewerToRemove) {
+      // Create snapshot
+      await createSnapshot(filteredReviewers, `Removed reviewer: ${reviewerToRemove.name}`)
+    }
+
+    return success
   } catch (error) {
     console.error("Error removing reviewer from Redis:", error)
     return false
@@ -158,21 +185,33 @@ export async function forceAssignReviewer(id: string): Promise<{ success: boolea
     await addToAssignmentHistory(id, true)
 
     // Save updated reviewers
-    await saveReviewers(updatedReviewers)
+    const success = await saveReviewers(updatedReviewers)
 
-    return { success: true, reviewer }
+    if (success) {
+      // Create snapshot
+      await createSnapshot(updatedReviewers, `Force assigned PR to: ${reviewer.name}`)
+    }
+
+    return { success, reviewer }
   } catch (error) {
     console.error("Error force assigning reviewer in Redis:", error)
     return { success: false }
   }
 }
-
 export async function updateAssignmentCount(id: string, count: number): Promise<boolean> {
   try {
     const reviewers = await getReviewers()
+    const reviewer = reviewers.find((r) => r.id === id)
     const updatedReviewers = reviewers.map((r) => (r.id === id ? { ...r, assignmentCount: count } : r))
 
-    return await saveReviewers(updatedReviewers)
+    const success = await saveReviewers(updatedReviewers)
+
+    if (success && reviewer) {
+      // Create snapshot
+      await createSnapshot(updatedReviewers, `Updated count for ${reviewer.name} to ${count}`)
+    }
+
+    return success
   } catch (error) {
     console.error("Error updating assignment count in Redis:", error)
     return false
@@ -190,7 +229,14 @@ export async function resetAllCounts(): Promise<boolean> {
     // Notify clients about the reset
     notifyClients({ type: "counts-reset" })
 
-    return await saveReviewers(updatedReviewers)
+    const success = await saveReviewers(updatedReviewers)
+
+    if (success) {
+      // Create snapshot
+      await createSnapshot(updatedReviewers, "Reset all assignment counts")
+    }
+
+    return success
   } catch (error) {
     console.error("Error resetting counts in Redis:", error)
     return false
@@ -200,9 +246,19 @@ export async function resetAllCounts(): Promise<boolean> {
 export async function toggleAbsence(id: string): Promise<boolean> {
   try {
     const reviewers = await getReviewers()
+    const reviewer = reviewers.find((r) => r.id === id)
+    const isCurrentlyAbsent = reviewer?.isAbsent || false
     const updatedReviewers = reviewers.map((r) => (r.id === id ? { ...r, isAbsent: !r.isAbsent } : r))
 
-    return await saveReviewers(updatedReviewers)
+    const success = await saveReviewers(updatedReviewers)
+
+    if (success && reviewer) {
+      // Create snapshot
+      const status = isCurrentlyAbsent ? "available" : "absent"
+      await createSnapshot(updatedReviewers, `Marked ${reviewer.name} as ${status}`)
+    }
+
+    return success
   } catch (error) {
     console.error("Error toggling absence in Redis:", error)
     return false
@@ -261,7 +317,7 @@ export async function undoLastAssignment(): Promise<{ success: boolean; reviewer
 
     // Decrement the count
     const updatedReviewers = reviewers.map((r) =>
-      r.id === lastAssignment.reviewerId ? { ...r, assignmentCount: Math.max(0, r.assignmentCount - 1) } : r,
+        r.id === lastAssignment.reviewerId ? { ...r, assignmentCount: Math.max(0, r.assignmentCount - 1) } : r,
     )
 
     // Remove from history
@@ -269,13 +325,18 @@ export async function undoLastAssignment(): Promise<{ success: boolean; reviewer
     await redis.set(HISTORY_KEY, updatedHistory)
 
     // Save updated reviewers
-    await saveReviewers(updatedReviewers)
+    const success = await saveReviewers(updatedReviewers)
 
-    // Notify clients about the undo
-    notifyClients({
-      type: "assignment-undone",
-      reviewerId: lastAssignment.reviewerId,
-    })
+    if (success) {
+      // Create snapshot
+      await createSnapshot(updatedReviewers, `Undid assignment for: ${reviewer.name}`)
+
+      // Notify clients about the undo
+      notifyClients({
+        type: "assignment-undone",
+        reviewerId: lastAssignment.reviewerId,
+      })
+    }
 
     return { success: true, reviewerId: lastAssignment.reviewerId }
   } catch (error) {
@@ -283,7 +344,6 @@ export async function undoLastAssignment(): Promise<{ success: boolean; reviewer
     return { success: false }
   }
 }
-
 export async function signOutAuthKit() {
   await signOut();
 }

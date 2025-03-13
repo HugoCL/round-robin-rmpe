@@ -51,7 +51,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { getBackups, restoreFromBackup, type BackupEntry } from "./backup-actions"
+import { getSnapshots, restoreFromSnapshot, type BackupEntry } from "./backup-actions"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {
   DropdownMenu,
@@ -72,9 +72,9 @@ export default function PRReviewAssignment() {
   const [selectedReviewerId, setSelectedReviewerId] = useState<string>("")
   const [forceDialogOpen, setForceDialogOpen] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
-  const [backups, setBackups] = useState<BackupEntry[]>([])
-  const [backupsLoading, setBackupsLoading] = useState(false)
-  const [backupDialogOpen, setBackupDialogOpen] = useState(false)
+  const [snapshots, setSnapshots] = useState<BackupEntry[]>([])
+  const [snapshotsLoading, setSnapshotsLoading] = useState(false)
+  const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false)
   const [showAssignments, setShowAssignments] = useState(false)
   const eventSourceRef = useRef<EventSource | null>(null)
 
@@ -150,7 +150,7 @@ export default function PRReviewAssignment() {
             case "assignment-added":
             case "assignment-undone":
             case "counts-reset":
-            case "backup-restored":
+            case "snapshot-restored":
               // Reload reviewers data
               const updatedReviewers = await getReviewers()
               setReviewers(updatedReviewers)
@@ -532,50 +532,50 @@ export default function PRReviewAssignment() {
     }
   }
 
-  const loadBackups = async () => {
-    setBackupsLoading(true)
+  const loadSnapshots = async () => {
+    setSnapshotsLoading(true)
     try {
-      const backupData = await getBackups()
-      setBackups(backupData)
+      const snapshotData = await getSnapshots()
+      setSnapshots(snapshotData)
     } catch (error) {
-      console.error("Error loading backups:", error)
+      console.error("Error loading snapshots:", error)
       toast({
         title: "Error",
-        description: "Failed to load backups",
+        description: "Failed to load snapshots",
         variant: "destructive",
       })
     } finally {
-      setBackupsLoading(false)
+      setSnapshotsLoading(false)
     }
   }
 
-  const handleOpenBackupDialog = () => {
-    loadBackups()
-    setBackupDialogOpen(true)
+  const handleOpenSnapshotDialog = () => {
+    loadSnapshots()
+    setSnapshotDialogOpen(true)
   }
 
-  const handleRestoreBackup = async (key: string) => {
+  const handleRestoreSnapshot = async (key: string) => {
     try {
-      const success = await restoreFromBackup(key)
+      const success = await restoreFromSnapshot(key)
 
       if (success) {
         toast({
-          title: "Backup Restored",
-          description: "The selected backup has been successfully restored",
+          title: "Snapshot Restored",
+          description: "The selected snapshot has been successfully restored",
         })
-        setBackupDialogOpen(false)
+        setSnapshotDialogOpen(false)
       } else {
         toast({
           title: "Error",
-          description: "Failed to restore from backup",
+          description: "Failed to restore from snapshot",
           variant: "destructive",
         })
       }
     } catch (error) {
-      console.error("Error restoring backup:", error)
+      console.error("Error restoring snapshot:", error)
       toast({
         title: "Error",
-        description: "Failed to restore from backup",
+        description: "Failed to restore from snapshot",
         variant: "destructive",
       })
     }
@@ -644,9 +644,9 @@ export default function PRReviewAssignment() {
               )}
             </Button>
 
-            <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={handleOpenBackupDialog}>
+            <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={handleOpenSnapshotDialog}>
               <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">Backups</span>
+              <span className="hidden sm:inline">Snapshots</span>
             </Button>
 
             {isConnected ? (
@@ -770,13 +770,18 @@ export default function PRReviewAssignment() {
                       <Save className="h-4 w-4 mr-2" />
                       Export Data
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => document.getElementById("import-file")?.click()}>
+                    <DropdownMenuItem
+                        onSelect={(e) => {
+                          e.preventDefault()
+                          document.getElementById("import-file")?.click()
+                        }}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Import Data
-                      <input id="import-file" type="file" accept=".json" onChange={importData} className="hidden" />
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <input id="import-file" type="file" accept=".json" onChange={importData} className="hidden" />
               </div>
             </CardFooter>
           </Card>
@@ -862,34 +867,34 @@ export default function PRReviewAssignment() {
           </Card>
         </div>
 
-        {/* Backup Dialog */}
-        <Dialog open={backupDialogOpen} onOpenChange={setBackupDialogOpen}>
+        {/* Snapshot Dialog */}
+        <Dialog open={snapshotDialogOpen} onOpenChange={setSnapshotDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Backup History</DialogTitle>
-              <DialogDescription>View and restore from previous backups (last 3 days)</DialogDescription>
+              <DialogTitle>Snapshot History</DialogTitle>
+              <DialogDescription>View and restore from previous snapshots (last 3 days)</DialogDescription>
             </DialogHeader>
             <div className="py-4 max-h-[300px] overflow-y-auto">
-              {backupsLoading ? (
+              {snapshotsLoading ? (
                   <div className="text-center py-4">
-                    <p>Loading backups...</p>
+                    <p>Loading snapshots...</p>
                   </div>
-              ) : backups.length === 0 ? (
+              ) : snapshots.length === 0 ? (
                   <div className="text-center py-4">
-                    <p>No backups available yet</p>
-                    <p className="text-sm text-muted-foreground mt-2">Backups are created hourly and stored for 3 days</p>
+                    <p>No snapshots available yet</p>
+                    <p className="text-sm text-muted-foreground mt-2">Snapshots are created hourly and stored for 3 days</p>
                   </div>
               ) : (
                   <div className="space-y-2">
-                    {backups.map((backup) => (
+                    {snapshots.map((snapshot) => (
                         <div
-                            key={backup.key}
+                            key={snapshot.key}
                             className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/50"
                         >
                           <div>
-                            <p className="font-medium">{backup.formattedDate}</p>
+                            <p className="font-medium">{snapshot.formattedDate}</p>
                           </div>
-                          <Button size="sm" variant="outline" onClick={() => handleRestoreBackup(backup.key)}>
+                          <Button size="sm" variant="outline" onClick={() => handleRestoreSnapshot(snapshot.key)}>
                             Restore
                           </Button>
                         </div>
@@ -898,7 +903,7 @@ export default function PRReviewAssignment() {
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setBackupDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setSnapshotDialogOpen(false)}>
                 Close
               </Button>
             </DialogFooter>

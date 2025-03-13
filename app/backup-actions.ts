@@ -8,19 +8,66 @@ export interface BackupEntry {
     key: string
     timestamp: number
     formattedDate: string
+    description: string
 }
 
 export interface BackupData {
     timestamp: number
+    description: string
     data: Reviewer[]
 }
 
-const BACKUP_KEY_PREFIX = "pr-reviewers-backup"
+const BACKUP_KEY_PREFIX = "pr-reviewers-snapshot"
+const MAX_SNAPSHOTS = 10
 
-// Get all available backups
-export async function getBackups(): Promise<BackupEntry[]> {
+
+// Create a snapshot after a change
+export async function createSnapshot(reviewers: Reviewer[], description: string): Promise<boolean> {
     try {
-        // Get all backup keys
+        // Get all existing snapshots
+        const keys = await redis.keys(`${BACKUP_KEY_PREFIX}-*`)
+
+        // Sort keys by timestamp (newest first)
+        const sortedKeys = keys.sort((a, b) => {
+            const timestampA = Number.parseInt(a.split("-").pop() || "0")
+            const timestampB = Number.parseInt(b.split("-").pop() || "0")
+            return timestampB - timestampA
+        })
+
+        // Create new snapshot
+        const timestamp = Date.now()
+        const backupKey = `${BACKUP_KEY_PREFIX}-${timestamp}`
+
+        // Store snapshot in Redis
+        await redis.set(backupKey, {
+            timestamp,
+            description,
+            data: reviewers,
+        })
+
+        // If we have more than MAX_SNAPSHOTS, delete the oldest ones
+        if (sortedKeys.length >= MAX_SNAPSHOTS) {
+            // Get keys to delete (oldest ones beyond our limit)
+            const keysToDelete = sortedKeys.slice(MAX_SNAPSHOTS - 1)
+
+            // Delete old snapshots
+            for (const key of keysToDelete) {
+                await redis.del(key)
+            }
+        }
+
+        return true
+    } catch (error) {
+        console.error("Error creating snapshot:", error)
+        return false
+    }
+}
+
+// Get all available snapshots
+// Get all available snapshots
+export async function getSnapshots(): Promise<BackupEntry[]> {
+    try {
+        // Get all snapshot keys
         const keys = await redis.keys(`${BACKUP_KEY_PREFIX}-*`)
 
         // Sort keys by timestamp (newest first)
@@ -31,18 +78,24 @@ export async function getBackups(): Promise<BackupEntry[]> {
         })
 
         // Format the data for display
-        return sortedKeys.map((key) => {
-            const timestamp = Number.parseInt(key.split("-").pop() || "0")
-            const date = new Date(timestamp)
+        const snapshots: BackupEntry[] = []
 
-            return {
-                key,
-                timestamp,
-                formattedDate: formatDate(date),
+        for (const key of sortedKeys) {
+            const snapshot = await redis.get<BackupData>(key)
+            if (snapshot) {
+                const date = new Date(snapshot.timestamp)
+                snapshots.push({
+                    key,
+                    timestamp: snapshot.timestamp,
+                    formattedDate: formatDate(date),
+                    description: snapshot.description,
+                })
             }
-        })
+        }
+
+        return snapshots
     } catch (error) {
-        console.error("Error fetching backups:", error)
+        console.error("Error fetching snapshots:", error)
         return []
     }
 }
@@ -57,26 +110,39 @@ export async function getBackupData(key: string): Promise<BackupData | null> {
     }
 }
 
-// Restore from a backup
-export async function restoreFromBackup(key: string): Promise<boolean> {
+// Get a specific snapshot by key
+export async function getSnapshotData(key: string): Promise<BackupData | null> {
     try {
-        const backup = await getBackupData(key)
+        return await redis.get<BackupData>(key)
+    } catch (error) {
+        console.error("Error fetching snapshot data:", error)
+        return null
+    }
+}
 
-        if (!backup || !backup.data) {
+// Restore from a snapshot
+export async function restoreFromSnapshot(key: string): Promise<boolean> {
+    try {
+        const snapshot = await getSnapshotData(key)
+
+        if (!snapshot || !snapshot.data) {
             return false
         }
 
-        // Save the backup data as the current reviewers
-        const success = await saveReviewers(backup.data)
+        // Save the snapshot data as the current reviewers
+        const success = await saveReviewers(snapshot.data)
 
         if (success) {
+            // Create a new snapshot to record this restore action
+            await createSnapshot(snapshot.data, `Restored from ${formatDate(new Date(snapshot.timestamp))}`)
+
             // Notify clients about the restore
-            notifyClients({ type: "backup-restored", timestamp: backup.timestamp })
+            notifyClients({ type: "snapshot-restored", timestamp: snapshot.timestamp })
         }
 
         return success
     } catch (error) {
-        console.error("Error restoring from backup:", error)
+        console.error("Error restoring from snapshot:", error)
         return false
     }
 }
