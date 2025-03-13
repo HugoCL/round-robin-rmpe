@@ -1,4 +1,4 @@
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 // This is required to enable streaming
 export const dynamic = 'force-dynamic';
 // Store active connections
