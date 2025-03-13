@@ -1,29 +1,53 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { UserPlus, UserMinus, RotateCw, Save, Download, Undo2, Edit, Check, X } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+import {useEffect, useState} from "react"
+import {Button} from "@/components/ui/button"
+import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card"
+import {Input} from "@/components/ui/input"
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
+import {Badge} from "@/components/ui/badge"
+import {Switch} from "@/components/ui/switch"
+import {Label} from "@/components/ui/label"
 import {
+  AlertTriangle,
+  Check,
+  Download,
+  Edit,
+  RotateCw,
+  Save,
+  Undo2,
+  UserCheck,
+  UserMinus,
+  UserPlus,
+  X,
+} from "lucide-react"
+import {toast} from "@/hooks/use-toast"
+import {
+  addReviewer as addReviewerAction,
+  forceAssignReviewer,
   getReviewers,
-  saveReviewers,
   incrementReviewerCount,
-  resetAllCounts,
-  toggleAbsence,
   removeReviewer as removeReviewerAction,
+  resetAllCounts,
+  type Reviewer,
+  saveReviewers,
+  signOutAuthKit,
+  toggleAbsence,
   undoLastAssignment,
   updateAssignmentCount,
-  addReviewer as addReviewerAction,
-  type Reviewer,
 } from "./actions"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {useAuth} from "@workos-inc/authkit-nextjs/components";
 
 export default function PRReviewAssignment() {
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
@@ -32,6 +56,9 @@ export default function PRReviewAssignment() {
   const [isLoading, setIsLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState<number>(0)
+  const [selectedReviewerId, setSelectedReviewerId] = useState<string>("")
+  const [forceDialogOpen, setForceDialogOpen] = useState(false)
+  const {user} = useAuth();
 
   // Load reviewers from Redis on initial load
   useEffect(() => {
@@ -105,6 +132,54 @@ export default function PRReviewAssignment() {
       toast({
         title: "Error",
         description: "Failed to assign PR. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleForceAssign = async () => {
+    if (!selectedReviewerId) {
+      toast({
+        title: "Error",
+        description: "Please select a reviewer to force assign",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const result = await forceAssignReviewer(selectedReviewerId)
+
+    if (result.success && result.reviewer) {
+      // Update local state
+      setReviewers((prev) =>
+        prev.map((reviewer) =>
+          reviewer.id === selectedReviewerId
+            ? { ...reviewer, assignmentCount: reviewer.assignmentCount + 1 }
+            : reviewer,
+        ),
+      )
+
+      // Show appropriate toast based on reviewer status
+      if (result.reviewer.isAbsent) {
+        toast({
+          title: "PR Force Assigned",
+          description: `PR assigned to ${result.reviewer.name} who is currently marked as absent`,
+          variant: "default",
+        })
+      } else {
+        toast({
+          title: "PR Force Assigned",
+          description: `PR assigned to ${result.reviewer.name}`,
+        })
+      }
+
+      // Close the dialog
+      setForceDialogOpen(false)
+      setSelectedReviewerId("")
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to force assign PR. Please try again.",
         variant: "destructive",
       })
     }
@@ -377,9 +452,38 @@ export default function PRReviewAssignment() {
     )
   }
 
+  if (!user){
+    return (
+        <div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">You are not authenticated</h2>
+            <p className="text-muted-foreground">Please sign in to access this page</p>
+          </div>
+        </div>
+    )
+  }
+
+  if(user && (!user.email.endsWith('@buk.cl') && !user.email.endsWith('@buk.pe'))){
+    return (
+        <div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">You are not authorized</h2>
+            <p className="text-muted-foreground">Please sign in with a valid email address. You're currently using {user.email}</p>
+            <form
+                action={async () => {
+                  await signOutAuthKit()
+                }}
+            >
+              <Button type="submit">Sign out</Button>
+            </form>
+          </div>
+        </div>
+    )
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <h1 className="text-3xl font-bold">Buk PR Review - Remuneraciones Perú</h1>
+      <h1 className="text-3xl font-bold">PR Review - Remuneraciones Perú</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-2">
@@ -517,11 +621,58 @@ export default function PRReviewAssignment() {
               Assign PR
             </Button>
           </CardFooter>
-          <div className="px-6 pb-6">
+          <div className="px-6 pb-6 space-y-4">
             <Button variant="secondary" className="w-full" onClick={undoAssignment}>
               <Undo2 className="h-4 w-4 mr-2" />
               Undo Last Assignment
             </Button>
+
+            <Dialog open={forceDialogOpen} onOpenChange={setForceDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Force Assign PR
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Force Assign PR</DialogTitle>
+                  <DialogDescription>
+                    Select a specific reviewer to assign a PR to, regardless of the normal rotation.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <Select value={selectedReviewerId} onValueChange={setSelectedReviewerId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a reviewer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {reviewers.map((reviewer) => (
+                        <SelectItem key={reviewer.id} value={reviewer.id}>
+                          <div className="flex items-center">
+                            <span>{reviewer.name}</span>
+                            {reviewer.isAbsent && <AlertTriangle className="h-4 w-4 ml-2 text-amber-500" />}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {selectedReviewerId && reviewers.find((r) => r.id === selectedReviewerId)?.isAbsent && (
+                    <div className="mt-2 text-sm text-amber-500 flex items-center">
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                      <span>This reviewer is currently marked as absent</span>
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setForceDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleForceAssign}>Force Assign</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </Card>
       </div>

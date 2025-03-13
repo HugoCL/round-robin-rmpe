@@ -1,6 +1,7 @@
 "use server"
 
-import { redis } from "@/lib/redis"
+import {redis} from "@/lib/redis"
+import {signOut} from '@workos-inc/authkit-nextjs';
 
 export interface Reviewer {
   id: string
@@ -13,6 +14,7 @@ export interface Reviewer {
 export interface AssignmentHistory {
   reviewerId: string
   timestamp: number
+  forced: boolean // Track if this was a forced assignment
 }
 
 const REDIS_KEY = "pr-reviewers"
@@ -127,12 +129,36 @@ export async function incrementReviewerCount(id: string): Promise<boolean> {
     const updatedReviewers = reviewers.map((r) => (r.id === id ? { ...r, assignmentCount: r.assignmentCount + 1 } : r))
 
     // Add to assignment history
-    await addToAssignmentHistory(id)
+    await addToAssignmentHistory(id, false)
 
     return await saveReviewers(updatedReviewers)
   } catch (error) {
     console.error("Error incrementing reviewer count in Redis:", error)
     return false
+  }
+}
+
+export async function forceAssignReviewer(id: string): Promise<{ success: boolean; reviewer?: Reviewer }> {
+  try {
+    const reviewers = await getReviewers()
+    const reviewer = reviewers.find((r) => r.id === id)
+
+    if (!reviewer) {
+      return { success: false }
+    }
+
+    const updatedReviewers = reviewers.map((r) => (r.id === id ? { ...r, assignmentCount: r.assignmentCount + 1 } : r))
+
+    // Add to assignment history with forced flag
+    await addToAssignmentHistory(id, true)
+
+    // Save updated reviewers
+    await saveReviewers(updatedReviewers)
+
+    return { success: true, reviewer }
+  } catch (error) {
+    console.error("Error force assigning reviewer in Redis:", error)
+    return { success: false }
   }
 }
 
@@ -176,11 +202,11 @@ export async function toggleAbsence(id: string): Promise<boolean> {
 }
 
 // Assignment history functions for undo feature
-async function addToAssignmentHistory(reviewerId: string): Promise<boolean> {
+async function addToAssignmentHistory(reviewerId: string, forced: boolean): Promise<boolean> {
   try {
     const history = await getAssignmentHistory()
 
-    const updatedHistory = [{ reviewerId, timestamp: Date.now() }, ...history].slice(0, 50) // Keep only the last 50 assignments
+    const updatedHistory = [{ reviewerId, timestamp: Date.now(), forced }, ...history].slice(0, 50) // Keep only the last 50 assignments
 
     await redis.set(HISTORY_KEY, updatedHistory)
     return true
@@ -234,5 +260,9 @@ export async function undoLastAssignment(): Promise<{ success: boolean; reviewer
     console.error("Error undoing last assignment:", error)
     return { success: false }
   }
+}
+
+export async function signOutAuthKit() {
+  await signOut();
 }
 
