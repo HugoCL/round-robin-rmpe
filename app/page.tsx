@@ -22,6 +22,9 @@ import {
   Wifi,
   WifiOff,
   X,
+  Clock,
+  Eye,
+  EyeOff,
 } from "lucide-react"
 import {toast} from "@/hooks/use-toast"
 import {
@@ -48,7 +51,16 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
+import { getBackups, restoreFromBackup, type BackupEntry } from "./backup-actions"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function PRReviewAssignment() {
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
@@ -60,6 +72,10 @@ export default function PRReviewAssignment() {
   const [selectedReviewerId, setSelectedReviewerId] = useState<string>("")
   const [forceDialogOpen, setForceDialogOpen] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
+  const [backups, setBackups] = useState<BackupEntry[]>([])
+  const [backupsLoading, setBackupsLoading] = useState(false)
+  const [backupDialogOpen, setBackupDialogOpen] = useState(false)
+  const [showAssignments, setShowAssignments] = useState(false)
   const eventSourceRef = useRef<EventSource | null>(null)
 
   // Auth
@@ -83,9 +99,19 @@ export default function PRReviewAssignment() {
       }
     }
 
+    // Load show assignments preference from localStorage
+    const savedShowAssignments = localStorage.getItem("showAssignments")
+    if (savedShowAssignments !== null) {
+      setShowAssignments(savedShowAssignments === "true")
+    }
+
     loadReviewers()
   }, [])
 
+  // Save show assignments preference to localStorage
+  useEffect(() => {
+    localStorage.setItem("showAssignments", showAssignments.toString())
+  }, [showAssignments])
 
   // Set up SSE connection for real-time updates
   useEffect(() => {
@@ -121,17 +147,13 @@ export default function PRReviewAssignment() {
               break
 
             case "reviewers-updated":
-              // Reload reviewers data
-              const updatedReviewers = await getReviewers()
-              setReviewers(updatedReviewers)
-              break
-
             case "assignment-added":
             case "assignment-undone":
             case "counts-reset":
+            case "backup-restored":
               // Reload reviewers data
-              const refreshedReviewers = await getReviewers()
-              setReviewers(refreshedReviewers)
+              const updatedReviewers = await getReviewers()
+              setReviewers(updatedReviewers)
               break
           }
         } catch (error) {
@@ -510,6 +532,59 @@ export default function PRReviewAssignment() {
     }
   }
 
+  const loadBackups = async () => {
+    setBackupsLoading(true)
+    try {
+      const backupData = await getBackups()
+      setBackups(backupData)
+    } catch (error) {
+      console.error("Error loading backups:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load backups",
+        variant: "destructive",
+      })
+    } finally {
+      setBackupsLoading(false)
+    }
+  }
+
+  const handleOpenBackupDialog = () => {
+    loadBackups()
+    setBackupDialogOpen(true)
+  }
+
+  const handleRestoreBackup = async (key: string) => {
+    try {
+      const success = await restoreFromBackup(key)
+
+      if (success) {
+        toast({
+          title: "Backup Restored",
+          description: "The selected backup has been successfully restored",
+        })
+        setBackupDialogOpen(false)
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to restore from backup",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error restoring backup:", error)
+      toast({
+        title: "Error",
+        description: "Failed to restore from backup",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const toggleShowAssignments = () => {
+    setShowAssignments((prev) => !prev)
+  }
+
   if (isLoading || loading) {
     return (
       <div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
@@ -551,215 +626,288 @@ export default function PRReviewAssignment() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">PR Review - Remuneraciones Perú</h1>
-        <div className="flex items-center gap-2">
-          {isConnected ? (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
-                <Wifi className="h-3 w-3" />
-                <span>Real-time updates active</span>
-              </Badge>
-          ) : (
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
-                <WifiOff className="h-3 w-3" />
-                <span>Offline mode</span>
-              </Badge>
-          )}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Reviewers</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Assignments</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reviewers.map((reviewer) => (
-                  <TableRow key={reviewer.id} className={reviewer.isAbsent ? "opacity-60" : ""}>
-                    <TableCell className="font-medium">
-                      {reviewer.name}
-                      {nextReviewer?.id === reviewer.id && <Badge className="ml-2 bg-green-500">Next</Badge>}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === reviewer.id ? (
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            type="number"
-                            value={editValue}
-                            onChange={(e) => setEditValue(Number.parseInt(e.target.value) || 0)}
-                            className="w-20"
-                            min={0}
-                          />
-                          <Button size="icon" variant="ghost" onClick={saveEditing}>
-                            <Check className="h-4 w-4 text-green-500" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={cancelEditing}>
-                            <X className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          <span>{reviewer.assignmentCount}</span>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => startEditing(reviewer.id, reviewer.assignmentCount)}
-                          >
-                            <Edit className="h-3 w-3 text-muted-foreground" />
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id={`absence-${reviewer.id}`}
-                          checked={!reviewer.isAbsent}
-                          onCheckedChange={() => handleToggleAbsence(reviewer.id)}
-                        />
-                        <Label htmlFor={`absence-${reviewer.id}`}>{reviewer.isAbsent ? "Absent" : "Available"}</Label>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => removeReviewer(reviewer.id)}>
-                        <UserMinus className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <div className="flex items-center space-x-2">
-              <Input
-                placeholder="New reviewer name"
-                value={newReviewerName}
-                onChange={(e) => setNewReviewerName(e.target.value)}
-                className="w-48"
-              />
-              <Button onClick={addReviewer}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add
-              </Button>
-            </div>
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={handleResetCounts}>
-                <RotateCw className="h-4 w-4 mr-2" />
-                Reset Counts
-              </Button>
-              <Button variant="outline" onClick={exportData}>
-                <Save className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              <div className="relative">
-                <Button variant="outline" onClick={() => document.getElementById("import-file")?.click()}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Import
-                </Button>
-                <input
-                  id="import-file"
-                  type="file"
-                  accept=".json"
-                  onChange={importData}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-              </div>
-            </div>
-          </CardFooter>
-        </Card>
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <h1 className="text-3xl font-bold">PR Review - Remuneraciones Perú</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={toggleShowAssignments}>
+              {showAssignments ? (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    <span className="hidden sm:inline">Hide Assignments</span>
+                  </>
+              ) : (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    <span className="hidden sm:inline">Show Assignments</span>
+                  </>
+              )}
+            </Button>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Assign PR Review</CardTitle>
-            <CardDescription>Assign a PR to the next reviewer in rotation</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {nextReviewer ? (
-              <div className="text-center p-4 border rounded-lg">
-                <h3 className="text-xl font-bold">{nextReviewer.name}</h3>
-                <p className="text-muted-foreground">Current assignments: {nextReviewer.assignmentCount}</p>
-              </div>
+            <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={handleOpenBackupDialog}>
+              <Clock className="h-4 w-4" />
+              <span className="hidden sm:inline">Backups</span>
+            </Button>
+
+            {isConnected ? (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
+                  <Wifi className="h-3 w-3" />
+                  <span className="hidden sm:inline">Real-time updates active</span>
+                </Badge>
             ) : (
-              <div className="text-center p-4 border rounded-lg bg-muted">
-                <p>No available reviewers</p>
-              </div>
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                  <WifiOff className="h-3 w-3" />
+                  <span className="hidden sm:inline">Offline mode</span>
+                </Badge>
             )}
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={skipReviewer} disabled={!nextReviewer}>
-              Skip
-            </Button>
-            <Button onClick={assignPR} disabled={!nextReviewer}>
-              Assign PR
-            </Button>
-          </CardFooter>
-          <div className="px-6 pb-6 space-y-4">
-            <Button variant="secondary" className="w-full" onClick={undoAssignment}>
-              <Undo2 className="h-4 w-4 mr-2" />
-              Undo Last Assignment
-            </Button>
-
-            <Dialog open={forceDialogOpen} onOpenChange={setForceDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="w-full">
-                  <UserCheck className="h-4 w-4 mr-2" />
-                  Force Assign PR
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Force Assign PR</DialogTitle>
-                  <DialogDescription>
-                    Select a specific reviewer to assign a PR to, regardless of the normal rotation.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                  <Select value={selectedReviewerId} onValueChange={setSelectedReviewerId}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a reviewer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {reviewers.map((reviewer) => (
-                        <SelectItem key={reviewer.id} value={reviewer.id}>
-                          <div className="flex items-center">
-                            <span>{reviewer.name}</span>
-                            {reviewer.isAbsent && <AlertTriangle className="h-4 w-4 ml-2 text-amber-500" />}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {selectedReviewerId && reviewers.find((r) => r.id === selectedReviewerId)?.isAbsent && (
-                    <div className="mt-2 text-sm text-amber-500 flex items-center">
-                      <AlertTriangle className="h-4 w-4 mr-1" />
-                      <span>This reviewer is currently marked as absent</span>
-                    </div>
-                  )}
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setForceDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleForceAssign}>Force Assign</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
           </div>
-        </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Reviewers</CardTitle>
+              <CardDescription>Manage your team of PR reviewers</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    {showAssignments && <TableHead>Assignments</TableHead>}
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reviewers.map((reviewer) => (
+                      <TableRow key={reviewer.id} className={reviewer.isAbsent ? "opacity-60" : ""}>
+                        <TableCell className="font-medium">
+                          {reviewer.name}
+                          {nextReviewer?.id === reviewer.id && <Badge className="ml-2 bg-green-500">Next</Badge>}
+                        </TableCell>
+                        {showAssignments && (
+                            <TableCell>
+                              {editingId === reviewer.id ? (
+                                  <div className="flex items-center space-x-2">
+                                    <Input
+                                        type="number"
+                                        value={editValue}
+                                        onChange={(e) => setEditValue(Number.parseInt(e.target.value) || 0)}
+                                        className="w-20"
+                                        min={0}
+                                    />
+                                    <Button size="icon" variant="ghost" onClick={saveEditing}>
+                                      <Check className="h-4 w-4 text-green-500" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" onClick={cancelEditing}>
+                                      <X className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                  </div>
+                              ) : (
+                                  <div className="flex items-center space-x-2">
+                                    <span>{reviewer.assignmentCount}</span>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => startEditing(reviewer.id, reviewer.assignmentCount)}
+                                    >
+                                      <Edit className="h-3 w-3 text-muted-foreground" />
+                                    </Button>
+                                  </div>
+                              )}
+                            </TableCell>
+                        )}
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                                id={`absence-${reviewer.id}`}
+                                checked={!reviewer.isAbsent}
+                                onCheckedChange={() => handleToggleAbsence(reviewer.id)}
+                            />
+                            <Label htmlFor={`absence-${reviewer.id}`}>{reviewer.isAbsent ? "Absent" : "Available"}</Label>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => removeReviewer(reviewer.id)}>
+                            <UserMinus className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row gap-4 justify-between">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <Input
+                    placeholder="New reviewer name"
+                    value={newReviewerName}
+                    onChange={(e) => setNewReviewerName(e.target.value)}
+                    className="w-full sm:w-48"
+                />
+                <Button onClick={addReviewer}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <RotateCw className="h-4 w-4 mr-2" />
+                      <span className="sm:inline">Actions</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Manage Data</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleResetCounts}>
+                      <RotateCw className="h-4 w-4 mr-2" />
+                      Reset Counts
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportData}>
+                      <Save className="h-4 w-4 mr-2" />
+                      Export Data
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => document.getElementById("import-file")?.click()}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Import Data
+                      <input id="import-file" type="file" accept=".json" onChange={importData} className="hidden" />
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardFooter>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Assign PR Review</CardTitle>
+              <CardDescription>Assign a PR to the next reviewer in rotation</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {nextReviewer ? (
+                  <div className="text-center p-4 border rounded-lg">
+                    <h3 className="text-xl font-bold">{nextReviewer.name}</h3>
+                    <p className="text-muted-foreground">Current assignments: {nextReviewer.assignmentCount}</p>
+                  </div>
+              ) : (
+                  <div className="text-center p-4 border rounded-lg bg-muted">
+                    <p>No available reviewers</p>
+                  </div>
+              )}
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button variant="outline" onClick={skipReviewer} disabled={!nextReviewer}>
+                Skip
+              </Button>
+              <Button onClick={assignPR} disabled={!nextReviewer}>
+                Assign PR
+              </Button>
+            </CardFooter>
+            <div className="px-6 pb-6 space-y-4">
+              <Button variant="secondary" className="w-full" onClick={undoAssignment}>
+                <Undo2 className="h-4 w-4 mr-2" />
+                Undo Last Assignment
+              </Button>
+
+              <Dialog open={forceDialogOpen} onOpenChange={setForceDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full">
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Force Assign PR
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Force Assign PR</DialogTitle>
+                    <DialogDescription>
+                      Select a specific reviewer to assign a PR to, regardless of the normal rotation.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <Select value={selectedReviewerId} onValueChange={setSelectedReviewerId}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a reviewer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {reviewers.map((reviewer) => (
+                            <SelectItem key={reviewer.id} value={reviewer.id}>
+                              <div className="flex items-center">
+                                <span>{reviewer.name}</span>
+                                {reviewer.isAbsent && <AlertTriangle className="h-4 w-4 ml-2 text-amber-500" />}
+                              </div>
+                            </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {selectedReviewerId && reviewers.find((r) => r.id === selectedReviewerId)?.isAbsent && (
+                        <div className="mt-2 text-sm text-amber-500 flex items-center">
+                          <AlertTriangle className="h-4 w-4 mr-1" />
+                          <span>This reviewer is currently marked as absent</span>
+                        </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setForceDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleForceAssign}>Force Assign</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </Card>
+        </div>
+
+        {/* Backup Dialog */}
+        <Dialog open={backupDialogOpen} onOpenChange={setBackupDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Backup History</DialogTitle>
+              <DialogDescription>View and restore from previous backups (last 3 days)</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 max-h-[300px] overflow-y-auto">
+              {backupsLoading ? (
+                  <div className="text-center py-4">
+                    <p>Loading backups...</p>
+                  </div>
+              ) : backups.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p>No backups available yet</p>
+                    <p className="text-sm text-muted-foreground mt-2">Backups are created hourly and stored for 3 days</p>
+                  </div>
+              ) : (
+                  <div className="space-y-2">
+                    {backups.map((backup) => (
+                        <div
+                            key={backup.key}
+                            className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/50"
+                        >
+                          <div>
+                            <p className="font-medium">{backup.formattedDate}</p>
+                          </div>
+                          <Button size="sm" variant="outline" onClick={() => handleRestoreBackup(backup.key)}>
+                            Restore
+                          </Button>
+                        </div>
+                    ))}
+                  </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBackupDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-    </div>
   )
 }
+
+
+
 
