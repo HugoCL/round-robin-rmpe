@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import {useEffect, useState} from "react"
+import React, {useEffect, useRef, useState} from "react"
 import {Button} from "@/components/ui/button"
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card"
 import {Input} from "@/components/ui/input"
@@ -20,6 +19,8 @@ import {
   UserCheck,
   UserMinus,
   UserPlus,
+  Wifi,
+  WifiOff,
   X,
 } from "lucide-react"
 import {toast} from "@/hooks/use-toast"
@@ -58,6 +59,8 @@ export default function PRReviewAssignment() {
   const [editValue, setEditValue] = useState<number>(0)
   const [selectedReviewerId, setSelectedReviewerId] = useState<string>("")
   const [forceDialogOpen, setForceDialogOpen] = useState(false)
+  const [isConnected, setIsConnected] = useState(false)
+  const eventSourceRef = useRef<EventSource | null>(null)
 
   // Auth
   const { user, loading } = useAuth();
@@ -82,6 +85,70 @@ export default function PRReviewAssignment() {
 
     loadReviewers()
   }, [])
+
+
+  // Set up SSE connection for real-time updates
+  useEffect(() => {
+    // Only set up the connection once the initial data is loaded
+    if (isLoading) return
+
+    const setupEventSource = () => {
+      const eventSource = new EventSource("/api/updates")
+      eventSourceRef.current = eventSource
+
+      eventSource.onopen = () => {
+        setIsConnected(true)
+        console.log("SSE connection established")
+      }
+
+      eventSource.onerror = (error) => {
+        console.error("SSE connection error:", error)
+        setIsConnected(false)
+
+        // Try to reconnect after a delay
+        eventSource.close()
+        setTimeout(setupEventSource, 5000)
+      }
+
+      eventSource.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          console.log("SSE message received:", data)
+
+          switch (data.type) {
+            case "connected":
+              setIsConnected(true)
+              break
+
+            case "reviewers-updated":
+              // Reload reviewers data
+              const updatedReviewers = await getReviewers()
+              setReviewers(updatedReviewers)
+              break
+
+            case "assignment-added":
+            case "assignment-undone":
+            case "counts-reset":
+              // Reload reviewers data
+              const refreshedReviewers = await getReviewers()
+              setReviewers(refreshedReviewers)
+              break
+          }
+        } catch (error) {
+          console.error("Error processing SSE message:", error)
+        }
+      }
+    }
+
+    setupEventSource()
+
+    // Clean up on unmount
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
+    }
+  }, [isLoading])
 
   // Find the next reviewer whenever the reviewers list changes
   useEffect(() => {
@@ -485,8 +552,22 @@ export default function PRReviewAssignment() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <h1 className="text-3xl font-bold">PR Review - Remuneraciones Perú</h1>
-
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">PR Review - Remuneraciones Perú</h1>
+        <div className="flex items-center gap-2">
+          {isConnected ? (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
+                <Wifi className="h-3 w-3" />
+                <span>Real-time updates active</span>
+              </Badge>
+          ) : (
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                <WifiOff className="h-3 w-3" />
+                <span>Offline mode</span>
+              </Badge>
+          )}
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-2">
           <CardHeader>

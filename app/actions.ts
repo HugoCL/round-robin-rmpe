@@ -2,6 +2,7 @@
 
 import {redis} from "@/lib/redis"
 import {signOut} from '@workos-inc/authkit-nextjs';
+import {notifyClients} from "./api/updates/route";
 
 export interface Reviewer {
   id: string
@@ -68,6 +69,10 @@ export async function getReviewers(): Promise<Reviewer[]> {
 export async function saveReviewers(reviewers: Reviewer[]): Promise<boolean> {
   try {
     await redis.set(REDIS_KEY, reviewers)
+
+    // Notify all clients about the update
+    notifyClients({ type: "reviewers-updated" })
+
     return true
   } catch (error) {
     console.error("Error saving reviewers to Redis:", error)
@@ -182,6 +187,9 @@ export async function resetAllCounts(): Promise<boolean> {
     // Clear assignment history
     await redis.set(HISTORY_KEY, [])
 
+    // Notify clients about the reset
+    notifyClients({ type: "counts-reset" })
+
     return await saveReviewers(updatedReviewers)
   } catch (error) {
     console.error("Error resetting counts in Redis:", error)
@@ -209,6 +217,14 @@ async function addToAssignmentHistory(reviewerId: string, forced: boolean): Prom
     const updatedHistory = [{ reviewerId, timestamp: Date.now(), forced }, ...history].slice(0, 50) // Keep only the last 50 assignments
 
     await redis.set(HISTORY_KEY, updatedHistory)
+
+    // Notify clients about the new assignment
+    notifyClients({
+      type: "assignment-added",
+      reviewerId,
+      forced,
+    })
+
     return true
   } catch (error) {
     console.error("Error adding to assignment history:", error)
@@ -254,6 +270,12 @@ export async function undoLastAssignment(): Promise<{ success: boolean; reviewer
 
     // Save updated reviewers
     await saveReviewers(updatedReviewers)
+
+    // Notify clients about the undo
+    notifyClients({
+      type: "assignment-undone",
+      reviewerId: lastAssignment.reviewerId,
+    })
 
     return { success: true, reviewerId: lastAssignment.reviewerId }
   } catch (error) {
