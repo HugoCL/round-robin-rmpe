@@ -37,7 +37,7 @@ import {
   undoLastAssignment,
   updateAssignmentCount,
 } from "./actions"
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
+import {useAuth} from "@workos-inc/authkit-nextjs/components";
 import {
   Dialog,
   DialogContent,
@@ -45,9 +45,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {useAuth} from "@workos-inc/authkit-nextjs/components";
+  DialogTrigger
+} from "@/components/ui/dialog";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 
 export default function PRReviewAssignment() {
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
@@ -58,7 +58,9 @@ export default function PRReviewAssignment() {
   const [editValue, setEditValue] = useState<number>(0)
   const [selectedReviewerId, setSelectedReviewerId] = useState<string>("")
   const [forceDialogOpen, setForceDialogOpen] = useState(false)
-  const {user} = useAuth();
+
+  // Auth
+  const { user, loading } = useAuth();
 
   // Load reviewers from Redis on initial load
   useEffect(() => {
@@ -441,7 +443,7 @@ export default function PRReviewAssignment() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || loading) {
     return (
       <div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
         <div className="text-center">
