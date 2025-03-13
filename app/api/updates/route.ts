@@ -1,3 +1,6 @@
+export const runtime = 'nodejs';
+// This is required to enable streaming
+export const dynamic = 'force-dynamic';
 // Store active connections
 const clients = new Set<{
     id: string
