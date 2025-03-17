@@ -22,17 +22,7 @@ const MAX_SNAPSHOTS = 10
 // Create a snapshot after a change
 export async function createSnapshot(reviewers: Reviewer[], description: string): Promise<boolean> {
   try {
-    // Get all existing snapshots
-    const keys = await redis.keys(`${BACKUP_KEY_PREFIX}-*`)
-
-    // Sort keys by timestamp (newest first)
-    const sortedKeys = keys.sort((a, b) => {
-      const timestampA = Number.parseInt(a.split("-").pop() || "0")
-      const timestampB = Number.parseInt(b.split("-").pop() || "0")
-      return timestampB - timestampA
-    })
-
-    // Create new snapshot
+    // Create new snapshot first
     const timestamp = Date.now()
     const backupKey = `${BACKUP_KEY_PREFIX}-${timestamp}`
 
@@ -43,10 +33,20 @@ export async function createSnapshot(reviewers: Reviewer[], description: string)
       data: reviewers,
     })
 
+    // Get all existing snapshots (including the one we just created)
+    const keys = await redis.keys(`${BACKUP_KEY_PREFIX}-*`)
+
+    // Sort keys by timestamp (newest first)
+    const sortedKeys = keys.sort((a, b) => {
+      const timestampA = Number.parseInt(a.split("-").pop() || "0")
+      const timestampB = Number.parseInt(b.split("-").pop() || "0")
+      return timestampB - timestampA
+    })
+
     // If we have more than MAX_SNAPSHOTS, delete the oldest ones
-    if (sortedKeys.length >= MAX_SNAPSHOTS) {
+    if (sortedKeys.length > MAX_SNAPSHOTS) {
       // Get keys to delete (oldest ones beyond our limit)
-      const keysToDelete = sortedKeys.slice(MAX_SNAPSHOTS - 1)
+      const keysToDelete = sortedKeys.slice(MAX_SNAPSHOTS)
 
       // Delete old snapshots
       for (const key of keysToDelete) {
