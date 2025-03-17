@@ -2,160 +2,145 @@
 
 import {redis} from "@/lib/redis"
 import {type Reviewer, saveReviewers} from "./actions"
-import {notifyClients} from "./api/updates/route"
 
 export interface BackupEntry {
-    key: string
-    timestamp: number
-    formattedDate: string
-    description: string
+  key: string
+  timestamp: number
+  formattedDate: string
+  description: string
 }
 
 export interface BackupData {
-    timestamp: number
-    description: string
-    data: Reviewer[]
+  timestamp: number
+  description: string
+  data: Reviewer[]
 }
 
 const BACKUP_KEY_PREFIX = "pr-reviewers-snapshot"
 const MAX_SNAPSHOTS = 10
 
-
 // Create a snapshot after a change
 export async function createSnapshot(reviewers: Reviewer[], description: string): Promise<boolean> {
-    try {
-        // Get all existing snapshots
-        const keys = await redis.keys(`${BACKUP_KEY_PREFIX}-*`)
+  try {
+    // Get all existing snapshots
+    const keys = await redis.keys(`${BACKUP_KEY_PREFIX}-*`)
 
-        // Sort keys by timestamp (newest first)
-        const sortedKeys = keys.sort((a, b) => {
-            const timestampA = Number.parseInt(a.split("-").pop() || "0")
-            const timestampB = Number.parseInt(b.split("-").pop() || "0")
-            return timestampB - timestampA
-        })
+    // Sort keys by timestamp (newest first)
+    const sortedKeys = keys.sort((a, b) => {
+      const timestampA = Number.parseInt(a.split("-").pop() || "0")
+      const timestampB = Number.parseInt(b.split("-").pop() || "0")
+      return timestampB - timestampA
+    })
 
-        // Create new snapshot
-        const timestamp = Date.now()
-        const backupKey = `${BACKUP_KEY_PREFIX}-${timestamp}`
+    // Create new snapshot
+    const timestamp = Date.now()
+    const backupKey = `${BACKUP_KEY_PREFIX}-${timestamp}`
 
-        // Store snapshot in Redis
-        await redis.set(backupKey, {
-            timestamp,
-            description,
-            data: reviewers,
-        })
+    // Store snapshot in Redis
+    await redis.set(backupKey, {
+      timestamp,
+      description,
+      data: reviewers,
+    })
 
-        // If we have more than MAX_SNAPSHOTS, delete the oldest ones
-        if (sortedKeys.length >= MAX_SNAPSHOTS) {
-            // Get keys to delete (oldest ones beyond our limit)
-            const keysToDelete = sortedKeys.slice(MAX_SNAPSHOTS - 1)
+    // If we have more than MAX_SNAPSHOTS, delete the oldest ones
+    if (sortedKeys.length >= MAX_SNAPSHOTS) {
+      // Get keys to delete (oldest ones beyond our limit)
+      const keysToDelete = sortedKeys.slice(MAX_SNAPSHOTS - 1)
 
-            // Delete old snapshots
-            for (const key of keysToDelete) {
-                await redis.del(key)
-            }
-        }
-
-        return true
-    } catch (error) {
-        console.error("Error creating snapshot:", error)
-        return false
+      // Delete old snapshots
+      for (const key of keysToDelete) {
+        await redis.del(key)
+      }
     }
+
+    return true
+  } catch (error) {
+    console.error("Error creating snapshot:", error)
+    return false
+  }
 }
 
-// Get all available snapshots
 // Get all available snapshots
 export async function getSnapshots(): Promise<BackupEntry[]> {
-    try {
-        // Get all snapshot keys
-        const keys = await redis.keys(`${BACKUP_KEY_PREFIX}-*`)
+  try {
+    // Get all snapshot keys
+    const keys = await redis.keys(`${BACKUP_KEY_PREFIX}-*`)
 
-        // Sort keys by timestamp (newest first)
-        const sortedKeys = keys.sort((a, b) => {
-            const timestampA = Number.parseInt(a.split("-").pop() || "0")
-            const timestampB = Number.parseInt(b.split("-").pop() || "0")
-            return timestampB - timestampA
+    // Sort keys by timestamp (newest first)
+    const sortedKeys = keys.sort((a, b) => {
+      const timestampA = Number.parseInt(a.split("-").pop() || "0")
+      const timestampB = Number.parseInt(b.split("-").pop() || "0")
+      return timestampB - timestampA
+    })
+
+    // Format the data for display
+    const snapshots: BackupEntry[] = []
+
+    for (const key of sortedKeys) {
+      const snapshot = await redis.get<BackupData>(key)
+      if (snapshot) {
+        const date = new Date(snapshot.timestamp)
+        snapshots.push({
+          key,
+          timestamp: snapshot.timestamp,
+          formattedDate: formatDate(date),
+          description: snapshot.description,
         })
-
-        // Format the data for display
-        const snapshots: BackupEntry[] = []
-
-        for (const key of sortedKeys) {
-            const snapshot = await redis.get<BackupData>(key)
-            if (snapshot) {
-                const date = new Date(snapshot.timestamp)
-                snapshots.push({
-                    key,
-                    timestamp: snapshot.timestamp,
-                    formattedDate: formatDate(date),
-                    description: snapshot.description,
-                })
-            }
-        }
-
-        return snapshots
-    } catch (error) {
-        console.error("Error fetching snapshots:", error)
-        return []
+      }
     }
-}
 
-// Get a specific backup by key
-export async function getBackupData(key: string): Promise<BackupData | null> {
-    try {
-        return await redis.get<BackupData>(key)
-    } catch (error) {
-        console.error("Error fetching backup data:", error)
-        return null
-    }
+    return snapshots
+  } catch (error) {
+    console.error("Error fetching snapshots:", error)
+    return []
+  }
 }
 
 // Get a specific snapshot by key
 export async function getSnapshotData(key: string): Promise<BackupData | null> {
-    try {
-        return await redis.get<BackupData>(key)
-    } catch (error) {
-        console.error("Error fetching snapshot data:", error)
-        return null
-    }
+  try {
+    return await redis.get<BackupData>(key)
+  } catch (error) {
+    console.error("Error fetching snapshot data:", error)
+    return null
+  }
 }
 
 // Restore from a snapshot
 export async function restoreFromSnapshot(key: string): Promise<boolean> {
-    try {
-        const snapshot = await getSnapshotData(key)
+  try {
+    const snapshot = await getSnapshotData(key)
 
-        if (!snapshot || !snapshot.data) {
-            return false
-        }
-
-        // Save the snapshot data as the current reviewers
-        const success = await saveReviewers(snapshot.data)
-
-        if (success) {
-            // Create a new snapshot to record this restore action
-            await createSnapshot(snapshot.data, `Restored from ${formatDate(new Date(snapshot.timestamp))}`)
-
-            // Notify clients about the restore
-            notifyClients({ type: "snapshot-restored", timestamp: snapshot.timestamp })
-        }
-
-        return success
-    } catch (error) {
-        console.error("Error restoring from snapshot:", error)
-        return false
+    if (!snapshot || !snapshot.data) {
+      return false
     }
+
+    // Save the snapshot data as the current reviewers
+    const success = await saveReviewers(snapshot.data)
+
+    if (success) {
+      // Create a new snapshot to record this restore action
+      await createSnapshot(snapshot.data, `Restored from ${formatDate(new Date(snapshot.timestamp))}`)
+    }
+
+    return success
+  } catch (error) {
+    console.error("Error restoring from snapshot:", error)
+    return false
+  }
 }
 
 // Helper function to format date
 function formatDate(date: Date): string {
-    const options: Intl.DateTimeFormatOptions = {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }
 
-    return date.toLocaleDateString("en-US", options)
+  return date.toLocaleDateString("en-US", options)
 }
+
