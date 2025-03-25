@@ -25,7 +25,7 @@ import {
     Clock,
     Eye,
     EyeOff,
-    RefreshCw, MoreHorizontal,
+    RefreshCw, MoreHorizontal, User,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import {
@@ -39,7 +39,10 @@ import {
     updateAssignmentCount,
     addReviewer as addReviewerAction,
     forceAssignReviewer,
+    skipToNextReviewer,
+    getAssignmentFeed,
     type Reviewer, signOutAuthKit,
+    type AssignmentFeed,
 } from "./actions"
 import { getSnapshots, restoreFromSnapshot, type BackupEntry } from "./backup-actions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -78,22 +81,27 @@ export default function PRReviewAssignment() {
     const [showAssignments, setShowAssignments] = useState(false)
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
     const [isRefreshing, setIsRefreshing] = useState(false)
+    const [assignmentFeed, setAssignmentFeed] = useState<AssignmentFeed>({ items: [], lastAssigned: null })
+    const [skipConfirmDialogOpen, setSkipConfirmDialogOpen] = useState(false)
+    const [nextAfterSkip, setNextAfterSkip] = useState<Reviewer | null>(null)
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
     const UPDATE_INTERVAL = 60000 // 1 minute in milliseconds
 
     const { user, loading } = useAuth();
-    // Function to fetch reviewers data
-    const fetchReviewers = useCallback(async (showLoadingState = false) => {
+    // Function to fetch reviewers data and assignment feed
+    const fetchData = useCallback(async (showLoadingState = false) => {
         if (showLoadingState) {
             setIsRefreshing(true)
         }
 
         try {
-            const data = await getReviewers()
-            setReviewers(data)
+            const [reviewersData, feedData] = await Promise.all([getReviewers(), getAssignmentFeed()])
+
+            setReviewers(reviewersData)
+            setAssignmentFeed(feedData)
             setLastUpdated(new Date())
         } catch (error) {
-            console.error("Error loading reviewers:", error)
+            console.error("Error loading data:", error)
             toast({
                 title: "Error",
                 description: "Failed to refresh data from database",
@@ -108,24 +116,26 @@ export default function PRReviewAssignment() {
 
     // Load reviewers from Redis on initial load
     useEffect(() => {
-        async function loadReviewers() {
+        async function loadInitialData() {
             try {
-                const data = await getReviewers()
-                setReviewers(data)
+                const [reviewersData, feedData] = await Promise.all([getReviewers(), getAssignmentFeed()])
+
+                setReviewers(reviewersData)
+                setAssignmentFeed(feedData)
                 setLastUpdated(new Date())
                 setIsLoading(false)
             } catch (error) {
-                console.error("Error loading reviewers:", error)
+                console.error("Error loading initial data:", error)
                 toast({
                     title: "Error",
-                    description: "Failed to load reviewers from database",
+                    description: "Failed to load data from database",
                     variant: "destructive",
                 })
                 setIsLoading(false)
             }
         }
 
-        loadReviewers()
+        loadInitialData()
 
         // Load show assignments preference from localStorage
         const savedShowAssignments = localStorage.getItem("showAssignments")
@@ -146,7 +156,7 @@ export default function PRReviewAssignment() {
 
         // Set up interval to fetch data every minute
         intervalRef.current = setInterval(() => {
-            fetchReviewers()
+            fetchData()
         }, UPDATE_INTERVAL)
 
         // Clean up on unmount
@@ -155,14 +165,14 @@ export default function PRReviewAssignment() {
                 clearInterval(intervalRef.current)
             }
         }
-    }, [isLoading, fetchReviewers])
+    }, [isLoading, fetchData])
 
     // Handle visibility change to pause/resume updates when tab is hidden
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === "visible") {
                 // Refresh data immediately when tab becomes visible
-                fetchReviewers()
+                fetchData()
 
                 // Restart the interval
                 if (intervalRef.current) {
@@ -170,7 +180,7 @@ export default function PRReviewAssignment() {
                 }
 
                 intervalRef.current = setInterval(() => {
-                    fetchReviewers()
+                    fetchData()
                 }, UPDATE_INTERVAL)
             } else {
                 // Clear interval when tab is hidden
@@ -188,7 +198,7 @@ export default function PRReviewAssignment() {
         return () => {
             document.removeEventListener("visibilitychange", handleVisibilityChange)
         }
-    }, [fetchReviewers])
+    }, [fetchData])
 
     // Find the next reviewer whenever the reviewers list changes
     useEffect(() => {
@@ -226,15 +236,8 @@ export default function PRReviewAssignment() {
         const success = await incrementReviewerCount(nextReviewer.id)
 
         if (success) {
-            // Update local state
-            setReviewers((prev) =>
-                prev.map((reviewer) =>
-                    reviewer.id === nextReviewer.id ? { ...reviewer, assignmentCount: reviewer.assignmentCount + 1 } : reviewer,
-                ),
-            )
-
-            // Update last updated time
-            setLastUpdated(new Date())
+            // Refresh data to get updated reviewers and feed
+            await fetchData()
 
             toast({
                 title: "PR Assigned",
@@ -262,17 +265,8 @@ export default function PRReviewAssignment() {
         const result = await forceAssignReviewer(selectedReviewerId)
 
         if (result.success && result.reviewer) {
-            // Update local state
-            setReviewers((prev) =>
-                prev.map((reviewer) =>
-                    reviewer.id === selectedReviewerId
-                        ? { ...reviewer, assignmentCount: reviewer.assignmentCount + 1 }
-                        : reviewer,
-                ),
-            )
-
-            // Update last updated time
-            setLastUpdated(new Date())
+            // Refresh data to get updated reviewers and feed
+            await fetchData()
 
             // Show appropriate toast based on reviewer status
             if (result.reviewer.isAbsent) {
@@ -302,19 +296,12 @@ export default function PRReviewAssignment() {
     const skipReviewer = async () => {
         if (!nextReviewer) return
 
-        // Increment the counter in Redis
-        const success = await incrementReviewerCount(nextReviewer.id)
+        // Increment the counter in Redis with skipped flag
+        const success = await incrementReviewerCount(nextReviewer.id, true)
 
         if (success) {
-            // Update local state
-            setReviewers((prev) =>
-                prev.map((reviewer) =>
-                    reviewer.id === nextReviewer.id ? { ...reviewer, assignmentCount: reviewer.assignmentCount + 1 } : reviewer,
-                ),
-            )
-
-            // Update last updated time
-            setLastUpdated(new Date())
+            // Refresh data to get updated reviewers and feed
+            await fetchData()
 
             toast({
                 title: "Reviewer Skipped",
@@ -329,21 +316,50 @@ export default function PRReviewAssignment() {
         }
     }
 
+
+    const handleImTheNextOne = async () => {
+        if (!nextReviewer) return
+
+        // Find the next reviewer that's not the current next one
+        const result = await skipToNextReviewer(nextReviewer.id)
+
+        if (result.success && result.nextReviewer) {
+            // Store the next reviewer after skip for the confirmation dialog
+            setNextAfterSkip(result.nextReviewer)
+            // Open the confirmation dialog
+            setSkipConfirmDialogOpen(true)
+        } else {
+            toast({
+                title: "Error",
+                description: "No other available reviewers found.",
+                variant: "destructive",
+            })
+        }
+    }
+
+
+    const confirmSkipToNext = () => {
+        if (!nextReviewer || !nextAfterSkip) return
+
+        // Update local state to show the new next reviewer
+        setNextReviewer(nextAfterSkip)
+
+        toast({
+            title: "Next Reviewer Updated",
+            description: `${nextReviewer.name} was skipped. ${nextAfterSkip.name} is now the next reviewer.`,
+        })
+
+        // Close the dialog
+        setSkipConfirmDialogOpen(false)
+        setNextAfterSkip(null)
+    }
+
     const undoAssignment = async () => {
         const result = await undoLastAssignment()
 
         if (result.success && result.reviewerId) {
-            // Update local state
-            setReviewers((prev) =>
-                prev.map((reviewer) =>
-                    reviewer.id === result.reviewerId
-                        ? { ...reviewer, assignmentCount: Math.max(0, reviewer.assignmentCount - 1) }
-                        : reviewer,
-                ),
-            )
-
-            // Update last updated time
-            setLastUpdated(new Date())
+            // Refresh data to get updated reviewers and feed
+            await fetchData()
 
             toast({
                 title: "Assignment Undone",
@@ -372,13 +388,9 @@ export default function PRReviewAssignment() {
         const success = await addReviewerAction(newReviewerName.trim())
 
         if (success) {
-            // Reload reviewers to get the new one with proper ID
-            const updatedReviewers = await getReviewers()
-            setReviewers(updatedReviewers)
+            // Refresh data to get updated reviewers
+            await fetchData()
             setNewReviewerName("")
-
-            // Update last updated time
-            setLastUpdated(new Date())
 
             toast({
                 title: "Reviewer Added",
@@ -398,11 +410,8 @@ export default function PRReviewAssignment() {
         const success = await removeReviewerAction(id)
 
         if (success) {
-            // Update local state
-            setReviewers((prev) => prev.filter((reviewer) => reviewer.id !== id))
-
-            // Update last updated time
-            setLastUpdated(new Date())
+            // Refresh data to get updated reviewers
+            await fetchData()
 
             toast({
                 title: "Reviewer Removed",
@@ -422,13 +431,8 @@ export default function PRReviewAssignment() {
         const success = await toggleAbsence(id)
 
         if (success) {
-            // Update local state
-            setReviewers((prev) =>
-                prev.map((reviewer) => (reviewer.id === id ? { ...reviewer, isAbsent: !reviewer.isAbsent } : reviewer)),
-            )
-
-            // Update last updated time
-            setLastUpdated(new Date())
+            // Refresh data to get updated reviewers
+            await fetchData()
         } else {
             toast({
                 title: "Error",
@@ -464,13 +468,8 @@ export default function PRReviewAssignment() {
         const success = await updateAssignmentCount(editingId, editValue)
 
         if (success) {
-            // Update local state
-            setReviewers((prev) =>
-                prev.map((reviewer) => (reviewer.id === editingId ? { ...reviewer, assignmentCount: editValue } : reviewer)),
-            )
-
-            // Update last updated time
-            setLastUpdated(new Date())
+            // Refresh data to get updated reviewers
+            await fetchData()
 
             toast({
                 title: "Assignment Count Updated",
@@ -521,11 +520,8 @@ export default function PRReviewAssignment() {
                     const success = await saveReviewers(dataWithCreatedAt)
 
                     if (success) {
-                        // Update local state
-                        setReviewers(dataWithCreatedAt)
-
-                        // Update last updated time
-                        setLastUpdated(new Date())
+                        // Refresh data to get updated reviewers
+                        await fetchData()
 
                         toast({
                             title: "Data Imported",
@@ -559,11 +555,8 @@ export default function PRReviewAssignment() {
             const success = await resetAllCounts()
 
             if (success) {
-                // Update local state
-                setReviewers((prev) => prev.map((reviewer) => ({ ...reviewer, assignmentCount: 0 })))
-
-                // Update last updated time
-                setLastUpdated(new Date())
+                // Refresh data to get updated reviewers
+                await fetchData()
 
                 toast({
                     title: "Counts Reset",
@@ -607,7 +600,7 @@ export default function PRReviewAssignment() {
 
             if (success) {
                 // Refresh data after restore
-                await fetchReviewers()
+                await fetchData()
 
                 toast({
                     title: "Snapshot Restored",
@@ -636,13 +629,14 @@ export default function PRReviewAssignment() {
     }
 
     const handleManualRefresh = () => {
-        fetchReviewers(true)
+        fetchData(true)
     }
 
     // Format the last updated time
     const formatLastUpdated = () => {
         return lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     }
+
 
     if (isLoading) {
         return (
@@ -763,6 +757,9 @@ export default function PRReviewAssignment() {
                                         <TableCell className="font-medium">
                                             {reviewer.name}
                                             {nextReviewer?.id === reviewer.id && <Badge className="ml-2 bg-green-500">Next</Badge>}
+                                            {assignmentFeed.lastAssigned?.reviewerId === reviewer.id && (
+                                                <Badge className="ml-2 bg-blue-500">Last Assigned</Badge>
+                                            )}
                                         </TableCell>
                                         {showAssignments && (
                                             <TableCell>
@@ -863,7 +860,7 @@ export default function PRReviewAssignment() {
                         </div>
                     </CardFooter>
                 </Card>
-
+                <div className="flex flex-col gap-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>Assign PR Review</CardTitle>
@@ -880,6 +877,16 @@ export default function PRReviewAssignment() {
                                 <p>No available reviewers</p>
                             </div>
                         )}
+
+                        {assignmentFeed.lastAssigned && (
+                            <div className="text-center p-4 border rounded-lg bg-muted">
+                                <p className="text-sm font-medium">Last assigned to:</p>
+                                <p className="font-bold">{assignmentFeed.lastAssigned.reviewerName}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {new Date(assignmentFeed.lastAssigned.timestamp).toLocaleString()}
+                                </p>
+                            </div>
+                        )}
                     </CardContent>
                     <CardFooter className="flex justify-between">
                         <Button variant="outline" onClick={skipReviewer} disabled={!nextReviewer}>
@@ -893,6 +900,11 @@ export default function PRReviewAssignment() {
                         <Button variant="secondary" className="w-full" onClick={undoAssignment}>
                             <Undo2 className="h-4 w-4 mr-2" />
                             Undo Last Assignment
+                        </Button>
+
+                        <Button variant="outline" className="w-full" onClick={handleImTheNextOne} disabled={!nextReviewer}>
+                            <User className="h-4 w-4 mr-2" />
+                            I'm the Next One
                         </Button>
 
                         <Dialog open={forceDialogOpen} onOpenChange={setForceDialogOpen}>
@@ -943,6 +955,50 @@ export default function PRReviewAssignment() {
                         </Dialog>
                     </div>
                 </Card>
+
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Recent Assignments</CardTitle>
+                            <CardDescription>Last 5 PR review assignments</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {assignmentFeed.items.length === 0 ? (
+                                <div className="text-center p-4 border rounded-lg bg-muted">
+                                    <p>No recent assignments</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {assignmentFeed.items.map((item, index) => (
+                                        <div key={index} className="flex items-center p-3 border rounded-lg">
+                                            <div className="flex-1">
+                                                <p className="font-medium">{item.reviewerName}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                                {item.forced && (
+                                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                                                        Forced
+                                                    </Badge>
+                                                )}
+                                                {item.skipped && (
+                                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                                        Skipped
+                                                    </Badge>
+                                                )}
+                                                {!item.forced && !item.skipped && (
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                        Regular
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
 
             {/* Snapshot Dialog */}
@@ -983,10 +1039,36 @@ export default function PRReviewAssignment() {
                             </div>
                         )}
                     </div>
+                    <DialogFooter></DialogFooter> {/* Added missing DialogFooter */}
+                </DialogContent>
+            </Dialog>
+
+            {/* Skip Confirmation Dialog */}
+            <Dialog open={skipConfirmDialogOpen} onOpenChange={setSkipConfirmDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Confirm Skip</DialogTitle>
+                        <DialogDescription>You're about to skip yourself in the PR review rotation.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        {nextReviewer && nextAfterSkip && (
+                            <p className="text-center">
+                                Hey <span className="font-bold">{nextReviewer.name}</span>! You'll be skipped and you'll assign this PR
+                                to <span className="font-bold">{nextAfterSkip.name}</span>. Do you confirm?
+                            </p>
+                        )}
+                    </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setSnapshotDialogOpen(false)}>
-                            Close
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setSkipConfirmDialogOpen(false)
+                                setNextAfterSkip(null)
+                            }}
+                        >
+                            Cancel
                         </Button>
+                        <Button onClick={confirmSkipToNext}>Confirm</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

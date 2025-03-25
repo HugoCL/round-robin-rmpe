@@ -14,12 +14,20 @@ export interface Reviewer {
 
 export interface AssignmentHistory {
   reviewerId: string
+  reviewerName: string // Adding name for display purposes
   timestamp: number
   forced: boolean // Track if this was a forced assignment
+  skipped: boolean // Track if this was a skip operation
+}
+
+export interface AssignmentFeed {
+  items: AssignmentHistory[]
+  lastAssigned: AssignmentHistory | null
 }
 
 const REDIS_KEY = "pr-reviewers"
 const HISTORY_KEY = "pr-assignment-history"
+const FEED_KEY = "pr-assignment-feed"
 
 // Default reviewers based on the screenshot
 const defaultReviewers: Reviewer[] = [
@@ -150,18 +158,68 @@ export async function removeReviewer(id: string): Promise<boolean> {
   }
 }
 
-export async function incrementReviewerCount(id: string): Promise<boolean> {
+export async function incrementReviewerCount(id: string, skipped = false): Promise<boolean> {
   try {
     const reviewers = await getReviewers()
+    const reviewer = reviewers.find((r) => r.id === id)
+
+    if (!reviewer) {
+      return false
+    }
+
     const updatedReviewers = reviewers.map((r) => (r.id === id ? { ...r, assignmentCount: r.assignmentCount + 1 } : r))
 
     // Add to assignment history
-    await addToAssignmentHistory(id, false)
+    await addToAssignmentHistory(id, reviewer.name, false, skipped)
 
-    return await saveReviewers(updatedReviewers)
+    const success = await saveReviewers(updatedReviewers)
+
+    if (success) {
+      // Create snapshot
+      const action = skipped ? "Skipped" : "Assigned PR to"
+      await createSnapshot(updatedReviewers, `${action}: ${reviewer.name}`)
+    }
+
+    return success
   } catch (error) {
     console.error("Error incrementing reviewer count in Redis:", error)
     return false
+  }
+}
+
+export async function skipToNextReviewer(
+    currentNextId: string,
+): Promise<{ success: boolean; nextReviewer?: Reviewer }> {
+  try {
+    const reviewers = await getReviewers()
+
+    // Filter out absent reviewers and the current next reviewer
+    const availableReviewers = reviewers.filter((r) => !r.isAbsent && r.id !== currentNextId)
+
+    if (availableReviewers.length === 0) {
+      return { success: false }
+    }
+
+    // Find the minimum assignment count among available reviewers
+    const minCount = Math.min(...availableReviewers.map((r) => r.assignmentCount))
+
+    // Get all available reviewers with the minimum count
+    const candidatesWithMinCount = availableReviewers.filter((r) => r.assignmentCount === minCount)
+
+    // Sort by creation time (older first)
+    const sortedCandidates = [...candidatesWithMinCount].sort((a, b) => a.createdAt - b.createdAt)
+
+    // Select the first one
+    const nextReviewer = sortedCandidates[0]
+
+    if (!nextReviewer) {
+      return { success: false }
+    }
+
+    return { success: true, nextReviewer }
+  } catch (error) {
+    console.error("Error finding next reviewer in Redis:", error)
+    return { success: false }
   }
 }
 
@@ -177,7 +235,7 @@ export async function forceAssignReviewer(id: string): Promise<{ success: boolea
     const updatedReviewers = reviewers.map((r) => (r.id === id ? { ...r, assignmentCount: r.assignmentCount + 1 } : r))
 
     // Add to assignment history with forced flag
-    await addToAssignmentHistory(id, true)
+    await addToAssignmentHistory(id, reviewer.name, true, false)
 
     // Save updated reviewers
     const success = await saveReviewers(updatedReviewers)
@@ -193,6 +251,7 @@ export async function forceAssignReviewer(id: string): Promise<{ success: boolea
     return { success: false }
   }
 }
+
 export async function updateAssignmentCount(id: string, count: number): Promise<boolean> {
   try {
     const reviewers = await getReviewers()
@@ -220,6 +279,7 @@ export async function resetAllCounts(): Promise<boolean> {
 
     // Clear assignment history
     await redis.set(HISTORY_KEY, [])
+    await redis.set(FEED_KEY, { items: [], lastAssigned: null })
 
     const success = await saveReviewers(updatedReviewers)
 
@@ -258,13 +318,29 @@ export async function toggleAbsence(id: string): Promise<boolean> {
 }
 
 // Assignment history functions for undo feature
-async function addToAssignmentHistory(reviewerId: string, forced: boolean): Promise<boolean> {
+async function addToAssignmentHistory(
+    reviewerId: string,
+    reviewerName: string,
+    forced: boolean,
+    skipped: boolean,
+): Promise<boolean> {
   try {
     const history = await getAssignmentHistory()
 
-    const updatedHistory = [{ reviewerId, timestamp: Date.now(), forced }, ...history].slice(0, 50) // Keep only the last 50 assignments
+    const newAssignment: AssignmentHistory = {
+      reviewerId,
+      reviewerName,
+      timestamp: Date.now(),
+      forced,
+      skipped,
+    }
+
+    const updatedHistory = [newAssignment, ...history].slice(0, 50) // Keep only the last 50 assignments
 
     await redis.set(HISTORY_KEY, updatedHistory)
+
+    // Update the feed
+    await updateAssignmentFeed(newAssignment)
 
     return true
   } catch (error) {
@@ -280,6 +356,36 @@ async function getAssignmentHistory(): Promise<AssignmentHistory[]> {
   } catch (error) {
     console.error("Error getting assignment history:", error)
     return []
+  }
+}
+
+// New function to update the assignment feed
+async function updateAssignmentFeed(newAssignment: AssignmentHistory): Promise<boolean> {
+  try {
+    const feed = await getAssignmentFeed()
+
+    // Update the feed with the new assignment
+    const updatedFeed: AssignmentFeed = {
+      items: [newAssignment, ...feed.items].slice(0, 5), // Keep only the last 5 assignments
+      lastAssigned: newAssignment,
+    }
+
+    await redis.set(FEED_KEY, updatedFeed)
+    return true
+  } catch (error) {
+    console.error("Error updating assignment feed:", error)
+    return false
+  }
+}
+
+// New function to get the assignment feed
+export async function getAssignmentFeed(): Promise<AssignmentFeed> {
+  try {
+    const feed = await redis.get<AssignmentFeed>(FEED_KEY)
+    return feed || { items: [], lastAssigned: null }
+  } catch (error) {
+    console.error("Error getting assignment feed:", error)
+    return { items: [], lastAssigned: null }
   }
 }
 
@@ -308,6 +414,14 @@ export async function undoLastAssignment(): Promise<{ success: boolean; reviewer
     // Remove from history
     const updatedHistory = history.slice(1)
     await redis.set(HISTORY_KEY, updatedHistory)
+
+    // Update the feed
+    const feed = await getAssignmentFeed()
+    const updatedFeed: AssignmentFeed = {
+      items: feed.items.filter((item) => item.timestamp !== lastAssignment.timestamp),
+      lastAssigned: feed.items.length > 1 ? feed.items[1] : null,
+    }
+    await redis.set(FEED_KEY, updatedFeed)
 
     // Save updated reviewers
     const success = await saveReviewers(updatedReviewers)
