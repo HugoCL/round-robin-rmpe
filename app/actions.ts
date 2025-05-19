@@ -176,7 +176,7 @@ export async function incrementReviewerCount(id: string, skipped = false): Promi
 
     if (success) {
       // Create snapshot
-      const action = skipped ? "Skipped" : "Assigned PR to"
+      const action = skipped ? (reviewer.isAbsent ? "Auto-skipped absent reviewer" : "Skipped") : "Assigned PR to"
       await createSnapshot(updatedReviewers, `${action}: ${reviewer.name}`)
     }
 

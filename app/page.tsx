@@ -207,26 +207,48 @@ export default function PRReviewAssignment() {
         }
     }, [reviewers])
 
-    const findNextReviewer = () => {
-        // Filter out absent reviewers
-        const availableReviewers = reviewers.filter((r) => !r.isAbsent)
-
-        if (availableReviewers.length === 0) {
+    const findNextReviewer = async () => {
+        // Get all reviewers (including absent ones)
+        if (reviewers.length === 0) {
             setNextReviewer(null)
             return
         }
 
-        // Find the minimum assignment count among available reviewers
-        const minCount = Math.min(...availableReviewers.map((r) => r.assignmentCount))
+        // Find the minimum assignment count among all reviewers
+        const minCount = Math.min(...reviewers.map((r) => r.assignmentCount))
 
-        // Get all available reviewers with the minimum count
-        const candidatesWithMinCount = availableReviewers.filter((r) => r.assignmentCount === minCount)
+        // Get all reviewers with the minimum count
+        const candidatesWithMinCount = reviewers.filter((r) => r.assignmentCount === minCount)
 
         // Sort by creation time (older first)
         const sortedCandidates = [...candidatesWithMinCount].sort((a, b) => a.createdAt - b.createdAt)
 
-        // Select the first one
-        setNextReviewer(sortedCandidates[0])
+        // Check if the first candidate is absent
+        if (sortedCandidates.length > 0) {
+            const firstCandidate = sortedCandidates[0]
+
+            if (firstCandidate.isAbsent) {
+                // Increment the counter for the absent reviewer
+                const success = await incrementReviewerCount(firstCandidate.id, true)
+
+                if (success) {
+                    // Refresh data and find next reviewer again
+                    await fetchData()
+                    // This will trigger useEffect which will call findNextReviewer again
+                } else {
+                    toast({
+                        title: "Error",
+                        description: "Failed to skip absent reviewer. Please try again.",
+                        variant: "destructive",
+                    })
+                }
+            } else {
+                // If not absent, set as next reviewer
+                setNextReviewer(firstCandidate)
+            }
+        } else {
+            setNextReviewer(null)
+        }
     }
 
     const assignPR = async () => {
