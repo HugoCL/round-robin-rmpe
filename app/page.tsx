@@ -228,8 +228,8 @@ export default function PRReviewAssignment() {
             const firstCandidate = sortedCandidates[0]
 
             if (firstCandidate.isAbsent) {
-                // Increment the counter for the absent reviewer
-                const success = await incrementReviewerCount(firstCandidate.id, true)
+                // Increment the counter for the absent reviewer, but mark it as an absent skip
+                const success = await incrementReviewerCount(firstCandidate.id, true, true)
 
                 if (success) {
                     // Refresh data and find next reviewer again
@@ -255,7 +255,7 @@ export default function PRReviewAssignment() {
         if (!nextReviewer) return
 
         // Increment the counter in Redis
-        const success = await incrementReviewerCount(nextReviewer.id)
+        const success = await incrementReviewerCount(nextReviewer.id, false, false)
 
         if (success) {
             // Refresh data to get updated reviewers and feed
@@ -319,7 +319,7 @@ export default function PRReviewAssignment() {
         if (!nextReviewer) return
 
         // Increment the counter in Redis with skipped flag
-        const success = await incrementReviewerCount(nextReviewer.id, true)
+        const success = await incrementReviewerCount(nextReviewer.id, true, false)
 
         if (success) {
             // Refresh data to get updated reviewers and feed

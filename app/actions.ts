@@ -18,6 +18,7 @@ export interface AssignmentHistory {
   timestamp: number
   forced: boolean // Track if this was a forced assignment
   skipped: boolean // Track if this was a skip operation
+  isAbsentSkip: boolean // Track if this was an auto-skip of an absent reviewer
 }
 
 export interface AssignmentFeed {
@@ -158,7 +159,7 @@ export async function removeReviewer(id: string): Promise<boolean> {
   }
 }
 
-export async function incrementReviewerCount(id: string, skipped = false): Promise<boolean> {
+export async function incrementReviewerCount(id: string, skipped = false, isAbsentSkip = false): Promise<boolean> {
   try {
     const reviewers = await getReviewers()
     const reviewer = reviewers.find((r) => r.id === id)
@@ -169,14 +170,20 @@ export async function incrementReviewerCount(id: string, skipped = false): Promi
 
     const updatedReviewers = reviewers.map((r) => (r.id === id ? { ...r, assignmentCount: r.assignmentCount + 1 } : r))
 
-    // Add to assignment history
-    await addToAssignmentHistory(id, reviewer.name, false, skipped)
+    // Add to assignment history, but only update the feed if it's not an absent reviewer being skipped
+    await addToAssignmentHistory(id, reviewer.name, false, skipped, isAbsentSkip)
 
     const success = await saveReviewers(updatedReviewers)
 
     if (success) {
       // Create snapshot
-      const action = skipped ? (reviewer.isAbsent ? "Auto-skipped absent reviewer" : "Skipped") : "Assigned PR to"
+      let action = "Assigned PR to"
+      if (skipped) {
+        action = "Skipped"
+      }
+      if (isAbsentSkip) {
+        action = "Auto-skipped absent reviewer"
+      }
       await createSnapshot(updatedReviewers, `${action}: ${reviewer.name}`)
     }
 
@@ -235,7 +242,7 @@ export async function forceAssignReviewer(id: string): Promise<{ success: boolea
     const updatedReviewers = reviewers.map((r) => (r.id === id ? { ...r, assignmentCount: r.assignmentCount + 1 } : r))
 
     // Add to assignment history with forced flag
-    await addToAssignmentHistory(id, reviewer.name, true, false)
+    await addToAssignmentHistory(id, reviewer.name, true, false, false)
 
     // Save updated reviewers
     const success = await saveReviewers(updatedReviewers)
@@ -323,6 +330,7 @@ async function addToAssignmentHistory(
     reviewerName: string,
     forced: boolean,
     skipped: boolean,
+    isAbsentSkip: boolean,
 ): Promise<boolean> {
   try {
     const history = await getAssignmentHistory()
@@ -333,14 +341,17 @@ async function addToAssignmentHistory(
       timestamp: Date.now(),
       forced,
       skipped,
+      isAbsentSkip,
     }
 
     const updatedHistory = [newAssignment, ...history].slice(0, 50) // Keep only the last 50 assignments
 
     await redis.set(HISTORY_KEY, updatedHistory)
 
-    // Update the feed
-    await updateAssignmentFeed(newAssignment)
+    // Only update the feed if it's not an absent reviewer being auto-skipped
+    if (!isAbsentSkip) {
+      await updateAssignmentFeed(newAssignment)
+    }
 
     return true
   } catch (error) {
