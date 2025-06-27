@@ -19,7 +19,7 @@ import {
     Clock,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { signOutAuthKit } from "@/app/actions"
+import { signOutAuthKit, type Reviewer } from "@/app/actions"
 import { getSnapshots, restoreFromSnapshot, type BackupEntry } from "@/app/backup-actions"
 import {
     Dialog,
@@ -40,11 +40,13 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useAuth } from "@workos-inc/authkit-nextjs/components"
 import { usePRReviewData } from "@/hooks/usePRReviewData"
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import { ReviewersTable } from "@/components/pr-review/ReviewersTable"
 import { AssignmentCard } from "@/components/pr-review/AssignmentCard"
 import { RecentAssignments } from "@/components/pr-review/RecentAssignments"
 import { ForceAssignDialog } from "@/components/pr-review/ForceAssignDialog"
 import { SkipConfirmationDialog } from "@/components/pr-review/SkipConfirmationDialog"
+import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsHelp"
 
 export default function PRReviewAssignment() {
     const [newReviewerName, setNewReviewerName] = useState("")
@@ -53,7 +55,7 @@ export default function PRReviewAssignment() {
     const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false)
     const [showAssignments, setShowAssignments] = useState(false)
     const [skipConfirmDialogOpen, setSkipConfirmDialogOpen] = useState(false)
-    const [nextAfterSkip, setNextAfterSkip] = useState<any>(null)
+    const [nextAfterSkip, setNextAfterSkip] = useState<Reviewer | null>(null)
 
     const { user, loading } = useAuth()
     
@@ -78,6 +80,15 @@ export default function PRReviewAssignment() {
         handleManualRefresh,
         formatLastUpdated,
     } = usePRReviewData()
+
+    // Enable keyboard shortcuts
+    useKeyboardShortcuts({
+        onAssignPR: assignPR,
+        onSkipReviewer: skipReviewer,
+        onUndoAssignment: undoAssignment,
+        onRefresh: handleManualRefresh,
+        isNextReviewerAvailable: !!nextReviewer,
+    })
 
     // Load show assignments preference from localStorage
     useEffect(() => {
@@ -253,6 +264,8 @@ export default function PRReviewAssignment() {
                         <Clock className="h-4 w-4" />
                         <span className="hidden sm:inline">History</span>
                     </Button>
+
+                    <KeyboardShortcutsHelp />
 
                     <TooltipProvider>
                         <Tooltip>
