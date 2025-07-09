@@ -176,39 +176,42 @@ export function AssignmentCard({
 					</div>
 				)}
 			</CardContent>
-			<CardFooter className="flex justify-center flex-shrink-0">
-				<Button
-					onClick={handleAssignPR}
-					disabled={!nextReviewer || isAssigning}
-					className="flex-1 bg-primary hover:bg-primary/90 max-w-md"
-					size="lg"
-				>
-					{isAssigning ? "Assigning..." : "Assign PR"}
-				</Button>
-			</CardFooter>
-			<div className="px-6 pb-6 space-y-3 flex-shrink-0">
-				<div className="flex gap-3">
-					<Button
-						variant="secondary"
-						className="flex-1"
-						onClick={onUndoAssignment}
-						disabled={isAssigning}
-					>
-						<Undo2 className="h-4 w-4 mr-2" />
-						Undo Last Assignment
-					</Button>
+			<CardFooter className="flex-shrink-0 space-y-4">
+				<div className="w-full space-y-4">
+					<div className="flex justify-center">
+						<Button
+							onClick={handleAssignPR}
+							disabled={!nextReviewer || isAssigning}
+							className="flex-1 bg-primary hover:bg-primary/90 max-w-md"
+							size="lg"
+						>
+							{isAssigning ? "Assigning..." : "Assign PR"}
+						</Button>
+					</div>
 
-					<Button
-						variant="outline"
-						className="flex-1"
-						onClick={onImTheNextOne}
-						disabled={!nextReviewer || isAssigning}
-					>
-						<User className="h-4 w-4 mr-2" />
-						I'm the Next One
-					</Button>
+					<div className="flex flex-col gap-3">
+						<Button
+							variant="secondary"
+							className="w-full"
+							onClick={onUndoAssignment}
+							disabled={isAssigning}
+						>
+							<Undo2 className="h-4 w-4 mr-2" />
+							Undo Last Assignment
+						</Button>
+
+						<Button
+							variant="outline"
+							className="w-full"
+							onClick={onImTheNextOne}
+							disabled={!nextReviewer || isAssigning}
+						>
+							<User className="h-4 w-4 mr-2" />
+							I'm the Next One
+						</Button>
+					</div>
 				</div>
-			</div>
+			</CardFooter>
 		</Card>
 	);
 }

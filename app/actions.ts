@@ -4,12 +4,21 @@ import { signOut } from "@workos-inc/authkit-nextjs";
 import { redis } from "@/lib/redis";
 import { createSnapshot } from "./backup-actions";
 
+export interface Tag {
+	id: string;
+	name: string;
+	color: string;
+	description?: string;
+	createdAt: number;
+}
+
 export interface Reviewer {
 	id: string;
 	name: string;
 	assignmentCount: number;
 	isAbsent: boolean;
 	createdAt: number; // Adding timestamp for ordering
+	tags: string[]; // Array of tag IDs
 }
 
 export interface AssignmentHistory {
@@ -19,6 +28,7 @@ export interface AssignmentHistory {
 	forced: boolean; // Track if this was a forced assignment
 	skipped: boolean; // Track if this was a skip operation
 	isAbsentSkip: boolean; // Track if this was an auto-skip of an absent reviewer
+	tag?: string; // Track which tag was used for assignment
 	actionBy?: {
 		email: string;
 		firstName?: string;
@@ -34,6 +44,10 @@ export interface AssignmentFeed {
 const REDIS_KEY = process.env.REDIS_KEY_REVIEWERS || "pr-reviewers";
 const HISTORY_KEY = process.env.REDIS_KEY_ASSIGNMENT_HISTORY || "pr-assignment-history";
 const FEED_KEY = process.env.REDIS_KEY_ASSIGNMENT_FEED || "pr-assignment-feed";
+const TAGS_KEY = process.env.REDIS_KEY_TAGS || "pr-tags";
+
+// Default tags - empty by default
+const defaultTags: Tag[] = [];
 
 // Default reviewers based on the screenshot
 const defaultReviewers: Reviewer[] = [
@@ -43,6 +57,7 @@ const defaultReviewers: Reviewer[] = [
 		assignmentCount: 167,
 		isAbsent: false,
 		createdAt: 1614556800000,
+		tags: [],
 	},
 	{
 		id: "2",
@@ -50,6 +65,7 @@ const defaultReviewers: Reviewer[] = [
 		assignmentCount: 167,
 		isAbsent: true,
 		createdAt: 1614556800001,
+		tags: [],
 	},
 	{
 		id: "3",
@@ -57,6 +73,7 @@ const defaultReviewers: Reviewer[] = [
 		assignmentCount: 166,
 		isAbsent: false,
 		createdAt: 1614556800002,
+		tags: [],
 	},
 	{
 		id: "4",
@@ -64,6 +81,7 @@ const defaultReviewers: Reviewer[] = [
 		assignmentCount: 166,
 		isAbsent: false,
 		createdAt: 1614556800003,
+		tags: [],
 	},
 	{
 		id: "5",
@@ -71,6 +89,7 @@ const defaultReviewers: Reviewer[] = [
 		assignmentCount: 166,
 		isAbsent: false,
 		createdAt: 1614556800004,
+		tags: [],
 	},
 	{
 		id: "6",
@@ -78,6 +97,7 @@ const defaultReviewers: Reviewer[] = [
 		assignmentCount: 166,
 		isAbsent: false,
 		createdAt: 1614556800005,
+		tags: [],
 	},
 	{
 		id: "7",
@@ -85,6 +105,7 @@ const defaultReviewers: Reviewer[] = [
 		assignmentCount: 166,
 		isAbsent: false,
 		createdAt: 1614556800006,
+		tags: [],
 	},
 	{
 		id: "8",
@@ -92,6 +113,7 @@ const defaultReviewers: Reviewer[] = [
 		assignmentCount: 166,
 		isAbsent: false,
 		createdAt: 1614556800007,
+		tags: [],
 	},
 	{
 		id: "9",
@@ -99,6 +121,7 @@ const defaultReviewers: Reviewer[] = [
 		assignmentCount: 166,
 		isAbsent: false,
 		createdAt: 1614556800008,
+		tags: [],
 	},
 ];
 
@@ -117,16 +140,21 @@ export async function getReviewers(): Promise<Reviewer[]> {
 			return defaultReviewers;
 		}
 
-		// Ensure all reviewers have a createdAt timestamp
+		// Ensure all reviewers have a createdAt timestamp and tags array
 		const updatedReviewers = reviewers.map((reviewer) => {
-			if (!reviewer.createdAt) {
-				return { ...reviewer, createdAt: Date.now() };
+			const updated = { ...reviewer };
+			if (!updated.createdAt) {
+				updated.createdAt = Date.now();
 			}
-			return reviewer;
+			if (!updated.tags) {
+				updated.tags = [];
+			}
+			return updated;
 		});
 
-		// If we had to add createdAt to any reviewers, update Redis
-		if (updatedReviewers.some((r, i) => !reviewers[i].createdAt)) {
+		// If we had to add createdAt or tags to any reviewers, update Redis
+		const needsUpdate = updatedReviewers.some((r, i) => !reviewers[i]?.createdAt || !reviewers[i]?.tags);
+		if (needsUpdate) {
 			await redis.set(REDIS_KEY, updatedReviewers);
 			return updatedReviewers;
 		}
@@ -185,6 +213,7 @@ export async function addReviewer(name: string): Promise<boolean> {
 			assignmentCount: minCount,
 			isAbsent: false,
 			createdAt: Date.now(),
+			tags: [],
 		};
 
 		reviewers.push(newReviewer);
@@ -252,6 +281,7 @@ export async function incrementReviewerCount(
 			skipped,
 			isAbsentSkip,
 			actionBy,
+			undefined, // Regular assignment, no specific tag
 		);
 
 		const success = await saveReviewers(updatedReviewers);
@@ -336,7 +366,7 @@ export async function forceAssignReviewer(
 		);
 
 		// Add to assignment history with forced flag
-		await addToAssignmentHistory(id, reviewer.name, true, false, false, actionBy);
+		await addToAssignmentHistory(id, reviewer.name, true, false, false, actionBy, undefined);
 
 		// Save updated reviewers
 		const success = await saveReviewers(updatedReviewers);
@@ -445,6 +475,7 @@ async function addToAssignmentHistory(
 	skipped: boolean,
 	isAbsentSkip: boolean,
 	actionBy?: { email: string; name?: string },
+	tagId?: string,
 ): Promise<boolean> {
 	try {
 		const history = await getAssignmentHistory();
@@ -457,6 +488,7 @@ async function addToAssignmentHistory(
 			skipped,
 			isAbsentSkip,
 			actionBy,
+			tag: tagId,
 		};
 
 		const updatedHistory = [newAssignment, ...history].slice(0, 50); // Keep only the last 50 assignments
@@ -577,4 +609,215 @@ export async function undoLastAssignment(): Promise<{
 }
 export async function signOutAuthKit() {
 	await signOut();
+}
+
+// Tag management functions
+export async function getTags(): Promise<Tag[]> {
+	try {
+		const tags = await redis.get<Tag[]>(TAGS_KEY);
+
+		if (!tags) {
+			await redis.set(TAGS_KEY, defaultTags);
+			return defaultTags;
+		}
+
+		return tags;
+	} catch (error) {
+		console.error("Error fetching tags from Redis:", error);
+		return defaultTags;
+	}
+}
+
+export async function saveTags(tags: Tag[]): Promise<boolean> {
+	try {
+		await redis.set(TAGS_KEY, tags);
+		return true;
+	} catch (error) {
+		console.error("Error saving tags to Redis:", error);
+		return false;
+	}
+}
+
+export async function addTag(name: string, color: string, description?: string): Promise<boolean> {
+	try {
+		const tags = await getTags();
+
+		const newTag: Tag = {
+			id: Date.now().toString(),
+			name: name.trim(),
+			color,
+			description: description?.trim(),
+			createdAt: Date.now(),
+		};
+
+		tags.push(newTag);
+		return await saveTags(tags);
+	} catch (error) {
+		console.error("Error adding tag:", error);
+		return false;
+	}
+}
+
+export async function updateTag(tag: Tag): Promise<boolean> {
+	try {
+		const tags = await getTags();
+		const updatedTags = tags.map((t) => (t.id === tag.id ? tag : t));
+		return await saveTags(updatedTags);
+	} catch (error) {
+		console.error("Error updating tag:", error);
+		return false;
+	}
+}
+
+export async function removeTag(id: string): Promise<boolean> {
+	try {
+		const [tags, reviewers] = await Promise.all([getTags(), getReviewers()]);
+
+		// Remove tag from all reviewers
+		const updatedReviewers = reviewers.map((r) => ({
+			...r,
+			tags: r.tags.filter((tagId) => tagId !== id),
+		}));
+
+		// Remove tag from tags list
+		const updatedTags = tags.filter((t) => t.id !== id);
+
+		// Save both updates
+		await Promise.all([
+			saveTags(updatedTags),
+			saveReviewers(updatedReviewers),
+		]);
+
+		return true;
+	} catch (error) {
+		console.error("Error removing tag:", error);
+		return false;
+	}
+}
+
+export async function assignTagToReviewer(reviewerId: string, tagId: string): Promise<boolean> {
+	try {
+		const reviewers = await getReviewers();
+		const updatedReviewers = reviewers.map((r) => {
+			if (r.id === reviewerId) {
+				const tags = r.tags || [];
+				if (!tags.includes(tagId)) {
+					return { ...r, tags: [...tags, tagId] };
+				}
+			}
+			return r;
+		});
+
+		return await saveReviewers(updatedReviewers);
+	} catch (error) {
+		console.error("Error assigning tag to reviewer:", error);
+		return false;
+	}
+}
+
+export async function removeTagFromReviewer(reviewerId: string, tagId: string): Promise<boolean> {
+	try {
+		const reviewers = await getReviewers();
+		const updatedReviewers = reviewers.map((r) => {
+			if (r.id === reviewerId) {
+				return { ...r, tags: (r.tags || []).filter((t) => t !== tagId) };
+			}
+			return r;
+		});
+
+		return await saveReviewers(updatedReviewers);
+	} catch (error) {
+		console.error("Error removing tag from reviewer:", error);
+		return false;
+	}
+}
+
+// Track-based assignment functions
+export async function findNextReviewerByTag(tagId: string): Promise<{ success: boolean; nextReviewer?: Reviewer }> {
+	try {
+		const reviewers = await getReviewers();
+
+		// Filter reviewers by tag and availability
+		const availableReviewers = reviewers.filter(
+			(r) => !r.isAbsent && r.tags && r.tags.includes(tagId)
+		);
+
+		if (availableReviewers.length === 0) {
+			return { success: false };
+		}
+
+		// Find the minimum assignment count among available reviewers
+		const minCount = Math.min(...availableReviewers.map((r) => r.assignmentCount));
+
+		// Get all available reviewers with the minimum count
+		const candidatesWithMinCount = availableReviewers.filter(
+			(r) => r.assignmentCount === minCount
+		);
+
+		// Sort by creation time (older first)
+		const sortedCandidates = [...candidatesWithMinCount].sort(
+			(a, b) => a.createdAt - b.createdAt
+		);
+
+		// Select the first one
+		const nextReviewer = sortedCandidates[0];
+
+		return { success: true, nextReviewer };
+	} catch (error) {
+		console.error("Error finding next reviewer by tag:", error);
+		return { success: false };
+	}
+}
+
+export async function assignPRByTag(
+	tagId: string,
+	actionBy?: { email: string; name?: string }
+): Promise<{ success: boolean; reviewer?: Reviewer }> {
+	try {
+		const result = await findNextReviewerByTag(tagId);
+
+		if (!result.success || !result.nextReviewer) {
+			return { success: false };
+		}
+
+		const reviewer = result.nextReviewer;
+		const reviewers = await getReviewers();
+
+		// Update assignment count
+		const updatedReviewers = reviewers.map((r) =>
+			r.id === reviewer.id ? { ...r, assignmentCount: r.assignmentCount + 1 } : r
+		);
+
+		// Add to assignment history with tag info
+		await addToAssignmentHistory(
+			reviewer.id,
+			reviewer.name,
+			false,
+			false,
+			false,
+			actionBy,
+			tagId
+		);
+
+		// Save updated reviewers
+		const success = await saveReviewers(updatedReviewers);
+
+		if (success) {
+			// Get tag name for snapshot
+			const tags = await getTags();
+			const tag = tags.find((t) => t.id === tagId);
+			const tagName = tag ? tag.name : "Unknown Tag";
+
+			// Create snapshot
+			await createSnapshot(
+				updatedReviewers,
+				`Assigned PR to ${reviewer.name} (${tagName} track)`
+			);
+		}
+
+		return { success, reviewer };
+	} catch (error) {
+		console.error("Error assigning PR by tag:", error);
+		return { success: false };
+	}
 }

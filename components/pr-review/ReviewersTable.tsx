@@ -1,12 +1,13 @@
 "use client";
 
-import { Check, Edit, UserMinus, X } from "lucide-react";
-import type React from "react";
-import { useState } from "react";
+import { Check, Edit, X } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import {
 	type AssignmentFeed,
 	type Reviewer,
+	type Tag,
 	updateAssignmentCount,
+	getTags,
 } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,6 @@ interface ReviewersTableProps {
 	nextReviewer: Reviewer | null;
 	assignmentFeed: AssignmentFeed;
 	showAssignments: boolean;
-	onRemoveReviewer: (id: string) => Promise<void>;
 	onToggleAbsence: (id: string) => Promise<void>;
 	onDataUpdate: () => Promise<void>;
 }
@@ -38,12 +38,25 @@ export function ReviewersTable({
 	nextReviewer,
 	assignmentFeed,
 	showAssignments,
-	onRemoveReviewer,
 	onToggleAbsence,
 	onDataUpdate,
 }: ReviewersTableProps) {
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<number>(0);
+	const [tags, setTags] = useState<Tag[]>([]);
+
+	const loadTags = useCallback(async () => {
+		try {
+			const tagsData = await getTags();
+			setTags(tagsData);
+		} catch (error) {
+			console.error("Error loading tags:", error);
+		}
+	}, []);
+
+	useEffect(() => {
+		loadTags();
+	}, [loadTags]);
 
 	const startEditing = (id: string, currentValue: number) => {
 		setEditingId(id);
@@ -58,7 +71,7 @@ export function ReviewersTable({
 		if (!editingId) return;
 
 		// Validate input
-		if (editValue < 0 || isNaN(editValue)) {
+		if (editValue < 0 || Number.isNaN(editValue)) {
 			toast({
 				title: "Invalid Value",
 				description: "Assignment count must be a non-negative number",
@@ -90,14 +103,34 @@ export function ReviewersTable({
 		}
 	};
 
+	const getTagBadge = (tagId: string) => {
+		const tag = tags.find((t) => t.id === tagId);
+		if (!tag) return null;
+
+		return (
+			<Badge
+				key={tagId}
+				variant="secondary"
+				className="text-xs"
+				style={{
+					backgroundColor: `${tag.color}20`,
+					color: tag.color,
+					borderColor: tag.color,
+				}}
+			>
+				{tag.name}
+			</Badge>
+		);
+	};
+
 	return (
 		<Table>
 			<TableHeader>
 				<TableRow>
 					<TableHead>Name</TableHead>
+					<TableHead>Tags</TableHead>
 					{showAssignments && <TableHead>Assignments</TableHead>}
 					<TableHead>Status</TableHead>
-					<TableHead className="text-right">Actions</TableHead>
 				</TableRow>
 			</TableHeader>
 			<TableBody>
@@ -116,6 +149,15 @@ export function ReviewersTable({
 									Last Assigned
 								</Badge>
 							)}
+						</TableCell>
+						<TableCell>
+							<div className="flex flex-wrap gap-1">
+								{reviewer.tags && reviewer.tags.length > 0 ? (
+									reviewer.tags.map((tagId) => getTagBadge(tagId))
+								) : (
+									<span className="text-sm text-muted-foreground">No tags</span>
+								)}
+							</div>
 						</TableCell>
 						{showAssignments && (
 							<TableCell>
@@ -164,15 +206,6 @@ export function ReviewersTable({
 									{reviewer.isAbsent ? "Absent" : "Available"}
 								</Label>
 							</div>
-						</TableCell>
-						<TableCell className="text-right">
-							<Button
-								variant="ghost"
-								size="icon"
-								onClick={() => onRemoveReviewer(reviewer.id)}
-							>
-								<UserMinus className="h-4 w-4" />
-							</Button>
 						</TableCell>
 					</TableRow>
 				))}

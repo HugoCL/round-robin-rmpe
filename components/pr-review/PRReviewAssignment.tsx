@@ -12,6 +12,7 @@ import {
 	RefreshCw,
 	RotateCw,
 	Save,
+	UserMinus,
 	UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -22,20 +23,18 @@ import {
 	restoreFromSnapshot,
 } from "@/app/backup-actions";
 import { AssignmentCard } from "@/components/pr-review/AssignmentCard";
+import { AddReviewerDialog } from "@/components/pr-review/AddReviewerDialog";
+import { DeleteReviewerDialog } from "@/components/pr-review/DeleteReviewerDialog";
 import { ForceAssignDialog } from "@/components/pr-review/ForceAssignDialog";
 import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsHelp";
 import { RecentAssignments } from "@/components/pr-review/RecentAssignments";
 import { ReviewersTable } from "@/components/pr-review/ReviewersTable";
 import { SkipConfirmationDialog } from "@/components/pr-review/SkipConfirmationDialog";
 import { FeedHistory } from "@/components/pr-review/FeedHistory";
+import { TagManager } from "@/components/pr-review/TagManager";
+import { TrackBasedAssignment } from "@/components/pr-review/TrackBasedAssignment";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -62,7 +61,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import {
 	Tooltip,
 	TooltipContent,
@@ -72,9 +70,9 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { usePRReviewData } from "@/hooks/usePRReviewData";
+import { useTags } from "@/hooks/useTags";
 
 export default function PRReviewAssignment() {
-	const [newReviewerName, setNewReviewerName] = useState("");
 	const [snapshots, setSnapshots] = useState<BackupEntry[]>([]);
 	const [snapshotsLoading, setSnapshotsLoading] = useState(false);
 	const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
@@ -85,6 +83,7 @@ export default function PRReviewAssignment() {
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 
 	const { user, loading } = useAuth();
+	const { hasTags, refreshTags } = useTags();
 
 	const {
 		reviewers,
@@ -140,11 +139,9 @@ export default function PRReviewAssignment() {
 		localStorage.setItem("compactLayout", compactLayout.toString());
 	}, [compactLayout]);
 
-	const handleAddReviewer = async () => {
-		const success = await addReviewer(newReviewerName);
-		if (success) {
-			setNewReviewerName("");
-		}
+	const handleDataUpdate = async () => {
+		await fetchData();
+		await refreshTags();
 	};
 
 	const handleImTheNextOneWithDialog = async () => {
@@ -296,7 +293,7 @@ export default function PRReviewAssignment() {
 	}
 
 	return (
-		<div className="container mx-auto py-6 space-y-6">
+		<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 ">
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
 				<h1 className="text-3xl font-bold">PR Review - Remuneraciones Perú</h1>
 				<div className="flex flex-wrap items-center gap-2">
@@ -340,30 +337,25 @@ export default function PRReviewAssignment() {
 										nextReviewer={nextReviewer}
 										assignmentFeed={assignmentFeed}
 										showAssignments={showAssignments}
-										onRemoveReviewer={removeReviewer}
 										onToggleAbsence={handleToggleAbsence}
 										onDataUpdate={fetchData}
 									/>
 								</div>
 								<DrawerFooter className="flex flex-col gap-4">
-									<div className="flex items-center space-x-2">
-										<Input
-											placeholder="New reviewer name"
-											value={newReviewerName}
-											onChange={(e) => setNewReviewerName(e.target.value)}
-											className="flex-1"
-											onKeyDown={(e) => {
-												if (e.key === "Enter") {
-													handleAddReviewer();
-												}
-											}}
-										/>
-										<Button onClick={handleAddReviewer}>
-											<UserPlus className="h-4 w-4 mr-2" />
-											Add
-										</Button>
-									</div>
 									<div className="flex flex-wrap gap-2 justify-center">
+										<TagManager
+											reviewers={reviewers}
+											onDataUpdate={handleDataUpdate}
+										/>
+										<AddReviewerDialog
+											onAddReviewer={addReviewer}
+											trigger={
+												<Button variant="outline" size="sm">
+													<UserPlus className="h-4 w-4 mr-2" />
+													Add Reviewer
+												</Button>
+											}
+										/>
 										<DropdownMenu>
 											<DropdownMenuTrigger asChild>
 												<Button variant="outline" size="sm">
@@ -373,6 +365,23 @@ export default function PRReviewAssignment() {
 											</DropdownMenuTrigger>
 											<DropdownMenuContent align="end">
 												<DropdownMenuLabel>Manage Data</DropdownMenuLabel>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem
+													onSelect={(e) => {
+														e.preventDefault();
+													}}
+												>
+													<DeleteReviewerDialog
+														reviewers={reviewers}
+														onDeleteReviewer={removeReviewer}
+														trigger={
+															<div className="flex items-center w-full">
+																<UserMinus className="h-4 w-4 mr-2" />
+																Delete Reviewer
+															</div>
+														}
+													/>
+												</DropdownMenuItem>
 												<DropdownMenuSeparator />
 												<DropdownMenuItem onClick={handleResetCounts}>
 													<RotateCw className="h-4 w-4 mr-2" />
@@ -477,12 +486,19 @@ export default function PRReviewAssignment() {
 						</div>
 
 						{/* Force Assign Dialog */}
-						<div className="border rounded-lg p-4 bg-muted/50">
+						<div className="border rounded-lg p-4 bg-muted/50 space-y-4">
 							<ForceAssignDialog
 								reviewers={reviewers}
-								onDataUpdate={fetchData}
+								onDataUpdate={handleDataUpdate}
 								user={user}
 							/>
+							{hasTags && (
+								<TrackBasedAssignment
+									reviewers={reviewers}
+									onDataUpdate={handleDataUpdate}
+									user={user}
+								/>
+							)}
 						</div>
 					</div>
 
@@ -496,7 +512,66 @@ export default function PRReviewAssignment() {
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<Card className="md:col-span-2">
 						<CardHeader>
-							<CardTitle>Reviewers</CardTitle>
+							<div className="flex flex-wrap gap-2 justify-between items-center">
+								<CardTitle>Reviewers</CardTitle>
+								<div className="flex flex-wrap gap-2">
+									<AddReviewerDialog
+										onAddReviewer={addReviewer}
+										trigger={
+											<Button variant="outline" size="sm">
+												<UserPlus className="h-4 w-4 mr-2" />
+												Add Reviewer
+											</Button>
+										}
+									/>
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button variant="outline" size="sm">
+												<MoreHorizontal className="h-4 w-4 mr-2" />
+												<span className="sm:inline">Actions</span>
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent align="end">
+											<DropdownMenuLabel>Manage Data</DropdownMenuLabel>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem
+												onSelect={(e) => {
+													e.preventDefault();
+												}}
+											>
+												<DeleteReviewerDialog
+													reviewers={reviewers}
+													onDeleteReviewer={removeReviewer}
+													trigger={
+														<div className="flex items-center w-full">
+															<UserMinus className="h-4 w-4 mr-2" />
+															Delete Reviewer
+														</div>
+													}
+												/>
+											</DropdownMenuItem>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem onClick={handleResetCounts}>
+												<RotateCw className="h-4 w-4 mr-2" />
+												Reset Counts
+											</DropdownMenuItem>
+											<DropdownMenuItem onClick={exportData}>
+												<Save className="h-4 w-4 mr-2" />
+												Export Data
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onSelect={(e) => {
+													e.preventDefault();
+													document.getElementById("import-file")?.click();
+												}}
+											>
+												<Download className="h-4 w-4 mr-2" />
+												Import Data
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</div>
+							</div>
 						</CardHeader>
 						<CardContent>
 							<ReviewersTable
@@ -504,68 +579,10 @@ export default function PRReviewAssignment() {
 								nextReviewer={nextReviewer}
 								assignmentFeed={assignmentFeed}
 								showAssignments={showAssignments}
-								onRemoveReviewer={removeReviewer}
 								onToggleAbsence={handleToggleAbsence}
 								onDataUpdate={fetchData}
 							/>
 						</CardContent>
-						<CardFooter className="flex flex-col sm:flex-row gap-4 justify-between">
-							<div className="flex items-center space-x-2 w-full sm:w-auto">
-								<Input
-									placeholder="New reviewer name"
-									value={newReviewerName}
-									onChange={(e) => setNewReviewerName(e.target.value)}
-									className="w-full sm:w-48"
-									onKeyDown={(e) => {
-										if (e.key === "Enter") {
-											handleAddReviewer();
-										}
-									}}
-								/>
-								<Button onClick={handleAddReviewer}>
-									<UserPlus className="h-4 w-4 mr-2" />
-									Add
-								</Button>
-							</div>
-							<div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
-								<DropdownMenu>
-									<DropdownMenuTrigger asChild>
-										<Button variant="outline" size="sm">
-											<MoreHorizontal className="h-4 w-4 mr-2" />
-											<span className="sm:inline">Actions</span>
-										</Button>
-									</DropdownMenuTrigger>
-									<DropdownMenuContent align="end">
-										<DropdownMenuLabel>Manage Data</DropdownMenuLabel>
-										<DropdownMenuSeparator />
-										<DropdownMenuItem onClick={handleResetCounts}>
-											<RotateCw className="h-4 w-4 mr-2" />
-											Reset Counts
-										</DropdownMenuItem>
-										<DropdownMenuItem onClick={exportData}>
-											<Save className="h-4 w-4 mr-2" />
-											Export Data
-										</DropdownMenuItem>
-										<DropdownMenuItem
-											onSelect={(e) => {
-												e.preventDefault();
-												document.getElementById("import-file")?.click();
-											}}
-										>
-											<Download className="h-4 w-4 mr-2" />
-											Import Data
-										</DropdownMenuItem>
-									</DropdownMenuContent>
-								</DropdownMenu>
-								<input
-									id="import-file"
-									type="file"
-									accept=".json"
-									onChange={importFileHandler}
-									className="hidden"
-								/>
-							</div>
-						</CardFooter>
 					</Card>
 					<div className="flex flex-col gap-6">
 						<AssignmentCard
@@ -580,8 +597,19 @@ export default function PRReviewAssignment() {
 						<div className="space-y-4">
 							<ForceAssignDialog
 								reviewers={reviewers}
-								onDataUpdate={fetchData}
+								onDataUpdate={handleDataUpdate}
 								user={user}
+							/>
+							{hasTags && (
+								<TrackBasedAssignment
+									reviewers={reviewers}
+									onDataUpdate={handleDataUpdate}
+									user={user}
+								/>
+							)}
+							<TagManager
+								reviewers={reviewers}
+								onDataUpdate={handleDataUpdate}
 							/>
 						</div>
 
