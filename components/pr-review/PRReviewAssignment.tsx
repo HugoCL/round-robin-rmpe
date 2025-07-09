@@ -27,7 +27,7 @@ import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsH
 import { RecentAssignments } from "@/components/pr-review/RecentAssignments";
 import { ReviewersTable } from "@/components/pr-review/ReviewersTable";
 import { SkipConfirmationDialog } from "@/components/pr-review/SkipConfirmationDialog";
-import { SlotMachineHistory } from "@/components/pr-review/SlotMachineHistory";
+import { FeedHistory } from "@/components/pr-review/FeedHistory";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -468,6 +468,8 @@ export default function PRReviewAssignment() {
 						<div className="flex-1">
 							<AssignmentCard
 								nextReviewer={nextReviewer}
+								reviewers={reviewers}
+								assignmentFeed={assignmentFeed}
 								onAssignPR={assignPR}
 								onUndoAssignment={undoAssignment}
 								onImTheNextOne={handleImTheNextOneWithDialog}
@@ -486,7 +488,7 @@ export default function PRReviewAssignment() {
 
 					{/* History Section - 40% */}
 					<div className="flex-1 lg:w-[40%]">
-						<SlotMachineHistory assignmentFeed={assignmentFeed} />
+						<FeedHistory assignmentFeed={assignmentFeed} />
 					</div>
 				</div>
 			) : (
@@ -568,6 +570,8 @@ export default function PRReviewAssignment() {
 					<div className="flex flex-col gap-6">
 						<AssignmentCard
 							nextReviewer={nextReviewer}
+							reviewers={reviewers}
+							assignmentFeed={assignmentFeed}
 							onAssignPR={assignPR}
 							onUndoAssignment={undoAssignment}
 							onImTheNextOne={handleImTheNextOneWithDialog}

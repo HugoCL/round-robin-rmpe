@@ -14,9 +14,7 @@ interface SlotMachineHistoryProps {
 	assignmentFeed: AssignmentFeed;
 }
 
-export function SlotMachineHistory({
-	assignmentFeed,
-}: SlotMachineHistoryProps) {
+export function FeedHistory({ assignmentFeed }: SlotMachineHistoryProps) {
 	return (
 		<Card className="h-full flex flex-col">
 			<CardHeader className="flex-shrink-0">

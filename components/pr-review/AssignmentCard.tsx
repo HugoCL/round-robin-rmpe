@@ -1,7 +1,8 @@
 "use client";
 
 import { Undo2, User } from "lucide-react";
-import type { Reviewer } from "@/app/actions";
+import { useState, useEffect } from "react";
+import type { Reviewer, AssignmentFeed } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -14,6 +15,8 @@ import {
 
 interface AssignmentCardProps {
 	nextReviewer: Reviewer | null;
+	reviewers: Reviewer[];
+	assignmentFeed: AssignmentFeed;
 	onAssignPR: () => Promise<void>;
 	onUndoAssignment: () => Promise<void>;
 	onImTheNextOne: () => Promise<void>;
@@ -21,10 +24,86 @@ interface AssignmentCardProps {
 
 export function AssignmentCard({
 	nextReviewer,
+	reviewers,
+	assignmentFeed,
 	onAssignPR,
 	onUndoAssignment,
 	onImTheNextOne,
 }: AssignmentCardProps) {
+	const [isAssigning, setIsAssigning] = useState(false);
+	const [previousNextReviewer, setPreviousNextReviewer] =
+		useState<Reviewer | null>(null);
+
+	// Track changes in nextReviewer to trigger animations
+	useEffect(() => {
+		if (nextReviewer?.id !== previousNextReviewer?.id) {
+			setPreviousNextReviewer(nextReviewer);
+		}
+	}, [nextReviewer, previousNextReviewer]);
+
+	// Wrapper function to handle assignment with animation
+	const handleAssignPR = async () => {
+		setIsAssigning(true);
+		try {
+			await onAssignPR();
+		} finally {
+			// Wait for the animation to complete before resetting
+			setTimeout(() => setIsAssigning(false), 600);
+		}
+	};
+
+	// Helper function to find the next reviewer after the current next one
+	const findNextAfterCurrent = (): Reviewer | null => {
+		if (!nextReviewer || reviewers.length === 0) return null;
+
+		// Find the minimum assignment count among all non-absent reviewers
+		const availableReviewers = reviewers.filter((r) => !r.isAbsent);
+		if (availableReviewers.length === 0) return null;
+
+		// Find all reviewers with the minimum count, excluding the current next reviewer
+		const minCount = Math.min(
+			...availableReviewers.map((r) => r.assignmentCount),
+		);
+		const candidatesWithMinCount = availableReviewers.filter(
+			(r) => r.assignmentCount === minCount && r.id !== nextReviewer.id,
+		);
+
+		// If there are candidates with the same count, sort by creation time
+		if (candidatesWithMinCount.length > 0) {
+			const sortedCandidates = [...candidatesWithMinCount].sort(
+				(a, b) => a.createdAt - b.createdAt,
+			);
+			return sortedCandidates[0];
+		}
+
+		// If the current next reviewer has the minimum count, find the next lowest
+		const nextMinCount = Math.min(
+			...availableReviewers
+				.filter((r) => r.assignmentCount > minCount)
+				.map((r) => r.assignmentCount),
+		);
+
+		if (nextMinCount !== Infinity) {
+			const nextCandidates = availableReviewers.filter(
+				(r) => r.assignmentCount === nextMinCount,
+			);
+			const sortedNextCandidates = [...nextCandidates].sort(
+				(a, b) => a.createdAt - b.createdAt,
+			);
+			return sortedNextCandidates[0];
+		}
+
+		return null;
+	};
+
+	// Get the last assigned reviewer
+	const lastAssignedReviewer = assignmentFeed.lastAssigned
+		? reviewers.find((r) => r.id === assignmentFeed.lastAssigned?.reviewerId)
+		: null;
+
+	// Get the next reviewer after current
+	const nextAfterCurrent = findNextAfterCurrent();
+
 	return (
 		<Card className="h-full flex flex-col">
 			<CardHeader className="flex-shrink-0">
@@ -33,17 +112,58 @@ export function AssignmentCard({
 					Assign a PR to the next reviewer in rotation
 				</CardDescription>
 			</CardHeader>
-			<CardContent className="flex-1 flex items-center justify-center space-y-6">
+			<CardContent className="flex-1 flex items-center justify-center">
 				{nextReviewer ? (
-					<div className="text-center py-8">
-						<div className="mb-4">
-							<span className="text-sm font-medium text-primary uppercase tracking-wide">
-								Next Reviewer
-							</span>
+					<div className="text-center py-8 w-full space-y-6 overflow-hidden">
+						{/* Last assigned reviewer (greyed out) */}
+						{lastAssignedReviewer && (
+							<div
+								className={`transition-transform duration-500 ease-in-out ${
+									isAssigning
+										? "-translate-y-24 opacity-0"
+										: "translate-y-0 opacity-100"
+								}`}
+							>
+								<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+									Last Assigned
+								</span>
+								<h4 className="text-lg font-medium text-muted-foreground opacity-60">
+									{lastAssignedReviewer.name}
+								</h4>
+							</div>
+						)}
+
+						{/* Current next reviewer */}
+						<div
+							className={`transition-transform duration-500 ease-in-out ${
+								isAssigning ? "-translate-y-12" : "translate-y-0"
+							}`}
+						>
+							<div className="mb-4">
+								<span className="text-sm font-medium text-primary uppercase tracking-wide">
+									Next Reviewer
+								</span>
+							</div>
+							<h3 className="text-5xl font-bold text-primary">
+								{nextReviewer.name}
+							</h3>
 						</div>
-						<h3 className="text-5xl font-bold text-primary">
-							{nextReviewer.name}
-						</h3>
+
+						{/* Next after current (upcoming) */}
+						{nextAfterCurrent && (
+							<div
+								className={`transition-transform duration-500 ease-in-out ${
+									isAssigning ? "-translate-y-12" : "translate-y-0"
+								}`}
+							>
+								<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+									Up Next
+								</span>
+								<h4 className="text-lg font-medium text-muted-foreground">
+									{nextAfterCurrent.name}
+								</h4>
+							</div>
+						)}
 					</div>
 				) : (
 					<div className="text-center p-6 border-2 border-muted rounded-lg bg-muted">
@@ -58,12 +178,12 @@ export function AssignmentCard({
 			</CardContent>
 			<CardFooter className="flex justify-center flex-shrink-0">
 				<Button
-					onClick={onAssignPR}
-					disabled={!nextReviewer}
+					onClick={handleAssignPR}
+					disabled={!nextReviewer || isAssigning}
 					className="flex-1 bg-primary hover:bg-primary/90 max-w-md"
 					size="lg"
 				>
-					Assign PR
+					{isAssigning ? "Assigning..." : "Assign PR"}
 				</Button>
 			</CardFooter>
 			<div className="px-6 pb-6 space-y-3 flex-shrink-0">
@@ -72,6 +192,7 @@ export function AssignmentCard({
 						variant="secondary"
 						className="flex-1"
 						onClick={onUndoAssignment}
+						disabled={isAssigning}
 					>
 						<Undo2 className="h-4 w-4 mr-2" />
 						Undo Last Assignment
@@ -81,7 +202,7 @@ export function AssignmentCard({
 						variant="outline"
 						className="flex-1"
 						onClick={onImTheNextOne}
-						disabled={!nextReviewer}
+						disabled={!nextReviewer || isAssigning}
 					>
 						<User className="h-4 w-4 mr-2" />
 						I'm the Next One
