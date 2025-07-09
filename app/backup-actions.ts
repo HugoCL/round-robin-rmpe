@@ -83,11 +83,10 @@ export async function getSnapshots(): Promise<BackupEntry[]> {
 		for (const key of sortedKeys) {
 			const snapshot = await redis.get<BackupData>(key);
 			if (snapshot) {
-				const date = new Date(snapshot.timestamp);
 				snapshots.push({
 					key,
 					timestamp: snapshot.timestamp,
-					formattedDate: formatDate(date),
+					formattedDate: "", // Will be formatted on client side
 					description: snapshot.description,
 				});
 			}
@@ -126,7 +125,7 @@ export async function restoreFromSnapshot(key: string): Promise<boolean> {
 			// Create a new snapshot to record this restore action
 			await createSnapshot(
 				snapshot.data,
-				`Restored from ${formatDate(new Date(snapshot.timestamp))}`,
+				`Restored from snapshot`,
 			);
 		}
 
@@ -135,17 +134,4 @@ export async function restoreFromSnapshot(key: string): Promise<boolean> {
 		console.error("Error restoring from snapshot:", error);
 		return false;
 	}
-}
-
-// Helper function to format date
-function formatDate(date: Date): string {
-	const options: Intl.DateTimeFormatOptions = {
-		weekday: "short",
-		month: "short",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	};
-
-	return date.toLocaleDateString("en-US", options);
 }

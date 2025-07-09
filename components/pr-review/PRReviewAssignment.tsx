@@ -183,7 +183,12 @@ export default function PRReviewAssignment() {
 		setSnapshotsLoading(true);
 		try {
 			const snapshotData = await getSnapshots();
-			setSnapshots(snapshotData);
+			// Format dates on client side using user's local timezone
+			const formattedSnapshots = snapshotData.map((snapshot) => ({
+				...snapshot,
+				formattedDate: formatSnapshotDate(new Date(snapshot.timestamp)),
+			}));
+			setSnapshots(formattedSnapshots);
 		} catch (error) {
 			console.error("Error loading snapshots:", error);
 			toast({
@@ -194,6 +199,18 @@ export default function PRReviewAssignment() {
 		} finally {
 			setSnapshotsLoading(false);
 		}
+	};
+
+	const formatSnapshotDate = (date: Date): string => {
+		const options: Intl.DateTimeFormatOptions = {
+			weekday: "short",
+			month: "short",
+			day: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+		};
+
+		return date.toLocaleDateString("en-US", options);
 	};
 
 	const handleOpenSnapshotDialog = () => {
