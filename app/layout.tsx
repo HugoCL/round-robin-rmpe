@@ -4,7 +4,7 @@ import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
-
+import { unstable_ViewTransition as ViewTransition } from "react";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
@@ -18,20 +18,17 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en" suppressHydrationWarning>
-			<body className={inter.className}>
-				<AuthKitProvider>
-					<ThemeProvider
-						attribute="class"
-						defaultTheme="system"
-						enableSystem
-						disableTransitionOnChange
-					>
-						{children}
-						<Toaster />
-					</ThemeProvider>
-				</AuthKitProvider>
-			</body>
-		</html>
+		<ViewTransition>
+			<html lang="en" suppressHydrationWarning>
+				<body className={inter.className}>
+					<AuthKitProvider>
+						<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+							{children}
+							<Toaster />
+						</ThemeProvider>
+					</AuthKitProvider>
+				</body>
+			</html>
+		</ViewTransition>
 	);
 }
