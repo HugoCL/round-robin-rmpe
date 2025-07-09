@@ -19,6 +19,10 @@ export interface AssignmentHistory {
 	forced: boolean; // Track if this was a forced assignment
 	skipped: boolean; // Track if this was a skip operation
 	isAbsentSkip: boolean; // Track if this was an auto-skip of an absent reviewer
+	actionBy?: {
+		email: string;
+		name?: string;
+	}; // Track who performed the action
 }
 
 export interface AssignmentFeed {
@@ -225,6 +229,7 @@ export async function incrementReviewerCount(
 	id: string,
 	skipped = false,
 	isAbsentSkip = false,
+	actionBy?: { email: string; name?: string },
 ): Promise<boolean> {
 	try {
 		const reviewers = await getReviewers();
@@ -245,6 +250,7 @@ export async function incrementReviewerCount(
 			false,
 			skipped,
 			isAbsentSkip,
+			actionBy,
 		);
 
 		const success = await saveReviewers(updatedReviewers);
@@ -314,6 +320,7 @@ export async function skipToNextReviewer(
 
 export async function forceAssignReviewer(
 	id: string,
+	actionBy?: { email: string; name?: string },
 ): Promise<{ success: boolean; reviewer?: Reviewer }> {
 	try {
 		const reviewers = await getReviewers();
@@ -328,7 +335,7 @@ export async function forceAssignReviewer(
 		);
 
 		// Add to assignment history with forced flag
-		await addToAssignmentHistory(id, reviewer.name, true, false, false);
+		await addToAssignmentHistory(id, reviewer.name, true, false, false, actionBy);
 
 		// Save updated reviewers
 		const success = await saveReviewers(updatedReviewers);
@@ -436,6 +443,7 @@ async function addToAssignmentHistory(
 	forced: boolean,
 	skipped: boolean,
 	isAbsentSkip: boolean,
+	actionBy?: { email: string; name?: string },
 ): Promise<boolean> {
 	try {
 		const history = await getAssignmentHistory();
@@ -447,6 +455,7 @@ async function addToAssignmentHistory(
 			forced,
 			skipped,
 			isAbsentSkip,
+			actionBy,
 		};
 
 		const updatedHistory = [newAssignment, ...history].slice(0, 50); // Keep only the last 50 assignments

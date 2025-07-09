@@ -1,7 +1,7 @@
 "use client";
 
 import { Undo2, User } from "lucide-react";
-import type { AssignmentFeed, Reviewer } from "@/app/actions";
+import type { Reviewer } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -14,86 +14,79 @@ import {
 
 interface AssignmentCardProps {
 	nextReviewer: Reviewer | null;
-	assignmentFeed: AssignmentFeed;
 	onAssignPR: () => Promise<void>;
-	onSkipReviewer: () => Promise<void>;
 	onUndoAssignment: () => Promise<void>;
 	onImTheNextOne: () => Promise<void>;
 }
 
 export function AssignmentCard({
 	nextReviewer,
-	assignmentFeed,
 	onAssignPR,
-	onSkipReviewer,
 	onUndoAssignment,
 	onImTheNextOne,
 }: AssignmentCardProps) {
 	return (
-		<Card>
-			<CardHeader>
+		<Card className="h-full flex flex-col">
+			<CardHeader className="flex-shrink-0">
 				<CardTitle>Assign PR Review</CardTitle>
 				<CardDescription>
 					Assign a PR to the next reviewer in rotation
 				</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-4">
+			<CardContent className="flex-1 flex items-center justify-center space-y-6">
 				{nextReviewer ? (
-					<div className="text-center p-4 border rounded-lg">
-						<h3 className="text-xl font-bold">{nextReviewer.name}</h3>
-						<p className="text-muted-foreground">
-							Current assignments: {nextReviewer.assignmentCount}
-						</p>
+					<div className="text-center py-8">
+						<div className="mb-4">
+							<span className="text-sm font-medium text-primary uppercase tracking-wide">
+								Next Reviewer
+							</span>
+						</div>
+						<h3 className="text-5xl font-bold text-primary">
+							{nextReviewer.name}
+						</h3>
 					</div>
 				) : (
-					<div className="text-center p-4 border rounded-lg bg-muted">
-						<p>No available reviewers</p>
-					</div>
-				)}
-
-				{assignmentFeed.lastAssigned && (
-					<div className="text-center p-4 border rounded-lg bg-muted">
-						<p className="text-sm font-medium">Last assigned to:</p>
-						<p className="font-bold">
-							{assignmentFeed.lastAssigned.reviewerName}
-						</p>
-						<p className="text-xs text-muted-foreground">
-							{new Date(assignmentFeed.lastAssigned.timestamp).toLocaleString()}
+					<div className="text-center p-6 border-2 border-muted rounded-lg bg-muted">
+						<h3 className="text-xl font-medium text-muted-foreground mb-2">
+							No Available Reviewers
+						</h3>
+						<p className="text-sm text-muted-foreground">
+							All reviewers are currently absent
 						</p>
 					</div>
 				)}
 			</CardContent>
-			<CardFooter className="flex justify-between">
+			<CardFooter className="flex justify-center flex-shrink-0">
 				<Button
-					variant="outline"
-					onClick={onSkipReviewer}
+					onClick={onAssignPR}
 					disabled={!nextReviewer}
+					className="flex-1 bg-primary hover:bg-primary/90 max-w-md"
+					size="lg"
 				>
-					Skip
-				</Button>
-				<Button onClick={onAssignPR} disabled={!nextReviewer}>
 					Assign PR
 				</Button>
 			</CardFooter>
-			<div className="px-6 pb-6 space-y-4">
-				<Button
-					variant="secondary"
-					className="w-full"
-					onClick={onUndoAssignment}
-				>
-					<Undo2 className="h-4 w-4 mr-2" />
-					Undo Last Assignment
-				</Button>
+			<div className="px-6 pb-6 space-y-3 flex-shrink-0">
+				<div className="flex gap-3">
+					<Button
+						variant="secondary"
+						className="flex-1"
+						onClick={onUndoAssignment}
+					>
+						<Undo2 className="h-4 w-4 mr-2" />
+						Undo Last Assignment
+					</Button>
 
-				<Button
-					variant="outline"
-					className="w-full"
-					onClick={onImTheNextOne}
-					disabled={!nextReviewer}
-				>
-					<User className="h-4 w-4 mr-2" />
-					I'm the Next One
-				</Button>
+					<Button
+						variant="outline"
+						className="flex-1"
+						onClick={onImTheNextOne}
+						disabled={!nextReviewer}
+					>
+						<User className="h-4 w-4 mr-2" />
+						I'm the Next One
+					</Button>
+				</div>
 			</div>
 		</Card>
 	);

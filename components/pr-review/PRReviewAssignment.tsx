@@ -6,6 +6,8 @@ import {
 	Download,
 	Eye,
 	EyeOff,
+	LayoutGrid,
+	Menu,
 	MoreHorizontal,
 	RefreshCw,
 	RotateCw,
@@ -25,7 +27,7 @@ import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsH
 import { RecentAssignments } from "@/components/pr-review/RecentAssignments";
 import { ReviewersTable } from "@/components/pr-review/ReviewersTable";
 import { SkipConfirmationDialog } from "@/components/pr-review/SkipConfirmationDialog";
-import { Badge } from "@/components/ui/badge";
+import { SlotMachineHistory } from "@/components/pr-review/SlotMachineHistory";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -43,6 +45,16 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import {
+	Drawer,
+	DrawerClose,
+	DrawerContent,
+	DrawerDescription,
+	DrawerFooter,
+	DrawerHeader,
+	DrawerTitle,
+	DrawerTrigger,
+} from "@/components/ui/drawer";
+import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -51,8 +63,6 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
 	TooltipContent,
@@ -71,6 +81,8 @@ export default function PRReviewAssignment() {
 	const [showAssignments, setShowAssignments] = useState(false);
 	const [skipConfirmDialogOpen, setSkipConfirmDialogOpen] = useState(false);
 	const [nextAfterSkip, setNextAfterSkip] = useState<Reviewer | null>(null);
+	const [compactLayout, setCompactLayout] = useState(false);
+	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 
 	const { user, loading } = useAuth();
 
@@ -94,7 +106,7 @@ export default function PRReviewAssignment() {
 		fetchData,
 		handleManualRefresh,
 		formatLastUpdated,
-	} = usePRReviewData();
+	} = usePRReviewData(user);
 
 	// Enable keyboard shortcuts
 	useKeyboardShortcuts({
@@ -111,12 +123,22 @@ export default function PRReviewAssignment() {
 		if (savedShowAssignments !== null) {
 			setShowAssignments(savedShowAssignments === "true");
 		}
+
+		const savedCompactLayout = localStorage.getItem("compactLayout");
+		if (savedCompactLayout !== null) {
+			setCompactLayout(savedCompactLayout === "true");
+		}
 	}, []);
 
 	// Save show assignments preference to localStorage
 	useEffect(() => {
 		localStorage.setItem("showAssignments", showAssignments.toString());
 	}, [showAssignments]);
+
+	// Save compact layout preference to localStorage
+	useEffect(() => {
+		localStorage.setItem("compactLayout", compactLayout.toString());
+	}, [compactLayout]);
 
 	const handleAddReviewer = async () => {
 		const success = await addReviewer(newReviewerName);
@@ -216,6 +238,10 @@ export default function PRReviewAssignment() {
 		setShowAssignments((prev) => !prev);
 	};
 
+	const toggleCompactLayout = () => {
+		setCompactLayout((prev) => !prev);
+	};
+
 	if (isLoading || loading) {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
@@ -278,6 +304,108 @@ export default function PRReviewAssignment() {
 						variant="outline"
 						size="sm"
 						className="flex items-center gap-1"
+						onClick={toggleCompactLayout}
+					>
+						<LayoutGrid className="h-4 w-4" />
+						<span className="hidden sm:inline">
+							{compactLayout ? "Classic View" : "Compact View"}
+						</span>
+					</Button>
+
+					{compactLayout && (
+						<Drawer
+							open={reviewersDrawerOpen}
+							onOpenChange={setReviewersDrawerOpen}
+						>
+							<DrawerTrigger asChild>
+								<Button
+									variant="outline"
+									size="sm"
+									className="flex items-center gap-1"
+								>
+									<Menu className="h-4 w-4" />
+									<span className="hidden sm:inline">Manage Reviewers</span>
+								</Button>
+							</DrawerTrigger>
+							<DrawerContent>
+								<DrawerHeader>
+									<DrawerTitle>Reviewers</DrawerTitle>
+									<DrawerDescription>
+										Manage reviewers and their assignments
+									</DrawerDescription>
+								</DrawerHeader>
+								<div className="px-4 pb-4 max-h-[60vh] overflow-y-auto">
+									<ReviewersTable
+										reviewers={reviewers}
+										nextReviewer={nextReviewer}
+										assignmentFeed={assignmentFeed}
+										showAssignments={showAssignments}
+										onRemoveReviewer={removeReviewer}
+										onToggleAbsence={handleToggleAbsence}
+										onDataUpdate={fetchData}
+									/>
+								</div>
+								<DrawerFooter className="flex flex-col gap-4">
+									<div className="flex items-center space-x-2">
+										<Input
+											placeholder="New reviewer name"
+											value={newReviewerName}
+											onChange={(e) => setNewReviewerName(e.target.value)}
+											className="flex-1"
+											onKeyDown={(e) => {
+												if (e.key === "Enter") {
+													handleAddReviewer();
+												}
+											}}
+										/>
+										<Button onClick={handleAddReviewer}>
+											<UserPlus className="h-4 w-4 mr-2" />
+											Add
+										</Button>
+									</div>
+									<div className="flex flex-wrap gap-2 justify-center">
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button variant="outline" size="sm">
+													<MoreHorizontal className="h-4 w-4 mr-2" />
+													Actions
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												<DropdownMenuLabel>Manage Data</DropdownMenuLabel>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem onClick={handleResetCounts}>
+													<RotateCw className="h-4 w-4 mr-2" />
+													Reset Counts
+												</DropdownMenuItem>
+												<DropdownMenuItem onClick={exportData}>
+													<Save className="h-4 w-4 mr-2" />
+													Export Data
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onSelect={(e) => {
+														e.preventDefault();
+														document.getElementById("import-file")?.click();
+													}}
+												>
+													<Download className="h-4 w-4 mr-2" />
+													Import Data
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</div>
+									<DrawerClose asChild>
+										<Button variant="outline">Close</Button>
+									</DrawerClose>
+								</DrawerFooter>
+							</DrawerContent>
+						</Drawer>
+					)}
+
+					<Button
+						variant="outline"
+						size="sm"
+						className="flex items-center gap-1"
 						onClick={toggleShowAssignments}
 					>
 						{showAssignments ? (
@@ -332,97 +460,140 @@ export default function PRReviewAssignment() {
 				</div>
 			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<Card className="md:col-span-2">
-					<CardHeader>
-						<CardTitle>Reviewers</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<ReviewersTable
-							reviewers={reviewers}
-							nextReviewer={nextReviewer}
-							assignmentFeed={assignmentFeed}
-							showAssignments={showAssignments}
-							onRemoveReviewer={removeReviewer}
-							onToggleAbsence={handleToggleAbsence}
-							onDataUpdate={fetchData}
-						/>
-					</CardContent>
-					<CardFooter className="flex flex-col sm:flex-row gap-4 justify-between">
-						<div className="flex items-center space-x-2 w-full sm:w-auto">
-							<Input
-								placeholder="New reviewer name"
-								value={newReviewerName}
-								onChange={(e) => setNewReviewerName(e.target.value)}
-								className="w-full sm:w-48"
-								onKeyDown={(e) => {
-									if (e.key === "Enter") {
-										handleAddReviewer();
-									}
-								}}
-							/>
-							<Button onClick={handleAddReviewer}>
-								<UserPlus className="h-4 w-4 mr-2" />
-								Add
-							</Button>
-						</div>
-						<div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="outline" size="sm">
-										<MoreHorizontal className="h-4 w-4 mr-2" />
-										<span className="sm:inline">Actions</span>
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end">
-									<DropdownMenuLabel>Manage Data</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleResetCounts}>
-										<RotateCw className="h-4 w-4 mr-2" />
-										Reset Counts
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={exportData}>
-										<Save className="h-4 w-4 mr-2" />
-										Export Data
-									</DropdownMenuItem>
-									<DropdownMenuItem
-										onSelect={(e) => {
-											e.preventDefault();
-											document.getElementById("import-file")?.click();
-										}}
-									>
-										<Download className="h-4 w-4 mr-2" />
-										Import Data
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-							<input
-								id="import-file"
-								type="file"
-								accept=".json"
-								onChange={importFileHandler}
-								className="hidden"
+			{compactLayout ? (
+				// Compact Layout: 60% assignment, 40% history, reviewers in drawer
+				<div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)]">
+					<div className="flex-1 lg:w-[60%] flex flex-col space-y-6">
+						{/* Assignment Card */}
+						<div className="flex-1">
+							<AssignmentCard
+								nextReviewer={nextReviewer}
+								onAssignPR={assignPR}
+								onUndoAssignment={undoAssignment}
+								onImTheNextOne={handleImTheNextOneWithDialog}
 							/>
 						</div>
-					</CardFooter>
-				</Card>
-				<div className="flex flex-col gap-6">
-					<AssignmentCard
-						nextReviewer={nextReviewer}
-						assignmentFeed={assignmentFeed}
-						onAssignPR={assignPR}
-						onSkipReviewer={skipReviewer}
-						onUndoAssignment={undoAssignment}
-						onImTheNextOne={handleImTheNextOneWithDialog}
-					/>
 
-					<div className="space-y-4">
-						<ForceAssignDialog reviewers={reviewers} onDataUpdate={fetchData} />
+						{/* Force Assign Dialog */}
+						<div className="border rounded-lg p-4 bg-muted/50">
+							<ForceAssignDialog
+								reviewers={reviewers}
+								onDataUpdate={fetchData}
+								user={user}
+							/>
+						</div>
 					</div>
 
-					<RecentAssignments assignmentFeed={assignmentFeed} />
+					{/* History Section - 40% */}
+					<div className="flex-1 lg:w-[40%]">
+						<SlotMachineHistory assignmentFeed={assignmentFeed} />
+					</div>
 				</div>
-			</div>
+			) : (
+				// Classic Layout: Original grid layout
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+					<Card className="md:col-span-2">
+						<CardHeader>
+							<CardTitle>Reviewers</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<ReviewersTable
+								reviewers={reviewers}
+								nextReviewer={nextReviewer}
+								assignmentFeed={assignmentFeed}
+								showAssignments={showAssignments}
+								onRemoveReviewer={removeReviewer}
+								onToggleAbsence={handleToggleAbsence}
+								onDataUpdate={fetchData}
+							/>
+						</CardContent>
+						<CardFooter className="flex flex-col sm:flex-row gap-4 justify-between">
+							<div className="flex items-center space-x-2 w-full sm:w-auto">
+								<Input
+									placeholder="New reviewer name"
+									value={newReviewerName}
+									onChange={(e) => setNewReviewerName(e.target.value)}
+									className="w-full sm:w-48"
+									onKeyDown={(e) => {
+										if (e.key === "Enter") {
+											handleAddReviewer();
+										}
+									}}
+								/>
+								<Button onClick={handleAddReviewer}>
+									<UserPlus className="h-4 w-4 mr-2" />
+									Add
+								</Button>
+							</div>
+							<div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="outline" size="sm">
+											<MoreHorizontal className="h-4 w-4 mr-2" />
+											<span className="sm:inline">Actions</span>
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										<DropdownMenuLabel>Manage Data</DropdownMenuLabel>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem onClick={handleResetCounts}>
+											<RotateCw className="h-4 w-4 mr-2" />
+											Reset Counts
+										</DropdownMenuItem>
+										<DropdownMenuItem onClick={exportData}>
+											<Save className="h-4 w-4 mr-2" />
+											Export Data
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onSelect={(e) => {
+												e.preventDefault();
+												document.getElementById("import-file")?.click();
+											}}
+										>
+											<Download className="h-4 w-4 mr-2" />
+											Import Data
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+								<input
+									id="import-file"
+									type="file"
+									accept=".json"
+									onChange={importFileHandler}
+									className="hidden"
+								/>
+							</div>
+						</CardFooter>
+					</Card>
+					<div className="flex flex-col gap-6">
+						<AssignmentCard
+							nextReviewer={nextReviewer}
+							onAssignPR={assignPR}
+							onUndoAssignment={undoAssignment}
+							onImTheNextOne={handleImTheNextOneWithDialog}
+						/>
+
+						<div className="space-y-4">
+							<ForceAssignDialog
+								reviewers={reviewers}
+								onDataUpdate={fetchData}
+								user={user}
+							/>
+						</div>
+
+						<RecentAssignments assignmentFeed={assignmentFeed} />
+					</div>
+				</div>
+			)}
+
+			{/* Hidden input for import functionality */}
+			<input
+				id="import-file"
+				type="file"
+				accept=".json"
+				onChange={importFileHandler}
+				className="hidden"
+			/>
 
 			{/* Snapshot Dialog */}
 			<Dialog open={snapshotDialogOpen} onOpenChange={setSnapshotDialogOpen}>

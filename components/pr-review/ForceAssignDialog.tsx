@@ -25,11 +25,13 @@ import { toast } from "@/hooks/use-toast";
 interface ForceAssignDialogProps {
 	reviewers: Reviewer[];
 	onDataUpdate: () => Promise<void>;
+	user?: { email: string; name?: string } | null;
 }
 
 export function ForceAssignDialog({
 	reviewers,
 	onDataUpdate,
+	user,
 }: ForceAssignDialogProps) {
 	const [forceDialogOpen, setForceDialogOpen] = useState(false);
 	const [selectedReviewerId, setSelectedReviewerId] = useState<string>("");
@@ -44,7 +46,10 @@ export function ForceAssignDialog({
 			return;
 		}
 
-		const result = await forceAssignReviewer(selectedReviewerId);
+		const result = await forceAssignReviewer(
+			selectedReviewerId,
+			user || undefined,
+		);
 
 		if (result.success && result.reviewer) {
 			// Refresh data to get updated reviewers and feed

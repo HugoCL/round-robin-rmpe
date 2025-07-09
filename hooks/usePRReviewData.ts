@@ -20,7 +20,12 @@ import { toast } from "@/hooks/use-toast";
 
 const UPDATE_INTERVAL = 60000; // 1 minute in milliseconds
 
-export function usePRReviewData() {
+interface UserInfo {
+	email: string;
+	name?: string;
+}
+
+export function usePRReviewData(user?: UserInfo | null) {
 	const [reviewers, setReviewers] = useState<Reviewer[]>([]);
 	const [nextReviewer, setNextReviewer] = useState<Reviewer | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -202,7 +207,7 @@ export function usePRReviewData() {
 		if (!nextReviewer) return;
 
 		// Increment the counter in Redis
-		const success = await incrementReviewerCount(nextReviewer.id, false, false);
+		const success = await incrementReviewerCount(nextReviewer.id, false, false, user || undefined);
 
 		if (success) {
 			// Refresh data to get updated reviewers and feed
@@ -225,7 +230,7 @@ export function usePRReviewData() {
 		if (!nextReviewer) return;
 
 		// Increment the counter in Redis with skipped flag
-		const success = await incrementReviewerCount(nextReviewer.id, true, false);
+		const success = await incrementReviewerCount(nextReviewer.id, true, false, user || undefined);
 
 		if (success) {
 			// Refresh data to get updated reviewers and feed
@@ -271,7 +276,7 @@ export function usePRReviewData() {
 	) => {
 		// Increment only the reviewer who is actually getting the assignment (nextAfterSkip)
 		// The currentNext reviewer is being skipped, so they shouldn't get their counter incremented
-		const success = await incrementReviewerCount(nextAfterSkip.id, false, false);
+		const success = await incrementReviewerCount(nextAfterSkip.id, false, false, user || undefined);
 
 		if (success) {
 			// Refresh data which will automatically find the new next reviewer
