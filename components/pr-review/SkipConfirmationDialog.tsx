@@ -41,7 +41,8 @@ export function SkipConfirmationDialog({
 					{nextReviewer && nextAfterSkip && (
 						<p className="text-center">
 							Hey <span className="font-bold">{nextReviewer.name}</span>! You'll
-							be skipped and you'll assign this PR to{" "}
+							be skipped (without incrementing your count) and this PR will be
+							assigned to{" "}
 							<span className="font-bold">{nextAfterSkip.name}</span>. Do you
 							confirm?
 						</p>

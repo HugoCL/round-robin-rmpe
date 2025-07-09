@@ -26,9 +26,9 @@ export interface AssignmentFeed {
 	lastAssigned: AssignmentHistory | null;
 }
 
-const REDIS_KEY = "pr-reviewers";
-const HISTORY_KEY = "pr-assignment-history";
-const FEED_KEY = "pr-assignment-feed";
+const REDIS_KEY = process.env.REDIS_KEY_REVIEWERS || "pr-reviewers";
+const HISTORY_KEY = process.env.REDIS_KEY_ASSIGNMENT_HISTORY || "pr-assignment-history";
+const FEED_KEY = process.env.REDIS_KEY_ASSIGNMENT_FEED || "pr-assignment-feed";
 
 // Default reviewers based on the screenshot
 const defaultReviewers: Reviewer[] = [

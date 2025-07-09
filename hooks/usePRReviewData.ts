@@ -269,8 +269,9 @@ export function usePRReviewData() {
 		currentNext: Reviewer,
 		nextAfterSkip: Reviewer,
 	) => {
-		// Actually increment the current reviewer's count and assign to next
-		const success = await incrementReviewerCount(currentNext.id, true, false);
+		// Increment only the reviewer who is actually getting the assignment (nextAfterSkip)
+		// The currentNext reviewer is being skipped, so they shouldn't get their counter incremented
+		const success = await incrementReviewerCount(nextAfterSkip.id, false, false);
 
 		if (success) {
 			// Refresh data which will automatically find the new next reviewer
@@ -278,7 +279,7 @@ export function usePRReviewData() {
 
 			toast({
 				title: "Assignment Completed",
-				description: `${currentNext.name} was skipped and ${nextAfterSkip.name} will be next in line.`,
+				description: `${currentNext.name} was skipped and PR assigned to ${nextAfterSkip.name}.`,
 			});
 		} else {
 			toast({

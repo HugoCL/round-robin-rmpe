@@ -16,7 +16,7 @@ export interface BackupData {
 	data: Reviewer[];
 }
 
-const BACKUP_KEY_PREFIX = "pr-reviewers-snapshot";
+const BACKUP_KEY_PREFIX = process.env.REDIS_KEY_BACKUP_PREFIX || "pr-reviewers-snapshot";
 const MAX_SNAPSHOTS = 10;
 
 // Create a snapshot after a change
