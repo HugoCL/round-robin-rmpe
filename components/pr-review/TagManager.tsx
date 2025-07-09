@@ -317,7 +317,7 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 			}}
 		>
 			<DialogTrigger asChild>
-				<Button variant="outline" className="w-full">
+				<Button variant="outline" size="sm">
 					<Palette className="h-4 w-4 mr-2" />
 					Manage Tags
 				</Button>

@@ -515,6 +515,10 @@ export default function PRReviewAssignment() {
 							<div className="flex flex-wrap gap-2 justify-between items-center">
 								<CardTitle>Reviewers</CardTitle>
 								<div className="flex flex-wrap gap-2">
+									<TagManager
+										reviewers={reviewers}
+										onDataUpdate={handleDataUpdate}
+									/>
 									<AddReviewerDialog
 										onAddReviewer={addReviewer}
 										trigger={
@@ -607,10 +611,6 @@ export default function PRReviewAssignment() {
 									user={user}
 								/>
 							)}
-							<TagManager
-								reviewers={reviewers}
-								onDataUpdate={handleDataUpdate}
-							/>
 						</div>
 
 						<RecentAssignments assignmentFeed={assignmentFeed} />
