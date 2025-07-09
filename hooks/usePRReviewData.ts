@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	type AssignmentFeed,
 	addReviewer as addReviewerAction,
-	forceAssignReviewer,
 	getAssignmentFeed,
 	getReviewers,
 	incrementReviewerCount,
@@ -144,14 +143,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 		};
 	}, [fetchData]);
 
-	// Find the next reviewer whenever the reviewers list changes
-	useEffect(() => {
-		if (reviewers.length > 0) {
-			findNextReviewer();
-		}
-	}, [reviewers]);
-
-	const findNextReviewer = async () => {
+	const findNextReviewer = useCallback(async () => {
 		// Get all reviewers (including absent ones)
 		if (reviewers.length === 0) {
 			setNextReviewer(null);
@@ -201,7 +193,14 @@ export function usePRReviewData(user?: UserInfo | null) {
 		} else {
 			setNextReviewer(null);
 		}
-	};
+	}, [reviewers, fetchData]);
+
+	// Find the next reviewer whenever the reviewers list changes
+	useEffect(() => {
+		if (reviewers.length > 0) {
+			findNextReviewer();
+		}
+	}, [reviewers, findNextReviewer]);
 
 	const assignPR = async () => {
 		if (!nextReviewer) return;
@@ -454,7 +453,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 						});
 					}
 				}
-			} catch (error) {
+			} catch {
 				toast({
 					title: "Import Error",
 					description: "Failed to import data. Please check the file format.",

@@ -40,7 +40,9 @@ export function FeedHistory({ assignmentFeed }: SlotMachineHistoryProps) {
 									</p>
 									{item.actionBy && (
 										<p className="text-xs text-muted-foreground mt-1">
-											by {item.actionBy.name || item.actionBy.email}
+											by{" "}
+											{`${item.actionBy.firstName} ${item.actionBy.lastName?.split(" ")[0]}` ||
+												item.actionBy.email}
 										</p>
 									)}
 								</div>

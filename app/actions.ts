@@ -21,7 +21,8 @@ export interface AssignmentHistory {
 	isAbsentSkip: boolean; // Track if this was an auto-skip of an absent reviewer
 	actionBy?: {
 		email: string;
-		name?: string;
+		firstName?: string;
+		lastName?: string;
 	}; // Track who performed the action
 }
 
