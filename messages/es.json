@@ -34,6 +34,11 @@
     "manage": "Gestionar"
   },
   "pr": {
+    "manageData": "Gestionar Datos",
+    "exportData": "Exportar Datos",
+    "nameHeader": "Nombre",
+    "tagsHeader": "Etiquetas",
+    "statusHeader": "Estado",
     "title": "Revisión PR",
     "assignReviewer": "Asignar Revisor",
     "reviewers": "Revisores",
@@ -61,6 +66,7 @@
     "notAuthorizedDescription": "Esta aplicación está restringida solo para miembros del equipo Buk. Por favor contacta a tu administrador si crees que esto es un error.",
     "signOut": "Cerrar sesión",
     "unauthorized": "Acceso no autorizado. Por favor contacta a tu administrador.",
+    
     "lastAssigned": "Último Asignado",
     "upNext": "Siguiente",
     "noAvailableReviewersTitle": "No Hay Revisores Disponibles",

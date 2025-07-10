@@ -34,6 +34,11 @@
     "manage": "Manage"
   },
   "pr": {
+    "manageData": "Manage Data",
+    "exportData": "Export Data",
+    "nameHeader": "Name",
+    "tagsHeader": "Tags",
+    "statusHeader": "Status",
     "title": "PR Review",
     "assignReviewer": "Assign Reviewer",
     "reviewers": "Reviewers",
@@ -61,6 +66,14 @@
     "notAuthorizedDescription": "This application is restricted to Buk team members only. Please contact your administrator if you believe this is an error.",
     "signOut": "Sign out",
     "unauthorized": "Unauthorized access. Please contact your administrator.",
+    "lastAssigned": "Last Assigned",
+    "upNext": "Up Next",
+    "noAvailableReviewersTitle": "No Available Reviewers",
+    "allReviewersAbsent": "All reviewers are currently absent",
+    "undoLastAssignment": "Undo Last Assignment",
+    "noTags": "No tags",
+    "next": "Next",
+    "imTheNextOne": "I'm the Next One",
     "actions": "Actions",
     "available": "Available",
     "absent": "Absent"
