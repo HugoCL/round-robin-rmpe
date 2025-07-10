@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getTags, type Tag } from "@/app/actions";
+import { getTags, type Tag } from "@/app/[locale]/actions";
 
 export function useTags() {
     const [tags, setTags] = useState<Tag[]>([]);

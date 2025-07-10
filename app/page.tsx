@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import PRReviewAssignment from "@/components/pr-review/PRReviewAssignment";
-
-export default function Page() {
-	return <PRReviewAssignment />;
+export default function RootPage() {
+	redirect("/en");
 }

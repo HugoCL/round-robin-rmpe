@@ -1,6 +1,7 @@
 "use client";
 
-import type { AssignmentFeed } from "@/app/actions";
+import { useTranslations } from "next-intl";
+import type { AssignmentFeed } from "@/app/[locale]/actions";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -15,22 +16,24 @@ interface RecentAssignmentsProps {
 }
 
 export function RecentAssignments({ assignmentFeed }: RecentAssignmentsProps) {
+	const t = useTranslations();
+
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Recent Assignments</CardTitle>
-				<CardDescription>Last 5 PR review assignments</CardDescription>
+				<CardTitle>{t("pr.recent")}</CardTitle>
+				<CardDescription>{t("pr.lastAssignments")}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{assignmentFeed.items.length === 0 ? (
 					<div className="text-center p-4 border rounded-lg bg-muted">
-						<p>No recent assignments</p>
+						<p>{t("pr.noAssignments")}</p>
 					</div>
 				) : (
 					<div className="space-y-3">
 						{assignmentFeed.items.map((item, index) => (
 							<div
-								key={index}
+								key={`${item.reviewerName}-${item.timestamp}-${index}`}
 								className="flex items-center p-3 border rounded-lg"
 							>
 								<div className="flex-1">
@@ -42,12 +45,12 @@ export function RecentAssignments({ assignmentFeed }: RecentAssignmentsProps) {
 								<div>
 									{item.forced && (
 										<Badge className="bg-amber-50 text-amber-700 border-amber-200">
-											Forced
+											{t("pr.forceAssign")}
 										</Badge>
 									)}
 									{item.skipped && (
 										<Badge className="bg-blue-50 text-blue-700 border-blue-200">
-											Skipped
+											{t("pr.skip")}
 										</Badge>
 									)}
 									{!item.forced && !item.skipped && (

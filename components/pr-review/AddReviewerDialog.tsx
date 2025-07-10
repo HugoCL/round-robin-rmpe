@@ -2,6 +2,7 @@
 
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -24,6 +25,7 @@ export function AddReviewerDialog({
 	onAddReviewer,
 	trigger,
 }: AddReviewerDialogProps) {
+	const t = useTranslations();
 	const [newReviewerName, setNewReviewerName] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
 	const [isAdding, setIsAdding] = useState(false);
@@ -55,25 +57,23 @@ export function AddReviewerDialog({
 				{trigger || (
 					<Button variant="outline" size="sm">
 						<UserPlus className="h-4 w-4 mr-2" />
-						Add Reviewer
+						{t("pr.addReviewer")}
 					</Button>
 				)}
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
-					<DialogTitle>Add New Reviewer</DialogTitle>
-					<DialogDescription>
-						Enter the name of the new reviewer to add to the rotation.
-					</DialogDescription>
+					<DialogTitle>{t("reviewer.addNew")}</DialogTitle>
+					<DialogDescription>{t("reviewer.addDescription")}</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
 					<div className="grid grid-cols-4 items-center gap-4">
 						<Label htmlFor="reviewer-name" className="text-right">
-							Name
+							{t("common.name")}
 						</Label>
 						<Input
 							id="reviewer-name"
-							placeholder="Enter reviewer name"
+							placeholder={t("reviewer.enterName")}
 							value={newReviewerName}
 							onChange={(e) => setNewReviewerName(e.target.value)}
 							onKeyDown={handleKeyDown}
@@ -88,13 +88,13 @@ export function AddReviewerDialog({
 						onClick={() => setIsOpen(false)}
 						disabled={isAdding}
 					>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button
 						onClick={handleAddReviewer}
 						disabled={!newReviewerName.trim() || isAdding}
 					>
-						{isAdding ? "Adding..." : "Add Reviewer"}
+						{isAdding ? t("common.adding") : t("pr.addReviewer")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

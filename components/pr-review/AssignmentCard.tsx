@@ -2,7 +2,8 @@
 
 import { Undo2, User } from "lucide-react";
 import { useState, useEffect } from "react";
-import type { Reviewer, AssignmentFeed } from "@/app/actions";
+import { useTranslations } from "next-intl";
+import type { Reviewer, AssignmentFeed } from "@/app/[locale]/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -30,6 +31,7 @@ export function AssignmentCard({
 	onUndoAssignment,
 	onImTheNextOne,
 }: AssignmentCardProps) {
+	const t = useTranslations();
 	const [isAssigning, setIsAssigning] = useState(false);
 	const [previousNextReviewer, setPreviousNextReviewer] =
 		useState<Reviewer | null>(null);
@@ -107,10 +109,8 @@ export function AssignmentCard({
 	return (
 		<Card className="h-full flex flex-col">
 			<CardHeader className="flex-shrink-0">
-				<CardTitle>Assign PR Review</CardTitle>
-				<CardDescription>
-					Assign a PR to the next reviewer in rotation
-				</CardDescription>
+				<CardTitle>{t("pr.assignPR")}</CardTitle>
+				<CardDescription>{t("pr.assignReviewer")}</CardDescription>
 			</CardHeader>
 			<CardContent className="flex-1 flex items-center justify-center">
 				{nextReviewer ? (
@@ -125,7 +125,7 @@ export function AssignmentCard({
 								}`}
 							>
 								<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-									Last Assigned
+									{t("pr.lastAssigned")}
 								</span>
 								<h4 className="text-lg font-medium text-muted-foreground opacity-60">
 									{lastAssignedReviewer.name}
@@ -141,7 +141,7 @@ export function AssignmentCard({
 						>
 							<div className="mb-4">
 								<span className="text-sm font-medium text-primary uppercase tracking-wide">
-									Next Reviewer
+									{t("pr.nextReviewer")}
 								</span>
 							</div>
 							<h3 className="text-5xl font-bold text-primary">
@@ -157,7 +157,7 @@ export function AssignmentCard({
 								}`}
 							>
 								<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-									Up Next
+									{t("pr.upNext")}
 								</span>
 								<h4 className="text-lg font-medium text-muted-foreground">
 									{nextAfterCurrent.name}
@@ -168,10 +168,10 @@ export function AssignmentCard({
 				) : (
 					<div className="text-center p-6 border-2 border-muted rounded-lg bg-muted">
 						<h3 className="text-xl font-medium text-muted-foreground mb-2">
-							No Available Reviewers
+							{t("pr.noAvailableReviewersTitle")}
 						</h3>
 						<p className="text-sm text-muted-foreground">
-							All reviewers are currently absent
+							{t("pr.allReviewersAbsent")}
 						</p>
 					</div>
 				)}
@@ -185,7 +185,7 @@ export function AssignmentCard({
 							className="flex-1 bg-primary hover:bg-primary/90 max-w-md"
 							size="lg"
 						>
-							{isAssigning ? "Assigning..." : "Assign PR"}
+							{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
 						</Button>
 					</div>
 
@@ -197,7 +197,7 @@ export function AssignmentCard({
 							disabled={isAssigning}
 						>
 							<Undo2 className="h-4 w-4 mr-2" />
-							Undo Last Assignment
+							{t("pr.undoLastAssignment")}
 						</Button>
 
 						<Button
@@ -207,7 +207,7 @@ export function AssignmentCard({
 							disabled={!nextReviewer || isAssigning}
 						>
 							<User className="h-4 w-4 mr-2" />
-							I'm the Next One
+							{t("pr.imTheNextOne")}
 						</Button>
 					</div>
 				</div>

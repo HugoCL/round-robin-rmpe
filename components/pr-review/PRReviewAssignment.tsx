@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@workos-inc/authkit-nextjs/components";
+import { useTranslations } from "next-intl";
 import {
 	Clock,
 	Download,
@@ -16,12 +17,12 @@ import {
 	UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { type Reviewer, signOutAuthKit } from "@/app/actions";
+import { type Reviewer, signOutAuthKit } from "@/app/[locale]/actions";
 import {
 	type BackupEntry,
 	getSnapshots,
 	restoreFromSnapshot,
-} from "@/app/backup-actions";
+} from "@/app/[locale]/backup-actions";
 import { AssignmentCard } from "@/components/pr-review/AssignmentCard";
 import { AddReviewerDialog } from "@/components/pr-review/AddReviewerDialog";
 import { DeleteReviewerDialog } from "@/components/pr-review/DeleteReviewerDialog";
@@ -33,6 +34,7 @@ import { SkipConfirmationDialog } from "@/components/pr-review/SkipConfirmationD
 import { FeedHistory } from "@/components/pr-review/FeedHistory";
 import { TagManager } from "@/components/pr-review/TagManager";
 import { TrackBasedAssignment } from "@/components/pr-review/TrackBasedAssignment";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -73,6 +75,7 @@ import { usePRReviewData } from "@/hooks/usePRReviewData";
 import { useTags } from "@/hooks/useTags";
 
 export default function PRReviewAssignment() {
+	const t = useTranslations();
 	const [snapshots, setSnapshots] = useState<BackupEntry[]>([]);
 	const [snapshotsLoading, setSnapshotsLoading] = useState(false);
 	const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
@@ -192,8 +195,8 @@ export default function PRReviewAssignment() {
 		} catch (error) {
 			console.error("Error loading snapshots:", error);
 			toast({
-				title: "Error",
-				description: "Failed to load snapshots",
+				title: t("common.error"),
+				description: t("messages.loadSnapshotsFailed"),
 				variant: "destructive",
 			});
 		} finally {
@@ -227,22 +230,22 @@ export default function PRReviewAssignment() {
 				await fetchData();
 
 				toast({
-					title: "Snapshot Restored",
-					description: "The selected snapshot has been successfully restored",
+					title: t("common.success"),
+					description: t("messages.snapshotRestored"),
 				});
 				setSnapshotDialogOpen(false);
 			} else {
 				toast({
-					title: "Error",
-					description: "Failed to restore from snapshot",
+					title: t("common.error"),
+					description: t("messages.restoreSnapshotFailed"),
 					variant: "destructive",
 				});
 			}
 		} catch (error) {
 			console.error("Error restoring snapshot:", error);
 			toast({
-				title: "Error",
-				description: "Failed to restore from snapshot",
+				title: t("common.error"),
+				description: t("messages.restoreSnapshotFailed"),
 				variant: "destructive",
 			});
 		}
@@ -260,10 +263,8 @@ export default function PRReviewAssignment() {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
 				<div className="text-center">
-					<h2 className="text-xl font-semibold mb-2">Loading...</h2>
-					<p className="text-muted-foreground">
-						Fetching reviewer data from database
-					</p>
+					<h2 className="text-xl font-semibold mb-2">{t("common.loading")}</h2>
+					<p className="text-muted-foreground">{t("pr.loadingPleaseWait")}</p>
 				</div>
 			</div>
 		);
@@ -276,9 +277,7 @@ export default function PRReviewAssignment() {
 					<h2 className="text-xl font-semibold mb-2">
 						You are not authenticated
 					</h2>
-					<p className="text-muted-foreground">
-						Please sign in to access this page
-					</p>
+					<p className="text-muted-foreground">{t("pr.pleaseSignIn")}</p>
 				</div>
 			</div>
 		);
@@ -292,9 +291,11 @@ export default function PRReviewAssignment() {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
 				<div className="text-center">
-					<h2 className="text-xl font-semibold mb-2">You are not authorized</h2>
+					<h2 className="text-xl font-semibold mb-2">
+						{t("pr.notAuthorizedTitle")}
+					</h2>
 					<p className="text-muted-foreground">
-						Please sign in with a valid email address. You're currently using{" "}
+						{t("pr.notAuthorizedDescription")} {t("pr.unauthorized")}{" "}
 						{user.email}
 					</p>
 					<form
@@ -302,7 +303,7 @@ export default function PRReviewAssignment() {
 							await signOutAuthKit();
 						}}
 					>
-						<Button type="submit">Sign out</Button>
+						<Button type="submit">{t("pr.signOut")}</Button>
 					</form>
 				</div>
 			</div>
@@ -312,8 +313,11 @@ export default function PRReviewAssignment() {
 	return (
 		<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 ">
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-				<h1 className="text-3xl font-bold">PR Review - Remuneraciones Perú</h1>
+				<h1 className="text-3xl font-bold">
+					{t("pr.title")} - Remuneraciones Perú
+				</h1>
 				<div className="flex flex-wrap items-center gap-2">
+					<LanguageSwitcher />
 					<Button
 						variant="outline"
 						size="sm"
@@ -322,7 +326,9 @@ export default function PRReviewAssignment() {
 					>
 						<LayoutGrid className="h-4 w-4" />
 						<span className="hidden sm:inline">
-							{compactLayout ? "Classic View" : "Compact View"}
+							{compactLayout
+								? t("common.classicView")
+								: t("common.compactView")}
 						</span>
 					</Button>
 
@@ -338,7 +344,9 @@ export default function PRReviewAssignment() {
 									className="flex items-center gap-1"
 								>
 									<Menu className="h-4 w-4" />
-									<span className="hidden sm:inline">Manage Reviewers</span>
+									<span className="hidden sm:inline">
+										{t("pr.manageReviewers")}
+									</span>
 								</Button>
 							</DrawerTrigger>
 							<DrawerContent>
@@ -369,7 +377,7 @@ export default function PRReviewAssignment() {
 											trigger={
 												<Button variant="outline" size="sm">
 													<UserPlus className="h-4 w-4 mr-2" />
-													Add Reviewer
+													{t("pr.addReviewer")}
 												</Button>
 											}
 										/>
@@ -377,11 +385,13 @@ export default function PRReviewAssignment() {
 											<DropdownMenuTrigger asChild>
 												<Button variant="outline" size="sm">
 													<MoreHorizontal className="h-4 w-4 mr-2" />
-													Actions
+													{t("pr.actions")}
 												</Button>
 											</DropdownMenuTrigger>
 											<DropdownMenuContent align="end">
-												<DropdownMenuLabel>Manage Data</DropdownMenuLabel>
+												<DropdownMenuLabel>
+													{t("pr.manageData")}
+												</DropdownMenuLabel>
 												<DropdownMenuSeparator />
 												<DropdownMenuItem
 													onSelect={(e) => {
@@ -406,7 +416,7 @@ export default function PRReviewAssignment() {
 												</DropdownMenuItem>
 												<DropdownMenuItem onClick={exportData}>
 													<Save className="h-4 w-4 mr-2" />
-													Export Data
+													{t("pr.exportData")}
 												</DropdownMenuItem>
 												<DropdownMenuItem
 													onSelect={(e) => {
@@ -437,12 +447,16 @@ export default function PRReviewAssignment() {
 						{showAssignments ? (
 							<>
 								<EyeOff className="h-4 w-4" />
-								<span className="hidden sm:inline">Hide Assignments</span>
+								<span className="hidden sm:inline">
+									{t("pr.hideAssignments")}
+								</span>
 							</>
 						) : (
 							<>
 								<Eye className="h-4 w-4" />
-								<span className="hidden sm:inline">Show Assignments</span>
+								<span className="hidden sm:inline">
+									{t("pr.showAssignments")}
+								</span>
 							</>
 						)}
 					</Button>
@@ -454,7 +468,7 @@ export default function PRReviewAssignment() {
 						onClick={handleOpenSnapshotDialog}
 					>
 						<Clock className="h-4 w-4" />
-						<span className="hidden sm:inline">History</span>
+						<span className="hidden sm:inline">{t("pr.history")}</span>
 					</Button>
 
 					<KeyboardShortcutsHelp />
@@ -472,7 +486,9 @@ export default function PRReviewAssignment() {
 									<RefreshCw
 										className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
 									/>
-									<span className="hidden sm:inline">Refresh</span>
+									<span className="hidden sm:inline">
+										{t("common.refresh")}
+									</span>
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent>
@@ -530,7 +546,7 @@ export default function PRReviewAssignment() {
 					<Card className="md:col-span-2">
 						<CardHeader>
 							<div className="flex flex-wrap gap-2 justify-between items-center">
-								<CardTitle>Reviewers</CardTitle>
+								<CardTitle>{t("pr.reviewers")}</CardTitle>
 								<div className="flex flex-wrap gap-2">
 									<TagManager
 										reviewers={reviewers}
@@ -541,7 +557,7 @@ export default function PRReviewAssignment() {
 										trigger={
 											<Button variant="outline" size="sm">
 												<UserPlus className="h-4 w-4 mr-2" />
-												Add Reviewer
+												{t("pr.addReviewer")}
 											</Button>
 										}
 									/>
@@ -549,11 +565,13 @@ export default function PRReviewAssignment() {
 										<DropdownMenuTrigger asChild>
 											<Button variant="outline" size="sm">
 												<MoreHorizontal className="h-4 w-4 mr-2" />
-												<span className="sm:inline">Actions</span>
+												<span className="sm:inline">{t("pr.actions")}</span>
 											</Button>
 										</DropdownMenuTrigger>
 										<DropdownMenuContent align="end">
-											<DropdownMenuLabel>Manage Data</DropdownMenuLabel>
+											<DropdownMenuLabel>
+												{t("pr.manageData")}
+											</DropdownMenuLabel>
 											<DropdownMenuSeparator />
 											<DropdownMenuItem
 												onSelect={(e) => {
@@ -578,7 +596,7 @@ export default function PRReviewAssignment() {
 											</DropdownMenuItem>
 											<DropdownMenuItem onClick={exportData}>
 												<Save className="h-4 w-4 mr-2" />
-												Export Data
+												{t("pr.exportData")}
 											</DropdownMenuItem>
 											<DropdownMenuItem
 												onSelect={(e) => {
@@ -650,19 +668,19 @@ export default function PRReviewAssignment() {
 					<DialogHeader>
 						<DialogTitle>Change History</DialogTitle>
 						<DialogDescription>
-							View and restore from previous changes (last 10 changes)
+							{t("history.restoreDescription")}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="py-4 max-h-[300px] overflow-y-auto">
 						{snapshotsLoading ? (
 							<div className="text-center py-4">
-								<p>Loading history...</p>
+								<p>{t("common.loading")}</p>
 							</div>
 						) : snapshots.length === 0 ? (
 							<div className="text-center py-4">
-								<p>No history available yet</p>
+								<p>{t("history.noSnapshots")}</p>
 								<p className="text-sm text-muted-foreground mt-2">
-									Changes will be saved automatically as you make them
+									{t("history.changesAutoSaved")}
 								</p>
 							</div>
 						) : (

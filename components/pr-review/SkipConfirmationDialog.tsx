@@ -1,6 +1,7 @@
 "use client";
 
-import type { Reviewer } from "@/app/actions";
+import { useTranslations } from "next-intl";
+import type { Reviewer } from "@/app/[locale]/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -28,13 +29,19 @@ export function SkipConfirmationDialog({
 	onConfirm,
 	onCancel,
 }: SkipConfirmationDialogProps) {
+	const t = useTranslations();
+
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
-					<DialogTitle>Confirm Skip</DialogTitle>
+					<DialogTitle>
+						{t("pr.skip")} {t("common.confirm")}
+					</DialogTitle>
 					<DialogDescription>
-						You're about to skip yourself in the PR review rotation.
+						{nextReviewer
+							? t("reviewer.skipDescription", { name: nextReviewer.name })
+							: t("reviewer.skipDescription", { name: "the current reviewer" })}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="py-4">
@@ -50,9 +57,9 @@ export function SkipConfirmationDialog({
 				</div>
 				<DialogFooter>
 					<Button variant="outline" onClick={onCancel}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
-					<Button onClick={onConfirm}>Confirm</Button>
+					<Button onClick={onConfirm}>{t("common.confirm")}</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

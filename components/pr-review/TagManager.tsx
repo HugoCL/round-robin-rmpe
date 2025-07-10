@@ -2,6 +2,7 @@
 
 import { X, Edit2, Palette, Save } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
 	getTags,
 	addTag,
@@ -11,7 +12,7 @@ import {
 	removeTagFromReviewer,
 	type Tag,
 	type Reviewer,
-} from "@/app/actions";
+} from "@/app/[locale]/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -61,6 +62,7 @@ const DEFAULT_COLORS = [
 ];
 
 export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
+	const t = useTranslations();
 	const [tags, setTags] = useState<Tag[]>([]);
 	const [isOpen, setIsOpen] = useState(false);
 	const [editingTag, setEditingTag] = useState<Tag | null>(null);
@@ -80,12 +82,12 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 		} catch (error) {
 			console.error("Error loading tags:", error);
 			toast({
-				title: "Error",
-				description: "Failed to load tags",
+				title: t("common.error"),
+				description: t("messages.loadTagsFailed"),
 				variant: "destructive",
 			});
 		}
-	}, []);
+	}, [t]);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -96,8 +98,8 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 	const handleAddTag = async () => {
 		if (!newTagName.trim()) {
 			toast({
-				title: "Error",
-				description: "Please enter a tag name",
+				title: t("common.error"),
+				description: t("messages.enterTagName"),
 				variant: "destructive",
 			});
 			return;
@@ -112,28 +114,27 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 				setNewTagColor(DEFAULT_COLORS[0]);
 				await Promise.all([loadTags(), onDataUpdate()]);
 				toast({
-					title: "Success",
-					description: "Tag added successfully",
+					title: t("common.success"),
+					description: t("messages.tagAdded"),
 				});
 			} else {
 				toast({
-					title: "Error",
-					description: "Failed to add tag",
+					title: t("common.error"),
+					description: t("messages.addTagFailed"),
 					variant: "destructive",
 				});
 			}
 		} catch (_error) {
 			console.error("Error adding tag:", _error);
 			toast({
-				title: "Error",
-				description: "Failed to add tag",
+				title: t("common.error"),
+				description: t("messages.addTagFailed"),
 				variant: "destructive",
 			});
 		} finally {
 			setLoading(false);
 		}
 	};
-
 	const handleUpdateTag = async () => {
 		if (!editingTag) return;
 
@@ -144,33 +145,28 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 				setEditingTag(null);
 				await loadTags();
 				toast({
-					title: "Success",
-					description: "Tag updated successfully",
+					title: t("common.success"),
+					description: t("messages.tagUpdated"),
 				});
 			} else {
 				toast({
-					title: "Error",
-					description: "Failed to update tag",
+					title: t("common.error"),
+					description: t("messages.updateTagFailed"),
 					variant: "destructive",
 				});
 			}
 		} catch (_error) {
 			toast({
-				title: "Error",
-				description: "Failed to update tag",
+				title: t("common.error"),
+				description: t("messages.updateTagFailed"),
 				variant: "destructive",
 			});
 		} finally {
 			setLoading(false);
 		}
 	};
-
 	const handleRemoveTag = async (tagId: string) => {
-		if (
-			!confirm(
-				"Are you sure you want to remove this tag? It will be removed from all reviewers.",
-			)
-		) {
+		if (!confirm(t("tags.removeTagConfirmation"))) {
 			return;
 		}
 
@@ -181,20 +177,20 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 				await loadTags();
 				await onDataUpdate(); // Refresh reviewers data
 				toast({
-					title: "Success",
-					description: "Tag removed successfully",
+					title: t("common.success"),
+					description: t("messages.tagRemoved"),
 				});
 			} else {
 				toast({
-					title: "Error",
-					description: "Failed to remove tag",
+					title: t("common.error"),
+					description: t("messages.removeTagFailed"),
 					variant: "destructive",
 				});
 			}
 		} catch (_error) {
 			toast({
-				title: "Error",
-				description: "Failed to remove tag",
+				title: t("common.error"),
+				description: t("messages.removeTagFailed"),
 				variant: "destructive",
 			});
 		} finally {
@@ -250,21 +246,21 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 					setHasUnsavedChanges(false);
 					await onDataUpdate(); // Refresh reviewers data
 					toast({
-						title: "Success",
-						description: "Tag assignments saved successfully",
+						title: t("common.success"),
+						description: t("messages.tagAssignmentsSaved"),
 					});
 				} else {
 					toast({
-						title: "Error",
-						description: "Some changes failed to save",
+						title: t("common.error"),
+						description: t("messages.someChangesFailed"),
 						variant: "destructive",
 					});
 				}
 			}
 		} catch (_error) {
 			toast({
-				title: "Error",
-				description: "Failed to save changes",
+				title: t("common.error"),
+				description: t("messages.saveChangesFailed"),
 				variant: "destructive",
 			});
 		} finally {
@@ -300,11 +296,7 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 			open={isOpen}
 			onOpenChange={(open) => {
 				if (!open && hasUnsavedChanges) {
-					if (
-						confirm(
-							"You have unsaved changes. Are you sure you want to close without saving?",
-						)
-					) {
+					if (confirm(t("common.unsavedChanges"))) {
 						setIsOpen(false);
 						resetForm();
 					}
@@ -319,15 +311,15 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 			<DialogTrigger asChild>
 				<Button variant="outline" size="sm">
 					<Palette className="h-4 w-4 mr-2" />
-					Manage Tags
+					{t("common.manage")} {t("pr.tags")}
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle>Manage Tags</DialogTitle>
-					<DialogDescription>
-						Create and manage tags for tag-based PR assignments.
-					</DialogDescription>
+					<DialogTitle>
+						{t("common.manage")} {t("pr.tags")}
+					</DialogTitle>
+					<DialogDescription>{t("tags.manageDescription")}</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-6">
@@ -335,13 +327,13 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 					<Card>
 						<CardHeader>
 							<CardTitle className="text-lg">
-								{editingTag ? "Edit Tag" : "Add New Tag"}
+								{editingTag ? t("tags.editTag") : t("tags.addNewTag")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div className="grid grid-cols-2 gap-4">
 								<div>
-									<Label htmlFor="tagName">Tag Name</Label>
+									<Label htmlFor="tagName">{t("tags.tagName")}</Label>
 									<Input
 										id="tagName"
 										value={editingTag ? editingTag.name : newTagName}
@@ -352,11 +344,11 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 												setNewTagName(e.target.value);
 											}
 										}}
-										placeholder="e.g., Frontend, Backend"
+										placeholder={t("tags.tagPlaceholder")}
 									/>
 								</div>
 								<div>
-									<Label htmlFor="tagColor">Color</Label>
+									<Label htmlFor="tagColor">{t("common.color")}</Label>
 									<div className="flex items-center gap-2">
 										<Select
 											value={editingTag ? editingTag.color : newTagColor}
@@ -397,7 +389,9 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 								</div>
 							</div>
 							<div>
-								<Label htmlFor="tagDescription">Description (optional)</Label>
+								<Label htmlFor="tagDescription">
+									{t("tags.description")} ({t("common.optional")})
+								</Label>
 								<Textarea
 									id="tagDescription"
 									value={
@@ -415,7 +409,7 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 											setNewTagDescription(e.target.value);
 										}
 									}}
-									placeholder="Describe what this tag represents..."
+									placeholder={t("tags.descriptionPlaceholder")}
 									rows={2}
 								/>
 							</div>
@@ -424,11 +418,11 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 									onClick={editingTag ? handleUpdateTag : handleAddTag}
 									disabled={loading}
 								>
-									{editingTag ? "Update Tag" : "Add Tag"}
+									{editingTag ? t("tags.updateTag") : t("tags.addTag")}
 								</Button>
 								{editingTag && (
 									<Button variant="outline" onClick={() => setEditingTag(null)}>
-										Cancel
+										{t("common.cancel")}
 									</Button>
 								)}
 							</div>
@@ -438,15 +432,17 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 					{/* Existing Tags */}
 					<Card>
 						<CardHeader>
-							<CardTitle className="text-lg">Existing Tags</CardTitle>
+							<CardTitle className="text-lg">
+								{t("tags.existingTags")}
+							</CardTitle>
 							<CardDescription>
-								Manage existing tags and assign them to reviewers
+								{t("tags.manageExistingDescription")}
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
 							{tags.length === 0 ? (
 								<p className="text-muted-foreground text-center py-4">
-									No tags created yet
+									{t("tags.noTagsCreated")}
 								</p>
 							) : (
 								<div className="space-y-4">
@@ -514,7 +510,7 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 																{reviewer.name}
 																{reviewer.isAbsent && (
 																	<span className="text-xs text-muted-foreground ml-1">
-																		(absent)
+																		{t("tags.absent")}
 																	</span>
 																)}
 															</Label>
@@ -540,7 +536,7 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 									className="bg-blue-600 hover:bg-blue-700"
 								>
 									<Save className="h-4 w-4 mr-2" />
-									Save Changes
+									{t("tags.saveChanges")}
 								</Button>
 							)}
 						</div>
@@ -548,11 +544,7 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 							variant="outline"
 							onClick={() => {
 								if (hasUnsavedChanges) {
-									if (
-										confirm(
-											"You have unsaved changes. Are you sure you want to close without saving?",
-										)
-									) {
+									if (confirm(t("common.unsavedChanges"))) {
 										setIsOpen(false);
 										resetForm();
 									}
@@ -561,7 +553,7 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 								}
 							}}
 						>
-							Close
+							{t("common.close")}
 						</Button>
 					</div>
 				</DialogFooter>

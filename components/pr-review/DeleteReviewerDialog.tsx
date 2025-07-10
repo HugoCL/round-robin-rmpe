@@ -2,7 +2,8 @@
 
 import { Trash2, UserMinus } from "lucide-react";
 import { useState } from "react";
-import type { Reviewer } from "@/app/actions";
+import { useTranslations } from "next-intl";
+import type { Reviewer } from "@/app/[locale]/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -33,6 +34,7 @@ export function DeleteReviewerDialog({
 	onDeleteReviewer,
 	trigger,
 }: DeleteReviewerDialogProps) {
+	const t = useTranslations();
 	const [selectedReviewerId, setSelectedReviewerId] = useState<string>("");
 	const [isOpen, setIsOpen] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -58,29 +60,32 @@ export function DeleteReviewerDialog({
 				{trigger || (
 					<Button variant="outline" size="sm">
 						<UserMinus className="h-4 w-4 mr-2" />
-						Delete Reviewer
+						{t("pr.deleteReviewer")}
 					</Button>
 				)}
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
-					<DialogTitle>Delete Reviewer</DialogTitle>
+					<DialogTitle>{t("reviewer.deleteTitle")}</DialogTitle>
 					<DialogDescription>
-						Select a reviewer to remove from the rotation. This action cannot be
-						undone.
+						{selectedReviewer
+							? t("reviewer.deleteDescription", { name: selectedReviewer.name })
+							: t("reviewer.deleteDescription", {
+									name: "the selected reviewer",
+								})}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
 					<div className="space-y-2">
 						<label htmlFor="reviewer-select" className="text-sm font-medium">
-							Select Reviewer to Delete
+							{t("reviewer.selectReviewer")}
 						</label>
 						<Select
 							value={selectedReviewerId}
 							onValueChange={setSelectedReviewerId}
 						>
 							<SelectTrigger>
-								<SelectValue placeholder="Choose a reviewer to delete..." />
+								<SelectValue placeholder={t("reviewer.selectReviewer")} />
 							</SelectTrigger>
 							<SelectContent>
 								{reviewers.map((reviewer) => (
@@ -90,7 +95,7 @@ export function DeleteReviewerDialog({
 												<span>{reviewer.name}</span>
 												{reviewer.isAbsent && (
 													<Badge variant="secondary" className="text-xs">
-														Absent
+														{t("tags.absent")}
 													</Badge>
 												)}
 											</div>
@@ -107,7 +112,7 @@ export function DeleteReviewerDialog({
 						onClick={() => setIsOpen(false)}
 						disabled={isDeleting}
 					>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button
 						variant="destructive"
@@ -115,11 +120,11 @@ export function DeleteReviewerDialog({
 						disabled={!selectedReviewerId || isDeleting}
 					>
 						{isDeleting ? (
-							"Deleting..."
+							t("common.removing")
 						) : (
 							<>
 								<Trash2 className="h-4 w-4 mr-2" />
-								Delete Reviewer
+								{t("pr.deleteReviewer")}
 							</>
 						)}
 					</Button>

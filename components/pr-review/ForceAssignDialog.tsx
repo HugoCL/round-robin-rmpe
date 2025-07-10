@@ -2,7 +2,8 @@
 
 import { AlertTriangle, UserCheck } from "lucide-react";
 import { useState } from "react";
-import { forceAssignReviewer, type Reviewer } from "@/app/actions";
+import { useTranslations } from "next-intl";
+import { forceAssignReviewer, type Reviewer } from "@/app/[locale]/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -33,14 +34,15 @@ export function ForceAssignDialog({
 	onDataUpdate,
 	user,
 }: ForceAssignDialogProps) {
+	const t = useTranslations();
 	const [forceDialogOpen, setForceDialogOpen] = useState(false);
 	const [selectedReviewerId, setSelectedReviewerId] = useState<string>("");
 
 	const handleForceAssign = async () => {
 		if (!selectedReviewerId) {
 			toast({
-				title: "Error",
-				description: "Please select a reviewer to force assign",
+				title: t("common.error"),
+				description: t("messages.selectReviewerError"),
 				variant: "destructive",
 			});
 			return;
@@ -58,13 +60,17 @@ export function ForceAssignDialog({
 			// Show appropriate toast based on reviewer status
 			if (result.reviewer.isAbsent) {
 				toast({
-					title: "PR Force Assigned",
-					description: `PR assigned to ${result.reviewer.name} who is currently marked as absent`,
+					title: t("pr.forceAssign"),
+					description: t("messages.forceAssignAbsentWarning", {
+						reviewer: result.reviewer.name,
+					}),
 				});
 			} else {
 				toast({
-					title: "PR Force Assigned",
-					description: `PR assigned to ${result.reviewer.name}`,
+					title: t("pr.forceAssign"),
+					description: t("messages.forceAssignSuccess", {
+						reviewer: result.reviewer.name,
+					}),
 				});
 			}
 
@@ -73,8 +79,8 @@ export function ForceAssignDialog({
 			setSelectedReviewerId("");
 		} else {
 			toast({
-				title: "Error",
-				description: "Failed to force assign PR. Please try again.",
+				title: t("common.error"),
+				description: t("messages.forceAssignFailed"),
 				variant: "destructive",
 			});
 		}
@@ -85,15 +91,14 @@ export function ForceAssignDialog({
 			<DialogTrigger asChild>
 				<Button variant="outline" className="w-full">
 					<UserCheck className="h-4 w-4 mr-2" />
-					Force Assign PR
+					{t("pr.forceAssign")} PR
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
-					<DialogTitle>Force Assign PR</DialogTitle>
+					<DialogTitle>{t("reviewer.forceAssignTitle")}</DialogTitle>
 					<DialogDescription>
-						Select a specific reviewer to assign a PR to, regardless of the
-						normal rotation.
+						{t("reviewer.forceAssignDescription")}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="py-4">
@@ -102,7 +107,7 @@ export function ForceAssignDialog({
 						onValueChange={setSelectedReviewerId}
 					>
 						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select a reviewer" />
+							<SelectValue placeholder={t("reviewer.selectReviewer")} />
 						</SelectTrigger>
 						<SelectContent>
 							{reviewers.map((reviewer) => (
@@ -122,15 +127,15 @@ export function ForceAssignDialog({
 						reviewers.find((r) => r.id === selectedReviewerId)?.isAbsent && (
 							<div className="mt-2 text-sm text-amber-500 flex items-center">
 								<AlertTriangle className="h-4 w-4 mr-1" />
-								<span>This reviewer is currently marked as absent</span>
+								<span>{t("tags.absent")}</span>
 							</div>
 						)}
 				</div>
 				<DialogFooter>
 					<Button variant="outline" onClick={() => setForceDialogOpen(false)}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
-					<Button onClick={handleForceAssign}>Force Assign</Button>
+					<Button onClick={handleForceAssign}>{t("pr.forceAssign")}</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

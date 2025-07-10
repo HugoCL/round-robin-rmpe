@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { AssignmentFeed, Tag } from "@/app/actions";
-import { getTags } from "@/app/actions";
+import { useTranslations } from "next-intl";
+import type { AssignmentFeed, Tag } from "@/app/[locale]/actions";
+import { getTags } from "@/app/[locale]/actions";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -17,6 +18,7 @@ interface SlotMachineHistoryProps {
 }
 
 export function FeedHistory({ assignmentFeed }: SlotMachineHistoryProps) {
+	const t = useTranslations();
 	const [tags, setTags] = useState<Tag[]>([]);
 
 	const loadTags = useCallback(async () => {
@@ -54,13 +56,13 @@ export function FeedHistory({ assignmentFeed }: SlotMachineHistoryProps) {
 	return (
 		<Card className="h-full flex flex-col">
 			<CardHeader className="flex-shrink-0">
-				<CardTitle>Assignment History</CardTitle>
-				<CardDescription>Recent PR review assignments</CardDescription>
+				<CardTitle>{t("history.title")}</CardTitle>
+				<CardDescription>{t("pr.recent")}</CardDescription>
 			</CardHeader>
 			<CardContent className="flex-1 overflow-hidden">
 				{assignmentFeed.items.length === 0 ? (
 					<div className="text-center p-4 border rounded-lg bg-muted h-full flex items-center justify-center">
-						<p>No recent assignments</p>
+						<p>{t("pr.noAssignments")}</p>
 					</div>
 				) : (
 					<div className="space-y-3 h-full overflow-y-auto">

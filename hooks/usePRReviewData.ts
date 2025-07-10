@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
 	type AssignmentFeed,
 	addReviewer as addReviewerAction,
@@ -14,7 +15,7 @@ import {
 	skipToNextReviewer as skipToNextReviewerAction,
 	toggleAbsence,
 	undoLastAssignment,
-} from "@/app/actions";
+} from "@/app/[locale]/actions";
 import { toast } from "@/hooks/use-toast";
 
 const UPDATE_INTERVAL = 60000; // 1 minute in milliseconds
@@ -25,6 +26,7 @@ interface UserInfo {
 }
 
 export function usePRReviewData(user?: UserInfo | null) {
+	const t = useTranslations();
 	const [reviewers, setReviewers] = useState<Reviewer[]>([]);
 	const [nextReviewer, setNextReviewer] = useState<Reviewer | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -178,11 +180,10 @@ export function usePRReviewData(user?: UserInfo | null) {
 				if (success) {
 					// Refresh data and find next reviewer again
 					await fetchData();
-					// This will trigger useEffect which will call findNextReviewer again
-				} else {
+					// This will trigger useEffect which will call findNextReviewer again					} else {
 					toast({
-						title: "Error",
-						description: "Failed to skip absent reviewer. Please try again.",
+						title: t("messages.statusUpdateFailedTitle"),
+						description: t("messages.skipAbsentFailedDescription"),
 						variant: "destructive",
 					});
 				}
@@ -193,7 +194,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 		} else {
 			setNextReviewer(null);
 		}
-	}, [reviewers, fetchData]);
+	}, [reviewers, fetchData, t]);
 
 	// Find the next reviewer whenever the reviewers list changes
 	useEffect(() => {
@@ -218,8 +219,8 @@ export function usePRReviewData(user?: UserInfo | null) {
 			});
 		} else {
 			toast({
-				title: "Error",
-				description: "Failed to assign PR. Please try again.",
+				title: t("messages.assignFailedTitle"),
+				description: t("messages.assignFailedDescription"),
 				variant: "destructive",
 			});
 		}
@@ -236,13 +237,13 @@ export function usePRReviewData(user?: UserInfo | null) {
 			await fetchData();
 
 			toast({
-				title: "Reviewer Skipped",
-				description: `${nextReviewer.name} was skipped but their count was increased`,
+				title: t("messages.reviewerSkippedTitle"),
+				description: t("messages.reviewerSkippedDescription", { name: nextReviewer.name }),
 			});
 		} else {
 			toast({
-				title: "Error",
-				description: "Failed to skip reviewer. Please try again.",
+				title: t("messages.skipFailedTitle"),
+				description: t("messages.skipFailedDescription"),
 				variant: "destructive",
 			});
 		}
@@ -261,8 +262,8 @@ export function usePRReviewData(user?: UserInfo | null) {
 			return { success: true, nextReviewer: result.nextReviewer };
 		} else {
 			toast({
-				title: "Error",
-				description: "No other available reviewers found.",
+				title: t("messages.noOtherReviewersTitle"),
+				description: t("messages.noOtherReviewersDescription"),
 				variant: "destructive",
 			});
 			return { success: false };
@@ -376,8 +377,8 @@ export function usePRReviewData(user?: UserInfo | null) {
 			await fetchData();
 		} else {
 			toast({
-				title: "Error",
-				description: "Failed to update reviewer status. Please try again.",
+				title: t("messages.statusUpdateFailedTitle"),
+				description: t("messages.statusUpdateFailedDescription"),
 				variant: "destructive",
 			});
 		}
@@ -385,7 +386,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 
 	const handleResetCounts = async () => {
 		if (
-			confirm("Are you sure you want to reset all assignment counts to zero?")
+			confirm(t("messages.resetCountsConfirmation"))
 		) {
 			// Reset in Redis
 			const success = await resetAllCounts();
@@ -395,13 +396,13 @@ export function usePRReviewData(user?: UserInfo | null) {
 				await fetchData();
 
 				toast({
-					title: "Counts Reset",
-					description: "All assignment counts have been reset to zero",
+					title: t("messages.resetCountsSuccessTitle"),
+					description: t("messages.resetCountsSuccessDescription"),
 				});
 			} else {
 				toast({
-					title: "Error",
-					description: "Failed to reset counts. Please try again.",
+					title: t("messages.statusUpdateFailedTitle"),
+					description: t("messages.statusUpdateFailedDescription"),
 					variant: "destructive",
 				});
 			}

@@ -2,6 +2,7 @@
 
 import { Keyboard } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -13,28 +14,29 @@ import {
 } from "@/components/ui/dialog";
 
 export function KeyboardShortcutsHelp() {
+	const t = useTranslations();
 	const [open, setOpen] = useState(false);
 
 	const shortcuts = [
 		{
 			key: "Ctrl/Cmd + A",
-			description: "Assign PR to next reviewer",
-			note: "Only works when a reviewer is available",
+			description: t("shortcuts.assignPR"),
+			note: t("shortcuts.onlyAvailable"),
 		},
 		{
 			key: "Ctrl/Cmd + S",
-			description: "Skip current reviewer",
-			note: "Only works when a reviewer is available",
+			description: t("shortcuts.skipReviewer"),
+			note: t("shortcuts.onlyAvailable"),
 		},
 		{
 			key: "Ctrl/Cmd + Z",
-			description: "Undo last assignment",
-			note: "Always available",
+			description: t("shortcuts.undoAssignment"),
+			note: t("shortcuts.alwaysAvailable"),
 		},
 		{
 			key: "Ctrl/Cmd + R",
-			description: "Refresh data",
-			note: "Always available",
+			description: t("shortcuts.refreshData"),
+			note: t("shortcuts.alwaysAvailable"),
 		},
 	];
 
@@ -43,15 +45,13 @@ export function KeyboardShortcutsHelp() {
 			<DialogTrigger asChild>
 				<Button variant="outline" size="sm" className="flex items-center gap-1">
 					<Keyboard className="h-4 w-4" />
-					<span className="hidden sm:inline">Shortcuts</span>
+					<span className="hidden sm:inline">{t("shortcuts.help")}</span>
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[500px]">
 				<DialogHeader>
-					<DialogTitle>Keyboard Shortcuts</DialogTitle>
-					<DialogDescription>
-						Use these keyboard shortcuts to quickly perform common actions
-					</DialogDescription>
+					<DialogTitle>{t("shortcuts.title")}</DialogTitle>
+					<DialogDescription>{t("shortcuts.description")}</DialogDescription>
 				</DialogHeader>
 				<div className="py-4">
 					<div className="space-y-4">
@@ -83,9 +83,7 @@ export function KeyboardShortcutsHelp() {
 					</div>
 					<div className="mt-6 p-3 bg-muted rounded-md">
 						<p className="text-sm text-muted-foreground">
-							<strong>Note:</strong> Keyboard shortcuts work globally when this
-							page is active. Some shortcuts are only available when there's a
-							next reviewer available.
+							<strong>{t("shortcuts.note")}</strong> {t("shortcuts.globalNote")}
 						</p>
 					</div>
 				</div>

@@ -4,12 +4,13 @@ import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
+import { routing } from "@/i18n/routing";
+
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata = {
-	title: "RMPE PR Review",
-	description: "RMPE Team PR Review Tool",
-};
+export function generateStaticParams() {
+	return routing.locales.map((locale) => ({ locale }));
+}
 
 export default function RootLayout({
 	children,

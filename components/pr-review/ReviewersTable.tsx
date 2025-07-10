@@ -2,13 +2,14 @@
 
 import { Check, Edit, X } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
 	type AssignmentFeed,
 	type Reviewer,
 	type Tag,
 	updateAssignmentCount,
 	getTags,
-} from "@/app/actions";
+} from "@/app/[locale]/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ export function ReviewersTable({
 	onToggleAbsence,
 	onDataUpdate,
 }: ReviewersTableProps) {
+	const t = useTranslations();
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<number>(0);
 	const [tags, setTags] = useState<Tag[]>([]);
@@ -73,8 +75,8 @@ export function ReviewersTable({
 		// Validate input
 		if (editValue < 0 || Number.isNaN(editValue)) {
 			toast({
-				title: "Invalid Value",
-				description: "Assignment count must be a non-negative number",
+				title: t("common.error"),
+				description: t("reviewer.assignmentCount"),
 				variant: "destructive",
 			});
 			return;
@@ -88,16 +90,16 @@ export function ReviewersTable({
 			await onDataUpdate();
 
 			toast({
-				title: "Assignment Count Updated",
-				description: "The assignment count has been updated successfully",
+				title: t("common.success"),
+				description: t("reviewer.countUpdated"),
 			});
 
 			// Exit edit mode
 			setEditingId(null);
 		} else {
 			toast({
-				title: "Error",
-				description: "Failed to update assignment count. Please try again.",
+				title: t("common.error"),
+				description: t("reviewer.countUpdateFailed"),
 				variant: "destructive",
 			});
 		}
@@ -127,10 +129,12 @@ export function ReviewersTable({
 		<Table>
 			<TableHeader>
 				<TableRow>
-					<TableHead>Name</TableHead>
-					<TableHead>Tags</TableHead>
-					{showAssignments && <TableHead>Assignments</TableHead>}
-					<TableHead>Status</TableHead>
+					<TableHead>{t("pr.nameHeader")}</TableHead>
+					<TableHead>{t("pr.tagsHeader")}</TableHead>
+					{showAssignments && (
+						<TableHead>{t("pr.assignmentsHeader")}</TableHead>
+					)}
+					<TableHead>{t("pr.statusHeader")}</TableHead>
 				</TableRow>
 			</TableHeader>
 			<TableBody>
@@ -142,11 +146,13 @@ export function ReviewersTable({
 						<TableCell className="font-medium">
 							{reviewer.name}
 							{nextReviewer?.id === reviewer.id && (
-								<Badge className="ml-2 bg-green-500 text-white">Next</Badge>
+								<Badge className="ml-2 bg-green-500 text-white">
+									{t("pr.next")}
+								</Badge>
 							)}
 							{assignmentFeed.lastAssigned?.reviewerId === reviewer.id && (
 								<Badge className="ml-2 bg-blue-500 text-white">
-									Last Assigned
+									{t("pr.lastAssigned")}
 								</Badge>
 							)}
 						</TableCell>
@@ -155,7 +161,9 @@ export function ReviewersTable({
 								{reviewer.tags && reviewer.tags.length > 0 ? (
 									reviewer.tags.map((tagId) => getTagBadge(tagId))
 								) : (
-									<span className="text-sm text-muted-foreground">No tags</span>
+									<span className="text-sm text-muted-foreground">
+										{t("pr.noTags")}
+									</span>
 								)}
 							</div>
 						</TableCell>
@@ -203,7 +211,7 @@ export function ReviewersTable({
 									onCheckedChange={() => onToggleAbsence(reviewer.id)}
 								/>
 								<Label htmlFor={`absence-${reviewer.id}`}>
-									{reviewer.isAbsent ? "Absent" : "Available"}
+									{reviewer.isAbsent ? t("pr.absent") : t("pr.available")}
 								</Label>
 							</div>
 						</TableCell>

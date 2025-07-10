@@ -2,13 +2,14 @@
 
 import { Tag, Users } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
 	getTags,
 	assignPRByTag,
 	findNextReviewerByTag,
 	type Tag as TagType,
 	type Reviewer,
-} from "@/app/actions";
+} from "@/app/[locale]/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -47,6 +48,7 @@ export function TrackBasedAssignment({
 	onDataUpdate,
 	user,
 }: TrackBasedAssignmentProps) {
+	const t = useTranslations();
 	const [tags, setTags] = useState<TagType[]>([]);
 	const [selectedTagId, setSelectedTagId] = useState<string>("");
 	const [nextReviewer, setNextReviewer] = useState<Reviewer | null>(null);
@@ -61,12 +63,12 @@ export function TrackBasedAssignment({
 		} catch (error) {
 			console.error("Error loading tags:", error);
 			toast({
-				title: "Error",
-				description: "Failed to load tags",
+				title: t("common.error"),
+				description: t("messages.loadTagsFailed"),
 				variant: "destructive",
 			});
 		}
-	}, []);
+	}, [t]);
 
 	const findNextReviewerForTag = useCallback(async (tagId: string) => {
 		setIsLoading(true);
@@ -119,8 +121,11 @@ export function TrackBasedAssignment({
 
 				const selectedTag = tags.find((t) => t.id === selectedTagId);
 				toast({
-					title: "PR Assigned",
-					description: `PR assigned to ${result.reviewer.name} (${selectedTag?.name} tag)`,
+					title: t("common.success"),
+					description: t("messages.trackAssignSuccess", {
+						reviewer: result.reviewer.name,
+						tag: selectedTag?.name || "",
+					}),
 				});
 
 				// Refresh tags after assignment
@@ -132,16 +137,16 @@ export function TrackBasedAssignment({
 				setNextReviewer(null);
 			} else {
 				toast({
-					title: "Error",
-					description: "Failed to assign PR. Please try again.",
+					title: t("common.error"),
+					description: t("messages.trackAssignFailed"),
 					variant: "destructive",
 				});
 			}
 		} catch (error) {
 			console.error("Error assigning PR:", error);
 			toast({
-				title: "Error",
-				description: "Failed to assign PR. Please try again.",
+				title: t("common.error"),
+				description: t("messages.trackAssignFailed"),
 				variant: "destructive",
 			});
 		} finally {
@@ -181,16 +186,13 @@ export function TrackBasedAssignment({
 			<DialogTrigger asChild>
 				<Button variant="outline" className="w-full">
 					<Tag className="h-4 w-4 mr-2" />
-					Assign Based on Tags
+					{t("tags.assignBasedOnTags")}
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[500px]">
 				<DialogHeader>
-					<DialogTitle>Tag-Based Assignment</DialogTitle>
-					<DialogDescription>
-						Select a tag to assign the PR to the next reviewer in that specific
-						area.
-					</DialogDescription>
+					<DialogTitle>{t("tags.tagBasedAssignment")}</DialogTitle>
+					<DialogDescription>{t("tags.tagBasedDescription")}</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-4">
@@ -199,11 +201,11 @@ export function TrackBasedAssignment({
 							htmlFor="tag-select"
 							className="block text-sm font-medium mb-2"
 						>
-							Select Tag
+							{t("tags.selectTag")}
 						</label>
 						<Select value={selectedTagId} onValueChange={setSelectedTagId}>
 							<SelectTrigger>
-								<SelectValue placeholder="Choose a tag..." />
+								<SelectValue placeholder={t("tags.chooseTag")} />
 							</SelectTrigger>
 							<SelectContent>
 								{tags.map((tag) => {
@@ -238,7 +240,8 @@ export function TrackBasedAssignment({
 												?.color,
 										}}
 									/>
-									{tags.find((t) => t.id === selectedTagId)?.name} Tag
+									{tags.find((t) => t.id === selectedTagId)?.name}{" "}
+									{t("tags.tagLabel")}
 								</CardTitle>
 								<CardDescription>
 									{tags.find((t) => t.id === selectedTagId)?.description}
@@ -248,27 +251,27 @@ export function TrackBasedAssignment({
 								{isLoading ? (
 									<div className="text-center py-4">
 										<p className="text-sm text-muted-foreground">
-											Finding next reviewer...
+											{t("tags.findingNextReviewer")}
 										</p>
 									</div>
 								) : nextReviewer ? (
 									<div className="space-y-4">
 										<div className="text-center">
 											<div className="text-sm font-medium text-muted-foreground mb-1">
-												Next Reviewer
+												{t("tags.nextReviewer")}
 											</div>
 											<div className="text-2xl font-bold text-primary">
 												{nextReviewer.name}
 											</div>
 											<div className="text-sm text-muted-foreground">
-												{nextReviewer.assignmentCount} assignments
+												{nextReviewer.assignmentCount} {t("tags.assignments")}
 											</div>
 										</div>
 
 										<div className="border-t pt-4">
 											<div className="flex items-center justify-between text-sm">
 												<span className="text-muted-foreground">
-													Available reviewers:
+													{t("tags.availableReviewers")}
 												</span>
 												<div className="flex items-center gap-1">
 													<Users className="h-4 w-4" />
@@ -282,7 +285,7 @@ export function TrackBasedAssignment({
 								) : (
 									<div className="text-center py-4">
 										<p className="text-sm text-muted-foreground">
-											No available reviewers for this tag
+											{t("tags.noAvailableReviewers")}
 										</p>
 									</div>
 								)}
@@ -293,7 +296,9 @@ export function TrackBasedAssignment({
 					{selectedTagId && (
 						<Card>
 							<CardHeader>
-								<CardTitle className="text-sm">Available Reviewers</CardTitle>
+								<CardTitle className="text-sm">
+									{t("tags.availableReviewers")}
+								</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<div className="space-y-2">
@@ -305,11 +310,13 @@ export function TrackBasedAssignment({
 											<span className="text-sm">
 												{reviewer.name}
 												{reviewer.id === nextReviewer?.id && (
-													<Badge className="ml-2 bg-green-500">Next</Badge>
+													<Badge className="ml-2 bg-green-500">
+														{t("tags.next")}
+													</Badge>
 												)}
 											</span>
 											<span className="text-sm text-muted-foreground">
-												{reviewer.assignmentCount} assignments
+												{reviewer.assignmentCount} {t("tags.assignments")}
 											</span>
 										</div>
 									))}
@@ -321,13 +328,13 @@ export function TrackBasedAssignment({
 
 				<DialogFooter>
 					<Button variant="outline" onClick={resetAndClose}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button
 						onClick={handleAssignPR}
 						disabled={!selectedTagId || !nextReviewer || isAssigning}
 					>
-						{isAssigning ? "Assigning..." : "Assign PR"}
+						{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
