@@ -31,13 +31,20 @@
     "unsavedChanges": "You have unsaved changes. Are you sure you want to close without saving?",
     "selectPlaceholder": "Select a color...",
     "placeholder": "Enter {field}...",
-    "manage": "Manage"
+    "manage": "Manage",
+    "options": "Options",
+    "optionsDescription": "Customize your view and preferences",
+    "language": "Language",
+    "viewOptions": "View Options",
+    "historyAndData": "History & Data",
+    "help": "Help"
   },
   "pr": {
     "manageData": "Manage Data",
     "exportData": "Export Data",
     "nameHeader": "Name",
     "tagsHeader": "Tags",
+    "assignmentsHeader": "Assignments",
     "statusHeader": "Status",
     "title": "PR Review",
     "assignReviewer": "Assign Reviewer",
@@ -88,7 +95,7 @@
     "description": "Description",
     "existingTags": "Existing Tags",
     "noTags": "No tags found. Create your first tag to get started.",
-    "tagPlaceholder": "e.g., Frontend, Backend",
+    "tagPlaceholder": "e.g., Name of the track",
     "descriptionPlaceholder": "Describe what this tag represents...",
     "removeTagConfirmation": "Are you sure you want to remove this tag? It will be removed from all reviewers.",
     "absent": "(absent)",
@@ -145,7 +152,30 @@
     "forceAssignAbsentWarning": "PR assigned to {reviewer} who is currently marked as absent",
     "forceAssignFailed": "Failed to force assign PR. Please try again.",
     "trackAssignSuccess": "PR assigned to {reviewer} ({tag} tag)",
-    "trackAssignFailed": "Failed to assign PR. Please try again."
+    "trackAssignFailed": "Failed to assign PR. Please try again.",
+    "assignFailedTitle": "Error",
+    "assignFailedDescription": "Failed to assign PR. Please try again.",
+    "reviewerSkippedTitle": "Reviewer Skipped",
+    "reviewerSkippedDescription": "{name} was skipped but their counter was incremented",
+    "skipFailedTitle": "Error",
+    "skipFailedDescription": "Failed to skip reviewer. Please try again.",
+    "noOtherReviewersTitle": "Error",
+    "noOtherReviewersDescription": "No other available reviewers found.",
+    "nameHeader": "Name",
+    "tagsHeader": "Tags",
+    "assignmentsHeader": "Assignments",
+    "statusHeader": "Status",
+    "statusUpdateFailedTitle": "Error",
+    "statusUpdateFailedDescription": "Failed to update reviewer status. Please try again.",
+    "resetCountsConfirmation": "Are you sure you want to reset all assignment counts to zero?",
+    "resetCountsSuccessTitle": "Counts Reset",
+    "resetCountsSuccessDescription": "All assignment counts have been reset to zero.",
+    "available": "Available",
+    "absent": "Absent",
+    "skipAbsentFailedDescription": "Failed to skip absent reviewer. Please try again.",
+    "actions": "Actions",
+    "manageData": "Manage Data",
+    "exportData": "Export Data"
   },
   "history": {
     "title": "Assignment History",
@@ -155,7 +185,8 @@
     "noSnapshots": "No snapshots available",
     "changesAutoSaved": "Changes will be saved automatically as you make them",
     "export": "Export",
-    "import": "Import"
+    "import": "Import",
+    "restore": "Restore"
   },
   "shortcuts": {
     "title": "Keyboard Shortcuts",
@@ -179,5 +210,12 @@
     "current": "Current Language",
     "english": "English",
     "spanish": "Español"
-  }
+  },
+  "you-are-not-authenticated": "You are not authenticated",
+  "import-data": "Import Data",
+  "last-updated": "Last updated:",
+  "updates-automatically-every-minute-when-tab-is-active": "• Updates automatically every minute when tab is active",
+  "reset-counts": "Reset Counts",
+  "change-history": "Change History",
+  "manage-reviewers-and-their-assignments": "Manage reviewers and their assignments"
 }

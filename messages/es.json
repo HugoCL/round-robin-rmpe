@@ -31,13 +31,20 @@
     "unsavedChanges": "Tienes cambios no guardados. ¿Estás seguro de que quieres cerrar sin guardar?",
     "selectPlaceholder": "Selecciona un color...",
     "placeholder": "Ingresa {field}...",
-    "manage": "Gestionar"
+    "manage": "Gestionar",
+    "options": "Opciones",
+    "optionsDescription": "Personaliza tu vista y preferencias",
+    "language": "Idioma",
+    "viewOptions": "Opciones de Vista",
+    "historyAndData": "Historial y Datos",
+    "help": "Ayuda"
   },
   "pr": {
     "manageData": "Gestionar Datos",
     "exportData": "Exportar Datos",
     "nameHeader": "Nombre",
     "tagsHeader": "Etiquetas",
+    "assignmentsHeader": "Asignaciones",
     "statusHeader": "Estado",
     "title": "Revisión PR",
     "assignReviewer": "Asignar Revisor",
@@ -66,7 +73,6 @@
     "notAuthorizedDescription": "Esta aplicación está restringida solo para miembros del equipo Buk. Por favor contacta a tu administrador si crees que esto es un error.",
     "signOut": "Cerrar sesión",
     "unauthorized": "Acceso no autorizado. Por favor contacta a tu administrador.",
-    
     "lastAssigned": "Último Asignado",
     "upNext": "Siguiente",
     "noAvailableReviewersTitle": "No Hay Revisores Disponibles",
@@ -89,7 +95,7 @@
     "description": "Descripción",
     "existingTags": "Etiquetas Existentes",
     "noTags": "No se encontraron etiquetas. Crea tu primera etiqueta para comenzar.",
-    "tagPlaceholder": "ej., Frontend, Backend",
+    "tagPlaceholder": "ej., Nombre del track",
     "descriptionPlaceholder": "Describe qué representa esta etiqueta...",
     "removeTagConfirmation": "¿Estás seguro de que deseas eliminar esta etiqueta? Se eliminará de todos los revisores.",
     "absent": "(ausente)",
@@ -179,7 +185,8 @@
     "noSnapshots": "No hay instantáneas disponibles",
     "changesAutoSaved": "Los cambios se guardarán automáticamente mientras los realices",
     "export": "Exportar",
-    "import": "Importar"
+    "import": "Importar",
+    "restore": "Restaurar"
   },
   "shortcuts": {
     "title": "Atajos de Teclado",
@@ -203,5 +210,12 @@
     "current": "Idioma Actual",
     "english": "English",
     "spanish": "Español"
-  }
+  },
+  "import-data": "Importar datos",
+  "last-updated": "Última actualización:",
+  "updates-automatically-every-minute-when-tab-is-active": "• Actualizado cada minuto cuando la pestaña está activa",
+  "you-are-not-authenticated": "No estás autenticado",
+  "change-history": "Historial de Cambios",
+  "manage-reviewers-and-their-assignments": "Administrar revisores y sus tareas",
+  "reset-counts": "Restablecer recuentos"
 }

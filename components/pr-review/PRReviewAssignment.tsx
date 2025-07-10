@@ -3,14 +3,9 @@
 import { useAuth } from "@workos-inc/authkit-nextjs/components";
 import { useTranslations } from "next-intl";
 import {
-	Clock,
 	Download,
-	Eye,
-	EyeOff,
-	LayoutGrid,
 	Menu,
 	MoreHorizontal,
-	RefreshCw,
 	RotateCw,
 	Save,
 	UserMinus,
@@ -27,14 +22,13 @@ import { AssignmentCard } from "@/components/pr-review/AssignmentCard";
 import { AddReviewerDialog } from "@/components/pr-review/AddReviewerDialog";
 import { DeleteReviewerDialog } from "@/components/pr-review/DeleteReviewerDialog";
 import { ForceAssignDialog } from "@/components/pr-review/ForceAssignDialog";
-import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsHelp";
+import { HeaderOptionsDrawer } from "@/components/pr-review/HeaderOptionsDrawer";
 import { RecentAssignments } from "@/components/pr-review/RecentAssignments";
 import { ReviewersTable } from "@/components/pr-review/ReviewersTable";
 import { SkipConfirmationDialog } from "@/components/pr-review/SkipConfirmationDialog";
 import { FeedHistory } from "@/components/pr-review/FeedHistory";
 import { TagManager } from "@/components/pr-review/TagManager";
 import { TrackBasedAssignment } from "@/components/pr-review/TrackBasedAssignment";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -63,12 +57,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { usePRReviewData } from "@/hooks/usePRReviewData";
@@ -275,7 +263,7 @@ export default function PRReviewAssignment() {
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
 				<div className="text-center">
 					<h2 className="text-xl font-semibold mb-2">
-						You are not authenticated
+						{t("you-are-not-authenticated")}
 					</h2>
 					<p className="text-muted-foreground">{t("pr.pleaseSignIn")}</p>
 				</div>
@@ -316,21 +304,17 @@ export default function PRReviewAssignment() {
 				<h1 className="text-3xl font-bold">
 					{t("pr.title")} - Remuneraciones Perú
 				</h1>
-				<div className="flex flex-wrap items-center gap-2">
-					<LanguageSwitcher />
-					<Button
-						variant="outline"
-						size="sm"
-						className="flex items-center gap-1"
-						onClick={toggleCompactLayout}
-					>
-						<LayoutGrid className="h-4 w-4" />
-						<span className="hidden sm:inline">
-							{compactLayout
-								? t("common.classicView")
-								: t("common.compactView")}
-						</span>
-					</Button>
+				<div className="flex items-center gap-2">
+					<HeaderOptionsDrawer
+						compactLayout={compactLayout}
+						showAssignments={showAssignments}
+						isRefreshing={isRefreshing}
+						onToggleCompactLayout={toggleCompactLayout}
+						onToggleShowAssignments={toggleShowAssignments}
+						onOpenSnapshotDialog={handleOpenSnapshotDialog}
+						onManualRefresh={handleManualRefresh}
+						formatLastUpdated={formatLastUpdated}
+					/>
 
 					{compactLayout && (
 						<Drawer
@@ -351,9 +335,9 @@ export default function PRReviewAssignment() {
 							</DrawerTrigger>
 							<DrawerContent>
 								<DrawerHeader>
-									<DrawerTitle>Reviewers</DrawerTitle>
+									<DrawerTitle>{t("pr.reviewers")}</DrawerTitle>
 									<DrawerDescription>
-										Manage reviewers and their assignments
+										{t("manage-reviewers-and-their-assignments")}
 									</DrawerDescription>
 								</DrawerHeader>
 								<div className="px-4 pb-4 max-h-[60vh] overflow-y-auto">
@@ -404,7 +388,7 @@ export default function PRReviewAssignment() {
 														trigger={
 															<div className="flex items-center w-full">
 																<UserMinus className="h-4 w-4 mr-2" />
-																Delete Reviewer
+																{t("pr.deleteReviewer")}
 															</div>
 														}
 													/>
@@ -412,7 +396,7 @@ export default function PRReviewAssignment() {
 												<DropdownMenuSeparator />
 												<DropdownMenuItem onClick={handleResetCounts}>
 													<RotateCw className="h-4 w-4 mr-2" />
-													Reset Counts
+													{t("reset-counts")}
 												</DropdownMenuItem>
 												<DropdownMenuItem onClick={exportData}>
 													<Save className="h-4 w-4 mr-2" />
@@ -425,80 +409,18 @@ export default function PRReviewAssignment() {
 													}}
 												>
 													<Download className="h-4 w-4 mr-2" />
-													Import Data
+													{t("history.import")}
 												</DropdownMenuItem>
 											</DropdownMenuContent>
 										</DropdownMenu>
 									</div>
 									<DrawerClose asChild>
-										<Button variant="outline">Close</Button>
+										<Button variant="outline">{t("common.close")}</Button>
 									</DrawerClose>
 								</DrawerFooter>
 							</DrawerContent>
 						</Drawer>
 					)}
-
-					<Button
-						variant="outline"
-						size="sm"
-						className="flex items-center gap-1"
-						onClick={toggleShowAssignments}
-					>
-						{showAssignments ? (
-							<>
-								<EyeOff className="h-4 w-4" />
-								<span className="hidden sm:inline">
-									{t("pr.hideAssignments")}
-								</span>
-							</>
-						) : (
-							<>
-								<Eye className="h-4 w-4" />
-								<span className="hidden sm:inline">
-									{t("pr.showAssignments")}
-								</span>
-							</>
-						)}
-					</Button>
-
-					<Button
-						variant="outline"
-						size="sm"
-						className="flex items-center gap-1"
-						onClick={handleOpenSnapshotDialog}
-					>
-						<Clock className="h-4 w-4" />
-						<span className="hidden sm:inline">{t("pr.history")}</span>
-					</Button>
-
-					<KeyboardShortcutsHelp />
-
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="outline"
-									size="sm"
-									className="flex items-center gap-1"
-									onClick={handleManualRefresh}
-									disabled={isRefreshing}
-								>
-									<RefreshCw
-										className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-									/>
-									<span className="hidden sm:inline">
-										{t("common.refresh")}
-									</span>
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>Last updated: {formatLastUpdated()}</p>
-								<p className="text-xs text-muted-foreground">
-									Updates automatically every minute
-								</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
 				</div>
 			</div>
 
@@ -584,7 +506,7 @@ export default function PRReviewAssignment() {
 													trigger={
 														<div className="flex items-center w-full">
 															<UserMinus className="h-4 w-4 mr-2" />
-															Delete Reviewer
+															{t("pr.deleteReviewer")}
 														</div>
 													}
 												/>
@@ -592,7 +514,7 @@ export default function PRReviewAssignment() {
 											<DropdownMenuSeparator />
 											<DropdownMenuItem onClick={handleResetCounts}>
 												<RotateCw className="h-4 w-4 mr-2" />
-												Reset Counts
+												{t("reset-counts")}
 											</DropdownMenuItem>
 											<DropdownMenuItem onClick={exportData}>
 												<Save className="h-4 w-4 mr-2" />
@@ -605,7 +527,7 @@ export default function PRReviewAssignment() {
 												}}
 											>
 												<Download className="h-4 w-4 mr-2" />
-												Import Data
+												{t("import-data")}
 											</DropdownMenuItem>
 										</DropdownMenuContent>
 									</DropdownMenu>
@@ -666,7 +588,7 @@ export default function PRReviewAssignment() {
 			<Dialog open={snapshotDialogOpen} onOpenChange={setSnapshotDialogOpen}>
 				<DialogContent className="sm:max-w-[500px]">
 					<DialogHeader>
-						<DialogTitle>Change History</DialogTitle>
+						<DialogTitle>{t("change-history")}</DialogTitle>
 						<DialogDescription>
 							{t("history.restoreDescription")}
 						</DialogDescription>
@@ -701,7 +623,7 @@ export default function PRReviewAssignment() {
 											variant="outline"
 											onClick={() => handleRestoreSnapshot(snapshot.key)}
 										>
-											Restore
+											{t("history.restore")}
 										</Button>
 									</div>
 								))}
@@ -723,8 +645,8 @@ export default function PRReviewAssignment() {
 			/>
 
 			<div className="text-center text-xs text-muted-foreground">
-				Last updated: {formatLastUpdated()} • Updates automatically every minute
-				when tab is active
+				{t("last-updated")} {formatLastUpdated()}
+				{t("updates-automatically-every-minute-when-tab-is-active")}
 			</div>
 		</div>
 	);
