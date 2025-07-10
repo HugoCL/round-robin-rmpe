@@ -65,6 +65,8 @@
     "manageReviewers": "Gestionar Revisores",
     "hideAssignments": "Ocultar Asignaciones",
     "showAssignments": "Mostrar Asignaciones",
+    "hideTags": "Ocultar Etiquetas",
+    "showTags": "Mostrar Etiquetas",
     "lastAssignments": "Últimas 5 asignaciones de revisión PR",
     "noAssignments": "Aún no hay asignaciones",
     "loadingPleaseWait": "Por favor espera mientras cargamos tus datos...",
@@ -179,6 +181,7 @@
   },
   "history": {
     "title": "Historial de Asignaciones",
+    "assignedBy": "Asignado por",
     "restoreSnapshot": "Restaurar desde esta instantánea",
     "restoreSnapshots": "Restaurar desde Instantáneas",
     "restoreDescription": "Selecciona una instantánea para restaurar las asignaciones de revisores desde un estado anterior.",

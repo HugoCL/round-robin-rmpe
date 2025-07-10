@@ -8,6 +8,7 @@ import {
 	LayoutGrid,
 	RefreshCw,
 	Settings,
+	Tags,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsHelp";
@@ -33,9 +34,11 @@ import {
 interface HeaderOptionsDrawerProps {
 	compactLayout: boolean;
 	showAssignments: boolean;
+	showTags: boolean;
 	isRefreshing: boolean;
 	onToggleCompactLayout: () => void;
 	onToggleShowAssignments: () => void;
+	onToggleShowTags: () => void;
 	onOpenSnapshotDialog: () => void;
 	onManualRefresh: () => void;
 	formatLastUpdated: () => string;
@@ -44,9 +47,11 @@ interface HeaderOptionsDrawerProps {
 export function HeaderOptionsDrawer({
 	compactLayout,
 	showAssignments,
+	showTags,
 	isRefreshing,
 	onToggleCompactLayout,
 	onToggleShowAssignments,
+	onToggleShowTags,
 	onOpenSnapshotDialog,
 	onManualRefresh,
 	formatLastUpdated,
@@ -109,6 +114,24 @@ export function HeaderOptionsDrawer({
 									<>
 										<Eye className="h-4 w-4 mr-2" />
 										{t("pr.showAssignments")}
+									</>
+								)}
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								className="w-full justify-start"
+								onClick={onToggleShowTags}
+							>
+								{showTags ? (
+									<>
+										<EyeOff className="h-4 w-4 mr-2" />
+										{t("pr.hideTags")}
+									</>
+								) : (
+									<>
+										<Tags className="h-4 w-4 mr-2" />
+										{t("pr.showTags")}
 									</>
 								)}
 							</Button>

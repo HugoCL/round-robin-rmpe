@@ -65,6 +65,8 @@
     "manageReviewers": "Manage Reviewers",
     "hideAssignments": "Hide Assignments",
     "showAssignments": "Show Assignments",
+    "hideTags": "Hide Tags",
+    "showTags": "Show Tags",
     "lastAssignments": "Last 5 PR review assignments",
     "noAssignments": "No assignments yet",
     "loadingPleaseWait": "Please wait while we load your data...",
@@ -179,6 +181,7 @@
   },
   "history": {
     "title": "Assignment History",
+    "assignedBy": "Assigned by",
     "restoreSnapshot": "Restore from this snapshot",
     "restoreSnapshots": "Restore from Snapshots",
     "restoreDescription": "Select a snapshot to restore the reviewer assignments from a previous state.",

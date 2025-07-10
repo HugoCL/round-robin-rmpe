@@ -41,6 +41,17 @@ export function RecentAssignments({ assignmentFeed }: RecentAssignmentsProps) {
 									<p className="text-xs text-muted-foreground">
 										{new Date(item.timestamp).toLocaleString()}
 									</p>
+									{item.actionBy && (
+										<p className="text-xs text-muted-foreground mt-1">
+											{t("history.assignedBy")}:{" "}
+											{[
+												item.actionBy.firstName,
+												item.actionBy.lastName?.split(" ")[0],
+											]
+												.filter(Boolean)
+												.join(" ") || item.actionBy.email}
+										</p>
+									)}
 								</div>
 								<div>
 									{item.forced && (

@@ -68,6 +68,7 @@ export default function PRReviewAssignment() {
 	const [snapshotsLoading, setSnapshotsLoading] = useState(false);
 	const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
 	const [showAssignments, setShowAssignments] = useState(false);
+	const [showTags, setShowTags] = useState(true);
 	const [skipConfirmDialogOpen, setSkipConfirmDialogOpen] = useState(false);
 	const [nextAfterSkip, setNextAfterSkip] = useState<Reviewer | null>(null);
 	const [compactLayout, setCompactLayout] = useState(false);
@@ -114,6 +115,11 @@ export default function PRReviewAssignment() {
 			setShowAssignments(savedShowAssignments === "true");
 		}
 
+		const savedShowTags = localStorage.getItem("showTags");
+		if (savedShowTags !== null) {
+			setShowTags(savedShowTags === "true");
+		}
+
 		const savedCompactLayout = localStorage.getItem("compactLayout");
 		if (savedCompactLayout !== null) {
 			setCompactLayout(savedCompactLayout === "true");
@@ -124,6 +130,11 @@ export default function PRReviewAssignment() {
 	useEffect(() => {
 		localStorage.setItem("showAssignments", showAssignments.toString());
 	}, [showAssignments]);
+
+	// Save show tags preference to localStorage
+	useEffect(() => {
+		localStorage.setItem("showTags", showTags.toString());
+	}, [showTags]);
 
 	// Save compact layout preference to localStorage
 	useEffect(() => {
@@ -243,6 +254,10 @@ export default function PRReviewAssignment() {
 		setShowAssignments((prev) => !prev);
 	};
 
+	const toggleShowTags = () => {
+		setShowTags((prev) => !prev);
+	};
+
 	const toggleCompactLayout = () => {
 		setCompactLayout((prev) => !prev);
 	};
@@ -308,9 +323,11 @@ export default function PRReviewAssignment() {
 					<HeaderOptionsDrawer
 						compactLayout={compactLayout}
 						showAssignments={showAssignments}
+						showTags={showTags}
 						isRefreshing={isRefreshing}
 						onToggleCompactLayout={toggleCompactLayout}
 						onToggleShowAssignments={toggleShowAssignments}
+						onToggleShowTags={toggleShowTags}
 						onOpenSnapshotDialog={handleOpenSnapshotDialog}
 						onManualRefresh={handleManualRefresh}
 						formatLastUpdated={formatLastUpdated}
@@ -346,6 +363,7 @@ export default function PRReviewAssignment() {
 										nextReviewer={nextReviewer}
 										assignmentFeed={assignmentFeed}
 										showAssignments={showAssignments}
+										showTags={showTags}
 										onToggleAbsence={handleToggleAbsence}
 										onDataUpdate={fetchData}
 									/>
@@ -540,6 +558,7 @@ export default function PRReviewAssignment() {
 								nextReviewer={nextReviewer}
 								assignmentFeed={assignmentFeed}
 								showAssignments={showAssignments}
+								showTags={showTags}
 								onToggleAbsence={handleToggleAbsence}
 								onDataUpdate={fetchData}
 							/>

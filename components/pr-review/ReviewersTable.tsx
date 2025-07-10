@@ -30,6 +30,7 @@ interface ReviewersTableProps {
 	nextReviewer: Reviewer | null;
 	assignmentFeed: AssignmentFeed;
 	showAssignments: boolean;
+	showTags: boolean;
 	onToggleAbsence: (id: string) => Promise<void>;
 	onDataUpdate: () => Promise<void>;
 }
@@ -39,6 +40,7 @@ export function ReviewersTable({
 	nextReviewer,
 	assignmentFeed,
 	showAssignments,
+	showTags,
 	onToggleAbsence,
 	onDataUpdate,
 }: ReviewersTableProps) {
@@ -130,7 +132,7 @@ export function ReviewersTable({
 			<TableHeader>
 				<TableRow>
 					<TableHead>{t("pr.nameHeader")}</TableHead>
-					<TableHead>{t("pr.tagsHeader")}</TableHead>
+					{showTags && <TableHead>{t("pr.tagsHeader")}</TableHead>}
 					{showAssignments && (
 						<TableHead>{t("pr.assignmentsHeader")}</TableHead>
 					)}
@@ -156,17 +158,19 @@ export function ReviewersTable({
 								</Badge>
 							)}
 						</TableCell>
-						<TableCell>
-							<div className="flex flex-wrap gap-1">
-								{reviewer.tags && reviewer.tags.length > 0 ? (
-									reviewer.tags.map((tagId) => getTagBadge(tagId))
-								) : (
-									<span className="text-sm text-muted-foreground">
-										{t("pr.noTags")}
-									</span>
-								)}
-							</div>
-						</TableCell>
+						{showTags && (
+							<TableCell>
+								<div className="flex flex-wrap gap-1">
+									{reviewer.tags && reviewer.tags.length > 0 ? (
+										reviewer.tags.map((tagId) => getTagBadge(tagId))
+									) : (
+										<span className="text-sm text-muted-foreground">
+											{t("pr.noTags")}
+										</span>
+									)}
+								</div>
+							</TableCell>
+						)}
 						{showAssignments && (
 							<TableCell>
 								{editingId === reviewer.id ? (

@@ -13,11 +13,11 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 
-interface SlotMachineHistoryProps {
+interface FeedHistoryProps {
 	assignmentFeed: AssignmentFeed;
 }
 
-export function FeedHistory({ assignmentFeed }: SlotMachineHistoryProps) {
+export function FeedHistory({ assignmentFeed }: FeedHistoryProps) {
 	const t = useTranslations();
 	const [tags, setTags] = useState<Tag[]>([]);
 
@@ -76,6 +76,17 @@ export function FeedHistory({ assignmentFeed }: SlotMachineHistoryProps) {
 									<p className="text-xs text-muted-foreground">
 										{new Date(item.timestamp).toLocaleString()}
 									</p>
+									{item.actionBy && (
+										<p className="text-xs text-muted-foreground mt-1">
+											{t("history.assignedBy")}:{" "}
+											{[
+												item.actionBy.firstName,
+												item.actionBy.lastName?.split(" ")[0],
+											]
+												.filter(Boolean)
+												.join(" ") || item.actionBy.email}
+										</p>
+									)}
 									{item.tag && (
 										<div className="mt-1">{getTagBadge(item.tag)}</div>
 									)}
