@@ -56,8 +56,8 @@ export function usePRReviewData(user?: UserInfo | null) {
 		} catch (error) {
 			console.error("Error loading data:", error);
 			toast({
-				title: "Error",
-				description: "Failed to refresh data from database",
+				title: t("data.refreshFailedTitle"),
+				description: t("data.refreshFailedDescription"),
 				variant: "destructive",
 			});
 		} finally {
@@ -65,7 +65,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 				setIsRefreshing(false);
 			}
 		}
-	}, []);
+	}, [t]);
 
 	// Load reviewers from Redis on initial load
 	useEffect(() => {
@@ -83,8 +83,8 @@ export function usePRReviewData(user?: UserInfo | null) {
 			} catch (error) {
 				console.error("Error loading initial data:", error);
 				toast({
-					title: "Error",
-					description: "Failed to load data from database",
+					title: t("data.loadFailedTitle"),
+					description: t("data.loadFailedDescription"),
 					variant: "destructive",
 				});
 				setIsLoading(false);
@@ -92,7 +92,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 		}
 
 		loadInitialData();
-	}, []);
+	}, [t]);
 
 	// Set up interval for periodic updates
 	useEffect(() => {
@@ -152,47 +152,74 @@ export function usePRReviewData(user?: UserInfo | null) {
 			return;
 		}
 
-		// Find the minimum assignment count among all reviewers
-		const minCount = Math.min(...reviewers.map((r) => r.assignmentCount));
+		// Find available reviewers (not absent) first
+		const availableReviewers = reviewers.filter((r) => !r.isAbsent);
 
-		// Get all reviewers with the minimum count
-		const candidatesWithMinCount = reviewers.filter(
-			(r) => r.assignmentCount === minCount,
-		);
+		if (availableReviewers.length > 0) {
+			// Find the minimum assignment count among available reviewers
+			const minCount = Math.min(...availableReviewers.map((r) => r.assignmentCount));
 
-		// Sort by creation time (older first)
-		const sortedCandidates = [...candidatesWithMinCount].sort(
-			(a, b) => a.createdAt - b.createdAt,
-		);
+			// Get all available reviewers with the minimum count
+			const candidatesWithMinCount = availableReviewers.filter(
+				(r) => r.assignmentCount === minCount,
+			);
 
-		// Check if the first candidate is absent
-		if (sortedCandidates.length > 0) {
-			const firstCandidate = sortedCandidates[0];
+			// Sort by creation time (older first)
+			const sortedCandidates = [...candidatesWithMinCount].sort(
+				(a, b) => a.createdAt - b.createdAt,
+			);
 
-			if (firstCandidate.isAbsent) {
-				// Increment the counter for the absent reviewer, but mark it as an absent skip
-				const success = await incrementReviewerCount(
-					firstCandidate.id,
-					true,
-					true,
-				);
+			// Set the first available candidate as next reviewer
+			setNextReviewer(sortedCandidates[0]);
+		} else {
+			// All reviewers are absent - handle this case by auto-skipping the first one
+			// but only if we haven't already tried to skip them in this cycle
+			const minCount = Math.min(...reviewers.map((r) => r.assignmentCount));
+			const candidatesWithMinCount = reviewers.filter(
+				(r) => r.assignmentCount === minCount,
+			);
 
-				if (success) {
-					// Refresh data and find next reviewer again
-					await fetchData();
-					// This will trigger useEffect which will call findNextReviewer again					} else {
+			const sortedCandidates = [...candidatesWithMinCount].sort(
+				(a, b) => a.createdAt - b.createdAt,
+			);
+
+			if (sortedCandidates.length > 0) {
+				const firstCandidate = sortedCandidates[0];
+
+				// Check if this reviewer should be auto-skipped
+				// We'll skip them and increment their count, but only show an error if it fails
+				try {
+					const success = await incrementReviewerCount(
+						firstCandidate.id,
+						true,
+						true,
+					);
+
+					if (success) {
+						// Refresh data which will trigger this function again to find the next available reviewer
+						await fetchData();
+					} else {
+						// Show error and set the absent reviewer anyway so the UI doesn't break
+						toast({
+							title: t("messages.statusUpdateFailedTitle"),
+							description: t("messages.skipAbsentFailedDescription"),
+							variant: "destructive",
+						});
+						setNextReviewer(firstCandidate);
+					}
+				} catch (error) {
+					console.error("Error auto-skipping absent reviewer:", error);
 					toast({
 						title: t("messages.statusUpdateFailedTitle"),
 						description: t("messages.skipAbsentFailedDescription"),
 						variant: "destructive",
 					});
+					// Set the absent reviewer anyway so the UI doesn't break
+					setNextReviewer(firstCandidate);
 				}
 			} else {
-				// If not absent, set as next reviewer
-				setNextReviewer(firstCandidate);
+				setNextReviewer(null);
 			}
-		} else {
-			setNextReviewer(null);
 		}
 	}, [reviewers, fetchData, t]);
 
@@ -214,8 +241,8 @@ export function usePRReviewData(user?: UserInfo | null) {
 			await fetchData();
 
 			toast({
-				title: "PR Assigned",
-				description: `PR assigned to ${nextReviewer.name}`,
+				title: t("data.prAssignedTitle"),
+				description: t("data.prAssignedDescription", { name: nextReviewer.name }),
 			});
 		} else {
 			toast({
@@ -283,13 +310,16 @@ export function usePRReviewData(user?: UserInfo | null) {
 			await fetchData();
 
 			toast({
-				title: "Assignment Completed",
-				description: `${currentNext.name} was skipped and PR assigned to ${nextAfterSkip.name}.`,
+				title: t("data.assignmentCompletedTitle"),
+				description: t("data.assignmentCompletedDescription", { 
+					skippedName: currentNext.name, 
+					assignedName: nextAfterSkip.name 
+				}),
 			});
 		} else {
 			toast({
-				title: "Error",
-				description: "Failed to complete the skip operation. Please try again.",
+				title: t("data.skipOperationFailedTitle"),
+				description: t("data.skipOperationFailedDescription"),
 				variant: "destructive",
 			});
 		}
@@ -303,13 +333,13 @@ export function usePRReviewData(user?: UserInfo | null) {
 			await fetchData();
 
 			toast({
-				title: "Assignment Undone",
-				description: "The last PR assignment has been undone",
+				title: t("data.assignmentUndoneTitle"),
+				description: t("data.assignmentUndoneDescription"),
 			});
 		} else {
 			toast({
-				title: "Error",
-				description: "No assignments to undo or operation failed",
+				title: t("data.undoFailedTitle"),
+				description: t("data.undoFailedDescription"),
 				variant: "destructive",
 			});
 		}
@@ -318,8 +348,8 @@ export function usePRReviewData(user?: UserInfo | null) {
 	const addReviewer = async (name: string) => {
 		if (!name.trim()) {
 			toast({
-				title: "Error",
-				description: "Please enter a name for the new reviewer",
+				title: t("data.addReviewerEmptyNameTitle"),
+				description: t("data.addReviewerEmptyNameDescription"),
 				variant: "destructive",
 			});
 			return false;
@@ -333,14 +363,14 @@ export function usePRReviewData(user?: UserInfo | null) {
 			await fetchData();
 
 			toast({
-				title: "Reviewer Added",
-				description: `${name} has been added to the rotation`,
+				title: t("data.reviewerAddedTitle"),
+				description: t("data.reviewerAddedDescription", { name }),
 			});
 			return true;
 		} else {
 			toast({
-				title: "Error",
-				description: "Failed to add reviewer. Please try again.",
+				title: t("data.addReviewerFailedTitle"),
+				description: t("data.addReviewerFailedDescription"),
 				variant: "destructive",
 			});
 			return false;
@@ -356,13 +386,13 @@ export function usePRReviewData(user?: UserInfo | null) {
 			await fetchData();
 
 			toast({
-				title: "Reviewer Removed",
-				description: "Reviewer has been removed from the rotation",
+				title: t("data.reviewerRemovedTitle"),
+				description: t("data.reviewerRemovedDescription"),
 			});
 		} else {
 			toast({
-				title: "Error",
-				description: "Failed to remove reviewer. Please try again.",
+				title: t("data.removeReviewerFailedTitle"),
+				description: t("data.removeReviewerFailedDescription"),
 				variant: "destructive",
 			});
 		}
@@ -443,21 +473,21 @@ export function usePRReviewData(user?: UserInfo | null) {
 						await fetchData();
 
 						toast({
-							title: "Data Imported",
-							description: "Reviewer data has been successfully imported",
+							title: t("data.dataImportedTitle"),
+							description: t("data.dataImportedDescription"),
 						});
 					} else {
 						toast({
-							title: "Import Error",
-							description: "Failed to save imported data to database",
+							title: t("data.importSaveFailedTitle"),
+							description: t("data.importSaveFailedDescription"),
 							variant: "destructive",
 						});
 					}
 				}
 			} catch {
 				toast({
-					title: "Import Error",
-					description: "Failed to import data. Please check the file format.",
+					title: t("data.importFormatFailedTitle"),
+					description: t("data.importFormatFailedDescription"),
 					variant: "destructive",
 				});
 			}

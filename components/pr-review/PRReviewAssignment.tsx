@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@workos-inc/authkit-nextjs/components";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { useTranslations } from "next-intl";
 import {
 	Download,
@@ -12,7 +12,7 @@ import {
 	UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { type Reviewer, signOutAuthKit } from "@/app/[locale]/actions";
+import type { Reviewer } from "@/app/[locale]/actions";
 import {
 	type BackupEntry,
 	getSnapshots,
@@ -74,8 +74,17 @@ export default function PRReviewAssignment() {
 	const [compactLayout, setCompactLayout] = useState(false);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 
-	const { user, loading } = useAuth();
+	const { user, isLoaded } = useUser();
+	const { signOut } = useClerk();
 	const { hasTags, refreshTags } = useTags();
+
+	// Adapt Clerk user to expected UserInfo interface
+	const userInfo = user
+		? {
+				email: user.emailAddresses[0]?.emailAddress || "",
+				name: user.fullName || undefined,
+			}
+		: null;
 
 	const {
 		reviewers,
@@ -97,7 +106,7 @@ export default function PRReviewAssignment() {
 		fetchData,
 		handleManualRefresh,
 		formatLastUpdated,
-	} = usePRReviewData(user);
+	} = usePRReviewData(userInfo);
 
 	// Enable keyboard shortcuts
 	useKeyboardShortcuts({
@@ -262,7 +271,7 @@ export default function PRReviewAssignment() {
 		setCompactLayout((prev) => !prev);
 	};
 
-	if (isLoading || loading) {
+	if (isLoading || !isLoaded) {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
 				<div className="text-center">
@@ -287,9 +296,9 @@ export default function PRReviewAssignment() {
 	}
 
 	if (
-		user &&
-		!user.email.endsWith("@buk.cl") &&
-		!user.email.endsWith("@buk.pe")
+		userInfo &&
+		!userInfo.email.endsWith("@buk.cl") &&
+		!userInfo.email.endsWith("@buk.pe")
 	) {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
@@ -299,11 +308,11 @@ export default function PRReviewAssignment() {
 					</h2>
 					<p className="text-muted-foreground">
 						{t("pr.notAuthorizedDescription")} {t("pr.unauthorized")}{" "}
-						{user.email}
+						{userInfo?.email}
 					</p>
 					<form
 						action={async () => {
-							await signOutAuthKit();
+							await signOut();
 						}}
 					>
 						<Button type="submit">{t("pr.signOut")}</Button>
@@ -463,13 +472,13 @@ export default function PRReviewAssignment() {
 							<ForceAssignDialog
 								reviewers={reviewers}
 								onDataUpdate={handleDataUpdate}
-								user={user}
+								user={userInfo}
 							/>
 							{hasTags && (
 								<TrackBasedAssignment
 									reviewers={reviewers}
 									onDataUpdate={handleDataUpdate}
-									user={user}
+									user={userInfo}
 								/>
 							)}
 						</div>
@@ -578,13 +587,13 @@ export default function PRReviewAssignment() {
 							<ForceAssignDialog
 								reviewers={reviewers}
 								onDataUpdate={handleDataUpdate}
-								user={user}
+								user={userInfo}
 							/>
 							{hasTags && (
 								<TrackBasedAssignment
 									reviewers={reviewers}
 									onDataUpdate={handleDataUpdate}
-									user={user}
+									user={userInfo}
 								/>
 							)}
 						</div>

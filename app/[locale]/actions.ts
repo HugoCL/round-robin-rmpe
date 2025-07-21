@@ -1,6 +1,5 @@
 "use server";
 
-import { signOut } from "@workos-inc/authkit-nextjs";
 import { redis } from "@/lib/redis";
 import { createSnapshot } from "./backup-actions";
 
@@ -153,7 +152,7 @@ export async function getReviewers(): Promise<Reviewer[]> {
 		});
 
 		// If we had to add createdAt or tags to any reviewers, update Redis
-		const needsUpdate = updatedReviewers.some((r, i) => !reviewers[i]?.createdAt || !reviewers[i]?.tags);
+		const needsUpdate = updatedReviewers.some((_, i) => !reviewers[i]?.createdAt || !reviewers[i]?.tags);
 		if (needsUpdate) {
 			await redis.set(REDIS_KEY, updatedReviewers);
 			return updatedReviewers;
@@ -440,23 +439,68 @@ export async function resetAllCounts(): Promise<boolean> {
 	}
 }
 
+// Helper function to find the most common assignment count
+function getMostCommonAssignmentCount(reviewers: Reviewer[]): number {
+	if (reviewers.length === 0) return 0;
+
+	// Count frequency of each assignment count
+	const countFrequency = new Map<number, number>();
+
+	for (const reviewer of reviewers) {
+		const count = reviewer.assignmentCount;
+		countFrequency.set(count, (countFrequency.get(count) || 0) + 1);
+	}
+
+	// Find the highest count with the most frequency
+	let mostCommonCount = 0;
+	let maxFrequency = 0;
+
+	for (const [count, frequency] of countFrequency.entries()) {
+		if (frequency > maxFrequency || (frequency === maxFrequency && count > mostCommonCount)) {
+			mostCommonCount = count;
+			maxFrequency = frequency;
+		}
+	}
+
+	return mostCommonCount;
+}
+
 export async function toggleAbsence(id: string): Promise<boolean> {
 	try {
 		const reviewers = await getReviewers();
 		const reviewer = reviewers.find((r) => r.id === id);
 		const isCurrentlyAbsent = reviewer?.isAbsent || false;
-		const updatedReviewers = reviewers.map((r) =>
-			r.id === id ? { ...r, isAbsent: !r.isAbsent } : r,
-		);
+
+		// If unmarking as absent (making available), update assignment count to most common value
+		let updatedReviewers: Reviewer[];
+		if (isCurrentlyAbsent) {
+			// Find the most common assignment count among available reviewers
+			const availableReviewers = reviewers.filter((r) => !r.isAbsent || r.id === id);
+			const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
+
+			updatedReviewers = reviewers.map((r) =>
+				r.id === id
+					? { ...r, isAbsent: false, assignmentCount: mostCommonCount }
+					: r,
+			);
+		} else {
+			// Just mark as absent without changing assignment count
+			updatedReviewers = reviewers.map((r) =>
+				r.id === id ? { ...r, isAbsent: true } : r,
+			);
+		}
 
 		const success = await saveReviewers(updatedReviewers);
 
 		if (success && reviewer) {
 			// Create snapshot
 			const status = isCurrentlyAbsent ? "available" : "absent";
+			const countMessage = isCurrentlyAbsent
+				? ` and updated assignment count to ${updatedReviewers.find(r => r.id === id)?.assignmentCount}`
+				: "";
 			await createSnapshot(
 				updatedReviewers,
-				`Marked ${reviewer.name} as ${status}`,
+				`Marked ${reviewer.name} as ${status}${countMessage}`,
 			);
 		}
 
@@ -606,9 +650,6 @@ export async function undoLastAssignment(): Promise<{
 		console.error("Error undoing last assignment:", error);
 		return { success: false };
 	}
-}
-export async function signOutAuthKit() {
-	await signOut();
 }
 
 // Tag management functions

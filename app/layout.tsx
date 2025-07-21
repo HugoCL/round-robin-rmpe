@@ -1,6 +1,6 @@
 import type React from "react";
 import "@/app/globals.css";
-import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
@@ -18,15 +18,15 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en" suppressHydrationWarning>
-			<body className={inter.className}>
-				<AuthKitProvider>
+		<ClerkProvider>
+			<html lang="en" suppressHydrationWarning>
+				<body className={inter.className}>
 					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 						{children}
 						<Toaster />
 					</ThemeProvider>
-				</AuthKitProvider>
-			</body>
-		</html>
+				</body>
+			</html>
+		</ClerkProvider>
 	);
 }

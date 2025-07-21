@@ -1,49 +1,31 @@
-import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
-import { NextResponse } from 'next/server';
-import type { NextRequest, NextFetchEvent } from 'next/server';
 
 // Create the internationalization middleware
 const intlMiddleware = createMiddleware(routing);
 
-// Create the AuthKit middleware
-const authMiddleware = authkitMiddleware({
-	middlewareAuth: {
-		enabled: true,
-		unauthenticatedPaths: [
-			"/api/updates",
-			"/favicon.ico",
-			"/en/callback",
-			"/es/callback"
-		],
-	},
+// Define public routes (include both with and without locale prefixes)
+const isPublicRoute = createRouteMatcher([
+	"/",
+	"/api/updates",
+	"/sign-in(.*)",
+	"/sign-up(.*)",
+	"/(es|en)/sign-in(.*)",
+	"/(es|en)/sign-up(.*)"
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+	// Protect all routes except public ones
+	if (!isPublicRoute(req)) {
+		await auth.protect();
+	}
+
+	// Handle i18n routing for non-auth API routes
+	if (!req.nextUrl.pathname.startsWith('/api/') || req.nextUrl.pathname.startsWith('/api/updates')) {
+		return intlMiddleware(req);
+	}
 });
-
-export default async function middleware(request: NextRequest, event: NextFetchEvent) {
-	// First, run the AuthKit middleware to ensure withAuth coverage
-	const authResponse = await authMiddleware(request, event);
-
-	// If AuthKit returns a redirect response, return it immediately
-	if (authResponse && (authResponse.status === 302 || authResponse.status === 307)) {
-		return authResponse;
-	}
-
-	// Handle i18n routing
-	const intlResponse = intlMiddleware(request);
-	if (intlResponse) {
-		// If i18n middleware returns a response, copy headers from auth response
-		if (authResponse) {
-			authResponse.headers.forEach((value, key) => {
-				intlResponse.headers.set(key, value);
-			});
-		}
-		return intlResponse;
-	}
-
-	// Return the auth response or continue
-	return authResponse || NextResponse.next();
-}
 
 export const config = {
 	matcher: [
