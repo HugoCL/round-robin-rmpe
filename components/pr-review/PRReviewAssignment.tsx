@@ -295,11 +295,7 @@ export default function PRReviewAssignment() {
 		);
 	}
 
-	if (
-		userInfo &&
-		!userInfo.email.endsWith("@buk.cl") &&
-		!userInfo.email.endsWith("@buk.pe")
-	) {
+	if (userInfo && !/^.+@buk\.[a-zA-Z0-9-]+$/.test(userInfo.email)) {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
 				<div className="text-center">

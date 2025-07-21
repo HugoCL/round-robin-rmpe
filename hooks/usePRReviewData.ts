@@ -311,9 +311,9 @@ export function usePRReviewData(user?: UserInfo | null) {
 
 			toast({
 				title: t("data.assignmentCompletedTitle"),
-				description: t("data.assignmentCompletedDescription", { 
-					skippedName: currentNext.name, 
-					assignedName: nextAfterSkip.name 
+				description: t("data.assignmentCompletedDescription", {
+					skippedName: currentNext.name,
+					assignedName: nextAfterSkip.name
 				}),
 			});
 		} else {
