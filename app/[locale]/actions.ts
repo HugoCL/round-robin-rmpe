@@ -48,78 +48,22 @@ const TAGS_KEY = process.env.REDIS_KEY_TAGS || "pr-tags";
 // Default tags - empty by default
 const defaultTags: Tag[] = [];
 
-// Default reviewers based on the screenshot
+// Bootstrapping reviewers
 const defaultReviewers: Reviewer[] = [
 	{
 		id: "1",
-		name: "Marco",
-		assignmentCount: 167,
+		name: "Juan",
+		assignmentCount: 0,
 		isAbsent: false,
 		createdAt: 1614556800000,
 		tags: [],
 	},
 	{
 		id: "2",
-		name: "Max",
-		assignmentCount: 167,
-		isAbsent: true,
+		name: "Pedro",
+		assignmentCount: 0,
+		isAbsent: false,
 		createdAt: 1614556800001,
-		tags: [],
-	},
-	{
-		id: "3",
-		name: "Seba",
-		assignmentCount: 166,
-		isAbsent: false,
-		createdAt: 1614556800002,
-		tags: [],
-	},
-	{
-		id: "4",
-		name: "Jose Daniel",
-		assignmentCount: 166,
-		isAbsent: false,
-		createdAt: 1614556800003,
-		tags: [],
-	},
-	{
-		id: "5",
-		name: "Hugo",
-		assignmentCount: 166,
-		isAbsent: false,
-		createdAt: 1614556800004,
-		tags: [],
-	},
-	{
-		id: "6",
-		name: "Elizabeth",
-		assignmentCount: 166,
-		isAbsent: false,
-		createdAt: 1614556800005,
-		tags: [],
-	},
-	{
-		id: "7",
-		name: "Alexis",
-		assignmentCount: 166,
-		isAbsent: false,
-		createdAt: 1614556800006,
-		tags: [],
-	},
-	{
-		id: "8",
-		name: "Nicolás",
-		assignmentCount: 166,
-		isAbsent: false,
-		createdAt: 1614556800007,
-		tags: [],
-	},
-	{
-		id: "9",
-		name: "Pablo",
-		assignmentCount: 166,
-		isAbsent: false,
-		createdAt: 1614556800008,
 		tags: [],
 	},
 ];

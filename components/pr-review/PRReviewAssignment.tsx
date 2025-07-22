@@ -78,11 +78,11 @@ export default function PRReviewAssignment() {
 	const { signOut } = useClerk();
 	const { hasTags, refreshTags } = useTags();
 
-	// Adapt Clerk user to expected UserInfo interface
 	const userInfo = user
 		? {
 				email: user.emailAddresses[0]?.emailAddress || "",
-				name: user.fullName || undefined,
+				firstName: user.firstName || undefined,
+				lastName: user.lastName || undefined,
 			}
 		: null;
 

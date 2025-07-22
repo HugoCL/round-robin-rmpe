@@ -22,7 +22,8 @@ const UPDATE_INTERVAL = 60000; // 1 minute in milliseconds
 
 interface UserInfo {
 	email: string;
-	name?: string;
+	firstName?: string;
+	lastName?: string;
 }
 
 export function usePRReviewData(user?: UserInfo | null) {

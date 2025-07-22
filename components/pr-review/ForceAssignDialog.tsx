@@ -26,7 +26,7 @@ import { toast } from "@/hooks/use-toast";
 interface ForceAssignDialogProps {
 	reviewers: Reviewer[];
 	onDataUpdate: () => Promise<void>;
-	user?: { email: string; name?: string } | null;
+	user?: { email: string; firstName?: string; lastName?: string } | null;
 }
 
 export function ForceAssignDialog({

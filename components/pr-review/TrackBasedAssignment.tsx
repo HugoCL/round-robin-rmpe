@@ -40,7 +40,7 @@ import { toast } from "@/hooks/use-toast";
 interface TrackBasedAssignmentProps {
 	reviewers: Reviewer[];
 	onDataUpdate: () => Promise<void>;
-	user?: { email: string; name?: string } | null;
+	user?: { email: string; firstName?: string; lastName?: string } | null;
 }
 
 export function TrackBasedAssignment({
@@ -98,7 +98,7 @@ export function TrackBasedAssignment({
 		if (isOpen) {
 			loadTags();
 		}
-	}, [reviewers, loadTags, isOpen]);
+	}, [loadTags, isOpen]);
 
 	useEffect(() => {
 		if (selectedTagId) {
