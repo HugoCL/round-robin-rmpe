@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface AddReviewerDialogProps {
-	onAddReviewer: (name: string) => Promise<boolean>;
+	onAddReviewer: (name: string, email: string) => Promise<boolean>;
 	trigger?: React.ReactNode;
 }
 
@@ -27,17 +27,19 @@ export function AddReviewerDialog({
 }: AddReviewerDialogProps) {
 	const t = useTranslations();
 	const [newReviewerName, setNewReviewerName] = useState("");
+	const [newReviewerEmail, setNewReviewerEmail] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
 	const [isAdding, setIsAdding] = useState(false);
 
 	const handleAddReviewer = async () => {
-		if (!newReviewerName.trim()) return;
+		if (!newReviewerName.trim() || !newReviewerEmail.trim()) return;
 
 		setIsAdding(true);
 		try {
-			const success = await onAddReviewer(newReviewerName.trim());
+			const success = await onAddReviewer(newReviewerName.trim(), newReviewerEmail.trim());
 			if (success) {
 				setNewReviewerName("");
+				setNewReviewerEmail("");
 				setIsOpen(false);
 			}
 		} finally {
@@ -68,19 +70,33 @@ export function AddReviewerDialog({
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
 					<div className="grid grid-cols-4 items-center gap-4">
-						<Label htmlFor="reviewer-name" className="text-right">
-							{t("common.name")}
-						</Label>
-						<Input
-							id="reviewer-name"
-							placeholder={t("reviewer.enterName")}
-							value={newReviewerName}
-							onChange={(e) => setNewReviewerName(e.target.value)}
-							onKeyDown={handleKeyDown}
-							className="col-span-3"
-							autoFocus
-						/>
-					</div>
+					<Label htmlFor="reviewer-name" className="text-right">
+						{t("common.name")}
+					</Label>
+					<Input
+						id="reviewer-name"
+						placeholder={t("reviewer.enterName")}
+						value={newReviewerName}
+						onChange={(e) => setNewReviewerName(e.target.value)}
+						onKeyDown={handleKeyDown}
+						className="col-span-3"
+						autoFocus
+					/>
+				</div>
+				<div className="grid grid-cols-4 items-center gap-4">
+					<Label htmlFor="reviewer-email" className="text-right">
+						{t("common.email")}
+					</Label>
+					<Input
+						id="reviewer-email"
+						type="email"
+						placeholder={t("reviewer.enterEmail")}
+						value={newReviewerEmail}
+						onChange={(e) => setNewReviewerEmail(e.target.value)}
+						onKeyDown={handleKeyDown}
+						className="col-span-3"
+					/>
+				</div>
 				</div>
 				<DialogFooter>
 					<Button
@@ -92,7 +108,7 @@ export function AddReviewerDialog({
 					</Button>
 					<Button
 						onClick={handleAddReviewer}
-						disabled={!newReviewerName.trim() || isAdding}
+						disabled={!newReviewerName.trim() || !newReviewerEmail.trim() || isAdding}
 					>
 						{isAdding ? t("common.adding") : t("pr.addReviewer")}
 					</Button>

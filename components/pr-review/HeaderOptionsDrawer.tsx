@@ -6,6 +6,7 @@ import {
 	Eye,
 	EyeOff,
 	LayoutGrid,
+	Mail,
 	RefreshCw,
 	Settings,
 	Tags,
@@ -35,10 +36,12 @@ interface HeaderOptionsDrawerProps {
 	compactLayout: boolean;
 	showAssignments: boolean;
 	showTags: boolean;
+	showEmails: boolean;
 	isRefreshing: boolean;
 	onToggleCompactLayout: () => void;
 	onToggleShowAssignments: () => void;
 	onToggleShowTags: () => void;
+	onToggleShowEmails: () => void;
 	onOpenSnapshotDialog: () => void;
 	onManualRefresh: () => void;
 	formatLastUpdated: () => string;
@@ -48,10 +51,12 @@ export function HeaderOptionsDrawer({
 	compactLayout,
 	showAssignments,
 	showTags,
+	showEmails,
 	isRefreshing,
 	onToggleCompactLayout,
 	onToggleShowAssignments,
 	onToggleShowTags,
+	onToggleShowEmails,
 	onOpenSnapshotDialog,
 	onManualRefresh,
 	formatLastUpdated,
@@ -132,6 +137,24 @@ export function HeaderOptionsDrawer({
 									<>
 										<Tags className="h-4 w-4 mr-2" />
 										{t("pr.showTags")}
+									</>
+								)}
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								className="w-full justify-start"
+								onClick={onToggleShowEmails}
+							>
+								{showEmails ? (
+									<>
+										<EyeOff className="h-4 w-4 mr-2" />
+										{t("pr.hideEmails")}
+									</>
+								) : (
+									<>
+										<Mail className="h-4 w-4 mr-2" />
+										{t("pr.showEmails")}
 									</>
 								)}
 							</Button>

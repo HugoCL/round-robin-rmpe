@@ -22,6 +22,7 @@
     "compactView": "Compact View",
     "refresh": "Refresh",
     "name": "Name",
+    "email": "Email",
     "color": "Color",
     "adding": "Adding...",
     "updating": "Updating...",
@@ -67,6 +68,8 @@
     "showAssignments": "Show Assignments",
     "hideTags": "Hide Tags",
     "showTags": "Show Tags",
+    "showEmails": "Show Emails",
+    "hideEmails": "Hide Emails",
     "lastAssignments": "Last 5 PR review assignments",
     "noAssignments": "No assignments yet",
     "loadingPleaseWait": "Please wait while we load your data...",
@@ -121,8 +124,9 @@
   },
   "reviewer": {
     "addNew": "Add New Reviewer",
-    "addDescription": "Enter the name of the new reviewer to add to the rotation.",
+    "addDescription": "Enter the name and email of the new reviewer to add to the rotation.",
     "enterName": "Enter reviewer name",
+    "enterEmail": "Enter reviewer email",
     "deleteTitle": "Remove Reviewer",
     "deleteDescription": "Are you sure you want to remove {name} from the reviewer list? This action cannot be undone.",
     "forceAssignTitle": "Force Assign Reviewer",
@@ -191,6 +195,10 @@
     "import": "Import",
     "restore": "Restore"
   },
+  "googleChat": {
+    "greeting": "📋 Hello {reviewer}!",
+    "assignmentMessage": "{assigner} has assigned you the review of this <{prUrl}|PR>"
+  },
   "shortcuts": {
     "title": "Keyboard Shortcuts",
     "assign": "Assign next reviewer",
@@ -227,6 +235,8 @@
     "addReviewerFailedDescription": "Failed to add reviewer. Please try again.",
     "addReviewerEmptyNameTitle": "Error",
     "addReviewerEmptyNameDescription": "Please enter a name for the new reviewer",
+    "addReviewerEmptyEmailTitle": "Error",
+    "addReviewerEmptyEmailDescription": "Please enter an email for the new reviewer",
     "reviewerRemovedTitle": "Reviewer Removed",
     "reviewerRemovedDescription": "Reviewer has been removed from the rotation",
     "removeReviewerFailedTitle": "Error",

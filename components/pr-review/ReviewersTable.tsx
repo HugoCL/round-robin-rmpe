@@ -31,6 +31,7 @@ interface ReviewersTableProps {
 	assignmentFeed: AssignmentFeed;
 	showAssignments: boolean;
 	showTags: boolean;
+	showEmails: boolean;
 	onToggleAbsence: (id: string) => Promise<void>;
 	onDataUpdate: () => Promise<void>;
 }
@@ -41,6 +42,7 @@ export function ReviewersTable({
 	assignmentFeed,
 	showAssignments,
 	showTags,
+	showEmails,
 	onToggleAbsence,
 	onDataUpdate,
 }: ReviewersTableProps) {
@@ -132,6 +134,7 @@ export function ReviewersTable({
 			<TableHeader>
 				<TableRow>
 					<TableHead>{t("pr.nameHeader")}</TableHead>
+					{showEmails && <TableHead>{t("common.email")}</TableHead>}
 					{showTags && <TableHead>{t("pr.tagsHeader")}</TableHead>}
 					{showAssignments && (
 						<TableHead>{t("pr.assignmentsHeader")}</TableHead>
@@ -158,6 +161,11 @@ export function ReviewersTable({
 								</Badge>
 							)}
 						</TableCell>
+						{showEmails && (
+							<TableCell className="text-sm text-muted-foreground">
+								{reviewer.email}
+							</TableCell>
+						)}
 						{showTags && (
 							<TableCell>
 								<div className="flex flex-wrap gap-1">

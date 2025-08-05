@@ -1,8 +1,9 @@
 "use client";
 
-import { Undo2, User } from "lucide-react";
+import { Undo2, User, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { sendGoogleChatMessage } from "@/app/[locale]/actions";
 import type { Reviewer, AssignmentFeed } from "@/app/[locale]/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface AssignmentCardProps {
 	nextReviewer: Reviewer | null;
@@ -21,6 +25,7 @@ interface AssignmentCardProps {
 	onAssignPR: () => Promise<void>;
 	onUndoAssignment: () => Promise<void>;
 	onImTheNextOne: () => Promise<void>;
+	user?: { email: string; firstName?: string; lastName?: string } | null;
 }
 
 export function AssignmentCard({
@@ -30,11 +35,16 @@ export function AssignmentCard({
 	onAssignPR,
 	onUndoAssignment,
 	onImTheNextOne,
+	user,
 }: AssignmentCardProps) {
 	const t = useTranslations();
+	const locale = useLocale();
 	const [isAssigning, setIsAssigning] = useState(false);
 	const [previousNextReviewer, setPreviousNextReviewer] =
 		useState<Reviewer | null>(null);
+
+	const [sendMessage, setSendMessage] = useState(false);
+	const [prUrl, setPrUrl] = useState("");
 
 	// Track changes in nextReviewer to trigger animations
 	useEffect(() => {
@@ -48,8 +58,31 @@ export function AssignmentCard({
 		setIsAssigning(true);
 		try {
 			await onAssignPR();
+			// Send message to Google Chat if enabled
+			if (sendMessage && prUrl.trim() && nextReviewer) {
+				try {
+					const assignerName =
+						user?.firstName && user?.lastName
+							? `${user.firstName} ${user.lastName}`
+							: user?.firstName || user?.lastName || "Unknown";
+
+					const result = await sendGoogleChatMessage(
+						nextReviewer.name,
+						nextReviewer.email,
+						prUrl,
+						locale,
+						user?.email,
+						assignerName,
+						true,
+					);
+					if (!result.success) {
+						console.error("Failed to send Google Chat message:", result.error);
+					}
+				} catch (error) {
+					console.error("Failed to send Google Chat message:", error);
+				}
+			}
 		} finally {
-			// Wait for the animation to complete before resetting
 			setTimeout(() => setIsAssigning(false), 600);
 		}
 	};
@@ -109,8 +142,18 @@ export function AssignmentCard({
 	return (
 		<Card className="h-full flex flex-col">
 			<CardHeader className="flex-shrink-0">
-				<CardTitle>{t("pr.assignPR")}</CardTitle>
-				<CardDescription>{t("pr.assignReviewer")}</CardDescription>
+				<div className="flex justify-between items-end">
+					{/* Google Chat Toggle */}
+					<div className="flex items-center space-x-2">
+						<MessageSquare className="h-4 w-4 text-green-600" />
+						<Switch
+							id="send-message"
+							checked={sendMessage}
+							onCheckedChange={setSendMessage}
+							className="data-[state=checked]:bg-green-600"
+						/>
+					</div>
+				</div>
 			</CardHeader>
 			<CardContent className="flex-1 flex items-center justify-center">
 				{nextReviewer ? (
@@ -176,12 +219,37 @@ export function AssignmentCard({
 					</div>
 				)}
 			</CardContent>
-			<CardFooter className="flex-shrink-0 space-y-4">
+			<CardFooter className="flex-shrink-0 space-y-6">
+				{/* Action Buttons Section */}
 				<div className="w-full space-y-4">
+					{/* PR URL Input Section - Only shown when Google Chat is enabled */}
+					{sendMessage && (
+						<div className="w-full mb-6">
+							<div className="bg-muted/30 rounded-lg p-4 space-y-3 border border-muted/50">
+								<div className="space-y-1">
+									<Label
+										htmlFor="pr-url"
+										className="text-xs text-muted-foreground"
+									>
+										PR URL
+									</Label>
+									<Input
+										id="pr-url"
+										placeholder="https://github.com/owner/repo/pull/123"
+										value={prUrl}
+										onChange={(e) => setPrUrl(e.target.value)}
+										className="text-sm"
+									/>
+								</div>
+							</div>
+						</div>
+					)}
 					<div className="flex justify-center">
 						<Button
 							onClick={handleAssignPR}
-							disabled={!nextReviewer || isAssigning}
+							disabled={
+								!nextReviewer || isAssigning || (sendMessage && !prUrl.trim())
+							}
 							className="flex-1 bg-primary hover:bg-primary/90 max-w-md"
 							size="lg"
 						>

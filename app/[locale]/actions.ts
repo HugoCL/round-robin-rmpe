@@ -14,6 +14,7 @@ export interface Tag {
 export interface Reviewer {
 	id: string;
 	name: string;
+	email: string;
 	assignmentCount: number;
 	isAbsent: boolean;
 	createdAt: number; // Adding timestamp for ordering
@@ -44,6 +45,7 @@ const REDIS_KEY = process.env.REDIS_KEY_REVIEWERS || "pr-reviewers";
 const HISTORY_KEY = process.env.REDIS_KEY_ASSIGNMENT_HISTORY || "pr-assignment-history";
 const FEED_KEY = process.env.REDIS_KEY_ASSIGNMENT_FEED || "pr-assignment-feed";
 const TAGS_KEY = process.env.REDIS_KEY_TAGS || "pr-tags";
+const GOOGLE_CHAT_WEBHOOK_URL = process.env.GOOGLE_CHAT_WEBHOOK_URL;
 
 // Default tags - empty by default
 const defaultTags: Tag[] = [];
@@ -53,6 +55,7 @@ const defaultReviewers: Reviewer[] = [
 	{
 		id: "1",
 		name: "Juan",
+		email: "juan@example.com",
 		assignmentCount: 0,
 		isAbsent: false,
 		createdAt: 1614556800000,
@@ -61,6 +64,7 @@ const defaultReviewers: Reviewer[] = [
 	{
 		id: "2",
 		name: "Pedro",
+		email: "pedro@example.com",
 		assignmentCount: 0,
 		isAbsent: false,
 		createdAt: 1614556800001,
@@ -83,7 +87,7 @@ export async function getReviewers(): Promise<Reviewer[]> {
 			return defaultReviewers;
 		}
 
-		// Ensure all reviewers have a createdAt timestamp and tags array
+		// Ensure all reviewers have required fields for backward compatibility
 		const updatedReviewers = reviewers.map((reviewer) => {
 			const updated = { ...reviewer };
 			if (!updated.createdAt) {
@@ -92,11 +96,14 @@ export async function getReviewers(): Promise<Reviewer[]> {
 			if (!updated.tags) {
 				updated.tags = [];
 			}
+			if (!updated.email) {
+				updated.email = `${updated.name.toLowerCase().replace(/\s+/g, '.')}@example.com`;
+			}
 			return updated;
 		});
 
-		// If we had to add createdAt or tags to any reviewers, update Redis
-		const needsUpdate = updatedReviewers.some((_, i) => !reviewers[i]?.createdAt || !reviewers[i]?.tags);
+		// If we had to add any missing fields, update Redis
+		const needsUpdate = updatedReviewers.some((_, i) => !reviewers[i]?.createdAt || !reviewers[i]?.tags || !reviewers[i]?.email);
 		if (needsUpdate) {
 			await redis.set(REDIS_KEY, updatedReviewers);
 			return updatedReviewers;
@@ -143,9 +150,15 @@ export async function updateReviewer(reviewer: Reviewer): Promise<boolean> {
 	}
 }
 
-export async function addReviewer(name: string): Promise<boolean> {
+export async function addReviewer(name: string, email: string): Promise<boolean> {
 	try {
 		const reviewers = await getReviewers();
+
+		// Check if email already exists
+		const emailExists = reviewers.some((r) => r.email.toLowerCase() === email.toLowerCase());
+		if (emailExists) {
+			throw new Error("Email already exists");
+		}
 
 		// Find the minimum assignment count to start the new reviewer at
 		const minCount = Math.min(...reviewers.map((r) => r.assignmentCount));
@@ -153,6 +166,7 @@ export async function addReviewer(name: string): Promise<boolean> {
 		const newReviewer: Reviewer = {
 			id: Date.now().toString(),
 			name: name.trim(),
+			email: email.trim(),
 			assignmentCount: minCount,
 			isAbsent: false,
 			createdAt: Date.now(),
@@ -165,7 +179,7 @@ export async function addReviewer(name: string): Promise<boolean> {
 
 		if (success) {
 			// Create snapshot
-			await createSnapshot(reviewers, `Added reviewer: ${name}`);
+			await createSnapshot(reviewers, `Added reviewer: ${name} (${email})`);
 		}
 
 		return success;
@@ -289,6 +303,81 @@ export async function skipToNextReviewer(
 	} catch (error) {
 		console.error("Error finding next reviewer in Redis:", error);
 		return { success: false };
+	}
+}
+
+// Google Chat integration
+export async function sendGoogleChatMessage(
+	reviewerName: string,
+	reviewerEmail: string,
+	prUrl: string,
+	locale: string = 'en',
+	assignerEmail?: string,
+	assignerName?: string,
+	sendOnlyNames: boolean = true
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		if (!GOOGLE_CHAT_WEBHOOK_URL) {
+			return {
+				success: false,
+				error: "Google Chat webhook URL not configured"
+			};
+		}
+
+		// Import translations dynamically based on locale
+		const messages = await import(`../../messages/${locale}.json`);
+		const t = messages.default || messages;
+
+		// Create mentions - use names if sendOnlyNames is true, otherwise use email format
+		const reviewerMention = sendOnlyNames ? reviewerName : `<users/${reviewerEmail}>`;
+		const assignerMention = (assignerEmail || assignerName) ?
+			(sendOnlyNames ? (assignerName || 'Unknown') : `<users/${assignerEmail}>`) : null;
+
+		// Build the message with proper mentions using i18n
+		const greetingText = t.googleChat.greeting.replace('{reviewer}', reviewerMention);
+		
+		let messageText = greetingText;
+		
+		if (assignerMention) {
+			const assignmentText = t.googleChat.assignmentMessage
+				.replace('{assigner}', assignerMention)
+				.replace('{prUrl}', prUrl);
+			messageText += `\n${assignmentText}`;
+		} else {
+			// Fallback when no assigner is provided
+			const assignmentText = t.googleChat.assignmentMessage
+				.replace('{assigner}', 'Someone')
+				.replace('{prUrl}', prUrl);
+			messageText += `\n${assignmentText}`;
+		}
+
+		const message = {
+			text: messageText,
+			thread: { threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD " }
+		};
+
+		const response = await fetch(GOOGLE_CHAT_WEBHOOK_URL, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(message),
+		});
+
+		if (!response.ok) {
+			return {
+				success: false,
+				error: `HTTP ${response.status}: ${response.statusText}`
+			};
+		}
+
+		return { success: true };
+	} catch (error) {
+		console.error('Error sending Google Chat message:', error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Unknown error'
+		};
 	}
 }
 

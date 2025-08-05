@@ -69,6 +69,7 @@ export default function PRReviewAssignment() {
 	const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
 	const [showAssignments, setShowAssignments] = useState(false);
 	const [showTags, setShowTags] = useState(true);
+	const [showEmails, setShowEmails] = useState(false);
 	const [skipConfirmDialogOpen, setSkipConfirmDialogOpen] = useState(false);
 	const [nextAfterSkip, setNextAfterSkip] = useState<Reviewer | null>(null);
 	const [compactLayout, setCompactLayout] = useState(false);
@@ -133,6 +134,11 @@ export default function PRReviewAssignment() {
 		if (savedCompactLayout !== null) {
 			setCompactLayout(savedCompactLayout === "true");
 		}
+
+		const savedShowEmails = localStorage.getItem("showEmails");
+		if (savedShowEmails !== null) {
+			setShowEmails(savedShowEmails === "true");
+		}
 	}, []);
 
 	// Save show assignments preference to localStorage
@@ -149,6 +155,11 @@ export default function PRReviewAssignment() {
 	useEffect(() => {
 		localStorage.setItem("compactLayout", compactLayout.toString());
 	}, [compactLayout]);
+
+	// Save show emails preference to localStorage
+	useEffect(() => {
+		localStorage.setItem("showEmails", showEmails.toString());
+	}, [showEmails]);
 
 	const handleDataUpdate = async () => {
 		await fetchData();
@@ -271,6 +282,10 @@ export default function PRReviewAssignment() {
 		setCompactLayout((prev) => !prev);
 	};
 
+	const toggleShowEmails = () => {
+		setShowEmails((prev) => !prev);
+	};
+
 	if (isLoading || !isLoaded) {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
@@ -329,10 +344,12 @@ export default function PRReviewAssignment() {
 						compactLayout={compactLayout}
 						showAssignments={showAssignments}
 						showTags={showTags}
+						showEmails={showEmails}
 						isRefreshing={isRefreshing}
 						onToggleCompactLayout={toggleCompactLayout}
 						onToggleShowAssignments={toggleShowAssignments}
 						onToggleShowTags={toggleShowTags}
+						onToggleShowEmails={toggleShowEmails}
 						onOpenSnapshotDialog={handleOpenSnapshotDialog}
 						onManualRefresh={handleManualRefresh}
 						formatLastUpdated={formatLastUpdated}
@@ -369,6 +386,7 @@ export default function PRReviewAssignment() {
 										assignmentFeed={assignmentFeed}
 										showAssignments={showAssignments}
 										showTags={showTags}
+										showEmails={showEmails}
 										onToggleAbsence={handleToggleAbsence}
 										onDataUpdate={fetchData}
 									/>
@@ -454,13 +472,14 @@ export default function PRReviewAssignment() {
 						{/* Assignment Card */}
 						<div className="flex-1">
 							<AssignmentCard
-								nextReviewer={nextReviewer}
-								reviewers={reviewers}
-								assignmentFeed={assignmentFeed}
-								onAssignPR={assignPR}
-								onUndoAssignment={undoAssignment}
-								onImTheNextOne={handleImTheNextOneWithDialog}
-							/>
+						nextReviewer={nextReviewer}
+						reviewers={reviewers}
+						assignmentFeed={assignmentFeed}
+						onAssignPR={assignPR}
+						onUndoAssignment={undoAssignment}
+						onImTheNextOne={handleImTheNextOneWithDialog}
+						user={userInfo}
+					/>
 						</div>
 
 						{/* Force Assign Dialog */}
@@ -559,14 +578,15 @@ export default function PRReviewAssignment() {
 						</CardHeader>
 						<CardContent>
 							<ReviewersTable
-								reviewers={reviewers}
-								nextReviewer={nextReviewer}
-								assignmentFeed={assignmentFeed}
-								showAssignments={showAssignments}
-								showTags={showTags}
-								onToggleAbsence={handleToggleAbsence}
-								onDataUpdate={fetchData}
-							/>
+						reviewers={reviewers}
+						nextReviewer={nextReviewer}
+						assignmentFeed={assignmentFeed}
+						showAssignments={showAssignments}
+						showTags={showTags}
+						showEmails={showEmails}
+						onToggleAbsence={handleToggleAbsence}
+						onDataUpdate={fetchData}
+					/>
 						</CardContent>
 					</Card>
 					<div className="flex flex-col gap-6">
@@ -577,6 +597,7 @@ export default function PRReviewAssignment() {
 							onAssignPR={assignPR}
 							onUndoAssignment={undoAssignment}
 							onImTheNextOne={handleImTheNextOneWithDialog}
+							user={userInfo}
 						/>
 
 						<div className="space-y-4">

@@ -346,7 +346,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 		}
 	};
 
-	const addReviewer = async (name: string) => {
+	const addReviewer = async (name: string, email: string) => {
 		if (!name.trim()) {
 			toast({
 				title: t("data.addReviewerEmptyNameTitle"),
@@ -356,8 +356,17 @@ export function usePRReviewData(user?: UserInfo | null) {
 			return false;
 		}
 
+		if (!email.trim()) {
+			toast({
+				title: t("data.addReviewerEmptyEmailTitle"),
+				description: t("data.addReviewerEmptyEmailDescription"),
+				variant: "destructive",
+			});
+			return false;
+		}
+
 		// Add to Redis
-		const success = await addReviewerAction(name.trim());
+		const success = await addReviewerAction(name.trim(), email.trim());
 
 		if (success) {
 			// Refresh data to get updated reviewers
