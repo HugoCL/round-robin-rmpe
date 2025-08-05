@@ -99,6 +99,7 @@ export default function PRReviewAssignment() {
 		confirmSkipToNext,
 		undoAssignment,
 		addReviewer,
+		updateReviewer,
 		removeReviewer,
 		handleToggleAbsence,
 		handleResetCounts,
@@ -381,15 +382,16 @@ export default function PRReviewAssignment() {
 								</DrawerHeader>
 								<div className="px-4 pb-4 max-h-[60vh] overflow-y-auto">
 									<ReviewersTable
-										reviewers={reviewers}
-										nextReviewer={nextReviewer}
-										assignmentFeed={assignmentFeed}
-										showAssignments={showAssignments}
-										showTags={showTags}
-										showEmails={showEmails}
-										onToggleAbsence={handleToggleAbsence}
-										onDataUpdate={fetchData}
-									/>
+									reviewers={reviewers}
+									nextReviewer={nextReviewer}
+									assignmentFeed={assignmentFeed}
+									showAssignments={showAssignments}
+									showTags={showTags}
+									showEmails={showEmails}
+									onToggleAbsence={handleToggleAbsence}
+									onDataUpdate={fetchData}
+									updateReviewer={updateReviewer}
+								/>
 								</div>
 								<DrawerFooter className="flex flex-col gap-4">
 									<div className="flex flex-wrap gap-2 justify-center">
@@ -578,15 +580,16 @@ export default function PRReviewAssignment() {
 						</CardHeader>
 						<CardContent>
 							<ReviewersTable
-						reviewers={reviewers}
-						nextReviewer={nextReviewer}
-						assignmentFeed={assignmentFeed}
-						showAssignments={showAssignments}
-						showTags={showTags}
-						showEmails={showEmails}
-						onToggleAbsence={handleToggleAbsence}
-						onDataUpdate={fetchData}
-					/>
+				reviewers={reviewers}
+				nextReviewer={nextReviewer}
+				assignmentFeed={assignmentFeed}
+				showAssignments={showAssignments}
+				showTags={showTags}
+				showEmails={showEmails}
+				onToggleAbsence={handleToggleAbsence}
+				onDataUpdate={fetchData}
+				updateReviewer={updateReviewer}
+			/>
 						</CardContent>
 					</Card>
 					<div className="flex flex-col gap-6">

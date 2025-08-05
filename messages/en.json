@@ -38,7 +38,8 @@
     "language": "Language",
     "viewOptions": "View Options",
     "historyAndData": "History & Data",
-    "help": "Help"
+    "help": "Help",
+    "update": "Update"
   },
   "pr": {
     "manageData": "Manage Data",
@@ -125,6 +126,8 @@
   "reviewer": {
     "addNew": "Add New Reviewer",
     "addDescription": "Enter the name and email of the new reviewer to add to the rotation.",
+    "editReviewer": "Edit Reviewer",
+    "editDescription": "Update the name and email of the reviewer.",
     "enterName": "Enter reviewer name",
     "enterEmail": "Enter reviewer email",
     "deleteTitle": "Remove Reviewer",
@@ -136,7 +139,9 @@
     "selectReviewer": "Select a reviewer...",
     "assignmentCount": "Assignment count must be a non-negative number",
     "countUpdated": "The assignment count has been updated successfully",
-    "countUpdateFailed": "Failed to update assignment count. Please try again."
+    "countUpdateFailed": "Failed to update assignment count. Please try again.",
+    "updateSuccess": "Reviewer updated successfully",
+    "updateFailed": "Failed to update reviewer. Please try again."
   },
   "messages": {
     "tagAdded": "Tag added successfully",

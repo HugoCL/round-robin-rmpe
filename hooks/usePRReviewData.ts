@@ -15,6 +15,7 @@ import {
 	skipToNextReviewer as skipToNextReviewerAction,
 	toggleAbsence,
 	undoLastAssignment,
+	updateReviewer as updateReviewerAction,
 } from "@/app/[locale]/actions";
 import { toast } from "@/hooks/use-toast";
 
@@ -387,6 +388,64 @@ export function usePRReviewData(user?: UserInfo | null) {
 		}
 	};
 
+	const updateReviewer = async (id: string, name: string, email: string) => {
+		if (!name.trim()) {
+			toast({
+				title: t("data.addReviewerEmptyNameTitle"),
+				description: t("data.addReviewerEmptyNameDescription"),
+				variant: "destructive",
+			});
+			return false;
+		}
+
+		if (!email.trim()) {
+			toast({
+				title: t("data.addReviewerEmptyEmailTitle"),
+				description: t("data.addReviewerEmptyEmailDescription"),
+				variant: "destructive",
+			});
+			return false;
+		}
+
+		// Find the reviewer to update
+		const reviewer = reviewers.find((r) => r.id === id);
+		if (!reviewer) {
+			toast({
+				title: t("reviewer.updateFailed"),
+				description: t("reviewer.updateFailed"),
+				variant: "destructive",
+			});
+			return false;
+		}
+
+		// Update the reviewer
+		const updatedReviewer = {
+			...reviewer,
+			name: name.trim(),
+			email: email.trim(),
+		};
+
+		const success = await updateReviewerAction(updatedReviewer);
+
+		if (success) {
+			// Refresh data to get updated reviewers
+			await fetchData();
+
+			toast({
+				title: t("reviewer.updateSuccess"),
+				description: t("reviewer.updateSuccess"),
+			});
+			return true;
+		} else {
+			toast({
+				title: t("reviewer.updateFailed"),
+				description: t("reviewer.updateFailed"),
+				variant: "destructive",
+			});
+			return false;
+		}
+	};
+
 	const removeReviewer = async (id: string) => {
 		// Remove from Redis
 		const success = await removeReviewerAction(id);
@@ -533,6 +592,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 		confirmSkipToNext,
 		undoAssignment,
 		addReviewer,
+		updateReviewer,
 		removeReviewer,
 		handleToggleAbsence,
 		handleResetCounts,

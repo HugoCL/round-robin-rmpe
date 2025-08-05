@@ -1,6 +1,7 @@
 export { AddReviewerDialog } from "./AddReviewerDialog";
 export { AssignmentCard } from "./AssignmentCard";
 export { DeleteReviewerDialog } from "./DeleteReviewerDialog";
+export { EditReviewerDialog } from "./EditReviewerDialog";
 export { ForceAssignDialog } from "./ForceAssignDialog";
 export { HeaderOptionsDrawer } from "./HeaderOptionsDrawer";
 export { default as PRReviewAssignment } from "./PRReviewAssignment";

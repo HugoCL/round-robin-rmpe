@@ -24,6 +24,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
+import { EditReviewerDialog } from "./EditReviewerDialog";
 
 interface ReviewersTableProps {
 	reviewers: Reviewer[];
@@ -34,6 +35,7 @@ interface ReviewersTableProps {
 	showEmails: boolean;
 	onToggleAbsence: (id: string) => Promise<void>;
 	onDataUpdate: () => Promise<void>;
+	updateReviewer: (id: string, name: string, email: string) => Promise<boolean>;
 }
 
 export function ReviewersTable({
@@ -45,6 +47,7 @@ export function ReviewersTable({
 	showEmails,
 	onToggleAbsence,
 	onDataUpdate,
+	updateReviewer,
 }: ReviewersTableProps) {
 	const t = useTranslations();
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -140,6 +143,7 @@ export function ReviewersTable({
 						<TableHead>{t("pr.assignmentsHeader")}</TableHead>
 					)}
 					<TableHead>{t("pr.statusHeader")}</TableHead>
+					<TableHead className="w-16"></TableHead>
 				</TableRow>
 			</TableHeader>
 			<TableBody>
@@ -149,18 +153,20 @@ export function ReviewersTable({
 						className={reviewer.isAbsent ? "opacity-60" : ""}
 					>
 						<TableCell className="font-medium">
-							{reviewer.name}
+						<div className="flex items-center gap-2">
+							<span>{reviewer.name}</span>
 							{nextReviewer?.id === reviewer.id && (
-								<Badge className="ml-2 bg-green-500 text-white">
+								<Badge className="bg-green-500 text-white">
 									{t("pr.next")}
 								</Badge>
 							)}
 							{assignmentFeed.lastAssigned?.reviewerId === reviewer.id && (
-								<Badge className="ml-2 bg-blue-500 text-white">
+								<Badge className="bg-blue-500 text-white">
 									{t("pr.lastAssigned")}
 								</Badge>
 							)}
-						</TableCell>
+						</div>
+					</TableCell>
 						{showEmails && (
 							<TableCell className="text-sm text-muted-foreground">
 								{reviewer.email}
@@ -216,18 +222,29 @@ export function ReviewersTable({
 							</TableCell>
 						)}
 						<TableCell>
-							<div className="flex items-center space-x-2">
-								<Switch
-									id={`absence-${reviewer.id}`}
-									checked={!reviewer.isAbsent}
-									onCheckedChange={() => onToggleAbsence(reviewer.id)}
-								/>
-								<Label htmlFor={`absence-${reviewer.id}`}>
-									{reviewer.isAbsent ? t("pr.absent") : t("pr.available")}
-								</Label>
-							</div>
-						</TableCell>
-					</TableRow>
+						<div className="flex items-center space-x-2">
+							<Switch
+								id={`absence-${reviewer.id}`}
+								checked={!reviewer.isAbsent}
+								onCheckedChange={() => onToggleAbsence(reviewer.id)}
+							/>
+							<Label htmlFor={`absence-${reviewer.id}`}>
+								{reviewer.isAbsent ? t("pr.absent") : t("pr.available")}
+							</Label>
+						</div>
+					</TableCell>
+					<TableCell>
+						<EditReviewerDialog
+							reviewer={reviewer}
+							onUpdateReviewer={updateReviewer}
+							trigger={
+								<Button size="icon" variant="ghost" className="h-8 w-8">
+									<Edit className="h-4 w-4 text-muted-foreground" />
+								</Button>
+							}
+						/>
+					</TableCell>
+				</TableRow>
 				))}
 			</TableBody>
 		</Table>
