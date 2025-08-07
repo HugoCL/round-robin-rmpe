@@ -30,6 +30,12 @@
 			"type": "shell",
 			"command": "pnpm biome lint",
 			"group": "build"
+		},
+		{
+			"label": "Update pnpm lockfile",
+			"type": "shell",
+			"command": "pnpm install",
+			"group": "build"
 		}
 	]
 }
