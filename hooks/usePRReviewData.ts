@@ -1,22 +1,31 @@
+// @ts-nocheck
+// DEPRECATED: This file is replaced by useConvexPRReviewData.ts
+// TypeScript checking is disabled for this file since it's no longer used
+// and contains references to the removed Redis implementation
+
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import {
-	type AssignmentFeed,
-	addReviewer as addReviewerAction,
-	getAssignmentFeed,
-	getReviewers,
-	incrementReviewerCount,
-	type Reviewer,
-	removeReviewer as removeReviewerAction,
-	resetAllCounts,
-	saveReviewers,
-	skipToNextReviewer as skipToNextReviewerAction,
-	toggleAbsence,
-	undoLastAssignment,
-	updateReviewer as updateReviewerAction,
-} from "@/app/[locale]/actions";
+// DEPRECATED: This file is replaced by useConvexPRReviewData.ts
+// The following imports are commented out to avoid TypeScript errors
+// since the Redis implementation has been removed
+
+// import {
+// 	type AssignmentFeed,
+// 	addReviewer as addReviewerAction,
+// 	getAssignmentFeed,
+// 	getReviewers,
+// 	incrementReviewerCount,
+// 	type Reviewer,
+// 	removeReviewer as removeReviewerAction,
+// 	resetAllCounts,
+// 	saveReviewers,
+// 	skipToNextReviewer as skipToNextReviewerAction,
+// 	toggleAbsence,
+// 	undoLastAssignment,
+// 	updateReviewer as updateReviewerAction,
+// } from "@/app/[locale]/actions";
 import { toast } from "@/hooks/use-toast";
 
 const UPDATE_INTERVAL = 60000; // 1 minute in milliseconds

@@ -1,0 +1,41 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "TypeScript Check",
+			"type": "shell",
+			"command": "npx tsc --noEmit",
+			"group": "build"
+		},
+		{
+			"label": "TypeScript Check Final",
+			"type": "shell",
+			"command": "npx tsc --noEmit",
+			"group": "build"
+		},
+		{
+			"label": "Next.js Build Check",
+			"type": "shell",
+			"command": "npx next build --dry-run",
+			"group": "build"
+		},
+		{
+			"label": "TypeScript Check Single File",
+			"type": "shell",
+			"command": "npx tsc --noEmit components/pr-review/PRReviewAssignment.tsx",
+			"group": "build"
+		},
+		{
+			"label": "Lint Check",
+			"type": "shell",
+			"command": "pnpm biome lint",
+			"group": "build"
+		},
+		{
+			"label": "Update pnpm lockfile",
+			"type": "shell",
+			"command": "pnpm install",
+			"group": "build"
+		}
+	]
+}

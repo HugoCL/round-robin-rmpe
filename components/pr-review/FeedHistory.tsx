@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import type { AssignmentFeed, Tag } from "@/app/[locale]/actions";
-import { getTags } from "@/app/[locale]/actions";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -13,29 +13,15 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 
-interface FeedHistoryProps {
-	assignmentFeed: AssignmentFeed;
-}
-
-export function FeedHistory({ assignmentFeed }: FeedHistoryProps) {
+export function FeedHistory() {
 	const t = useTranslations();
-	const [tags, setTags] = useState<Tag[]>([]);
 
-	const loadTags = useCallback(async () => {
-		try {
-			const tagsData = await getTags();
-			setTags(tagsData);
-		} catch (error) {
-			console.error("Error loading tags:", error);
-		}
-	}, []);
-
-	useEffect(() => {
-		loadTags();
-	}, [loadTags]);
+	// Use Convex for real-time tags and assignment history
+	const tags = useQuery(api.queries.getTags) || [];
+	const assignmentHistory = useQuery(api.queries.getAssignmentHistory) || [];
 
 	const getTagBadge = (tagId: string) => {
-		const tag = tags.find((t) => t.id === tagId);
+		const tag = tags.find((t: Doc<"tags">) => t._id === tagId);
 		if (!tag) return null;
 
 		return (
@@ -57,16 +43,15 @@ export function FeedHistory({ assignmentFeed }: FeedHistoryProps) {
 		<Card className="h-full flex flex-col">
 			<CardHeader className="flex-shrink-0">
 				<CardTitle>{t("history.title")}</CardTitle>
-				<CardDescription>{t("pr.recent")}</CardDescription>
 			</CardHeader>
 			<CardContent className="flex-1 overflow-hidden">
-				{assignmentFeed.items.length === 0 ? (
+				{assignmentHistory.length === 0 ? (
 					<div className="text-center p-4 border rounded-lg bg-muted h-full flex items-center justify-center">
 						<p>{t("pr.noAssignments")}</p>
 					</div>
 				) : (
 					<div className="space-y-3 h-full overflow-y-auto">
-						{assignmentFeed.items.map((item, index) => (
+						{assignmentHistory.map((item, index) => (
 							<div
 								key={`${item.timestamp}-${item.reviewerName}-${index}`}
 								className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
