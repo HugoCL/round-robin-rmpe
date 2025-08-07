@@ -38,7 +38,6 @@ export function RecentAssignments() {
 		<Card>
 			<CardHeader>
 				<CardTitle>{t("pr.recent")}</CardTitle>
-				<CardDescription>{t("pr.lastAssignments")}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{assignmentHistory.length === 0 ? (
@@ -47,9 +46,8 @@ export function RecentAssignments() {
 					</div>
 				) : (
 					<div className="space-y-3">
-						{assignmentHistory
-							.slice(0, 10)
-							.map((item: AssignmentHistoryItem, index: number) => (
+						{assignmentHistory.map(
+							(item: AssignmentHistoryItem, index: number) => (
 								<div
 									key={`${item.reviewerName}-${item.timestamp}-${index}`}
 									className="flex items-center p-3 border rounded-lg"
@@ -89,7 +87,8 @@ export function RecentAssignments() {
 										)}
 									</div>
 								</div>
-							))}
+							),
+						)}
 					</div>
 				)}
 			</CardContent>

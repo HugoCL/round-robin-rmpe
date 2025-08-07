@@ -23,20 +23,7 @@ import { toast } from "@/hooks/use-toast";
 import { EditReviewerDialog } from "./EditReviewerDialog";
 
 interface AssignmentFeedType {
-	lastAssigned?: {
-		reviewerId: string;
-		reviewerName: string;
-		timestamp: number;
-		forced: boolean;
-		skipped: boolean;
-		isAbsentSkip: boolean;
-		tagId?: string;
-		actionBy?: {
-			email: string;
-			firstName?: string;
-			lastName?: string;
-		};
-	};
+	lastAssigned?: string; // Reviewer ID only (not full object)
 }
 
 interface ReviewersTableProps {
@@ -170,7 +157,7 @@ export function ReviewersTable({
 										{t("pr.next")}
 									</Badge>
 								)}
-								{assignmentFeed.lastAssigned?.reviewerId === reviewer._id && (
+								{assignmentFeed.lastAssigned === reviewer._id && (
 									<Badge className="bg-blue-500 text-white">
 										{t("pr.lastAssigned")}
 									</Badge>

@@ -34,20 +34,7 @@ export default defineSchema({
     }).index("by_timestamp", ["timestamp"]),
 
     assignmentFeed: defineTable({
-        lastAssigned: v.optional(v.object({
-            reviewerId: v.string(),
-            reviewerName: v.string(),
-            timestamp: v.number(),
-            forced: v.boolean(),
-            skipped: v.boolean(),
-            isAbsentSkip: v.boolean(),
-            tagId: v.optional(v.string()),
-            actionBy: v.optional(v.object({
-                email: v.string(),
-                firstName: v.optional(v.string()),
-                lastName: v.optional(v.string()),
-            })),
-        })),
+        lastAssigned: v.optional(v.string()), // Store just the reviewer ID
         items: v.array(v.object({
             reviewerId: v.string(),
             reviewerName: v.string(),

@@ -1,3 +1,8 @@
+// @ts-nocheck
+/* eslint-disable */
+// DEPRECATED: This migration script was used to migrate from Redis to Convex
+// TypeScript checking and linting are disabled for this file since it's no longer used
+
 /**
  * Data Migration Script: Redis to Convex
  * 
@@ -5,16 +10,16 @@
  * Run this after setting up Convex to preserve your existing data.
  */
 
-import {
-    getReviewers,
-    getTags,
-    getAssignmentFeed,
-} from "@/app/[locale]/actions";
+// import {
+//     getReviewers,
+//     getTags,
+//     getAssignmentFeed,
+// } from "@/app/[locale]/actions";
 
 interface MigrationData {
-    reviewers: any[];
-    tags: any[];
-    assignmentFeed: any;
+    reviewers: unknown[];
+    tags: unknown[];
+    assignmentFeed: unknown;
 }
 
 export async function exportDataFromRedis(): Promise<MigrationData> {

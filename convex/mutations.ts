@@ -206,12 +206,109 @@ export const resetAllCounts = mutation({
             await ctx.db.delete(history._id);
         }
 
+        // Reset assignment feed
+        const assignmentFeed = await ctx.db.query("assignmentFeed").first();
+        if (assignmentFeed) {
+            await ctx.db.patch(assignmentFeed._id, {
+                items: [],
+                lastAssigned: undefined,
+            });
+        }
+
         // Create backup snapshot
         await createSnapshot(ctx, "Reset all assignment counts");
 
         return { success: true };
     },
 });
+
+// Helper function to clean up old assignments (keep only last 100)
+async function cleanupOldAssignments(ctx: MutationCtx) {
+    const allAssignments = await ctx.db
+        .query("assignmentHistory")
+        .withIndex("by_timestamp")
+        .order("desc")
+        .collect();
+
+    // If we have more than 100 assignments, delete the oldest ones
+    if (allAssignments.length > 100) {
+        const assignmentsToDelete = allAssignments.slice(100);
+        for (const assignment of assignmentsToDelete) {
+            await ctx.db.delete(assignment._id);
+        }
+    }
+}
+
+// Helper function to update the assignment feed
+async function updateAssignmentFeed(ctx: MutationCtx, newAssignment: {
+    reviewerId: string;
+    reviewerName: string;
+    timestamp: number;
+    forced: boolean;
+    skipped: boolean;
+    isAbsentSkip: boolean;
+    tagId?: string;
+    actionBy?: {
+        email: string;
+        firstName?: string;
+        lastName?: string;
+    };
+}) {
+    // Get existing feed
+    const existingFeed = await ctx.db.query("assignmentFeed").first();
+
+    if (existingFeed) {
+        // Update existing feed
+        const updatedItems = [newAssignment, ...(existingFeed.items || [])].slice(0, 5); // Keep only last 5 assignments
+
+        await ctx.db.patch(existingFeed._id, {
+            items: updatedItems,
+            lastAssigned: newAssignment.reviewerId, // Store just the reviewer ID
+        });
+    } else {
+        // Create new feed
+        await ctx.db.insert("assignmentFeed", {
+            items: [newAssignment],
+            lastAssigned: newAssignment.reviewerId, // Store just the reviewer ID
+        });
+    }
+}
+
+// Helper function to update assignment feed after undo
+async function updateAssignmentFeedAfterUndo(ctx: MutationCtx) {
+    // Get the current assignment feed
+    const existingFeed = await ctx.db.query("assignmentFeed").first();
+
+    if (!existingFeed) {
+        return; // No feed to update
+    }
+
+    // Get the remaining assignment history to rebuild the feed
+    const remainingHistory = await ctx.db
+        .query("assignmentHistory")
+        .withIndex("by_timestamp")
+        .order("desc")
+        .take(5);
+
+    // Update the feed with the remaining assignments
+    const newLastAssigned = remainingHistory.length > 0 ? remainingHistory[0].reviewerId : undefined;
+
+    const newItems = remainingHistory.map(item => ({
+        reviewerId: item.reviewerId,
+        reviewerName: item.reviewerName,
+        timestamp: item.timestamp,
+        forced: item.forced,
+        skipped: item.skipped,
+        isAbsentSkip: item.isAbsentSkip,
+        tagId: item.tagId,
+        actionBy: item.actionBy,
+    }));
+
+    await ctx.db.patch(existingFeed._id, {
+        items: newItems,
+        lastAssigned: newLastAssigned, // Store just the reviewer ID
+    });
+}
 
 // Assignment mutations
 export const assignPR = mutation({
@@ -238,17 +335,36 @@ export const assignPR = mutation({
             assignmentCount: reviewer.assignmentCount + 1
         });
 
+        const timestamp = Date.now();
+
         // Add to assignment history
         await ctx.db.insert("assignmentHistory", {
             reviewerId,
             reviewerName: reviewer.name,
-            timestamp: Date.now(),
+            timestamp,
             forced,
             skipped,
             isAbsentSkip,
             tagId,
             actionBy,
         });
+
+        // Update assignment feed - only if it's not an absent reviewer being auto-skipped
+        if (!isAbsentSkip) {
+            await updateAssignmentFeed(ctx, {
+                reviewerId,
+                reviewerName: reviewer.name,
+                timestamp,
+                forced,
+                skipped,
+                isAbsentSkip,
+                tagId,
+                actionBy,
+            });
+        }
+
+        // Clean up old assignment history (keep only last 100 assignments)
+        await cleanupOldAssignments(ctx);
 
         // Create backup snapshot
         let action = "Assigned PR to";
@@ -305,6 +421,9 @@ export const undoLastAssignment = mutation({
 
         // Remove the assignment from history
         await ctx.db.delete(lastAssignment._id);
+
+        // Update the assignment feed
+        await updateAssignmentFeedAfterUndo(ctx);
 
         // Create backup snapshot
         await createSnapshot(ctx, `Undid assignment for: ${reviewer.name}`);

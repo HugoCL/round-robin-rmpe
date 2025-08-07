@@ -27,7 +27,7 @@ export const getAssignmentFeed = query({
     },
 });
 
-// Get assignment history (last 50 assignments for undo functionality)
+// Get assignment history (last 10 assignments for display)
 export const getAssignmentHistory = query({
     args: {},
     handler: async (ctx) => {
@@ -35,7 +35,7 @@ export const getAssignmentHistory = query({
             .query("assignmentHistory")
             .withIndex("by_timestamp")
             .order("desc")
-            .take(50);
+            .take(10);
 
         return history.map(item => ({
             reviewerId: item.reviewerId,

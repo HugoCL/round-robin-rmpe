@@ -378,16 +378,7 @@ export default function PRReviewAssignment() {
 										reviewers={reviewers}
 										nextReviewer={nextReviewer ?? null}
 										assignmentFeed={{
-											lastAssigned: assignmentFeed?.lastAssigned ? {
-												reviewerId: assignmentFeed.lastAssigned.reviewerId,
-												reviewerName: assignmentFeed.lastAssigned.reviewerName,
-												timestamp: assignmentFeed.lastAssigned.timestamp,
-												forced: assignmentFeed.lastAssigned.forced,
-												skipped: assignmentFeed.lastAssigned.skipped,
-												isAbsentSkip: assignmentFeed.lastAssigned.isAbsentSkip,
-												tagId: assignmentFeed.lastAssigned.tagId,
-												actionBy: assignmentFeed.lastAssigned.actionBy,
-											} : undefined
+											lastAssigned: assignmentFeed?.lastAssigned ?? undefined,
 										}}
 										showAssignments={showAssignments}
 										showTags={showTags}
@@ -481,18 +472,19 @@ export default function PRReviewAssignment() {
 								nextReviewer={nextReviewer ?? null}
 								reviewers={reviewers}
 								assignmentFeed={{
-									items: assignmentFeed?.items?.map(item => ({
-										id: `${item.reviewerId}-${item.timestamp}`,
-										reviewerId: item.reviewerId,
-										reviewerName: item.reviewerName,
-										timestamp: item.timestamp,
-										isForced: item.forced,
-										wasSkipped: item.skipped,
-										isAbsentSkip: item.isAbsentSkip,
-										actionBy: item.actionBy,
-										tagId: item.tagId,
-									})) || [],
-									lastAssigned: assignmentFeed?.lastAssigned?.reviewerId || null,
+									items:
+										assignmentFeed?.items?.map((item) => ({
+											id: `${item.reviewerId}-${item.timestamp}`,
+											reviewerId: item.reviewerId,
+											reviewerName: item.reviewerName,
+											timestamp: item.timestamp,
+											isForced: item.forced,
+											wasSkipped: item.skipped,
+											isAbsentSkip: item.isAbsentSkip,
+											actionBy: item.actionBy,
+											tagId: item.tagId,
+										})) || [],
+									lastAssigned: assignmentFeed?.lastAssigned || null,
 								}}
 								onAssignPR={assignPR}
 								onUndoAssignment={undoAssignment}
@@ -520,20 +512,7 @@ export default function PRReviewAssignment() {
 
 					{/* History Section - 40% */}
 					<div className="flex-1 lg:w-[40%]">
-						<FeedHistory assignmentFeed={{
-							items: assignmentFeed?.items?.map(item => ({
-								id: `${item.reviewerId}-${item.timestamp}`,
-								reviewerId: item.reviewerId,
-								reviewerName: item.reviewerName,
-								timestamp: item.timestamp,
-								isForced: item.forced,
-								wasSkipped: item.skipped,
-								isAbsentSkip: item.isAbsentSkip,
-								actionBy: item.actionBy,
-								tagId: item.tagId,
-							})) || [],
-							lastAssigned: assignmentFeed?.lastAssigned?.reviewerId || null,
-						}} />
+						<FeedHistory />
 					</div>
 				</div>
 			) : (
@@ -613,16 +592,7 @@ export default function PRReviewAssignment() {
 								reviewers={reviewers}
 								nextReviewer={nextReviewer ?? null}
 								assignmentFeed={{
-									lastAssigned: assignmentFeed?.lastAssigned ? {
-										reviewerId: assignmentFeed.lastAssigned.reviewerId,
-										reviewerName: assignmentFeed.lastAssigned.reviewerName,
-										timestamp: assignmentFeed.lastAssigned.timestamp,
-										forced: assignmentFeed.lastAssigned.forced,
-										skipped: assignmentFeed.lastAssigned.skipped,
-										isAbsentSkip: assignmentFeed.lastAssigned.isAbsentSkip,
-										tagId: assignmentFeed.lastAssigned.tagId,
-										actionBy: assignmentFeed.lastAssigned.actionBy,
-									} : undefined
+									lastAssigned: assignmentFeed?.lastAssigned || undefined,
 								}}
 								showAssignments={showAssignments}
 								showTags={showTags}
@@ -638,18 +608,19 @@ export default function PRReviewAssignment() {
 							nextReviewer={nextReviewer ?? null}
 							reviewers={reviewers}
 							assignmentFeed={{
-								items: assignmentFeed?.items?.map(item => ({
-									id: `${item.reviewerId}-${item.timestamp}`,
-									reviewerId: item.reviewerId,
-									reviewerName: item.reviewerName,
-									timestamp: item.timestamp,
-									isForced: item.forced,
-									wasSkipped: item.skipped,
-									isAbsentSkip: item.isAbsentSkip,
-									actionBy: item.actionBy,
-									tagId: item.tagId,
-								})) || [],
-								lastAssigned: assignmentFeed?.lastAssigned?.reviewerId || null,
+								items:
+									assignmentFeed?.items?.map((item) => ({
+										id: `${item.reviewerId}-${item.timestamp}`,
+										reviewerId: item.reviewerId,
+										reviewerName: item.reviewerName,
+										timestamp: item.timestamp,
+										isForced: item.forced,
+										wasSkipped: item.skipped,
+										isAbsentSkip: item.isAbsentSkip,
+										actionBy: item.actionBy,
+										tagId: item.tagId,
+									})) || [],
+								lastAssigned: assignmentFeed?.lastAssigned || null,
 							}}
 							onAssignPR={assignPR}
 							onUndoAssignment={undoAssignment}
