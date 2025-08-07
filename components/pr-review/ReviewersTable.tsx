@@ -1,15 +1,11 @@
 "use client";
 
 import { Check, Edit, X } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import {
-	type AssignmentFeed,
-	type Reviewer,
-	type Tag,
-	updateAssignmentCount,
-	getTags,
-} from "@/app/[locale]/actions";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +22,27 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { EditReviewerDialog } from "./EditReviewerDialog";
 
+interface AssignmentFeedType {
+	lastAssigned?: {
+		reviewerId: string;
+		reviewerName: string;
+		timestamp: number;
+		forced: boolean;
+		skipped: boolean;
+		isAbsentSkip: boolean;
+		tagId?: string;
+		actionBy?: {
+			email: string;
+			firstName?: string;
+			lastName?: string;
+		};
+	};
+}
+
 interface ReviewersTableProps {
-	reviewers: Reviewer[];
-	nextReviewer: Reviewer | null;
-	assignmentFeed: AssignmentFeed;
+	reviewers: Doc<"reviewers">[];
+	nextReviewer: Doc<"reviewers"> | null;
+	assignmentFeed: AssignmentFeedType;
 	showAssignments: boolean;
 	showTags: boolean;
 	showEmails: boolean;
@@ -52,20 +65,14 @@ export function ReviewersTable({
 	const t = useTranslations();
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<number>(0);
-	const [tags, setTags] = useState<Tag[]>([]);
 
-	const loadTags = useCallback(async () => {
-		try {
-			const tagsData = await getTags();
-			setTags(tagsData);
-		} catch (error) {
-			console.error("Error loading tags:", error);
-		}
-	}, []);
+	// Use Convex for real-time tags
+	const tags = useQuery(api.queries.getTags) || [];
 
-	useEffect(() => {
-		loadTags();
-	}, [loadTags]);
+	// Use Convex mutation for updating assignment count
+	const updateAssignmentCountMutation = useMutation(
+		api.mutations.updateAssignmentCount,
+	);
 
 	const startEditing = (id: string, currentValue: number) => {
 		setEditingId(id);
@@ -89,10 +96,13 @@ export function ReviewersTable({
 			return;
 		}
 
-		// Update in Redis
-		const success = await updateAssignmentCount(editingId, editValue);
+		try {
+			// Update using Convex mutation
+			await updateAssignmentCountMutation({
+				id: editingId as Id<"reviewers">,
+				count: editValue,
+			});
 
-		if (success) {
 			// Refresh data to get updated reviewers
 			await onDataUpdate();
 
@@ -103,7 +113,7 @@ export function ReviewersTable({
 
 			// Exit edit mode
 			setEditingId(null);
-		} else {
+		} catch (_error) {
 			toast({
 				title: t("common.error"),
 				description: t("reviewer.countUpdateFailed"),
@@ -113,7 +123,7 @@ export function ReviewersTable({
 	};
 
 	const getTagBadge = (tagId: string) => {
-		const tag = tags.find((t) => t.id === tagId);
+		const tag = tags.find((t) => t._id === tagId);
 		if (!tag) return null;
 
 		return (
@@ -149,24 +159,24 @@ export function ReviewersTable({
 			<TableBody>
 				{reviewers.map((reviewer) => (
 					<TableRow
-						key={reviewer.id}
+						key={reviewer._id}
 						className={reviewer.isAbsent ? "opacity-60" : ""}
 					>
 						<TableCell className="font-medium">
-						<div className="flex items-center gap-2">
-							<span>{reviewer.name}</span>
-							{nextReviewer?.id === reviewer.id && (
-								<Badge className="bg-green-500 text-white">
-									{t("pr.next")}
-								</Badge>
-							)}
-							{assignmentFeed.lastAssigned?.reviewerId === reviewer.id && (
-								<Badge className="bg-blue-500 text-white">
-									{t("pr.lastAssigned")}
-								</Badge>
-							)}
-						</div>
-					</TableCell>
+							<div className="flex items-center gap-2">
+								<span>{reviewer.name}</span>
+								{nextReviewer?._id === reviewer._id && (
+									<Badge className="bg-green-500 text-white">
+										{t("pr.next")}
+									</Badge>
+								)}
+								{assignmentFeed.lastAssigned?.reviewerId === reviewer._id && (
+									<Badge className="bg-blue-500 text-white">
+										{t("pr.lastAssigned")}
+									</Badge>
+								)}
+							</div>
+						</TableCell>
 						{showEmails && (
 							<TableCell className="text-sm text-muted-foreground">
 								{reviewer.email}
@@ -176,7 +186,7 @@ export function ReviewersTable({
 							<TableCell>
 								<div className="flex flex-wrap gap-1">
 									{reviewer.tags && reviewer.tags.length > 0 ? (
-										reviewer.tags.map((tagId) => getTagBadge(tagId))
+										reviewer.tags.map((tagId: string) => getTagBadge(tagId))
 									) : (
 										<span className="text-sm text-muted-foreground">
 											{t("pr.noTags")}
@@ -187,7 +197,7 @@ export function ReviewersTable({
 						)}
 						{showAssignments && (
 							<TableCell>
-								{editingId === reviewer.id ? (
+								{editingId === reviewer._id ? (
 									<div className="flex items-center space-x-2">
 										<Input
 											type="number"
@@ -212,7 +222,7 @@ export function ReviewersTable({
 											size="icon"
 											variant="ghost"
 											onClick={() =>
-												startEditing(reviewer.id, reviewer.assignmentCount)
+												startEditing(reviewer._id, reviewer.assignmentCount)
 											}
 										>
 											<Edit className="h-3 w-3 text-muted-foreground" />
@@ -222,29 +232,29 @@ export function ReviewersTable({
 							</TableCell>
 						)}
 						<TableCell>
-						<div className="flex items-center space-x-2">
-							<Switch
-								id={`absence-${reviewer.id}`}
-								checked={!reviewer.isAbsent}
-								onCheckedChange={() => onToggleAbsence(reviewer.id)}
+							<div className="flex items-center space-x-2">
+								<Switch
+									id={`absence-${reviewer._id}`}
+									checked={!reviewer.isAbsent}
+									onCheckedChange={() => onToggleAbsence(reviewer._id)}
+								/>
+								<Label htmlFor={`absence-${reviewer._id}`}>
+									{reviewer.isAbsent ? t("pr.absent") : t("pr.available")}
+								</Label>
+							</div>
+						</TableCell>
+						<TableCell>
+							<EditReviewerDialog
+								reviewer={reviewer}
+								onUpdateReviewer={updateReviewer}
+								trigger={
+									<Button size="icon" variant="ghost" className="h-8 w-8">
+										<Edit className="h-4 w-4 text-muted-foreground" />
+									</Button>
+								}
 							/>
-							<Label htmlFor={`absence-${reviewer.id}`}>
-								{reviewer.isAbsent ? t("pr.absent") : t("pr.available")}
-							</Label>
-						</div>
-					</TableCell>
-					<TableCell>
-						<EditReviewerDialog
-							reviewer={reviewer}
-							onUpdateReviewer={updateReviewer}
-							trigger={
-								<Button size="icon" variant="ghost" className="h-8 w-8">
-									<Edit className="h-4 w-4 text-muted-foreground" />
-								</Button>
-							}
-						/>
-					</TableCell>
-				</TableRow>
+						</TableCell>
+					</TableRow>
 				))}
 			</TableBody>
 		</Table>

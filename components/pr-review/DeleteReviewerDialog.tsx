@@ -3,8 +3,8 @@
 import { Trash2, UserMinus } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import type { Reviewer } from "@/app/[locale]/actions";
 import { Button } from "@/components/ui/button";
+
 import {
 	Dialog,
 	DialogContent,
@@ -22,9 +22,10 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Doc } from "@/convex/_generated/dataModel";
 
 interface DeleteReviewerDialogProps {
-	reviewers: Reviewer[];
+	reviewers: Doc<"reviewers">[];
 	onDeleteReviewer: (id: string) => Promise<void>;
 	trigger?: React.ReactNode;
 }
@@ -39,7 +40,7 @@ export function DeleteReviewerDialog({
 	const [isOpen, setIsOpen] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 
-	const selectedReviewer = reviewers.find((r) => r.id === selectedReviewerId);
+	const selectedReviewer = reviewers.find((r) => r._id === selectedReviewerId);
 
 	const handleDeleteReviewer = async () => {
 		if (!selectedReviewerId) return;
@@ -89,7 +90,7 @@ export function DeleteReviewerDialog({
 							</SelectTrigger>
 							<SelectContent>
 								{reviewers.map((reviewer) => (
-									<SelectItem key={reviewer.id} value={reviewer.id}>
+									<SelectItem key={reviewer._id} value={reviewer._id}>
 										<div className="flex items-center justify-between w-full">
 											<div className="flex items-center gap-2">
 												<span>{reviewer.name}</span>

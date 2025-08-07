@@ -1,8 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Reviewer } from "@/app/[locale]/actions";
 import { Button } from "@/components/ui/button";
+import type { Doc } from "@/convex/_generated/dataModel";
+
 import {
 	Dialog,
 	DialogContent,
@@ -15,8 +16,8 @@ import {
 interface SkipConfirmationDialogProps {
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
-	nextReviewer: Reviewer | null;
-	nextAfterSkip: Reviewer | null;
+	nextReviewer: Doc<"reviewers"> | null;
+	nextAfterSkip: Doc<"reviewers"> | null;
 	onConfirm: () => void;
 	onCancel: () => void;
 }

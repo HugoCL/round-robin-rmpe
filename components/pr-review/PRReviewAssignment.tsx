@@ -12,12 +12,6 @@ import {
 	UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Reviewer } from "@/app/[locale]/actions";
-import {
-	type BackupEntry,
-	getSnapshots,
-	restoreFromSnapshot,
-} from "@/app/[locale]/backup-actions";
 import { AssignmentCard } from "@/components/pr-review/AssignmentCard";
 import { AddReviewerDialog } from "@/components/pr-review/AddReviewerDialog";
 import { DeleteReviewerDialog } from "@/components/pr-review/DeleteReviewerDialog";
@@ -59,8 +53,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { usePRReviewData } from "@/hooks/usePRReviewData";
-import { useTags } from "@/hooks/useTags";
+import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
+import { useConvexTags } from "@/hooks/useConvexTags";
+import type { Doc } from "@/convex/_generated/dataModel";
+
+interface BackupEntry {
+	key: string;
+	description: string;
+	timestamp: number;
+	formattedDate?: string;
+}
 
 export default function PRReviewAssignment() {
 	const t = useTranslations();
@@ -71,13 +73,15 @@ export default function PRReviewAssignment() {
 	const [showTags, setShowTags] = useState(true);
 	const [showEmails, setShowEmails] = useState(false);
 	const [skipConfirmDialogOpen, setSkipConfirmDialogOpen] = useState(false);
-	const [nextAfterSkip, setNextAfterSkip] = useState<Reviewer | null>(null);
+	const [nextAfterSkip, setNextAfterSkip] = useState<Doc<"reviewers"> | null>(
+		null,
+	);
 	const [compactLayout, setCompactLayout] = useState(false);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 
 	const { user, isLoaded } = useUser();
 	const { signOut } = useClerk();
-	const { hasTags, refreshTags } = useTags();
+	const { hasTags, refreshTags } = useConvexTags();
 
 	const userInfo = user
 		? {
@@ -105,10 +109,9 @@ export default function PRReviewAssignment() {
 		handleResetCounts,
 		exportData,
 		importData,
-		fetchData,
 		handleManualRefresh,
 		formatLastUpdated,
-	} = usePRReviewData(userInfo);
+	} = useConvexPRReviewData(userInfo);
 
 	// Enable keyboard shortcuts
 	useKeyboardShortcuts({
@@ -163,7 +166,7 @@ export default function PRReviewAssignment() {
 	}, [showEmails]);
 
 	const handleDataUpdate = async () => {
-		await fetchData();
+		// With Convex, data updates automatically - no need to fetch
 		await refreshTags();
 	};
 
@@ -205,12 +208,13 @@ export default function PRReviewAssignment() {
 	const loadSnapshots = async () => {
 		setSnapshotsLoading(true);
 		try {
-			const snapshotData = await getSnapshots();
+			// TODO: Implement Convex snapshot queries
+			// const snapshotData = await getSnapshots();
 			// Format dates on client side using user's local timezone
-			const formattedSnapshots = snapshotData.map((snapshot) => ({
-				...snapshot,
-				formattedDate: formatSnapshotDate(new Date(snapshot.timestamp)),
-			}));
+			const formattedSnapshots: BackupEntry[] = []; // snapshotData.map((snapshot: any) => ({
+			//	...snapshot,
+			//	formattedDate: formatSnapshotDate(new Date(snapshot.timestamp)),
+			// }));
 			setSnapshots(formattedSnapshots);
 		} catch (error) {
 			console.error("Error loading snapshots:", error);
@@ -224,30 +228,19 @@ export default function PRReviewAssignment() {
 		}
 	};
 
-	const formatSnapshotDate = (date: Date): string => {
-		const options: Intl.DateTimeFormatOptions = {
-			weekday: "short",
-			month: "short",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-		};
-
-		return date.toLocaleDateString("en-US", options);
-	};
-
 	const handleOpenSnapshotDialog = () => {
 		loadSnapshots();
 		setSnapshotDialogOpen(true);
 	};
 
-	const handleRestoreSnapshot = async (key: string) => {
+	const handleRestoreSnapshot = async (_key: string) => {
 		try {
-			const success = await restoreFromSnapshot(key);
+			// TODO: Implement Convex restore snapshot mutation
+			// const success = await restoreFromSnapshot(key);
+			const success = false; // Temporarily disabled
 
 			if (success) {
-				// Refresh data after restore
-				await fetchData();
+				// With Convex, data updates automatically after restore
 
 				toast({
 					title: t("common.success"),
@@ -382,16 +375,27 @@ export default function PRReviewAssignment() {
 								</DrawerHeader>
 								<div className="px-4 pb-4 max-h-[60vh] overflow-y-auto">
 									<ReviewersTable
-									reviewers={reviewers}
-									nextReviewer={nextReviewer}
-									assignmentFeed={assignmentFeed}
-									showAssignments={showAssignments}
-									showTags={showTags}
-									showEmails={showEmails}
-									onToggleAbsence={handleToggleAbsence}
-									onDataUpdate={fetchData}
-									updateReviewer={updateReviewer}
-								/>
+										reviewers={reviewers}
+										nextReviewer={nextReviewer ?? null}
+										assignmentFeed={{
+											lastAssigned: assignmentFeed?.lastAssigned ? {
+												reviewerId: assignmentFeed.lastAssigned.reviewerId,
+												reviewerName: assignmentFeed.lastAssigned.reviewerName,
+												timestamp: assignmentFeed.lastAssigned.timestamp,
+												forced: assignmentFeed.lastAssigned.forced,
+												skipped: assignmentFeed.lastAssigned.skipped,
+												isAbsentSkip: assignmentFeed.lastAssigned.isAbsentSkip,
+												tagId: assignmentFeed.lastAssigned.tagId,
+												actionBy: assignmentFeed.lastAssigned.actionBy,
+											} : undefined
+										}}
+										showAssignments={showAssignments}
+										showTags={showTags}
+										showEmails={showEmails}
+										onToggleAbsence={handleToggleAbsence}
+										onDataUpdate={handleDataUpdate}
+										updateReviewer={updateReviewer}
+									/>
 								</div>
 								<DrawerFooter className="flex flex-col gap-4">
 									<div className="flex flex-wrap gap-2 justify-center">
@@ -474,14 +478,27 @@ export default function PRReviewAssignment() {
 						{/* Assignment Card */}
 						<div className="flex-1">
 							<AssignmentCard
-						nextReviewer={nextReviewer}
-						reviewers={reviewers}
-						assignmentFeed={assignmentFeed}
-						onAssignPR={assignPR}
-						onUndoAssignment={undoAssignment}
-						onImTheNextOne={handleImTheNextOneWithDialog}
-						user={userInfo}
-					/>
+								nextReviewer={nextReviewer ?? null}
+								reviewers={reviewers}
+								assignmentFeed={{
+									items: assignmentFeed?.items?.map(item => ({
+										id: `${item.reviewerId}-${item.timestamp}`,
+										reviewerId: item.reviewerId,
+										reviewerName: item.reviewerName,
+										timestamp: item.timestamp,
+										isForced: item.forced,
+										wasSkipped: item.skipped,
+										isAbsentSkip: item.isAbsentSkip,
+										actionBy: item.actionBy,
+										tagId: item.tagId,
+									})) || [],
+									lastAssigned: assignmentFeed?.lastAssigned?.reviewerId || null,
+								}}
+								onAssignPR={assignPR}
+								onUndoAssignment={undoAssignment}
+								onImTheNextOne={handleImTheNextOneWithDialog}
+								user={userInfo}
+							/>
 						</div>
 
 						{/* Force Assign Dialog */}
@@ -503,7 +520,20 @@ export default function PRReviewAssignment() {
 
 					{/* History Section - 40% */}
 					<div className="flex-1 lg:w-[40%]">
-						<FeedHistory assignmentFeed={assignmentFeed} />
+						<FeedHistory assignmentFeed={{
+							items: assignmentFeed?.items?.map(item => ({
+								id: `${item.reviewerId}-${item.timestamp}`,
+								reviewerId: item.reviewerId,
+								reviewerName: item.reviewerName,
+								timestamp: item.timestamp,
+								isForced: item.forced,
+								wasSkipped: item.skipped,
+								isAbsentSkip: item.isAbsentSkip,
+								actionBy: item.actionBy,
+								tagId: item.tagId,
+							})) || [],
+							lastAssigned: assignmentFeed?.lastAssigned?.reviewerId || null,
+						}} />
 					</div>
 				</div>
 			) : (
@@ -580,23 +610,47 @@ export default function PRReviewAssignment() {
 						</CardHeader>
 						<CardContent>
 							<ReviewersTable
-				reviewers={reviewers}
-				nextReviewer={nextReviewer}
-				assignmentFeed={assignmentFeed}
-				showAssignments={showAssignments}
-				showTags={showTags}
-				showEmails={showEmails}
-				onToggleAbsence={handleToggleAbsence}
-				onDataUpdate={fetchData}
-				updateReviewer={updateReviewer}
-			/>
+								reviewers={reviewers}
+								nextReviewer={nextReviewer ?? null}
+								assignmentFeed={{
+									lastAssigned: assignmentFeed?.lastAssigned ? {
+										reviewerId: assignmentFeed.lastAssigned.reviewerId,
+										reviewerName: assignmentFeed.lastAssigned.reviewerName,
+										timestamp: assignmentFeed.lastAssigned.timestamp,
+										forced: assignmentFeed.lastAssigned.forced,
+										skipped: assignmentFeed.lastAssigned.skipped,
+										isAbsentSkip: assignmentFeed.lastAssigned.isAbsentSkip,
+										tagId: assignmentFeed.lastAssigned.tagId,
+										actionBy: assignmentFeed.lastAssigned.actionBy,
+									} : undefined
+								}}
+								showAssignments={showAssignments}
+								showTags={showTags}
+								showEmails={showEmails}
+								onToggleAbsence={handleToggleAbsence}
+								onDataUpdate={handleDataUpdate}
+								updateReviewer={updateReviewer}
+							/>
 						</CardContent>
 					</Card>
 					<div className="flex flex-col gap-6">
 						<AssignmentCard
-							nextReviewer={nextReviewer}
+							nextReviewer={nextReviewer ?? null}
 							reviewers={reviewers}
-							assignmentFeed={assignmentFeed}
+							assignmentFeed={{
+								items: assignmentFeed?.items?.map(item => ({
+									id: `${item.reviewerId}-${item.timestamp}`,
+									reviewerId: item.reviewerId,
+									reviewerName: item.reviewerName,
+									timestamp: item.timestamp,
+									isForced: item.forced,
+									wasSkipped: item.skipped,
+									isAbsentSkip: item.isAbsentSkip,
+									actionBy: item.actionBy,
+									tagId: item.tagId,
+								})) || [],
+								lastAssigned: assignmentFeed?.lastAssigned?.reviewerId || null,
+							}}
 							onAssignPR={assignPR}
 							onUndoAssignment={undoAssignment}
 							onImTheNextOne={handleImTheNextOneWithDialog}
@@ -618,7 +672,7 @@ export default function PRReviewAssignment() {
 							)}
 						</div>
 
-						<RecentAssignments assignmentFeed={assignmentFeed} />
+						<RecentAssignments />
 					</div>
 				</div>
 			)}
@@ -686,7 +740,7 @@ export default function PRReviewAssignment() {
 			<SkipConfirmationDialog
 				isOpen={skipConfirmDialogOpen}
 				onOpenChange={setSkipConfirmDialogOpen}
-				nextReviewer={nextReviewer}
+				nextReviewer={nextReviewer ?? null}
 				nextAfterSkip={nextAfterSkip}
 				onConfirm={handleConfirmSkipToNext}
 				onCancel={handleCancelSkip}

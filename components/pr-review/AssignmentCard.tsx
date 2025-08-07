@@ -3,24 +3,45 @@
 import { Undo2, User, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { sendGoogleChatMessage } from "@/app/[locale]/actions";
-import type { Reviewer, AssignmentFeed } from "@/app/[locale]/actions";
+import { useAction } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
+
 import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardFooter,
 	CardHeader,
-	CardTitle,
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
+interface AssignmentFeedItem {
+	id: string;
+	reviewerId: string;
+	reviewerName: string;
+	timestamp: number;
+	isForced: boolean;
+	wasSkipped: boolean;
+	isAbsentSkip: boolean;
+	actionBy?: {
+		email: string;
+		firstName?: string;
+		lastName?: string;
+	};
+	tagId?: string;
+}
+
+interface AssignmentFeed {
+	items: AssignmentFeedItem[];
+	lastAssigned: string | null;
+}
+
 interface AssignmentCardProps {
-	nextReviewer: Reviewer | null;
-	reviewers: Reviewer[];
+	nextReviewer: Doc<"reviewers"> | null;
+	reviewers: Doc<"reviewers">[];
 	assignmentFeed: AssignmentFeed;
 	onAssignPR: () => Promise<void>;
 	onUndoAssignment: () => Promise<void>;
@@ -41,14 +62,17 @@ export function AssignmentCard({
 	const locale = useLocale();
 	const [isAssigning, setIsAssigning] = useState(false);
 	const [previousNextReviewer, setPreviousNextReviewer] =
-		useState<Reviewer | null>(null);
+		useState<Doc<"reviewers"> | null>(null);
 
 	const [sendMessage, setSendMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
 
+	// Use Convex action for Google Chat
+	const sendGoogleChatAction = useAction(api.actions.sendGoogleChatMessage);
+
 	// Track changes in nextReviewer to trigger animations
 	useEffect(() => {
-		if (nextReviewer?.id !== previousNextReviewer?.id) {
+		if (nextReviewer?._id !== previousNextReviewer?._id) {
 			setPreviousNextReviewer(nextReviewer);
 		}
 	}, [nextReviewer, previousNextReviewer]);
@@ -66,15 +90,15 @@ export function AssignmentCard({
 							? `${user.firstName} ${user.lastName}`
 							: user?.firstName || user?.lastName || "Unknown";
 
-					const result = await sendGoogleChatMessage(
-						nextReviewer.name,
-						nextReviewer.email,
+					const result = await sendGoogleChatAction({
+						reviewerName: nextReviewer.name,
+						reviewerEmail: nextReviewer.email,
 						prUrl,
 						locale,
-						user?.email,
+						assignerEmail: user?.email,
 						assignerName,
-						true,
-					);
+						sendOnlyNames: true,
+					});
 					if (!result.success) {
 						console.error("Failed to send Google Chat message:", result.error);
 					}
@@ -88,7 +112,7 @@ export function AssignmentCard({
 	};
 
 	// Helper function to find the next reviewer after the current next one
-	const findNextAfterCurrent = (): Reviewer | null => {
+	const findNextAfterCurrent = (): Doc<"reviewers"> | null => {
 		if (!nextReviewer || reviewers.length === 0) return null;
 
 		// Find the minimum assignment count among all non-absent reviewers
@@ -100,7 +124,7 @@ export function AssignmentCard({
 			...availableReviewers.map((r) => r.assignmentCount),
 		);
 		const candidatesWithMinCount = availableReviewers.filter(
-			(r) => r.assignmentCount === minCount && r.id !== nextReviewer.id,
+			(r) => r.assignmentCount === minCount && r._id !== nextReviewer._id,
 		);
 
 		// If there are candidates with the same count, sort by creation time
@@ -108,7 +132,7 @@ export function AssignmentCard({
 			const sortedCandidates = [...candidatesWithMinCount].sort(
 				(a, b) => a.createdAt - b.createdAt,
 			);
-			return sortedCandidates[0];
+			return sortedCandidates[0] || null;
 		}
 
 		// If the current next reviewer has the minimum count, find the next lowest
@@ -125,7 +149,7 @@ export function AssignmentCard({
 			const sortedNextCandidates = [...nextCandidates].sort(
 				(a, b) => a.createdAt - b.createdAt,
 			);
-			return sortedNextCandidates[0];
+			return sortedNextCandidates[0] || null;
 		}
 
 		return null;
@@ -133,7 +157,7 @@ export function AssignmentCard({
 
 	// Get the last assigned reviewer
 	const lastAssignedReviewer = assignmentFeed.lastAssigned
-		? reviewers.find((r) => r.id === assignmentFeed.lastAssigned?.reviewerId)
+		? reviewers.find((r) => r._id === assignmentFeed.lastAssigned)
 		: null;
 
 	// Get the next reviewer after current

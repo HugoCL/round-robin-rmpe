@@ -3,8 +3,9 @@
 import { Edit } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import type { Reviewer } from "@/app/[locale]/actions";
 import { Button } from "@/components/ui/button";
+import type { Doc } from "@/convex/_generated/dataModel";
+
 import {
 	Dialog,
 	DialogContent,
@@ -18,8 +19,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface EditReviewerDialogProps {
-	reviewer: Reviewer;
-	onUpdateReviewer: (id: string, name: string, email: string) => Promise<boolean>;
+	reviewer: Doc<"reviewers">;
+	onUpdateReviewer: (
+		id: string,
+		name: string,
+		email: string,
+	) => Promise<boolean>;
 	trigger?: React.ReactNode;
 }
 
@@ -40,7 +45,7 @@ export function EditReviewerDialog({
 		setIsUpdating(true);
 		try {
 			const success = await onUpdateReviewer(
-				reviewer.id,
+				reviewer._id,
 				reviewerName.trim(),
 				reviewerEmail.trim(),
 			);

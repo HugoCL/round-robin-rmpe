@@ -3,7 +3,9 @@
 import { AlertTriangle, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { forceAssignReviewer, type Reviewer } from "@/app/[locale]/actions";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -24,7 +26,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 
 interface ForceAssignDialogProps {
-	reviewers: Reviewer[];
+	reviewers: Doc<"reviewers">[];
 	onDataUpdate: () => Promise<void>;
 	user?: { email: string; firstName?: string; lastName?: string } | null;
 }
@@ -38,6 +40,9 @@ export function ForceAssignDialog({
 	const [forceDialogOpen, setForceDialogOpen] = useState(false);
 	const [selectedReviewerId, setSelectedReviewerId] = useState<string>("");
 
+	// Use Convex mutation for force assignment
+	const assignPRMutation = useMutation(api.mutations.assignPR);
+
 	const handleForceAssign = async () => {
 		if (!selectedReviewerId) {
 			toast({
@@ -48,36 +53,52 @@ export function ForceAssignDialog({
 			return;
 		}
 
-		const result = await forceAssignReviewer(
-			selectedReviewerId,
-			user || undefined,
-		);
+		try {
+			const result = await assignPRMutation({
+				reviewerId: selectedReviewerId as Id<"reviewers">,
+				forced: true, // Mark as forced assignment
+				actionBy: user
+					? {
+							email: user.email,
+							firstName: user.firstName,
+							lastName: user.lastName,
+						}
+					: undefined,
+			});
 
-		if (result.success && result.reviewer) {
-			// Refresh data to get updated reviewers and feed
-			await onDataUpdate();
+			if (result.success && result.reviewer) {
+				// Refresh data to get updated reviewers and feed
+				await onDataUpdate();
 
-			// Show appropriate toast based on reviewer status
-			if (result.reviewer.isAbsent) {
-				toast({
-					title: t("pr.forceAssign"),
-					description: t("messages.forceAssignAbsentWarning", {
-						reviewer: result.reviewer.name,
-					}),
-				});
+				// Show appropriate toast based on reviewer status
+				if (result.reviewer.isAbsent) {
+					toast({
+						title: t("pr.forceAssign"),
+						description: t("messages.forceAssignAbsentWarning", {
+							reviewer: result.reviewer.name,
+						}),
+					});
+				} else {
+					toast({
+						title: t("pr.forceAssign"),
+						description: t("messages.forceAssignSuccess", {
+							reviewer: result.reviewer.name,
+						}),
+					});
+				}
+
+				// Close the dialog
+				setForceDialogOpen(false);
+				setSelectedReviewerId("");
 			} else {
 				toast({
-					title: t("pr.forceAssign"),
-					description: t("messages.forceAssignSuccess", {
-						reviewer: result.reviewer.name,
-					}),
+					title: t("common.error"),
+					description: t("messages.forceAssignFailed"),
+					variant: "destructive",
 				});
 			}
-
-			// Close the dialog
-			setForceDialogOpen(false);
-			setSelectedReviewerId("");
-		} else {
+		} catch (error) {
+			console.error("Error force assigning reviewer:", error);
 			toast({
 				title: t("common.error"),
 				description: t("messages.forceAssignFailed"),
@@ -111,7 +132,7 @@ export function ForceAssignDialog({
 						</SelectTrigger>
 						<SelectContent>
 							{reviewers.map((reviewer) => (
-								<SelectItem key={reviewer.id} value={reviewer.id}>
+								<SelectItem key={reviewer._id} value={reviewer._id}>
 									<div className="flex items-center">
 										<span>{reviewer.name}</span>
 										{reviewer.isAbsent && (
@@ -124,7 +145,7 @@ export function ForceAssignDialog({
 					</Select>
 
 					{selectedReviewerId &&
-						reviewers.find((r) => r.id === selectedReviewerId)?.isAbsent && (
+						reviewers.find((r) => r._id === selectedReviewerId)?.isAbsent && (
 							<div className="mt-2 text-sm text-amber-500 flex items-center">
 								<AlertTriangle className="h-4 w-4 mr-1" />
 								<span>{t("tags.absent")}</span>

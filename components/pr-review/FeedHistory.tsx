@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import type { AssignmentFeed, Tag } from "@/app/[locale]/actions";
-import { getTags } from "@/app/[locale]/actions";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -13,29 +13,39 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 
+interface AssignmentFeedItem {
+	id: string;
+	reviewerId: string;
+	reviewerName: string;
+	timestamp: number;
+	isForced: boolean;
+	wasSkipped: boolean;
+	isAbsentSkip: boolean;
+	actionBy?: {
+		email: string;
+		firstName?: string;
+		lastName?: string;
+	};
+	tagId?: string;
+}
+
+interface AssignmentFeed {
+	items: AssignmentFeedItem[];
+	lastAssigned: string | null;
+}
+
 interface FeedHistoryProps {
 	assignmentFeed: AssignmentFeed;
 }
 
 export function FeedHistory({ assignmentFeed }: FeedHistoryProps) {
 	const t = useTranslations();
-	const [tags, setTags] = useState<Tag[]>([]);
 
-	const loadTags = useCallback(async () => {
-		try {
-			const tagsData = await getTags();
-			setTags(tagsData);
-		} catch (error) {
-			console.error("Error loading tags:", error);
-		}
-	}, []);
-
-	useEffect(() => {
-		loadTags();
-	}, [loadTags]);
+	// Use Convex for real-time tags
+	const tags = useQuery(api.queries.getTags) || [];
 
 	const getTagBadge = (tagId: string) => {
-		const tag = tags.find((t) => t.id === tagId);
+		const tag = tags.find((t: Doc<"tags">) => t._id === tagId);
 		if (!tag) return null;
 
 		return (
@@ -87,22 +97,22 @@ export function FeedHistory({ assignmentFeed }: FeedHistoryProps) {
 												.join(" ") || item.actionBy.email}
 										</p>
 									)}
-									{item.tag && (
-										<div className="mt-1">{getTagBadge(item.tag)}</div>
+									{item.tagId && (
+										<div className="mt-1">{getTagBadge(item.tagId)}</div>
 									)}
 								</div>
 								<div className="flex flex-col items-end gap-1">
-									{item.forced && (
+									{item.isForced && (
 										<Badge className="bg-amber-50 text-amber-700 border-amber-200">
 											Forced
 										</Badge>
 									)}
-									{item.skipped && (
+									{item.wasSkipped && (
 										<Badge className="bg-blue-50 text-blue-700 border-blue-200">
 											Skipped
 										</Badge>
 									)}
-									{!item.forced && !item.skipped && (
+									{!item.isForced && !item.wasSkipped && (
 										<Badge className="bg-green-50 text-green-700 border-green-200">
 											Regular
 										</Badge>

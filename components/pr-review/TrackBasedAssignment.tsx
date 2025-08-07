@@ -1,15 +1,12 @@
 "use client";
 
 import { Tag, Users } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import {
-	getTags,
-	assignPRByTag,
-	findNextReviewerByTag,
-	type Tag as TagType,
-	type Reviewer,
-} from "@/app/[locale]/actions";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -35,10 +32,18 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
+
+// Type for tag from query (with mapped id)
+type TagFromQuery = {
+	id: Id<"tags">;
+	name: string;
+	color: string;
+	description?: string;
+	createdAt: number;
+};
 
 interface TrackBasedAssignmentProps {
-	reviewers: Reviewer[];
+	reviewers: Doc<"reviewers">[];
 	onDataUpdate: () => Promise<void>;
 	user?: { email: string; firstName?: string; lastName?: string } | null;
 }
@@ -49,77 +54,46 @@ export function TrackBasedAssignment({
 	user,
 }: TrackBasedAssignmentProps) {
 	const t = useTranslations();
-	const [tags, setTags] = useState<TagType[]>([]);
+
 	const [selectedTagId, setSelectedTagId] = useState<string>("");
-	const [nextReviewer, setNextReviewer] = useState<Reviewer | null>(null);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isAssigning, setIsAssigning] = useState(false);
-	const [isLoading, setIsLoading] = useState(false);
 
-	const loadTags = useCallback(async () => {
-		try {
-			const tagsData = await getTags();
-			setTags(tagsData);
-		} catch (error) {
-			console.error("Error loading tags:", error);
-			toast({
-				title: t("common.error"),
-				description: t("messages.loadTagsFailed"),
-				variant: "destructive",
-			});
-		}
-	}, [t]);
+	// Use Convex hooks for real-time data
+	const tags = useQuery(api.queries.getTags) || [];
+	const assignPRMutation = useMutation(api.mutations.assignPR);
+	const getNextReviewerByTag = useQuery(
+		api.queries.getNextReviewerByTag,
+		selectedTagId ? { tagId: selectedTagId } : "skip",
+	);
 
-	const findNextReviewerForTag = useCallback(async (tagId: string) => {
-		setIsLoading(true);
-		try {
-			const result = await findNextReviewerByTag(tagId);
-			if (result.success && result.nextReviewer) {
-				setNextReviewer(result.nextReviewer);
-			} else {
-				setNextReviewer(null);
-			}
-		} catch (error) {
-			console.error("Error finding next reviewer:", error);
-			setNextReviewer(null);
-		} finally {
-			setIsLoading(false);
-		}
-	}, []);
-
-	useEffect(() => {
-		if (isOpen) {
-			loadTags();
-		}
-	}, [isOpen, loadTags]);
-
-	// Refresh tags when reviewers change (e.g., when tags are added/removed)
-	useEffect(() => {
-		if (isOpen) {
-			loadTags();
-		}
-	}, [loadTags, isOpen]);
-
-	useEffect(() => {
-		if (selectedTagId) {
-			findNextReviewerForTag(selectedTagId);
-		} else {
-			setNextReviewer(null);
-		}
-	}, [selectedTagId, findNextReviewerForTag]);
+	// Get next reviewer for selected tag
+	const nextReviewer = getNextReviewerByTag || null;
 
 	const handleAssignPR = async () => {
 		if (!selectedTagId || !nextReviewer) return;
 
 		setIsAssigning(true);
 		try {
-			const result = await assignPRByTag(selectedTagId, user || undefined);
+			const result = await assignPRMutation({
+				reviewerId: nextReviewer._id as Id<"reviewers">,
+				tagId: selectedTagId as Id<"tags">, // Pass the tag ID for tracking
+				actionBy: user
+					? {
+							email: user.email,
+							firstName: user.firstName,
+							lastName: user.lastName,
+						}
+					: undefined,
+			});
 
 			if (result.success && result.reviewer) {
 				// Update the parent component's data first
 				await onDataUpdate();
 
-				const selectedTag = tags.find((t) => t.id === selectedTagId);
+				const selectedTag = tags.find(
+					(t: Doc<"tags">) => t._id === selectedTagId,
+				);
 				toast({
 					title: t("common.success"),
 					description: t("messages.trackAssignSuccess", {
@@ -128,13 +102,9 @@ export function TrackBasedAssignment({
 					}),
 				});
 
-				// Refresh tags after assignment
-				await loadTags();
-
 				// Close dialog and reset state
 				setIsOpen(false);
 				setSelectedTagId("");
-				setNextReviewer(null);
 			} else {
 				toast({
 					title: t("common.error"),
@@ -168,7 +138,6 @@ export function TrackBasedAssignment({
 
 	const resetAndClose = () => {
 		setSelectedTagId("");
-		setNextReviewer(null);
 		setIsOpen(false);
 	};
 
@@ -208,10 +177,10 @@ export function TrackBasedAssignment({
 								<SelectValue placeholder={t("tags.chooseTag")} />
 							</SelectTrigger>
 							<SelectContent>
-								{tags.map((tag) => {
-									const stats = getTagStats(tag.id);
+								{tags.map((tag: Doc<"tags">) => {
+									const stats = getTagStats(tag._id);
 									return (
-										<SelectItem key={tag.id} value={tag.id}>
+										<SelectItem key={tag._id} value={tag._id}>
 											<div className="flex items-center gap-2">
 												<div
 													className="w-3 h-3 rounded-full"
@@ -236,25 +205,23 @@ export function TrackBasedAssignment({
 									<div
 										className="w-4 h-4 rounded-full"
 										style={{
-											backgroundColor: tags.find((t) => t.id === selectedTagId)
-												?.color,
+											backgroundColor: tags.find(
+												(t: Doc<"tags">) => t._id === selectedTagId,
+											)?.color,
 										}}
 									/>
-									{tags.find((t) => t.id === selectedTagId)?.name}{" "}
+									{tags.find((t: Doc<"tags">) => t._id === selectedTagId)?.name}{" "}
 									{t("tags.tagLabel")}
 								</CardTitle>
 								<CardDescription>
-									{tags.find((t) => t.id === selectedTagId)?.description}
+									{
+										tags.find((t: Doc<"tags">) => t._id === selectedTagId)
+											?.description
+									}
 								</CardDescription>
 							</CardHeader>
 							<CardContent>
-								{isLoading ? (
-									<div className="text-center py-4">
-										<p className="text-sm text-muted-foreground">
-											{t("tags.findingNextReviewer")}
-										</p>
-									</div>
-								) : nextReviewer ? (
+								{nextReviewer ? (
 									<div className="space-y-4">
 										<div className="text-center">
 											<div className="text-sm font-medium text-muted-foreground mb-1">
@@ -304,12 +271,12 @@ export function TrackBasedAssignment({
 								<div className="space-y-2">
 									{getReviewersForTag(selectedTagId).map((reviewer) => (
 										<div
-											key={reviewer.id}
+											key={reviewer._id}
 											className="flex items-center justify-between"
 										>
 											<span className="text-sm">
 												{reviewer.name}
-												{reviewer.id === nextReviewer?.id && (
+												{reviewer._id === nextReviewer?._id && (
 													<Badge className="ml-2 bg-green-500">
 														{t("tags.next")}
 													</Badge>

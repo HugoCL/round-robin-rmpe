@@ -1,18 +1,11 @@
 "use client";
 
 import { X, Edit2, Palette, Save } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import {
-	getTags,
-	addTag,
-	updateTag,
-	removeTag,
-	assignTagToReviewer,
-	removeTagFromReviewer,
-	type Tag,
-	type Reviewer,
-} from "@/app/[locale]/actions";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -26,7 +19,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
 import {
 	Select,
 	SelectContent,
@@ -42,9 +34,10 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "@/hooks/use-toast";
 
 interface TagManagerProps {
-	reviewers: Reviewer[];
+	reviewers: Doc<"reviewers">[];
 	onDataUpdate: () => Promise<void>;
 }
 
@@ -63,9 +56,21 @@ const DEFAULT_COLORS = [
 
 export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 	const t = useTranslations();
-	const [tags, setTags] = useState<Tag[]>([]);
+
+	// Use Convex hooks for real-time data
+	const tags = useQuery(api.queries.getTags) || [];
+	const addTagMutation = useMutation(api.mutations.addTag);
+	const updateTagMutation = useMutation(api.mutations.updateTag);
+	const removeTagMutation = useMutation(api.mutations.removeTag);
+	const assignTagToReviewerMutation = useMutation(
+		api.mutations.assignTagToReviewer,
+	);
+	const removeTagFromReviewerMutation = useMutation(
+		api.mutations.removeTagFromReviewer,
+	);
+
 	const [isOpen, setIsOpen] = useState(false);
-	const [editingTag, setEditingTag] = useState<Tag | null>(null);
+	const [editingTag, setEditingTag] = useState<Doc<"tags"> | null>(null);
 	const [newTagName, setNewTagName] = useState("");
 	const [newTagColor, setNewTagColor] = useState(DEFAULT_COLORS[0]);
 	const [newTagDescription, setNewTagDescription] = useState("");
@@ -74,26 +79,6 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 		[reviewerId: string]: { [tagId: string]: boolean };
 	}>({});
 	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-	const loadTags = useCallback(async () => {
-		try {
-			const tagsData = await getTags();
-			setTags(tagsData);
-		} catch (error) {
-			console.error("Error loading tags:", error);
-			toast({
-				title: t("common.error"),
-				description: t("messages.loadTagsFailed"),
-				variant: "destructive",
-			});
-		}
-	}, [t]);
-
-	useEffect(() => {
-		if (isOpen) {
-			loadTags();
-		}
-	}, [isOpen, loadTags]);
 
 	const handleAddTag = async () => {
 		if (!newTagName.trim()) {
@@ -107,23 +92,19 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 
 		setLoading(true);
 		try {
-			const success = await addTag(newTagName, newTagColor, newTagDescription);
-			if (success) {
-				setNewTagName("");
-				setNewTagDescription("");
-				setNewTagColor(DEFAULT_COLORS[0]);
-				await Promise.all([loadTags(), onDataUpdate()]);
-				toast({
-					title: t("common.success"),
-					description: t("messages.tagAdded"),
-				});
-			} else {
-				toast({
-					title: t("common.error"),
-					description: t("messages.addTagFailed"),
-					variant: "destructive",
-				});
-			}
+			await addTagMutation({
+				name: newTagName,
+				color: newTagColor,
+				description: newTagDescription,
+			});
+			setNewTagName("");
+			setNewTagDescription("");
+			setNewTagColor(DEFAULT_COLORS[0]);
+			onDataUpdate?.();
+			toast({
+				title: t("common.success"),
+				description: t("messages.tagAdded"),
+			});
 		} catch (_error) {
 			console.error("Error adding tag:", _error);
 			toast({
@@ -140,21 +121,17 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 
 		setLoading(true);
 		try {
-			const success = await updateTag(editingTag);
-			if (success) {
-				setEditingTag(null);
-				await loadTags();
-				toast({
-					title: t("common.success"),
-					description: t("messages.tagUpdated"),
-				});
-			} else {
-				toast({
-					title: t("common.error"),
-					description: t("messages.updateTagFailed"),
-					variant: "destructive",
-				});
-			}
+			await updateTagMutation({
+				id: editingTag._id,
+				name: editingTag.name,
+				color: editingTag.color,
+				description: editingTag.description,
+			});
+			setEditingTag(null);
+			toast({
+				title: t("common.success"),
+				description: t("messages.tagUpdated"),
+			});
 		} catch (_error) {
 			toast({
 				title: t("common.error"),
@@ -165,28 +142,19 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 			setLoading(false);
 		}
 	};
-	const handleRemoveTag = async (tagId: string) => {
+	const handleRemoveTag = async (tagId: Id<"tags">) => {
 		if (!confirm(t("tags.removeTagConfirmation"))) {
 			return;
 		}
 
 		setLoading(true);
 		try {
-			const success = await removeTag(tagId);
-			if (success) {
-				await loadTags();
-				await onDataUpdate(); // Refresh reviewers data
-				toast({
-					title: t("common.success"),
-					description: t("messages.tagRemoved"),
-				});
-			} else {
-				toast({
-					title: t("common.error"),
-					description: t("messages.removeTagFailed"),
-					variant: "destructive",
-				});
-			}
+			await removeTagMutation({ id: tagId });
+			onDataUpdate?.(); // Refresh reviewers data
+			toast({
+				title: t("common.success"),
+				description: t("messages.tagRemoved"),
+			});
 		} catch (_error) {
 			toast({
 				title: t("common.error"),
@@ -223,39 +191,40 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 			for (const [reviewerId, tagChanges] of Object.entries(pendingChanges)) {
 				for (const [tagId, shouldAssign] of Object.entries(tagChanges)) {
 					const currentlyAssigned =
-						reviewers.find((r) => r.id === reviewerId)?.tags?.includes(tagId) ||
-						false;
+						reviewers
+							.find((r) => r._id === reviewerId)
+							?.tags?.includes(tagId) || false;
 
 					// Only make changes if the state is different from current
 					if (shouldAssign !== currentlyAssigned) {
 						if (shouldAssign) {
-							promises.push(assignTagToReviewer(reviewerId, tagId));
+							promises.push(
+								assignTagToReviewerMutation({
+									reviewerId: reviewerId as Id<"reviewers">,
+									tagId: tagId as Id<"tags">,
+								}),
+							);
 						} else {
-							promises.push(removeTagFromReviewer(reviewerId, tagId));
+							promises.push(
+								removeTagFromReviewerMutation({
+									reviewerId: reviewerId as Id<"reviewers">,
+									tagId: tagId as Id<"tags">,
+								}),
+							);
 						}
 					}
 				}
 			}
 
 			if (promises.length > 0) {
-				const results = await Promise.all(promises);
-				const allSuccessful = results.every((result) => result);
-
-				if (allSuccessful) {
-					setPendingChanges({});
-					setHasUnsavedChanges(false);
-					await onDataUpdate(); // Refresh reviewers data
-					toast({
-						title: t("common.success"),
-						description: t("messages.tagAssignmentsSaved"),
-					});
-				} else {
-					toast({
-						title: t("common.error"),
-						description: t("messages.someChangesFailed"),
-						variant: "destructive",
-					});
-				}
+				await Promise.all(promises);
+				setPendingChanges({});
+				setHasUnsavedChanges(false);
+				onDataUpdate?.(); // Refresh reviewers data
+				toast({
+					title: t("common.success"),
+					description: t("messages.tagAssignmentsSaved"),
+				});
 			}
 		} catch (_error) {
 			toast({
@@ -278,7 +247,8 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 		}
 		// Otherwise, return the current state
 		return (
-			reviewers.find((r) => r.id === reviewerId)?.tags?.includes(tagId) || false
+			reviewers.find((r) => r._id === reviewerId)?.tags?.includes(tagId) ||
+			false
 		);
 	};
 
@@ -446,8 +416,8 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 								</p>
 							) : (
 								<div className="space-y-4">
-									{tags.map((tag) => (
-										<div key={tag.id} className="border rounded-lg p-4">
+									{tags.map((tag: Doc<"tags">) => (
+										<div key={tag._id} className="border rounded-lg p-4">
 											<div className="flex items-center justify-between mb-3">
 												<div className="flex items-center gap-2">
 													<div
@@ -472,7 +442,7 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 													<Button
 														variant="ghost"
 														size="sm"
-														onClick={() => handleRemoveTag(tag.id)}
+														onClick={() => handleRemoveTag(tag._id)}
 													>
 														<X className="h-4 w-4" />
 													</Button>
@@ -483,28 +453,28 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 											<div className="grid grid-cols-2 gap-2">
 												{reviewers.map((reviewer) => {
 													const isAssigned = getReviewerTagState(
-														reviewer.id,
-														tag.id,
+														reviewer._id,
+														tag._id,
 													);
 													return (
 														<div
-															key={reviewer.id}
+															key={reviewer._id}
 															className="flex items-center space-x-2"
 														>
 															<Checkbox
-																id={`${tag.id}-${reviewer.id}`}
+																id={`${tag._id}-${reviewer._id}`}
 																checked={isAssigned}
 																onCheckedChange={() =>
 																	handleToggleReviewerTag(
-																		reviewer.id,
-																		tag.id,
+																		reviewer._id,
+																		tag._id,
 																		isAssigned,
 																	)
 																}
 																disabled={loading}
 															/>
 															<Label
-																htmlFor={`${tag.id}-${reviewer.id}`}
+																htmlFor={`${tag._id}-${reviewer._id}`}
 																className={`text-sm ${reviewer.isAbsent ? "opacity-60" : ""}`}
 															>
 																{reviewer.name}
