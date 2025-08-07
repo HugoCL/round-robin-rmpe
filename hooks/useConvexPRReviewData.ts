@@ -19,6 +19,7 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
     const reviewers = useQuery(api.queries.getReviewers) ?? [];
     const nextReviewer = useQuery(api.queries.getNextReviewer);
     const assignmentFeed = useQuery(api.queries.getAssignmentFeed) ?? { items: [], lastAssigned: null };
+    const backups = useQuery(api.queries.getBackups) ?? [];
 
     // Mutations
     const addReviewerMutation = useMutation(api.mutations.addReviewer);
@@ -31,6 +32,7 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
     const updateAssignmentCountMutation = useMutation(api.mutations.updateAssignmentCount);
     const importReviewersDataMutation = useMutation(api.mutations.importReviewersData);
     const initializeDataMutation = useMutation(api.mutations.initializeData);
+    const restoreFromBackupMutation = useMutation(api.mutations.restoreFromBackup);
 
     // Initialize data on first load if needed
     const initializeIfNeeded = async () => {
@@ -370,6 +372,36 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
         }
     };
 
+    const restoreFromBackup = async (backupId: string): Promise<boolean> => {
+        try {
+            const result = await restoreFromBackupMutation({
+                backupId: backupId as Id<"backups">,
+            });
+
+            if (result.success) {
+                toast({
+                    title: t("common.success"),
+                    description: t("messages.snapshotRestored"),
+                });
+                return true;
+            } else {
+                toast({
+                    title: t("common.error"),
+                    description: t("messages.restoreSnapshotFailed"),
+                    variant: "destructive",
+                });
+                return false;
+            }
+        } catch (_error) {
+            toast({
+                title: t("common.error"),
+                description: t("messages.restoreSnapshotFailed"),
+                variant: "destructive",
+            });
+            return false;
+        }
+    };
+
     // Initialize data if needed
     if (!isLoading && reviewers.length === 0) {
         initializeIfNeeded();
@@ -383,6 +415,7 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
         isRefreshing: false, // No more manual refreshing needed with Convex
         assignmentFeed,
         lastUpdated: new Date(), // Always current with Convex
+        backups,
 
         // Actions
         assignPR,
@@ -398,6 +431,7 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
         exportData,
         importData,
         updateAssignmentCount,
+        restoreFromBackup,
         handleManualRefresh: () => { }, // No-op since Convex is realtime
         formatLastUpdated: () => "Real-time", // Always real-time with Convex
     };

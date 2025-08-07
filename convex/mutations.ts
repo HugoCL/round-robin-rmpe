@@ -657,3 +657,55 @@ async function createSnapshot(ctx: MutationCtx, description: string) {
         }
     }
 }
+
+// Restore from backup snapshot
+export const restoreFromBackup = mutation({
+    args: { backupId: v.id("backups") },
+    handler: async (ctx, { backupId }) => {
+        try {
+            // Get the backup data
+            const backup = await ctx.db.get(backupId);
+            if (!backup) {
+                return { success: false, error: "Backup not found" };
+            }
+
+            // Clear existing reviewers
+            const existingReviewers = await ctx.db.query("reviewers").collect();
+            for (const reviewer of existingReviewers) {
+                await ctx.db.delete(reviewer._id);
+            }
+
+            // Clear existing assignment feed
+            const existingFeed = await ctx.db.query("assignmentFeed").collect();
+            for (const feed of existingFeed) {
+                await ctx.db.delete(feed._id);
+            }
+
+            // Restore reviewers from backup
+            for (const reviewerData of backup.reviewers) {
+                await ctx.db.insert("reviewers", {
+                    name: reviewerData.name,
+                    email: reviewerData.email,
+                    assignmentCount: reviewerData.assignmentCount,
+                    isAbsent: reviewerData.isAbsent,
+                    createdAt: reviewerData.createdAt,
+                    tags: reviewerData.tags,
+                });
+            }
+
+            // Create initial assignment feed
+            await ctx.db.insert("assignmentFeed", {
+                items: [],
+                lastAssigned: undefined,
+            });
+
+            // Create a new backup to record this restore action
+            await createSnapshot(ctx, `Restored from backup: ${backup.reason}`);
+
+            return { success: true };
+        } catch (error) {
+            console.error("Error restoring from backup:", error);
+            return { success: false, error: "Failed to restore from backup" };
+        }
+    },
+});

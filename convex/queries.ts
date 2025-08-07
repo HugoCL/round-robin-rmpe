@@ -167,3 +167,20 @@ export const getTagById = query({
         }
     },
 });
+
+// Get all backup snapshots
+export const getBackups = query({
+    handler: async (ctx) => {
+        const backups = await ctx.db
+            .query("backups")
+            .withIndex("by_created_at")
+            .order("desc")
+            .collect();
+
+        return backups.map(backup => ({
+            key: backup._id,
+            description: backup.reason,
+            timestamp: backup.createdAt,
+        }));
+    },
+});

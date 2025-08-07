@@ -97,6 +97,7 @@ export default function PRReviewAssignment() {
 		isLoading,
 		isRefreshing,
 		assignmentFeed,
+		backups,
 		assignPR,
 		skipReviewer,
 		handleImTheNextOne,
@@ -109,6 +110,7 @@ export default function PRReviewAssignment() {
 		handleResetCounts,
 		exportData,
 		importData,
+		restoreFromBackup,
 		handleManualRefresh,
 		formatLastUpdated,
 	} = useConvexPRReviewData(userInfo);
@@ -208,13 +210,13 @@ export default function PRReviewAssignment() {
 	const loadSnapshots = async () => {
 		setSnapshotsLoading(true);
 		try {
-			// TODO: Implement Convex snapshot queries
-			// const snapshotData = await getSnapshots();
-			// Format dates on client side using user's local timezone
-			const formattedSnapshots: BackupEntry[] = []; // snapshotData.map((snapshot: any) => ({
-			//	...snapshot,
-			//	formattedDate: formatSnapshotDate(new Date(snapshot.timestamp)),
-			// }));
+			// Use Convex backups query - data is automatically formatted
+			const formattedSnapshots: BackupEntry[] = backups.map((backup) => ({
+				key: backup.key,
+				description: backup.description,
+				timestamp: backup.timestamp,
+				formattedDate: new Date(backup.timestamp).toLocaleString(),
+			}));
 			setSnapshots(formattedSnapshots);
 		} catch (error) {
 			console.error("Error loading snapshots:", error);
@@ -233,26 +235,14 @@ export default function PRReviewAssignment() {
 		setSnapshotDialogOpen(true);
 	};
 
-	const handleRestoreSnapshot = async (_key: string) => {
+	const handleRestoreSnapshot = async (key: string) => {
 		try {
-			// TODO: Implement Convex restore snapshot mutation
-			// const success = await restoreFromSnapshot(key);
-			const success = false; // Temporarily disabled
+			// Use Convex restore from backup mutation
+			const success = await restoreFromBackup(key);
 
 			if (success) {
 				// With Convex, data updates automatically after restore
-
-				toast({
-					title: t("common.success"),
-					description: t("messages.snapshotRestored"),
-				});
 				setSnapshotDialogOpen(false);
-			} else {
-				toast({
-					title: t("common.error"),
-					description: t("messages.restoreSnapshotFailed"),
-					variant: "destructive",
-				});
 			}
 		} catch (error) {
 			console.error("Error restoring snapshot:", error);

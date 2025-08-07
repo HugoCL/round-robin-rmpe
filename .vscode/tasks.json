@@ -28,7 +28,7 @@
 		{
 			"label": "Lint Check",
 			"type": "shell",
-			"command": "npm run lint",
+			"command": "pnpm biome lint",
 			"group": "build"
 		}
 	]
