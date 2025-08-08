@@ -23,6 +23,7 @@ import { SkipConfirmationDialog } from "@/components/pr-review/SkipConfirmationD
 import { FeedHistory } from "@/components/pr-review/FeedHistory";
 import { TagManager } from "@/components/pr-review/TagManager";
 import { TrackBasedAssignment } from "@/components/pr-review/TrackBasedAssignment";
+import { TeamSwitcher } from "@/components/TeamSwitcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -64,7 +65,11 @@ interface BackupEntry {
 	formattedDate?: string;
 }
 
-export default function PRReviewAssignment() {
+export default function PRReviewAssignment({
+	teamSlug,
+}: {
+	teamSlug?: string;
+}) {
 	const t = useTranslations();
 	const [snapshots, setSnapshots] = useState<BackupEntry[]>([]);
 	const [snapshotsLoading, setSnapshotsLoading] = useState(false);
@@ -81,7 +86,7 @@ export default function PRReviewAssignment() {
 
 	const { user, isLoaded } = useUser();
 	const { signOut } = useClerk();
-	const { hasTags, refreshTags } = useConvexTags();
+	const { hasTags, refreshTags } = useConvexTags(teamSlug);
 
 	const userInfo = user
 		? {
@@ -113,7 +118,7 @@ export default function PRReviewAssignment() {
 		restoreFromBackup,
 		handleManualRefresh,
 		formatLastUpdated,
-	} = useConvexPRReviewData(userInfo);
+	} = useConvexPRReviewData(userInfo, teamSlug);
 
 	// Enable keyboard shortcuts
 	useKeyboardShortcuts({
@@ -320,9 +325,10 @@ export default function PRReviewAssignment() {
 	return (
 		<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 ">
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-				<h1 className="text-3xl font-bold">
-					{t("pr.title")} - Remuneraciones Perú
-				</h1>
+				<div className="flex items-center gap-3 flex-wrap">
+					<h1 className="text-3xl font-bold">{t("pr.title")}</h1>
+					<TeamSwitcher teamSlug={teamSlug} />
+				</div>
 				<div className="flex items-center gap-2">
 					<HeaderOptionsDrawer
 						compactLayout={compactLayout}
@@ -376,6 +382,7 @@ export default function PRReviewAssignment() {
 										onToggleAbsence={handleToggleAbsence}
 										onDataUpdate={handleDataUpdate}
 										updateReviewer={updateReviewer}
+										teamSlug={teamSlug}
 									/>
 								</div>
 								<DrawerFooter className="flex flex-col gap-4">
@@ -383,6 +390,7 @@ export default function PRReviewAssignment() {
 										<TagManager
 											reviewers={reviewers}
 											onDataUpdate={handleDataUpdate}
+											teamSlug={teamSlug}
 										/>
 										<AddReviewerDialog
 											onAddReviewer={addReviewer}
@@ -489,12 +497,14 @@ export default function PRReviewAssignment() {
 								reviewers={reviewers}
 								onDataUpdate={handleDataUpdate}
 								user={userInfo}
+								teamSlug={teamSlug}
 							/>
 							{hasTags && (
 								<TrackBasedAssignment
 									reviewers={reviewers}
 									onDataUpdate={handleDataUpdate}
 									user={userInfo}
+									teamSlug={teamSlug}
 								/>
 							)}
 						</div>
@@ -502,7 +512,7 @@ export default function PRReviewAssignment() {
 
 					{/* History Section - 40% */}
 					<div className="flex-1 lg:w-[40%]">
-						<FeedHistory />
+						<FeedHistory teamSlug={teamSlug} />
 					</div>
 				</div>
 			) : (
@@ -516,6 +526,7 @@ export default function PRReviewAssignment() {
 									<TagManager
 										reviewers={reviewers}
 										onDataUpdate={handleDataUpdate}
+										teamSlug={teamSlug}
 									/>
 									<AddReviewerDialog
 										onAddReviewer={addReviewer}
@@ -590,6 +601,7 @@ export default function PRReviewAssignment() {
 								onToggleAbsence={handleToggleAbsence}
 								onDataUpdate={handleDataUpdate}
 								updateReviewer={updateReviewer}
+								teamSlug={teamSlug}
 							/>
 						</CardContent>
 					</Card>
@@ -623,17 +635,19 @@ export default function PRReviewAssignment() {
 								reviewers={reviewers}
 								onDataUpdate={handleDataUpdate}
 								user={userInfo}
+								teamSlug={teamSlug}
 							/>
 							{hasTags && (
 								<TrackBasedAssignment
 									reviewers={reviewers}
 									onDataUpdate={handleDataUpdate}
 									user={userInfo}
+									teamSlug={teamSlug}
 								/>
 							)}
 						</div>
 
-						<RecentAssignments />
+						<RecentAssignments teamSlug={teamSlug} />
 					</div>
 				</div>
 			)}

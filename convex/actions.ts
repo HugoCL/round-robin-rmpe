@@ -118,6 +118,7 @@ export const forceAssignPR = action({
 // Action to assign PR by tag
 export const assignPRByTag = action({
     args: {
+        teamSlug: v.string(),
         tagId: v.id("tags"),
         actionBy: v.optional(v.object({
             email: v.string(),
@@ -125,9 +126,9 @@ export const assignPRByTag = action({
             lastName: v.optional(v.string()),
         })),
     },
-    handler: async (ctx, { tagId, actionBy }): Promise<{ success: boolean; reviewer?: Doc<"reviewers">; error?: string }> => {
+    handler: async (ctx, { teamSlug, tagId, actionBy }): Promise<{ success: boolean; reviewer?: Doc<"reviewers">; error?: string }> => {
         // Get next reviewer by tag
-        const nextReviewer = await ctx.runQuery(api.queries.getNextReviewerByTag, { tagId });
+        const nextReviewer = await ctx.runQuery(api.queries.getNextReviewerByTag, { teamSlug, tagId });
 
         if (!nextReviewer) {
             return { success: false };
@@ -150,11 +151,12 @@ export const assignPRByTag = action({
 // Action to skip to next reviewer
 export const skipToNextReviewer = action({
     args: {
+        teamSlug: v.string(),
         currentNextId: v.id("reviewers"),
     },
-    handler: async (ctx, { currentNextId }): Promise<{ success: boolean; nextReviewer?: Doc<"reviewers"> }> => {
+    handler: async (ctx, { teamSlug, currentNextId }): Promise<{ success: boolean; nextReviewer?: Doc<"reviewers"> }> => {
         // Get all reviewers
-        const reviewers = await ctx.runQuery(api.queries.getReviewers, {});
+        const reviewers = await ctx.runQuery(api.queries.getReviewers, { teamSlug });
 
         // Filter out absent reviewers and the current next reviewer
         const availableReviewers = reviewers.filter(

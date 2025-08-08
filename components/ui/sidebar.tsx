@@ -82,8 +82,29 @@ const SidebarProvider = React.forwardRef<
 					_setOpen(openState);
 				}
 
-				// This sets the cookie to keep the sidebar state.
-				document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+				// This sets the cookie to keep the sidebar state using Cookie Store API when available.
+				try {
+					// @ts-ignore - cookieStore may not exist in all browsers
+					if (typeof cookieStore !== "undefined" && cookieStore.set) {
+						// @ts-ignore
+						cookieStore.set({
+							name: SIDEBAR_COOKIE_NAME,
+							value: String(openState),
+							expires: Date.now() + SIDEBAR_COOKIE_MAX_AGE * 1000,
+							path: "/",
+						});
+					} else if (typeof window !== "undefined") {
+						// Fallback when Cookie Store API isn't available
+						try {
+							window.localStorage.setItem(
+								SIDEBAR_COOKIE_NAME,
+								String(openState),
+							);
+						} catch {}
+					}
+				} catch {
+					// ignore cookie errors
+				}
 			},
 			[setOpenProp, open],
 		);
@@ -93,7 +114,7 @@ const SidebarProvider = React.forwardRef<
 			return isMobile
 				? setOpenMobile((open) => !open)
 				: setOpen((open) => !open);
-		}, [isMobile, setOpen, setOpenMobile]);
+		}, [isMobile, setOpen]);
 
 		// Adds a keyboard shortcut to toggle the sidebar.
 		React.useEffect(() => {
@@ -125,15 +146,7 @@ const SidebarProvider = React.forwardRef<
 				setOpenMobile,
 				toggleSidebar,
 			}),
-			[
-				state,
-				open,
-				setOpen,
-				isMobile,
-				openMobile,
-				setOpenMobile,
-				toggleSidebar,
-			],
+			[state, open, setOpen, isMobile, openMobile, toggleSidebar],
 		);
 
 		return (

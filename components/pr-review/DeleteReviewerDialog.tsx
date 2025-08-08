@@ -22,7 +22,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Doc } from "@/convex/_generated/dataModel";
+import type { Doc } from "@/convex/_generated/dataModel";
 
 interface DeleteReviewerDialogProps {
 	reviewers: Doc<"reviewers">[];

@@ -1,13 +1,34 @@
-import { mutation, type MutationCtx } from "./_generated/server";
+import { mutation, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 
+// Helpers
+async function getTeamBySlugOrThrow(ctx: QueryCtx | MutationCtx, teamSlug: string) {
+    const team = await ctx.db.query("teams").withIndex("by_slug", q => q.eq("slug", teamSlug)).first();
+    if (!team) throw new Error("Team not found");
+    return team;
+}
+
+// Create team
+export const createTeam = mutation({
+    args: { name: v.string(), slug: v.string() },
+    handler: async (ctx, { name, slug }) => {
+        const existing = await ctx.db.query("teams").withIndex("by_slug", q => q.eq("slug", slug)).first();
+        if (existing) throw new Error("Slug already in use");
+        const teamId = await ctx.db.insert("teams", { name: name.trim(), slug: slug.trim(), createdAt: Date.now() });
+        // Create empty feed row for team
+        await ctx.db.insert("assignmentFeed", { teamId, items: [], lastAssigned: undefined });
+        return teamId;
+    }
+});
+
 // Initialize default data
 export const initializeData = mutation({
-    args: {},
-    handler: async (ctx) => {
-        // Check if we already have data
-        const existingReviewers = await ctx.db.query("reviewers").take(1);
+    args: { teamSlug: v.string() },
+    handler: async (ctx, { teamSlug }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+        // Check if we already have data for this team
+        const existingReviewers = await ctx.db.query("reviewers").withIndex("by_team", q => q.eq("teamId", team._id)).take(1);
         if (existingReviewers.length > 0) {
             return { success: true, message: "Data already initialized" };
         }
@@ -33,7 +54,7 @@ export const initializeData = mutation({
         ];
 
         for (const reviewer of defaultReviewers) {
-            await ctx.db.insert("reviewers", reviewer);
+            await ctx.db.insert("reviewers", { ...reviewer, teamId: team._id });
         }
 
         return { success: true, message: "Default data initialized" };
@@ -43,14 +64,16 @@ export const initializeData = mutation({
 // Reviewer mutations
 export const addReviewer = mutation({
     args: {
+        teamSlug: v.string(),
         name: v.string(),
         email: v.string(),
     },
-    handler: async (ctx, { name, email }) => {
+    handler: async (ctx, { teamSlug, name, email }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
         // Check if email already exists
         const existingReviewer = await ctx.db
             .query("reviewers")
-            .withIndex("by_email", q => q.eq("email", email.toLowerCase()))
+            .withIndex("by_team_email", q => q.eq("teamId", team._id).eq("email", email.toLowerCase()))
             .first();
 
         if (existingReviewer) {
@@ -58,12 +81,13 @@ export const addReviewer = mutation({
         }
 
         // Get all reviewers to find minimum assignment count
-        const allReviewers = await ctx.db.query("reviewers").collect();
+        const allReviewers = await ctx.db.query("reviewers").withIndex("by_team", q => q.eq("teamId", team._id)).collect();
         const minCount = allReviewers.length > 0
             ? Math.min(...allReviewers.map(r => r.assignmentCount))
             : 0;
 
         const reviewerId = await ctx.db.insert("reviewers", {
+            teamId: team._id,
             name: name.trim(),
             email: email.trim().toLowerCase(),
             assignmentCount: minCount,
@@ -73,7 +97,7 @@ export const addReviewer = mutation({
         });
 
         // Create backup snapshot
-        await createSnapshot(ctx, `Added reviewer: ${name} (${email})`);
+        await createSnapshot(ctx, team._id, `Added reviewer: ${name} (${email})`);
 
         return reviewerId;
     },
@@ -94,7 +118,10 @@ export const updateReviewer = mutation({
         // Check if email conflicts with another reviewer
         const emailConflict = await ctx.db
             .query("reviewers")
-            .withIndex("by_email", q => q.eq("email", email.toLowerCase()))
+            .withIndex("by_team_email", q => q
+                .eq("teamId", reviewer.teamId)
+                .eq("email", email.toLowerCase())
+            )
             .filter(q => q.neq(q.field("_id"), id))
             .first();
 
@@ -108,7 +135,7 @@ export const updateReviewer = mutation({
         });
 
         // Create backup snapshot
-        await createSnapshot(ctx, `Updated reviewer: ${name}`);
+        await createSnapshot(ctx, reviewer.teamId, `Updated reviewer: ${name}`);
 
         return id;
     },
@@ -127,7 +154,7 @@ export const removeReviewer = mutation({
         await ctx.db.delete(id);
 
         // Create backup snapshot
-        await createSnapshot(ctx, `Removed reviewer: ${reviewer.name}`);
+        await createSnapshot(ctx, reviewer.teamId, `Removed reviewer: ${reviewer.name}`);
 
         return { success: true };
     },
@@ -151,7 +178,7 @@ export const toggleReviewerAbsence = mutation({
 
         // If unmarking as absent, update assignment count to most common value
         if (isCurrentlyAbsent) {
-            const allReviewers = await ctx.db.query("reviewers").collect();
+            const allReviewers = await ctx.db.query("reviewers").withIndex("by_team", q => q.eq("teamId", reviewer.teamId)).collect();
             const availableReviewers = allReviewers.filter(r => !r.isAbsent || r._id === id);
             const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
             updateData.assignmentCount = mostCommonCount;
@@ -164,7 +191,7 @@ export const toggleReviewerAbsence = mutation({
         const countMessage = isCurrentlyAbsent
             ? ` and updated assignment count to ${updateData.assignmentCount}`
             : "";
-        await createSnapshot(ctx, `Marked ${reviewer.name} as ${status}${countMessage}`);
+        await createSnapshot(ctx, reviewer.teamId, `Marked ${reviewer.name} as ${status}${countMessage}`);
 
         return { success: true };
     },
@@ -184,16 +211,17 @@ export const updateAssignmentCount = mutation({
         await ctx.db.patch(id, { assignmentCount: count });
 
         // Create backup snapshot  
-        await createSnapshot(ctx, `Updated count for ${reviewer.name} to ${count}`);
+        await createSnapshot(ctx, reviewer.teamId, `Updated count for ${reviewer.name} to ${count}`);
 
         return { success: true };
     },
 });
 
 export const resetAllCounts = mutation({
-    args: {},
-    handler: async (ctx) => {
-        const allReviewers = await ctx.db.query("reviewers").collect();
+    args: { teamSlug: v.string() },
+    handler: async (ctx, { teamSlug }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+        const allReviewers = await ctx.db.query("reviewers").withIndex("by_team", q => q.eq("teamId", team._id)).collect();
 
         // Reset all reviewer counts
         for (const reviewer of allReviewers) {
@@ -201,13 +229,13 @@ export const resetAllCounts = mutation({
         }
 
         // Clear assignment history
-        const allHistory = await ctx.db.query("assignmentHistory").collect();
+        const allHistory = await ctx.db.query("assignmentHistory").withIndex("by_team_timestamp", q => q.eq("teamId", team._id)).collect();
         for (const history of allHistory) {
             await ctx.db.delete(history._id);
         }
 
         // Reset assignment feed
-        const assignmentFeed = await ctx.db.query("assignmentFeed").first();
+        const assignmentFeed = await ctx.db.query("assignmentFeed").withIndex("by_team", q => q.eq("teamId", team._id)).first();
         if (assignmentFeed) {
             await ctx.db.patch(assignmentFeed._id, {
                 items: [],
@@ -216,23 +244,23 @@ export const resetAllCounts = mutation({
         }
 
         // Create backup snapshot
-        await createSnapshot(ctx, "Reset all assignment counts");
+        await createSnapshot(ctx, team._id, "Reset all assignment counts");
 
         return { success: true };
     },
 });
 
-// Helper function to clean up old assignments (keep only last 100)
-async function cleanupOldAssignments(ctx: MutationCtx) {
-    const allAssignments = await ctx.db
+// Helper function to clean up old assignments (keep only last 100 per team)
+async function cleanupOldAssignments(ctx: MutationCtx, teamId: Id<"teams"> | undefined) {
+    const teamAssignments = await ctx.db
         .query("assignmentHistory")
-        .withIndex("by_timestamp")
+        .withIndex("by_team_timestamp", q => q.eq("teamId", teamId))
         .order("desc")
         .collect();
 
-    // If we have more than 100 assignments, delete the oldest ones
-    if (allAssignments.length > 100) {
-        const assignmentsToDelete = allAssignments.slice(100);
+    // If we have more than 100 assignments for this team, delete the oldest ones
+    if (teamAssignments.length > 100) {
+        const assignmentsToDelete = teamAssignments.slice(100);
         for (const assignment of assignmentsToDelete) {
             await ctx.db.delete(assignment._id);
         }
@@ -253,9 +281,9 @@ async function updateAssignmentFeed(ctx: MutationCtx, newAssignment: {
         firstName?: string;
         lastName?: string;
     };
-}) {
+}, teamId: Id<"teams"> | undefined) {
     // Get existing feed
-    const existingFeed = await ctx.db.query("assignmentFeed").first();
+    const existingFeed = await ctx.db.query("assignmentFeed").withIndex("by_team", q => q.eq("teamId", teamId)).first();
 
     if (existingFeed) {
         // Update existing feed
@@ -268,6 +296,7 @@ async function updateAssignmentFeed(ctx: MutationCtx, newAssignment: {
     } else {
         // Create new feed
         await ctx.db.insert("assignmentFeed", {
+            teamId,
             items: [newAssignment],
             lastAssigned: newAssignment.reviewerId, // Store just the reviewer ID
         });
@@ -275,9 +304,9 @@ async function updateAssignmentFeed(ctx: MutationCtx, newAssignment: {
 }
 
 // Helper function to update assignment feed after undo
-async function updateAssignmentFeedAfterUndo(ctx: MutationCtx) {
+async function updateAssignmentFeedAfterUndo(ctx: MutationCtx, teamId: Id<"teams"> | undefined) {
     // Get the current assignment feed
-    const existingFeed = await ctx.db.query("assignmentFeed").first();
+    const existingFeed = await ctx.db.query("assignmentFeed").withIndex("by_team", q => q.eq("teamId", teamId)).first();
 
     if (!existingFeed) {
         return; // No feed to update
@@ -286,7 +315,7 @@ async function updateAssignmentFeedAfterUndo(ctx: MutationCtx) {
     // Get the remaining assignment history to rebuild the feed
     const remainingHistory = await ctx.db
         .query("assignmentHistory")
-        .withIndex("by_timestamp")
+        .withIndex("by_team_timestamp", q => q.eq("teamId", teamId))
         .order("desc")
         .take(5);
 
@@ -339,6 +368,7 @@ export const assignPR = mutation({
 
         // Add to assignment history
         await ctx.db.insert("assignmentHistory", {
+            teamId: reviewer.teamId,
             reviewerId,
             reviewerName: reviewer.name,
             timestamp,
@@ -360,11 +390,11 @@ export const assignPR = mutation({
                 isAbsentSkip,
                 tagId,
                 actionBy,
-            });
+            }, reviewer.teamId);
         }
 
-        // Clean up old assignment history (keep only last 100 assignments)
-        await cleanupOldAssignments(ctx);
+        // Clean up old assignment history (keep only last 100 assignments per team)
+        await cleanupOldAssignments(ctx, reviewer.teamId);
 
         // Create backup snapshot
         let action = "Assigned PR to";
@@ -374,7 +404,7 @@ export const assignPR = mutation({
         const tagName = tagId ? (await ctx.db.get(tagId))?.name : undefined;
         const tagMessage = tagName ? ` (${tagName} track)` : "";
 
-        await createSnapshot(ctx, `${action}: ${reviewer.name}${tagMessage}`);
+        await createSnapshot(ctx, reviewer.teamId, `${action}: ${reviewer.name}${tagMessage}`);
 
         return {
             success: true, reviewer: {
@@ -391,12 +421,13 @@ export const assignPR = mutation({
 });
 
 export const undoLastAssignment = mutation({
-    args: {},
-    handler: async (ctx) => {
+    args: { teamSlug: v.string() },
+    handler: async (ctx, { teamSlug }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
         // Get the most recent assignment
         const lastAssignment = await ctx.db
             .query("assignmentHistory")
-            .withIndex("by_timestamp")
+            .withIndex("by_team_timestamp", q => q.eq("teamId", team._id))
             .order("desc")
             .first();
 
@@ -423,10 +454,10 @@ export const undoLastAssignment = mutation({
         await ctx.db.delete(lastAssignment._id);
 
         // Update the assignment feed
-        await updateAssignmentFeedAfterUndo(ctx);
+        await updateAssignmentFeedAfterUndo(ctx, reviewer.teamId);
 
         // Create backup snapshot
-        await createSnapshot(ctx, `Undid assignment for: ${reviewer.name}`);
+        await createSnapshot(ctx, reviewer.teamId, `Undid assignment for: ${reviewer.name}`);
 
         return {
             success: true,
@@ -438,12 +469,15 @@ export const undoLastAssignment = mutation({
 // Tag mutations
 export const addTag = mutation({
     args: {
+        teamSlug: v.string(),
         name: v.string(),
         color: v.string(),
         description: v.optional(v.string()),
     },
-    handler: async (ctx, { name, color, description }) => {
+    handler: async (ctx, { teamSlug, name, color, description }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
         const tagId = await ctx.db.insert("tags", {
+            teamId: team._id,
             name: name.trim(),
             color,
             description: description?.trim(),
@@ -488,7 +522,7 @@ export const removeTag = mutation({
         }
 
         // Remove tag from all reviewers
-        const allReviewers = await ctx.db.query("reviewers").collect();
+        const allReviewers = await ctx.db.query("reviewers").withIndex("by_team", q => q.eq("teamId", tag.teamId)).collect();
         const reviewersWithTag = allReviewers.filter(reviewer =>
             reviewer.tags.includes(id)
         );
@@ -553,6 +587,7 @@ export const removeTagFromReviewer = mutation({
 // Import data mutation for migrations
 export const importReviewersData = mutation({
     args: {
+        teamSlug: v.string(),
         reviewersData: v.array(v.object({
             name: v.string(),
             email: v.string(),
@@ -562,9 +597,10 @@ export const importReviewersData = mutation({
             tags: v.optional(v.array(v.string())),
         })),
     },
-    handler: async (ctx, { reviewersData }) => {
+    handler: async (ctx, { teamSlug, reviewersData }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
         // Clear existing reviewers
-        const existingReviewers = await ctx.db.query("reviewers").collect();
+        const existingReviewers = await ctx.db.query("reviewers").withIndex("by_team", q => q.eq("teamId", team._id)).collect();
         for (const reviewer of existingReviewers) {
             await ctx.db.delete(reviewer._id);
         }
@@ -572,6 +608,7 @@ export const importReviewersData = mutation({
         // Insert new reviewers
         for (const reviewerData of reviewersData) {
             await ctx.db.insert("reviewers", {
+                teamId: team._id,
                 name: reviewerData.name,
                 email: reviewerData.email,
                 assignmentCount: reviewerData.assignmentCount,
@@ -582,7 +619,7 @@ export const importReviewersData = mutation({
         }
 
         // Create backup snapshot
-        await createSnapshot(ctx, "Imported reviewers data");
+        await createSnapshot(ctx, team._id, "Imported reviewers data");
 
         return { success: true };
     },
@@ -623,8 +660,8 @@ function getMostCommonAssignmentCount(reviewers: Array<{
 
 // Helper function to create backup snapshots
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function createSnapshot(ctx: MutationCtx, description: string) {
-    const reviewers = await ctx.db.query("reviewers").collect();
+async function createSnapshot(ctx: MutationCtx, teamId: Id<"teams"> | undefined, description: string) {
+    const reviewers = await ctx.db.query("reviewers").withIndex("by_team", q => q.eq("teamId", teamId)).collect();
 
     // Map reviewers to the backup format required by schema
     const reviewersForBackup = reviewers.map(reviewer => ({
@@ -638,6 +675,7 @@ async function createSnapshot(ctx: MutationCtx, description: string) {
     }));
 
     await ctx.db.insert("backups", {
+        teamId,
         reason: description,
         reviewers: reviewersForBackup,
         createdAt: Date.now(),
@@ -646,7 +684,7 @@ async function createSnapshot(ctx: MutationCtx, description: string) {
     // Keep only the last 20 backups
     const allBackups = await ctx.db
         .query("backups")
-        .withIndex("by_created_at")
+        .withIndex("by_team", q => q.eq("teamId", teamId))
         .order("desc")
         .collect();
 
@@ -660,30 +698,33 @@ async function createSnapshot(ctx: MutationCtx, description: string) {
 
 // Restore from backup snapshot
 export const restoreFromBackup = mutation({
-    args: { backupId: v.id("backups") },
-    handler: async (ctx, { backupId }) => {
+    args: { teamSlug: v.string(), backupId: v.id("backups") },
+    handler: async (ctx, { teamSlug, backupId }) => {
         try {
+            const team = await getTeamBySlugOrThrow(ctx, teamSlug);
             // Get the backup data
             const backup = await ctx.db.get(backupId);
             if (!backup) {
                 return { success: false, error: "Backup not found" };
             }
+            if (backup.teamId !== team._id) {
+                return { success: false, error: "Backup does not belong to this team" };
+            }
 
             // Clear existing reviewers
-            const existingReviewers = await ctx.db.query("reviewers").collect();
+            const existingReviewers = await ctx.db.query("reviewers").withIndex("by_team", q => q.eq("teamId", team._id)).collect();
             for (const reviewer of existingReviewers) {
                 await ctx.db.delete(reviewer._id);
             }
 
             // Clear existing assignment feed
-            const existingFeed = await ctx.db.query("assignmentFeed").collect();
-            for (const feed of existingFeed) {
-                await ctx.db.delete(feed._id);
-            }
+            const existingFeed = await ctx.db.query("assignmentFeed").withIndex("by_team", q => q.eq("teamId", team._id)).first();
+            if (existingFeed) await ctx.db.delete(existingFeed._id);
 
             // Restore reviewers from backup
             for (const reviewerData of backup.reviewers) {
                 await ctx.db.insert("reviewers", {
+                    teamId: team._id,
                     name: reviewerData.name,
                     email: reviewerData.email,
                     assignmentCount: reviewerData.assignmentCount,
@@ -695,12 +736,13 @@ export const restoreFromBackup = mutation({
 
             // Create initial assignment feed
             await ctx.db.insert("assignmentFeed", {
+                teamId: team._id,
                 items: [],
                 lastAssigned: undefined,
             });
 
             // Create a new backup to record this restore action
-            await createSnapshot(ctx, `Restored from backup: ${backup.reason}`);
+            await createSnapshot(ctx, team._id, `Restored from backup: ${backup.reason}`);
 
             return { success: true };
         } catch (error) {

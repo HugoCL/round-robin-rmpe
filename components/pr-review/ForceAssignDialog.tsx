@@ -29,6 +29,7 @@ interface ForceAssignDialogProps {
 	reviewers: Doc<"reviewers">[];
 	onDataUpdate: () => Promise<void>;
 	user?: { email: string; firstName?: string; lastName?: string } | null;
+	teamSlug?: string;
 }
 
 export function ForceAssignDialog({

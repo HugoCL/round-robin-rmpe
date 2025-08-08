@@ -39,6 +39,7 @@ import { toast } from "@/hooks/use-toast";
 interface TagManagerProps {
 	reviewers: Doc<"reviewers">[];
 	onDataUpdate: () => Promise<void>;
+	teamSlug?: string;
 }
 
 const DEFAULT_COLORS = [
@@ -54,11 +55,16 @@ const DEFAULT_COLORS = [
 	"#6B7280", // Gray
 ];
 
-export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
+export function TagManager({
+	reviewers,
+	onDataUpdate,
+	teamSlug,
+}: TagManagerProps) {
 	const t = useTranslations();
 
 	// Use Convex hooks for real-time data
-	const tags = useQuery(api.queries.getTags) || [];
+	const tags =
+		useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") || [];
 	const addTagMutation = useMutation(api.mutations.addTag);
 	const updateTagMutation = useMutation(api.mutations.updateTag);
 	const removeTagMutation = useMutation(api.mutations.removeTag);
@@ -81,6 +87,14 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
 	const handleAddTag = async () => {
+		if (!teamSlug) {
+			toast({
+				title: t("common.error"),
+				description: t("messages.missingTeam"),
+				variant: "destructive",
+			});
+			return;
+		}
 		if (!newTagName.trim()) {
 			toast({
 				title: t("common.error"),
@@ -93,6 +107,7 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 		setLoading(true);
 		try {
 			await addTagMutation({
+				teamSlug,
 				name: newTagName,
 				color: newTagColor,
 				description: newTagDescription,
