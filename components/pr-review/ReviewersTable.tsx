@@ -3,7 +3,7 @@
 import { Check, Edit, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { EditReviewerDialog } from "./EditReviewerDialog";
+import { useConvexTags } from "@/hooks/useConvexTags";
 
 interface AssignmentFeedType {
 	lastAssigned?: string; // Reviewer ID only (not full object)
@@ -36,6 +37,7 @@ interface ReviewersTableProps {
 	onToggleAbsence: (id: string) => Promise<void>;
 	onDataUpdate: () => Promise<void>;
 	updateReviewer: (id: string, name: string, email: string) => Promise<boolean>;
+	teamSlug?: string;
 }
 
 export function ReviewersTable({
@@ -48,13 +50,14 @@ export function ReviewersTable({
 	onToggleAbsence,
 	onDataUpdate,
 	updateReviewer,
+	teamSlug,
 }: ReviewersTableProps) {
 	const t = useTranslations();
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<number>(0);
 
 	// Use Convex for real-time tags
-	const tags = useQuery(api.queries.getTags) || [];
+	const { tags } = useConvexTags(teamSlug);
 
 	// Use Convex mutation for updating assignment count
 	const updateAssignmentCountMutation = useMutation(

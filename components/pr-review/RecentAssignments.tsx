@@ -20,19 +20,17 @@ interface AssignmentHistoryItem {
 		lastName?: string;
 	};
 }
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function RecentAssignments() {
+export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 	const t = useTranslations();
 
 	// Use Convex for real-time assignment history
-	const assignmentHistory = useQuery(api.queries.getAssignmentHistory) || [];
+	const assignmentHistory =
+		useQuery(
+			api.queries.getAssignmentHistory,
+			teamSlug ? { teamSlug } : "skip",
+		) || [];
 
 	return (
 		<Card>

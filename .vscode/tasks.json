@@ -36,6 +36,17 @@
 			"type": "shell",
 			"command": "pnpm install",
 			"group": "build"
+		},
+		{
+			"label": "TypeScript: List Files",
+			"type": "shell",
+			"command": "npx tsc --noEmit --pretty false --listFiles"
+		},
+		{
+			"label": "Next.js Build",
+			"type": "shell",
+			"command": "npx next build",
+			"group": "build"
 		}
 	]
 }

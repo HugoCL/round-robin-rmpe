@@ -33,25 +33,18 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
-// Type for tag from query (with mapped id)
-type TagFromQuery = {
-	id: Id<"tags">;
-	name: string;
-	color: string;
-	description?: string;
-	createdAt: number;
-};
-
 interface TrackBasedAssignmentProps {
 	reviewers: Doc<"reviewers">[];
 	onDataUpdate: () => Promise<void>;
 	user?: { email: string; firstName?: string; lastName?: string } | null;
+	teamSlug?: string;
 }
 
 export function TrackBasedAssignment({
 	reviewers,
 	onDataUpdate,
 	user,
+	teamSlug,
 }: TrackBasedAssignmentProps) {
 	const t = useTranslations();
 
@@ -62,11 +55,12 @@ export function TrackBasedAssignment({
 	const [isAssigning, setIsAssigning] = useState(false);
 
 	// Use Convex hooks for real-time data
-	const tags = useQuery(api.queries.getTags) || [];
+	const tags =
+		useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") || [];
 	const assignPRMutation = useMutation(api.mutations.assignPR);
 	const getNextReviewerByTag = useQuery(
 		api.queries.getNextReviewerByTag,
-		selectedTagId ? { tagId: selectedTagId } : "skip",
+		selectedTagId && teamSlug ? { teamSlug, tagId: selectedTagId } : "skip",
 	);
 
 	// Get next reviewer for selected tag

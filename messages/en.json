@@ -186,7 +186,8 @@
     "skipAbsentFailedDescription": "Failed to skip absent reviewer. Please try again.",
     "actions": "Actions",
     "manageData": "Manage Data",
-    "exportData": "Export Data"
+  "exportData": "Export Data",
+  "missingTeam": "No team selected. Please pick or create a team first."
   },
   "history": {
     "title": "Assignment History",

@@ -12,14 +12,14 @@ interface UserInfo {
     lastName?: string;
 }
 
-export function useConvexPRReviewData(user?: UserInfo | null) {
+export function useConvexPRReviewData(user?: UserInfo | null, teamSlug?: string) {
     const t = useTranslations();
 
     // Queries - these are automatically reactive and cached
-    const reviewers = useQuery(api.queries.getReviewers) ?? [];
-    const nextReviewer = useQuery(api.queries.getNextReviewer);
-    const assignmentFeed = useQuery(api.queries.getAssignmentFeed) ?? { items: [], lastAssigned: null };
-    const backups = useQuery(api.queries.getBackups) ?? [];
+    const reviewers = useQuery(api.queries.getReviewers, teamSlug ? { teamSlug } : "skip") ?? [];
+    const nextReviewer = useQuery(api.queries.getNextReviewer, teamSlug ? { teamSlug } : "skip");
+    const assignmentFeed = useQuery(api.queries.getAssignmentFeed, teamSlug ? { teamSlug } : "skip") ?? { items: [], lastAssigned: null };
+    const backups = useQuery(api.queries.getBackups, teamSlug ? { teamSlug } : "skip") ?? [];
 
     // Mutations
     const addReviewerMutation = useMutation(api.mutations.addReviewer);
@@ -38,7 +38,9 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
     const initializeIfNeeded = async () => {
         if (reviewers.length === 0) {
             try {
-                await initializeDataMutation({});
+                if (teamSlug) {
+                    await initializeDataMutation({ teamSlug });
+                }
             } catch (error) {
                 console.error("Error initializing data:", error);
             }
@@ -160,8 +162,9 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
     };
 
     const undoAssignment = async () => {
+        if (!teamSlug) return;
         try {
-            const result = await undoLastAssignmentMutation({});
+            const result = await undoLastAssignmentMutation({ teamSlug });
 
             if (result.success) {
                 toast({
@@ -185,6 +188,10 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
     };
 
     const addReviewer = async (name: string, email: string) => {
+        if (!teamSlug) {
+            toast({ title: t("common.error"), description: t("messages.missingTeam"), variant: "destructive" });
+            return false;
+        }
         if (!name.trim()) {
             toast({
                 title: t("data.addReviewerEmptyNameTitle"),
@@ -205,6 +212,7 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
 
         try {
             await addReviewerMutation({
+                teamSlug,
                 name: name.trim(),
                 email: email.trim()
             });
@@ -297,7 +305,9 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
     const handleResetCounts = async () => {
         if (confirm(t("messages.resetCountsConfirmation"))) {
             try {
-                await resetAllCountsMutation({});
+                if (teamSlug) {
+                    await resetAllCountsMutation({ teamSlug });
+                }
 
                 toast({
                     title: t("messages.resetCountsSuccessTitle"),
@@ -326,6 +336,10 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
     };
 
     const importData = async (file: File) => {
+        if (!teamSlug) {
+            toast({ title: t("common.error"), description: t("messages.missingTeam"), variant: "destructive" });
+            return;
+        }
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
@@ -339,7 +353,7 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
                         return reviewer;
                     });
 
-                    await importReviewersDataMutation({ reviewersData: dataWithCreatedAt });
+                    await importReviewersDataMutation({ teamSlug, reviewersData: dataWithCreatedAt });
 
                     toast({
                         title: t("data.dataImportedTitle"),
@@ -373,8 +387,13 @@ export function useConvexPRReviewData(user?: UserInfo | null) {
     };
 
     const restoreFromBackup = async (backupId: string): Promise<boolean> => {
+        if (!teamSlug) {
+            toast({ title: t("common.error"), description: t("messages.missingTeam"), variant: "destructive" });
+            return false;
+        }
         try {
             const result = await restoreFromBackupMutation({
+                teamSlug,
                 backupId: backupId as Id<"backups">,
             });
 

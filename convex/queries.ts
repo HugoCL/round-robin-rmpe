@@ -1,39 +1,66 @@
-import { query } from "./_generated/server";
+import { query, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 
+// Helper: resolve team by slug and optionally create a default one for single-tenant upgrade
+async function getTeamBySlugOrThrow(ctx: QueryCtx, teamSlug: string) {
+    const team = await ctx.db.query("teams").withIndex("by_slug", q => q.eq("slug", teamSlug)).first();
+    if (!team) throw new Error("Team not found");
+    return team;
+}
+
+// Teams
+export const getTeams = query({
+    args: {},
+    handler: async (ctx) => {
+        const teams = await ctx.db.query("teams").order("desc").collect();
+        return teams;
+    },
+});
+
+export const getTeam = query({
+    args: { teamSlug: v.string() },
+    handler: async (ctx, { teamSlug }) => {
+        const team = await ctx.db.query("teams").withIndex("by_slug", q => q.eq("slug", teamSlug)).first();
+        return team ?? null;
+    },
+});
+
 // Reviewer queries
 export const getReviewers = query({
-    handler: async (ctx) => {
-        return await ctx.db.query("reviewers").collect();
+    args: { teamSlug: v.string() },
+    handler: async (ctx, { teamSlug }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+        return await ctx.db.query("reviewers").withIndex("by_team", q => q.eq("teamId", team._id)).collect();
     },
 });
 
 export const getTags = query({
-    handler: async (ctx) => {
-        return await ctx.db.query("tags").collect();
+    args: { teamSlug: v.string() },
+    handler: async (ctx, { teamSlug }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+        return await ctx.db.query("tags").withIndex("by_team", q => q.eq("teamId", team._id)).collect();
     },
 });
 
 export const getAssignmentFeed = query({
-    handler: async (ctx) => {
-        const feeds = await ctx.db.query("assignmentFeed").collect();
-
-        if (feeds.length === 0) {
-            return { items: [], lastAssigned: null };
-        }
-
-        return feeds[0];
+    args: { teamSlug: v.string() },
+    handler: async (ctx, { teamSlug }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+        const feed = await ctx.db.query("assignmentFeed").withIndex("by_team", q => q.eq("teamId", team._id)).first();
+        if (!feed) return { items: [], lastAssigned: null };
+        return feed;
     },
 });
 
 // Get assignment history (last 10 assignments for display)
 export const getAssignmentHistory = query({
-    args: {},
-    handler: async (ctx) => {
+    args: { teamSlug: v.string() },
+    handler: async (ctx, { teamSlug }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
         const history = await ctx.db
             .query("assignmentHistory")
-            .withIndex("by_timestamp")
+            .withIndex("by_team_timestamp", q => q.eq("teamId", team._id))
             .order("desc")
             .take(10);
 
@@ -52,10 +79,12 @@ export const getAssignmentHistory = query({
 
 // Get next reviewer for regular assignment
 export const getNextReviewer = query({
-    args: {},
-    handler: async (ctx) => {
+    args: { teamSlug: v.string() },
+    handler: async (ctx, { teamSlug }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
         const reviewers = await ctx.db
             .query("reviewers")
+            .withIndex("by_team", q => q.eq("teamId", team._id))
             .collect();
 
         if (reviewers.length === 0) {
@@ -88,9 +117,10 @@ export const getNextReviewer = query({
 
 // Get next reviewer by tag
 export const getNextReviewerByTag = query({
-    args: { tagId: v.id("tags") },
-    handler: async (ctx, { tagId }) => {
-        const allReviewers = await ctx.db.query("reviewers").collect();
+    args: { teamSlug: v.string(), tagId: v.id("tags") },
+    handler: async (ctx, { teamSlug, tagId }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+        const allReviewers = await ctx.db.query("reviewers").withIndex("by_team", q => q.eq("teamId", team._id)).collect();
 
         // Filter for available reviewers with the specific tag
         const availableReviewers = allReviewers.filter(r =>
@@ -170,10 +200,12 @@ export const getTagById = query({
 
 // Get all backup snapshots
 export const getBackups = query({
-    handler: async (ctx) => {
+    args: { teamSlug: v.string() },
+    handler: async (ctx, { teamSlug }) => {
+        const team = await getTeamBySlugOrThrow(ctx, teamSlug);
         const backups = await ctx.db
             .query("backups")
-            .withIndex("by_created_at")
+            .withIndex("by_team", q => q.eq("teamId", team._id))
             .order("desc")
             .collect();
 

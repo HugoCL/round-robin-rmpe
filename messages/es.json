@@ -234,7 +234,8 @@
     "skipAbsentFailedDescription": "Falló al omitir el revisor ausente. Por favor intenta de nuevo.",
     "actions": "Acciones",
     "manageData": "Gestionar Datos",
-    "exportData": "Exportar Datos"
+  "exportData": "Exportar Datos",
+  "missingTeam": "No hay equipo seleccionado. Primero elige o crea un equipo."
   },
   "history": {
     "title": "Historial de Asignaciones",

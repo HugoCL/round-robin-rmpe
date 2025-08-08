@@ -3,9 +3,9 @@
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 
-export function useConvexTags() {
+export function useConvexTags(teamSlug?: string) {
     // Queries - these are automatically reactive and cached
-    const tags = useQuery(api.queries.getTags) ?? [];
+    const tags = useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") ?? [];
     const loading = tags === undefined;
 
     // No need for manual refresh since Convex provides real-time updates

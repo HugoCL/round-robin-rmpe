@@ -5,20 +5,19 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function FeedHistory() {
+export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 	const t = useTranslations();
 
 	// Use Convex for real-time tags and assignment history
-	const tags = useQuery(api.queries.getTags) || [];
-	const assignmentHistory = useQuery(api.queries.getAssignmentHistory) || [];
+	const tags =
+		useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") || [];
+	const assignmentHistory =
+		useQuery(
+			api.queries.getAssignmentHistory,
+			teamSlug ? { teamSlug } : "skip",
+		) || [];
 
 	const getTagBadge = (tagId: string) => {
 		const tag = tags.find((t: Doc<"tags">) => t._id === tagId);
