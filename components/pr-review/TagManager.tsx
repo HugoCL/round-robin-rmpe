@@ -76,7 +76,7 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 	const [newTagDescription, setNewTagDescription] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [pendingChanges, setPendingChanges] = useState<{
-		[reviewerId: string]: { [tagId: string]: boolean };
+		[reviewerId: Id<"reviewers">]: { [tagId: Id<"tags">]: boolean };
 	}>({});
 	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -167,8 +167,8 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 	};
 
 	const handleToggleReviewerTag = (
-		reviewerId: string,
-		tagId: string,
+		reviewerId: Id<"reviewers">,
+		tagId: Id<"tags">,
 		currentState: boolean,
 	) => {
 		setPendingChanges((prev) => ({
@@ -190,25 +190,28 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 
 			for (const [reviewerId, tagChanges] of Object.entries(pendingChanges)) {
 				for (const [tagId, shouldAssign] of Object.entries(tagChanges)) {
+					const reviewerIdTyped = reviewerId as Id<"reviewers">;
+					const tagIdTyped = tagId as Id<"tags">;
+
 					const currentlyAssigned =
 						reviewers
-							.find((r) => r._id === reviewerId)
-							?.tags?.includes(tagId) || false;
+							.find((r) => r._id === reviewerIdTyped)
+							?.tags?.includes(tagIdTyped) || false;
 
 					// Only make changes if the state is different from current
 					if (shouldAssign !== currentlyAssigned) {
 						if (shouldAssign) {
 							promises.push(
 								assignTagToReviewerMutation({
-									reviewerId: reviewerId as Id<"reviewers">,
-									tagId: tagId as Id<"tags">,
+									reviewerId: reviewerIdTyped,
+									tagId: tagIdTyped,
 								}),
 							);
 						} else {
 							promises.push(
 								removeTagFromReviewerMutation({
-									reviewerId: reviewerId as Id<"reviewers">,
-									tagId: tagId as Id<"tags">,
+									reviewerId: reviewerIdTyped,
+									tagId: tagIdTyped,
 								}),
 							);
 						}
@@ -237,7 +240,10 @@ export function TagManager({ reviewers, onDataUpdate }: TagManagerProps) {
 		}
 	};
 
-	const getReviewerTagState = (reviewerId: string, tagId: string) => {
+	const getReviewerTagState = (
+		reviewerId: Id<"reviewers">,
+		tagId: Id<"tags">,
+	) => {
 		// Check if there's a pending change for this reviewer/tag combination
 		if (
 			pendingChanges[reviewerId] &&

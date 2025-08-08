@@ -55,7 +55,9 @@ export function TrackBasedAssignment({
 }: TrackBasedAssignmentProps) {
 	const t = useTranslations();
 
-	const [selectedTagId, setSelectedTagId] = useState<string>("");
+	const [selectedTagId, setSelectedTagId] = useState<Id<"tags"> | undefined>(
+		undefined,
+	);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isAssigning, setIsAssigning] = useState(false);
 
@@ -104,7 +106,7 @@ export function TrackBasedAssignment({
 
 				// Close dialog and reset state
 				setIsOpen(false);
-				setSelectedTagId("");
+				setSelectedTagId(undefined);
 			} else {
 				toast({
 					title: t("common.error"),
@@ -124,11 +126,11 @@ export function TrackBasedAssignment({
 		}
 	};
 
-	const getReviewersForTag = (tagId: string) => {
+	const getReviewersForTag = (tagId: Id<"tags">) => {
 		return reviewers.filter((r) => r.tags?.includes(tagId) && !r.isAbsent);
 	};
 
-	const getTagStats = (tagId: string) => {
+	const getTagStats = (tagId: Id<"tags">) => {
 		const tagReviewers = getReviewersForTag(tagId);
 		const totalReviewers = tagReviewers.length;
 		const availableReviewers = tagReviewers.filter((r) => !r.isAbsent).length;
@@ -137,7 +139,7 @@ export function TrackBasedAssignment({
 	};
 
 	const resetAndClose = () => {
-		setSelectedTagId("");
+		setSelectedTagId(undefined);
 		setIsOpen(false);
 	};
 
@@ -172,7 +174,10 @@ export function TrackBasedAssignment({
 						>
 							{t("tags.selectTag")}
 						</label>
-						<Select value={selectedTagId} onValueChange={setSelectedTagId}>
+						<Select
+							value={selectedTagId}
+							onValueChange={(value) => setSelectedTagId(value as Id<"tags">)}
+						>
 							<SelectTrigger>
 								<SelectValue placeholder={t("tags.chooseTag")} />
 							</SelectTrigger>

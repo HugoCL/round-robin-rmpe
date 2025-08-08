@@ -8,7 +8,7 @@ export default defineSchema({
         assignmentCount: v.number(),
         isAbsent: v.boolean(),
         createdAt: v.number(),
-        tags: v.array(v.string()), // Store tag IDs as strings for easier migration
+        tags: v.array(v.id("tags")),
     }).index("by_email", ["email"]),
 
     tags: defineTable({
@@ -19,7 +19,7 @@ export default defineSchema({
     }),
 
     assignmentHistory: defineTable({
-        reviewerId: v.string(),
+        reviewerId: v.id("reviewers"),
         reviewerName: v.string(),
         timestamp: v.number(),
         forced: v.boolean(),
@@ -59,7 +59,7 @@ export default defineSchema({
             assignmentCount: v.number(),
             isAbsent: v.boolean(),
             createdAt: v.number(),
-            tags: v.array(v.string()),
+            tags: v.array(v.id("tags")),
         })),
         reason: v.string(),
         createdAt: v.number(),

@@ -88,7 +88,7 @@ export const getNextReviewer = query({
 
 // Get next reviewer by tag
 export const getNextReviewerByTag = query({
-    args: { tagId: v.string() },
+    args: { tagId: v.id("tags") },
     handler: async (ctx, { tagId }) => {
         const allReviewers = await ctx.db.query("reviewers").collect();
 
