@@ -80,7 +80,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 										)}
 										{!item.forced && !item.skipped && (
 											<Badge className="bg-green-50 text-green-700 border-green-200 hover:border-transparent hover:text-white">
-												Regular
+												{t("pr.regular")}
 											</Badge>
 										)}
 									</div>
