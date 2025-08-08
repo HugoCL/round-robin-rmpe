@@ -706,11 +706,6 @@ export default function PRReviewAssignment() {
 				onConfirm={handleConfirmSkipToNext}
 				onCancel={handleCancelSkip}
 			/>
-
-			<div className="text-center text-xs text-muted-foreground">
-				{t("last-updated")} {formatLastUpdated()}
-				{t("updates-automatically-every-minute-when-tab-is-active")}
-			</div>
 		</div>
 	);
 }
