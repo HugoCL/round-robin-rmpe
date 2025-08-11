@@ -20,7 +20,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
-import { EditReviewerDialog } from "./EditReviewerDialog";
+import { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
 import { useConvexTags } from "@/hooks/useConvexTags";
 
 interface AssignmentFeedType {

@@ -2,62 +2,21 @@
 
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useTranslations } from "next-intl";
-import {
-	Download,
-	Menu,
-	MoreHorizontal,
-	RotateCw,
-	Save,
-	UserMinus,
-	UserPlus,
-} from "lucide-react";
 import { useEffect, useState } from "react";
-import { AssignmentCard } from "@/components/pr-review/AssignmentCard";
-import { AddReviewerDialog } from "@/components/pr-review/AddReviewerDialog";
-import { DeleteReviewerDialog } from "@/components/pr-review/DeleteReviewerDialog";
-import { ForceAssignDialog } from "@/components/pr-review/ForceAssignDialog";
-import { HeaderOptionsDrawer } from "@/components/pr-review/HeaderOptionsDrawer";
-import { RecentAssignments } from "@/components/pr-review/RecentAssignments";
-import { ReviewersTable } from "@/components/pr-review/ReviewersTable";
-import { SkipConfirmationDialog } from "@/components/pr-review/SkipConfirmationDialog";
-import { FeedHistory } from "@/components/pr-review/FeedHistory";
-import { TagManager } from "@/components/pr-review/TagManager";
-import { TrackBasedAssignment } from "@/components/pr-review/TrackBasedAssignment";
-import { TeamSwitcher } from "@/components/TeamSwitcher";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import {
-	Drawer,
-	DrawerClose,
-	DrawerContent,
-	DrawerDescription,
-	DrawerFooter,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "./header/PageHeader";
+import { CompactLayout } from "./layouts/CompactLayout";
+import { ClassicLayout } from "./layouts/ClassicLayout";
+import { SnapshotDialog } from "./dialogs/SnapshotDialog";
+import { SkipConfirmationDialog } from "./dialogs/SkipConfirmationDialog";
 import type { Doc } from "@/convex/_generated/dataModel";
+import type { UserInfo, Assignment } from "@/lib/types";
 
+// Define the structure for a backup entry
 interface BackupEntry {
 	key: string;
 	description: string;
@@ -65,12 +24,24 @@ interface BackupEntry {
 	formattedDate?: string;
 }
 
+/**
+ * PRReviewAssignment is the main component for the PR review assignment tool.
+ * It acts as a container, fetching data, managing state, and composing the UI
+ * from smaller components like layouts, dialogs, and headers.
+ *
+ * @param {object} props - The component props.
+ * @param {string} [props.teamSlug] - The slug of the team currently being viewed.
+ */
 export default function PRReviewAssignment({
 	teamSlug,
 }: {
 	teamSlug?: string;
 }) {
 	const t = useTranslations();
+	const { user, isLoaded } = useUser();
+	const { signOut } = useClerk();
+
+	// State for managing UI preferences and dialogs
 	const [snapshots, setSnapshots] = useState<BackupEntry[]>([]);
 	const [snapshotsLoading, setSnapshotsLoading] = useState(false);
 	const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
@@ -84,11 +55,9 @@ export default function PRReviewAssignment({
 	const [compactLayout, setCompactLayout] = useState(false);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 
-	const { user, isLoaded } = useUser();
-	const { signOut } = useClerk();
+	// Custom hooks for data fetching and business logic
 	const { hasTags, refreshTags } = useConvexTags(teamSlug);
-
-	const userInfo = user
+	const userInfo: UserInfo | null = user
 		? {
 				email: user.emailAddresses[0]?.emailAddress || "",
 				firstName: user.firstName || undefined,
@@ -101,7 +70,7 @@ export default function PRReviewAssignment({
 		nextReviewer,
 		isLoading,
 		isRefreshing,
-		assignmentFeed,
+		assignmentFeed: convexAssignmentFeed,
 		backups,
 		assignPR,
 		skipReviewer,
@@ -120,7 +89,7 @@ export default function PRReviewAssignment({
 		formatLastUpdated,
 	} = useConvexPRReviewData(userInfo, teamSlug);
 
-	// Enable keyboard shortcuts
+	// Enable keyboard shortcuts for common actions
 	useKeyboardShortcuts({
 		onAssignPR: assignPR,
 		onSkipReviewer: skipReviewer,
@@ -129,7 +98,7 @@ export default function PRReviewAssignment({
 		isNextReviewerAvailable: !!nextReviewer,
 	});
 
-	// Load show assignments preference from localStorage
+	// Load user preferences from localStorage on component mount
 	useEffect(() => {
 		const savedShowAssignments = localStorage.getItem("showAssignments");
 		if (savedShowAssignments !== null) {
@@ -152,31 +121,45 @@ export default function PRReviewAssignment({
 		}
 	}, []);
 
-	// Save show assignments preference to localStorage
+	// Save user preferences to localStorage whenever they change
 	useEffect(() => {
 		localStorage.setItem("showAssignments", showAssignments.toString());
 	}, [showAssignments]);
 
-	// Save show tags preference to localStorage
 	useEffect(() => {
 		localStorage.setItem("showTags", showTags.toString());
 	}, [showTags]);
 
-	// Save compact layout preference to localStorage
 	useEffect(() => {
 		localStorage.setItem("compactLayout", compactLayout.toString());
 	}, [compactLayout]);
 
-	// Save show emails preference to localStorage
 	useEffect(() => {
 		localStorage.setItem("showEmails", showEmails.toString());
 	}, [showEmails]);
 
+	// Transform assignment feed data for child components
+	const assignmentFeed: Assignment = {
+		items:
+			convexAssignmentFeed?.items?.map((item) => ({
+				id: `${item.reviewerId}-${item.timestamp}`,
+				reviewerId: item.reviewerId,
+				reviewerName: item.reviewerName,
+				timestamp: item.timestamp,
+				isForced: item.forced,
+				wasSkipped: item.skipped,
+				isAbsentSkip: item.isAbsentSkip,
+				actionBy: item.actionBy,
+				tagId: item.tagId,
+			})) || [],
+		lastAssigned: convexAssignmentFeed?.lastAssigned || null,
+	};
+
 	const handleDataUpdate = async () => {
-		// With Convex, data updates automatically - no need to fetch
 		await refreshTags();
 	};
 
+	// Opens the skip confirmation dialog
 	const handleImTheNextOneWithDialog = async () => {
 		const result = await handleImTheNextOne();
 		if (result.success && result.nextReviewer) {
@@ -185,41 +168,36 @@ export default function PRReviewAssignment({
 		}
 	};
 
+	// Confirms the skip action
 	const handleConfirmSkipToNext = async () => {
 		if (!nextReviewer || !nextAfterSkip) return;
-
 		await confirmSkipToNext(nextReviewer, nextAfterSkip);
-
-		// Close the dialog
 		setSkipConfirmDialogOpen(false);
 		setNextAfterSkip(null);
 	};
 
+	// Cancels the skip action
 	const handleCancelSkip = () => {
 		setSkipConfirmDialogOpen(false);
 		setNextAfterSkip(null);
 	};
 
+	// Handles file import for data recovery
 	const importFileHandler = async (
 		event: React.ChangeEvent<HTMLInputElement>,
 	) => {
 		const file = event.target.files?.[0];
 		if (!file) return;
-
 		await importData(file);
-
-		// Reset the input
-		event.target.value = "";
+		event.target.value = ""; // Reset input
 	};
 
+	// Loads snapshots from backups
 	const loadSnapshots = async () => {
 		setSnapshotsLoading(true);
 		try {
-			// Use Convex backups query - data is automatically formatted
 			const formattedSnapshots: BackupEntry[] = backups.map((backup) => ({
-				key: backup.key,
-				description: backup.description,
-				timestamp: backup.timestamp,
+				...backup,
 				formattedDate: new Date(backup.timestamp).toLocaleString(),
 			}));
 			setSnapshots(formattedSnapshots);
@@ -235,18 +213,17 @@ export default function PRReviewAssignment({
 		}
 	};
 
+	// Opens the snapshot dialog
 	const handleOpenSnapshotDialog = () => {
 		loadSnapshots();
 		setSnapshotDialogOpen(true);
 	};
 
+	// Restores data from a selected snapshot
 	const handleRestoreSnapshot = async (key: string) => {
 		try {
-			// Use Convex restore from backup mutation
 			const success = await restoreFromBackup(key);
-
 			if (success) {
-				// With Convex, data updates automatically after restore
 				setSnapshotDialogOpen(false);
 			}
 		} catch (error) {
@@ -259,22 +236,13 @@ export default function PRReviewAssignment({
 		}
 	};
 
-	const toggleShowAssignments = () => {
-		setShowAssignments((prev) => !prev);
-	};
+	// Toggles for various UI preferences
+	const toggleShowAssignments = () => setShowAssignments((p) => !p);
+	const toggleShowTags = () => setShowTags((p) => !p);
+	const toggleCompactLayout = () => setCompactLayout((p) => !p);
+	const toggleShowEmails = () => setShowEmails((p) => !p);
 
-	const toggleShowTags = () => {
-		setShowTags((prev) => !prev);
-	};
-
-	const toggleCompactLayout = () => {
-		setCompactLayout((prev) => !prev);
-	};
-
-	const toggleShowEmails = () => {
-		setShowEmails((prev) => !prev);
-	};
-
+	// Render loading state
 	if (isLoading || !isLoaded) {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
@@ -286,6 +254,7 @@ export default function PRReviewAssignment({
 		);
 	}
 
+	// Render not authenticated state
 	if (!user) {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
@@ -299,6 +268,7 @@ export default function PRReviewAssignment({
 		);
 	}
 
+	// Render not authorized state for non-company emails
 	if (userInfo && !/^.+@buk\.[a-zA-Z0-9-]+$/.test(userInfo.email)) {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
@@ -324,332 +294,69 @@ export default function PRReviewAssignment({
 
 	return (
 		<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 ">
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-				<div className="flex items-center gap-3 flex-wrap">
-					<h1 className="text-3xl font-bold">{t("pr.title")}</h1>
-					<TeamSwitcher teamSlug={teamSlug} />
-				</div>
-				<div className="flex items-center gap-2">
-					<HeaderOptionsDrawer
-						compactLayout={compactLayout}
-						showAssignments={showAssignments}
-						showTags={showTags}
-						showEmails={showEmails}
-						isRefreshing={isRefreshing}
-						onToggleCompactLayout={toggleCompactLayout}
-						onToggleShowAssignments={toggleShowAssignments}
-						onToggleShowTags={toggleShowTags}
-						onToggleShowEmails={toggleShowEmails}
-						onOpenSnapshotDialog={handleOpenSnapshotDialog}
-						onManualRefresh={handleManualRefresh}
-						formatLastUpdated={formatLastUpdated}
-					/>
-
-					{compactLayout && (
-						<Drawer
-							open={reviewersDrawerOpen}
-							onOpenChange={setReviewersDrawerOpen}
-						>
-							<DrawerTrigger asChild>
-								<Button
-									variant="outline"
-									size="sm"
-									className="flex items-center gap-1"
-								>
-									<Menu className="h-4 w-4" />
-									<span className="hidden sm:inline">
-										{t("pr.manageReviewers")}
-									</span>
-								</Button>
-							</DrawerTrigger>
-							<DrawerContent>
-								<DrawerHeader>
-									<DrawerTitle>{t("pr.reviewers")}</DrawerTitle>
-									<DrawerDescription>
-										{t("manage-reviewers-and-their-assignments")}
-									</DrawerDescription>
-								</DrawerHeader>
-								<div className="px-4 pb-4 max-h-[60vh] overflow-y-auto">
-									<ReviewersTable
-										reviewers={reviewers}
-										nextReviewer={nextReviewer ?? null}
-										assignmentFeed={{
-											lastAssigned: assignmentFeed?.lastAssigned ?? undefined,
-										}}
-										showAssignments={showAssignments}
-										showTags={showTags}
-										showEmails={showEmails}
-										onToggleAbsence={handleToggleAbsence}
-										onDataUpdate={handleDataUpdate}
-										updateReviewer={updateReviewer}
-										teamSlug={teamSlug}
-									/>
-								</div>
-								<DrawerFooter className="flex flex-col gap-4">
-									<div className="flex flex-wrap gap-2 justify-center">
-										<TagManager
-											reviewers={reviewers}
-											onDataUpdate={handleDataUpdate}
-											teamSlug={teamSlug}
-										/>
-										<AddReviewerDialog
-											onAddReviewer={addReviewer}
-											trigger={
-												<Button variant="outline" size="sm">
-													<UserPlus className="h-4 w-4 mr-2" />
-													{t("pr.addReviewer")}
-												</Button>
-											}
-										/>
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button variant="outline" size="sm">
-													<MoreHorizontal className="h-4 w-4 mr-2" />
-													{t("pr.actions")}
-												</Button>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent align="end">
-												<DropdownMenuLabel>
-													{t("pr.manageData")}
-												</DropdownMenuLabel>
-												<DropdownMenuSeparator />
-												<DropdownMenuItem
-													onSelect={(e) => {
-														e.preventDefault();
-													}}
-												>
-													<DeleteReviewerDialog
-														reviewers={reviewers}
-														onDeleteReviewer={removeReviewer}
-														trigger={
-															<div className="flex items-center w-full">
-																<UserMinus className="h-4 w-4 mr-2" />
-																{t("pr.deleteReviewer")}
-															</div>
-														}
-													/>
-												</DropdownMenuItem>
-												<DropdownMenuSeparator />
-												<DropdownMenuItem onClick={handleResetCounts}>
-													<RotateCw className="h-4 w-4 mr-2" />
-													{t("reset-counts")}
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={exportData}>
-													<Save className="h-4 w-4 mr-2" />
-													{t("pr.exportData")}
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													onSelect={(e) => {
-														e.preventDefault();
-														document.getElementById("import-file")?.click();
-													}}
-												>
-													<Download className="h-4 w-4 mr-2" />
-													{t("history.import")}
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</div>
-									<DrawerClose asChild>
-										<Button variant="outline">{t("common.close")}</Button>
-									</DrawerClose>
-								</DrawerFooter>
-							</DrawerContent>
-						</Drawer>
-					)}
-				</div>
-			</div>
+			<PageHeader
+				teamSlug={teamSlug}
+				compactLayout={compactLayout}
+				showAssignments={showAssignments}
+				showTags={showTags}
+				showEmails={showEmails}
+				isRefreshing={isRefreshing}
+				reviewers={reviewers}
+				nextReviewer={nextReviewer}
+				assignmentFeed={{ lastAssigned: assignmentFeed.lastAssigned ?? undefined }}
+				reviewersDrawerOpen={reviewersDrawerOpen}
+				onToggleCompactLayout={toggleCompactLayout}
+				onToggleShowAssignments={toggleShowAssignments}
+				onToggleShowTags={toggleShowTags}
+				onToggleShowEmails={toggleShowEmails}
+				onOpenSnapshotDialog={handleOpenSnapshotDialog}
+				onManualRefresh={handleManualRefresh}
+				formatLastUpdated={formatLastUpdated}
+				setReviewersDrawerOpen={setReviewersDrawerOpen}
+				onToggleAbsence={handleToggleAbsence}
+				onDataUpdate={handleDataUpdate}
+				updateReviewer={updateReviewer}
+				addReviewer={addReviewer}
+				removeReviewer={removeReviewer}
+				handleResetCounts={handleResetCounts}
+				exportData={exportData}
+			/>
 
 			{compactLayout ? (
-				// Compact Layout: 60% assignment, 40% history, reviewers in drawer
-				<div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)]">
-					<div className="flex-1 lg:w-[60%] flex flex-col space-y-6">
-						{/* Assignment Card */}
-						<div className="flex-1">
-							<AssignmentCard
-								nextReviewer={nextReviewer ?? null}
-								reviewers={reviewers}
-								assignmentFeed={{
-									items:
-										assignmentFeed?.items?.map((item) => ({
-											id: `${item.reviewerId}-${item.timestamp}`,
-											reviewerId: item.reviewerId,
-											reviewerName: item.reviewerName,
-											timestamp: item.timestamp,
-											isForced: item.forced,
-											wasSkipped: item.skipped,
-											isAbsentSkip: item.isAbsentSkip,
-											actionBy: item.actionBy,
-											tagId: item.tagId,
-										})) || [],
-									lastAssigned: assignmentFeed?.lastAssigned || null,
-								}}
-								onAssignPR={assignPR}
-								onUndoAssignment={undoAssignment}
-								onImTheNextOne={handleImTheNextOneWithDialog}
-								user={userInfo}
-							/>
-						</div>
-
-						{/* Force Assign Dialog */}
-						<div className="border rounded-lg p-4 bg-muted/50 space-y-4">
-							<ForceAssignDialog
-								reviewers={reviewers}
-								onDataUpdate={handleDataUpdate}
-								user={userInfo}
-								teamSlug={teamSlug}
-							/>
-							{hasTags && (
-								<TrackBasedAssignment
-									reviewers={reviewers}
-									onDataUpdate={handleDataUpdate}
-									user={userInfo}
-									teamSlug={teamSlug}
-								/>
-							)}
-						</div>
-					</div>
-
-					{/* History Section - 40% */}
-					<div className="flex-1 lg:w-[40%]">
-						<FeedHistory teamSlug={teamSlug} />
-					</div>
-				</div>
+				<CompactLayout
+					reviewers={reviewers}
+					nextReviewer={nextReviewer}
+					assignmentFeed={assignmentFeed}
+					hasTags={hasTags}
+					userInfo={userInfo}
+					teamSlug={teamSlug}
+					onDataUpdate={handleDataUpdate}
+					assignPR={assignPR}
+					undoAssignment={undoAssignment}
+					handleImTheNextOneWithDialog={handleImTheNextOneWithDialog}
+				/>
 			) : (
-				// Classic Layout: Original grid layout
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-					<Card className="md:col-span-2">
-						<CardHeader>
-							<div className="flex flex-wrap gap-2 justify-between items-center">
-								<CardTitle>{t("pr.reviewers")}</CardTitle>
-								<div className="flex flex-wrap gap-2">
-									<TagManager
-										reviewers={reviewers}
-										onDataUpdate={handleDataUpdate}
-										teamSlug={teamSlug}
-									/>
-									<AddReviewerDialog
-										onAddReviewer={addReviewer}
-										trigger={
-											<Button variant="outline" size="sm">
-												<UserPlus className="h-4 w-4 mr-2" />
-												{t("pr.addReviewer")}
-											</Button>
-										}
-									/>
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button variant="outline" size="sm">
-												<MoreHorizontal className="h-4 w-4 mr-2" />
-												<span className="sm:inline">{t("pr.actions")}</span>
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end">
-											<DropdownMenuLabel>
-												{t("pr.manageData")}
-											</DropdownMenuLabel>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem
-												onSelect={(e) => {
-													e.preventDefault();
-												}}
-											>
-												<DeleteReviewerDialog
-													reviewers={reviewers}
-													onDeleteReviewer={removeReviewer}
-													trigger={
-														<div className="flex items-center w-full">
-															<UserMinus className="h-4 w-4 mr-2" />
-															{t("pr.deleteReviewer")}
-														</div>
-													}
-												/>
-											</DropdownMenuItem>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem onClick={handleResetCounts}>
-												<RotateCw className="h-4 w-4 mr-2" />
-												{t("reset-counts")}
-											</DropdownMenuItem>
-											<DropdownMenuItem onClick={exportData}>
-												<Save className="h-4 w-4 mr-2" />
-												{t("pr.exportData")}
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												onSelect={(e) => {
-													e.preventDefault();
-													document.getElementById("import-file")?.click();
-												}}
-											>
-												<Download className="h-4 w-4 mr-2" />
-												{t("import-data")}
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</div>
-							</div>
-						</CardHeader>
-						<CardContent>
-							<ReviewersTable
-								reviewers={reviewers}
-								nextReviewer={nextReviewer ?? null}
-								assignmentFeed={{
-									lastAssigned: assignmentFeed?.lastAssigned || undefined,
-								}}
-								showAssignments={showAssignments}
-								showTags={showTags}
-								showEmails={showEmails}
-								onToggleAbsence={handleToggleAbsence}
-								onDataUpdate={handleDataUpdate}
-								updateReviewer={updateReviewer}
-								teamSlug={teamSlug}
-							/>
-						</CardContent>
-					</Card>
-					<div className="flex flex-col gap-6">
-						<AssignmentCard
-							nextReviewer={nextReviewer ?? null}
-							reviewers={reviewers}
-							assignmentFeed={{
-								items:
-									assignmentFeed?.items?.map((item) => ({
-										id: `${item.reviewerId}-${item.timestamp}`,
-										reviewerId: item.reviewerId,
-										reviewerName: item.reviewerName,
-										timestamp: item.timestamp,
-										isForced: item.forced,
-										wasSkipped: item.skipped,
-										isAbsentSkip: item.isAbsentSkip,
-										actionBy: item.actionBy,
-										tagId: item.tagId,
-									})) || [],
-								lastAssigned: assignmentFeed?.lastAssigned || null,
-							}}
-							onAssignPR={assignPR}
-							onUndoAssignment={undoAssignment}
-							onImTheNextOne={handleImTheNextOneWithDialog}
-							user={userInfo}
-						/>
-
-						<div className="space-y-4">
-							<ForceAssignDialog
-								reviewers={reviewers}
-								onDataUpdate={handleDataUpdate}
-								user={userInfo}
-								teamSlug={teamSlug}
-							/>
-							{hasTags && (
-								<TrackBasedAssignment
-									reviewers={reviewers}
-									onDataUpdate={handleDataUpdate}
-									user={userInfo}
-									teamSlug={teamSlug}
-								/>
-							)}
-						</div>
-
-						<RecentAssignments teamSlug={teamSlug} />
-					</div>
-				</div>
+				<ClassicLayout
+					reviewers={reviewers}
+					nextReviewer={nextReviewer}
+					assignmentFeed={assignmentFeed}
+					showAssignments={showAssignments}
+					showTags={showTags}
+					showEmails={showEmails}
+					hasTags={hasTags}
+					userInfo={userInfo}
+					teamSlug={teamSlug}
+					onToggleAbsence={handleToggleAbsence}
+					onDataUpdate={handleDataUpdate}
+					updateReviewer={updateReviewer}
+					addReviewer={addReviewer}
+					removeReviewer={removeReviewer}
+					handleResetCounts={handleResetCounts}
+					exportData={exportData}
+					assignPR={assignPR}
+					undoAssignment={undoAssignment}
+					handleImTheNextOneWithDialog={handleImTheNextOneWithDialog}
+				/>
 			)}
 
 			{/* Hidden input for import functionality */}
@@ -661,57 +368,14 @@ export default function PRReviewAssignment({
 				className="hidden"
 			/>
 
-			{/* Snapshot Dialog */}
-			<Dialog open={snapshotDialogOpen} onOpenChange={setSnapshotDialogOpen}>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>{t("change-history")}</DialogTitle>
-						<DialogDescription>
-							{t("history.restoreDescription")}
-						</DialogDescription>
-					</DialogHeader>
-					<div className="py-4 max-h-[300px] overflow-y-auto">
-						{snapshotsLoading ? (
-							<div className="text-center py-4">
-								<p>{t("common.loading")}</p>
-							</div>
-						) : snapshots.length === 0 ? (
-							<div className="text-center py-4">
-								<p>{t("history.noSnapshots")}</p>
-								<p className="text-sm text-muted-foreground mt-2">
-									{t("history.changesAutoSaved")}
-								</p>
-							</div>
-						) : (
-							<div className="space-y-2">
-								{snapshots.map((snapshot) => (
-									<div
-										key={snapshot.key}
-										className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/50"
-									>
-										<div>
-											<p className="font-medium">{snapshot.formattedDate}</p>
-											<p className="text-sm text-muted-foreground">
-												{snapshot.description}
-											</p>
-										</div>
-										<Button
-											size="sm"
-											variant="outline"
-											onClick={() => handleRestoreSnapshot(snapshot.key)}
-										>
-											{t("history.restore")}
-										</Button>
-									</div>
-								))}
-							</div>
-						)}
-					</div>
-					<DialogFooter></DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<SnapshotDialog
+				isOpen={snapshotDialogOpen}
+				onOpenChange={setSnapshotDialogOpen}
+				snapshots={snapshots}
+				isLoading={snapshotsLoading}
+				onRestore={handleRestoreSnapshot}
+			/>
 
-			{/* Skip Confirmation Dialog */}
 			<SkipConfirmationDialog
 				isOpen={skipConfirmDialogOpen}
 				onOpenChange={setSkipConfirmDialogOpen}
