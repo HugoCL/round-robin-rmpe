@@ -4,27 +4,11 @@ import { useTranslations } from "next-intl";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Badge } from "@/components/ui/badge";
-
-// Types
-interface AssignmentHistoryItem {
-	reviewerId: string;
-	reviewerName: string;
-	timestamp: number;
-	forced: boolean;
-	skipped: boolean;
-	isAbsentSkip: boolean;
-	tagId?: string;
-	actionBy?: {
-		email: string;
-		firstName?: string;
-		lastName?: string;
-	};
-}
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Doc } from "@/convex/_generated/dataModel";
 
 export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 	const t = useTranslations();
-
 	// Use Convex for real-time assignment history
 	const assignmentHistory =
 		useQuery(
@@ -45,7 +29,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 				) : (
 					<div className="space-y-3">
 						{assignmentHistory.map(
-							(item: AssignmentHistoryItem, index: number) => (
+							(item: Doc<"assignmentHistory">, index: number) => (
 								<div
 									key={`${item.reviewerName}-${item.timestamp}-${index}`}
 									className="flex items-center p-3 border rounded-lg"

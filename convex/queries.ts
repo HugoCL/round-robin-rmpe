@@ -64,16 +64,7 @@ export const getAssignmentHistory = query({
             .order("desc")
             .take(10);
 
-        return history.map(item => ({
-            reviewerId: item.reviewerId,
-            reviewerName: item.reviewerName,
-            timestamp: item.timestamp,
-            forced: item.forced,
-            skipped: item.skipped,
-            isAbsentSkip: item.isAbsentSkip,
-            tag: item.tagId,
-            actionBy: item.actionBy,
-        }));
+        return history;
     },
 });
 

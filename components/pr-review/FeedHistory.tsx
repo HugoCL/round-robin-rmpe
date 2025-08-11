@@ -71,8 +71,8 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 												.join(" ") || item.actionBy.email}
 										</p>
 									)}
-									{item.tag && (
-										<div className="mt-1">{getTagBadge(item.tag)}</div>
+									{item.tagId && (
+										<div className="mt-1">{getTagBadge(item.tagId)}</div>
 									)}
 								</div>
 								<div className="flex flex-col items-end gap-1">
