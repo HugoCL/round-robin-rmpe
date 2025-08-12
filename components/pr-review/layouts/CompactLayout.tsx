@@ -9,7 +9,7 @@ import { TrackBasedAssignment } from "../TrackBasedAssignment";
 import { usePRReview } from "../PRReviewContext";
 
 export function CompactLayout() {
-	const { hasTags } = usePRReview();
+	const { hasTags, teamSlug } = usePRReview();
 	return (
 		<div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)]">
 			<div className="flex-1 lg:w-[60%] flex flex-col space-y-6">
@@ -29,7 +29,7 @@ export function CompactLayout() {
 
 			{/* History Section - 40% */}
 			<div className="flex-1 lg:w-[40%]">
-				<FeedHistory />
+				<FeedHistory teamSlug={teamSlug} />
 			</div>
 		</div>
 	);
