@@ -5,7 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Doc } from "@/convex/_generated/dataModel";
+import type { Doc } from "@/convex/_generated/dataModel";
 
 export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 	const t = useTranslations();

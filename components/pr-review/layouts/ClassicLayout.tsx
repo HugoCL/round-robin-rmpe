@@ -25,60 +25,24 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Doc } from "@/convex/_generated/dataModel";
-import type { Assignment, Reviewer, UserInfo } from "@/lib/types";
-
-interface ClassicLayoutProps {
-	reviewers: Reviewer[];
-	nextReviewer: Reviewer | null;
-	assignmentFeed: Assignment;
-	showAssignments: boolean;
-	showTags: boolean;
-	showEmails: boolean;
-	hasTags: boolean;
-	userInfo: UserInfo | null;
-	teamSlug?: string;
-	onToggleAbsence: (id: Doc<"reviewers">["_id"]) => void;
-	onDataUpdate: () => void;
-	updateReviewer: (
-		id: Doc<"reviewers">["_id"],
-		data: Partial<Doc<"reviewers">>,
-	) => void;
-	addReviewer: (name: string, email: string) => Promise<void>;
-	removeReviewer: (id: Doc<"reviewers">["_id"]) => void;
-	handleResetCounts: () => void;
-	exportData: () => void;
-	assignPR: () => void;
-	undoAssignment: () => void;
-	handleImTheNextOneWithDialog: () => void;
-}
 
 /**
  * ClassicLayout component displays the original grid layout for the PR review assignment page.
- * @param {ClassicLayoutProps} props - The props for the component.
  */
-export function ClassicLayout({
-	reviewers,
-	nextReviewer,
-	assignmentFeed,
-	showAssignments,
-	showTags,
-	showEmails,
-	hasTags,
-	userInfo,
-	teamSlug,
-	onToggleAbsence,
-	onDataUpdate,
-	updateReviewer,
-	addReviewer,
-	removeReviewer,
-	handleResetCounts,
-	exportData,
-	assignPR,
-	undoAssignment,
-	handleImTheNextOneWithDialog,
-}: ClassicLayoutProps) {
+import { usePRReview } from "../PRReviewContext";
+
+export function ClassicLayout() {
 	const t = useTranslations();
+	const {
+		reviewers,
+		hasTags,
+		teamSlug,
+		// onDataUpdate (not needed here),
+		addReviewer,
+		removeReviewer,
+		handleResetCounts,
+		exportData,
+	} = usePRReview();
 
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -87,13 +51,9 @@ export function ClassicLayout({
 					<div className="flex flex-wrap gap-2 justify-between items-center">
 						<CardTitle>{t("pr.reviewers")}</CardTitle>
 						<div className="flex flex-wrap gap-2">
-							<TagManager
-								reviewers={reviewers}
-								onDataUpdate={onDataUpdate}
-								teamSlug={teamSlug}
-							/>
+							<TagManager />
 							<AddReviewerDialog
-								onAddReviewer={addReviewer}
+								onAddReviewer={async (name, email) => { await addReviewer(name, email); return true; }}
 								trigger={
 									<Button variant="outline" size="sm">
 										<UserPlus className="h-4 w-4 mr-2" />
@@ -111,21 +71,12 @@ export function ClassicLayout({
 								<DropdownMenuContent align="end">
 									<DropdownMenuLabel>{t("pr.manageData")}</DropdownMenuLabel>
 									<DropdownMenuSeparator />
-									<DropdownMenuItem
-										onSelect={(e) => {
-											e.preventDefault();
-										}}
-									>
-										<DeleteReviewerDialog
-											reviewers={reviewers}
-											onDeleteReviewer={removeReviewer}
-											trigger={
-												<div className="flex items-center w-full">
-													<UserMinus className="h-4 w-4 mr-2" />
-													{t("pr.deleteReviewer")}
-												</div>
-											}
-										/>
+									<DropdownMenuItem onSelect={(e) => { e.preventDefault(); }}>
+														<DeleteReviewerDialog
+															reviewers={reviewers}
+															onDeleteReviewer={removeReviewer}
+															trigger={<div className="flex items-center w-full"><UserMinus className="h-4 w-4 mr-2" />{t("pr.deleteReviewer")}</div>}
+														/>
 									</DropdownMenuItem>
 									<DropdownMenuSeparator />
 									<DropdownMenuItem onClick={handleResetCounts}>
@@ -151,47 +102,16 @@ export function ClassicLayout({
 					</div>
 				</CardHeader>
 				<CardContent>
-					<ReviewersTable
-						reviewers={reviewers}
-						nextReviewer={nextReviewer}
-						assignmentFeed={{
-							lastAssigned: assignmentFeed?.lastAssigned || undefined,
-						}}
-						showAssignments={showAssignments}
-						showTags={showTags}
-						showEmails={showEmails}
-						onToggleAbsence={onToggleAbsence}
-						onDataUpdate={onDataUpdate}
-						updateReviewer={updateReviewer}
-						teamSlug={teamSlug}
-					/>
+					<ReviewersTable teamSlug={teamSlug} />
 				</CardContent>
 			</Card>
 			<div className="flex flex-col gap-6">
-				<AssignmentCard
-					nextReviewer={nextReviewer}
-					reviewers={reviewers}
-					assignmentFeed={assignmentFeed}
-					onAssignPR={assignPR}
-					onUndoAssignment={undoAssignment}
-					onImTheNextOne={handleImTheNextOneWithDialog}
-					user={userInfo}
-				/>
+				<AssignmentCard />
 
 				<div className="space-y-4">
-					<ForceAssignDialog
-						reviewers={reviewers}
-						onDataUpdate={onDataUpdate}
-						user={userInfo}
-						teamSlug={teamSlug}
-					/>
+					<ForceAssignDialog />
 					{hasTags && (
-						<TrackBasedAssignment
-							reviewers={reviewers}
-							onDataUpdate={onDataUpdate}
-							user={userInfo}
-							teamSlug={teamSlug}
-						/>
+						<TrackBasedAssignment />
 					)}
 				</div>
 

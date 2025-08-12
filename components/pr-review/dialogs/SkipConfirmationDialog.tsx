@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { usePRReview } from "../PRReviewContext";
 
 import {
 	Dialog,
@@ -16,7 +17,6 @@ import {
 interface SkipConfirmationDialogProps {
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
-	nextReviewer: Doc<"reviewers"> | null;
 	nextAfterSkip: Doc<"reviewers"> | null;
 	onConfirm: () => void;
 	onCancel: () => void;
@@ -25,12 +25,12 @@ interface SkipConfirmationDialogProps {
 export function SkipConfirmationDialog({
 	isOpen,
 	onOpenChange,
-	nextReviewer,
 	nextAfterSkip,
 	onConfirm,
 	onCancel,
 }: SkipConfirmationDialogProps) {
 	const t = useTranslations();
+	const { nextReviewer } = usePRReview();
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>

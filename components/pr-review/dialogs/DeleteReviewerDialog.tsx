@@ -22,11 +22,11 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import type { Doc } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 
 interface DeleteReviewerDialogProps {
 	reviewers: Doc<"reviewers">[];
-	onDeleteReviewer: (id: string) => Promise<void>;
+	onDeleteReviewer: (id: Id<"reviewers">) => Promise<void>;
 	trigger?: React.ReactNode;
 }
 
@@ -47,7 +47,7 @@ export function DeleteReviewerDialog({
 
 		setIsDeleting(true);
 		try {
-			await onDeleteReviewer(selectedReviewerId);
+			await onDeleteReviewer(selectedReviewerId as Id<"reviewers">);
 			setSelectedReviewerId("");
 			setIsOpen(false);
 		} finally {

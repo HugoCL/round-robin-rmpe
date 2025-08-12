@@ -4,7 +4,7 @@ import { Edit } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import type { Doc } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 
 import {
 	Dialog,
@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 interface EditReviewerDialogProps {
 	reviewer: Doc<"reviewers">;
 	onUpdateReviewer: (
-		id: string,
+		id: Id<"reviewers">,
 		name: string,
 		email: string,
 	) => Promise<boolean>;

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -25,19 +25,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 
-interface ForceAssignDialogProps {
-	reviewers: Doc<"reviewers">[];
-	onDataUpdate: () => Promise<void>;
-	user?: { email: string; firstName?: string; lastName?: string } | null;
-	teamSlug?: string;
-}
+import { usePRReview } from "../PRReviewContext";
 
-export function ForceAssignDialog({
-	reviewers,
-	onDataUpdate,
-	user,
-}: ForceAssignDialogProps) {
+export function ForceAssignDialog() {
 	const t = useTranslations();
+	const { reviewers, onDataUpdate, userInfo: user } = usePRReview();
 	const [forceDialogOpen, setForceDialogOpen] = useState(false);
 	const [selectedReviewerId, setSelectedReviewerId] = useState<string>("");
 

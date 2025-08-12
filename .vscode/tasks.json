@@ -20,12 +20,6 @@
 			"group": "build"
 		},
 		{
-			"label": "TypeScript Check Single File",
-			"type": "shell",
-			"command": "npx tsc --noEmit components/pr-review/PRReviewAssignment.tsx",
-			"group": "build"
-		},
-		{
 			"label": "Lint Check",
 			"type": "shell",
 			"command": "pnpm biome lint",

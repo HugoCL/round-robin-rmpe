@@ -18,48 +18,20 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
-interface AssignmentFeedItem {
-	id: string;
-	reviewerId: string;
-	reviewerName: string;
-	timestamp: number;
-	isForced: boolean;
-	wasSkipped: boolean;
-	isAbsentSkip: boolean;
-	actionBy?: {
-		email: string;
-		firstName?: string;
-		lastName?: string;
-	};
-	tagId?: string;
-}
+import { usePRReview } from "./PRReviewContext";
 
-interface AssignmentFeed {
-	items: AssignmentFeedItem[];
-	lastAssigned: string | null;
-}
-
-interface AssignmentCardProps {
-	nextReviewer: Doc<"reviewers"> | null;
-	reviewers: Doc<"reviewers">[];
-	assignmentFeed: AssignmentFeed;
-	onAssignPR: () => Promise<void>;
-	onUndoAssignment: () => Promise<void>;
-	onImTheNextOne: () => Promise<void>;
-	user?: { email: string; firstName?: string; lastName?: string } | null;
-}
-
-export function AssignmentCard({
-	nextReviewer,
-	reviewers,
-	assignmentFeed,
-	onAssignPR,
-	onUndoAssignment,
-	onImTheNextOne,
-	user,
-}: AssignmentCardProps) {
+export function AssignmentCard() {
 	const t = useTranslations();
 	const locale = useLocale();
+	const {
+		nextReviewer,
+		reviewers,
+		assignmentFeed,
+		assignPR: onAssignPR,
+		undoAssignment: onUndoAssignment,
+		handleImTheNextOneWithDialog: onImTheNextOne,
+		userInfo: user,
+	} = usePRReview();
 	const [isAssigning, setIsAssigning] = useState(false);
 	const [previousNextReviewer, setPreviousNextReviewer] =
 		useState<Doc<"reviewers"> | null>(null);
@@ -155,9 +127,9 @@ export function AssignmentCard({
 		return null;
 	};
 
-	// Get the last assigned reviewer
-	const lastAssignedReviewer = assignmentFeed.lastAssigned
-		? reviewers.find((r) => r._id === assignmentFeed.lastAssigned)
+	// Get the last assigned reviewer (optional chaining avoids non-null assertions)
+	const lastAssignedReviewer = assignmentFeed.lastAssigned?.reviewerId
+		? reviewers.find((r) => r._id === assignmentFeed.lastAssigned?.reviewerId)
 		: null;
 
 	// Get the next reviewer after current

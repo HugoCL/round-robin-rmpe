@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@/convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,36 +23,23 @@ import { toast } from "@/hooks/use-toast";
 import { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
 import { useConvexTags } from "@/hooks/useConvexTags";
 
-interface AssignmentFeedType {
-	lastAssigned?: string; // Reviewer ID only (not full object)
-}
+interface ReviewersTableProps { teamSlug?: string }
 
-interface ReviewersTableProps {
-	reviewers: Doc<"reviewers">[];
-	nextReviewer: Doc<"reviewers"> | null;
-	assignmentFeed: AssignmentFeedType;
-	showAssignments: boolean;
-	showTags: boolean;
-	showEmails: boolean;
-	onToggleAbsence: (id: string) => Promise<void>;
-	onDataUpdate: () => Promise<void>;
-	updateReviewer: (id: string, name: string, email: string) => Promise<boolean>;
-	teamSlug?: string;
-}
+import { usePRReview } from "./PRReviewContext";
 
-export function ReviewersTable({
-	reviewers,
-	nextReviewer,
-	assignmentFeed,
-	showAssignments,
-	showTags,
-	showEmails,
-	onToggleAbsence,
-	onDataUpdate,
-	updateReviewer,
-	teamSlug,
-}: ReviewersTableProps) {
+export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 	const t = useTranslations();
+	const {
+		reviewers,
+		nextReviewer,
+		assignmentFeed,
+		showAssignments,
+		showTags,
+		showEmails,
+		onToggleAbsence,
+		onDataUpdate,
+		updateReviewer,
+	} = usePRReview();
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<number>(0);
 
@@ -160,7 +147,7 @@ export function ReviewersTable({
 										{t("pr.next")}
 									</Badge>
 								)}
-								{assignmentFeed.lastAssigned === reviewer._id && (
+								{assignmentFeed.lastAssigned && assignmentFeed.lastAssigned.reviewerId === reviewer._id && (
 									<Badge className="bg-blue-500 text-white">
 										{t("pr.lastAssigned")}
 									</Badge>
@@ -234,15 +221,11 @@ export function ReviewersTable({
 							</div>
 						</TableCell>
 						<TableCell>
-							<EditReviewerDialog
-								reviewer={reviewer}
-								onUpdateReviewer={updateReviewer}
-								trigger={
-									<Button size="icon" variant="ghost" className="h-8 w-8">
-										<Edit className="h-4 w-4 text-muted-foreground" />
-									</Button>
-								}
-							/>
+												<EditReviewerDialog
+													reviewer={reviewer}
+													onUpdateReviewer={async (id, name, email) => updateReviewer(id, name, email)}
+													trigger={<Button size="icon" variant="ghost" className="h-8 w-8"><Edit className="h-4 w-4 text-muted-foreground" /></Button>}
+												/>
 						</TableCell>
 					</TableRow>
 				))}

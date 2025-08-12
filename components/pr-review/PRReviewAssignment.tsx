@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "./header/PageHeader";
 import { CompactLayout } from "./layouts/CompactLayout";
 import { ClassicLayout } from "./layouts/ClassicLayout";
+import { PRReviewProvider } from "./PRReviewContext";
 import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { SkipConfirmationDialog } from "./dialogs/SkipConfirmationDialog";
 import type { Doc } from "@/convex/_generated/dataModel";
@@ -149,10 +150,16 @@ export default function PRReviewAssignment({
 				isForced: item.forced,
 				wasSkipped: item.skipped,
 				isAbsentSkip: item.isAbsentSkip,
-				actionBy: item.actionBy,
+				actionBy: item.actionBy?.email, // flatten to string per AssignmentItem type
 				tagId: item.tagId,
 			})) || [],
-		lastAssigned: convexAssignmentFeed?.lastAssigned || null,
+		lastAssigned: convexAssignmentFeed?.lastAssigned
+			? // convexAssignmentFeed.lastAssigned appears to be a string reviewerId; timestamp not provided in original code so set null semantics
+			  {
+					reviewerId: typeof convexAssignmentFeed.lastAssigned === "string" ? convexAssignmentFeed.lastAssigned : "",
+					timestamp: Date.now(),
+				}
+			: null,
 	};
 
 	const handleDataUpdate = async () => {
@@ -293,71 +300,46 @@ export default function PRReviewAssignment({
 	}
 
 	return (
-		<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 ">
+		<PRReviewProvider
+			value={{
+				teamSlug,
+				compactLayout,
+				toggleCompactLayout,
+				showAssignments,
+				toggleShowAssignments,
+				showTags,
+				toggleShowTags,
+				showEmails,
+				toggleShowEmails,
+				openSnapshotDialog: handleOpenSnapshotDialog,
+				reviewers: reviewers || [],
+				nextReviewer: nextReviewer || null,
+				assignmentFeed,
+				hasTags: !!hasTags,
+				userInfo,
+				isRefreshing: !!isRefreshing,
+				formatLastUpdated,
+				handleManualRefresh: async () => { await handleManualRefresh(); },
+				onDataUpdate: async () => { await handleDataUpdate(); },
+				assignPR: async () => { await assignPR(); },
+				undoAssignment: async () => { await undoAssignment(); },
+				handleImTheNextOneWithDialog: async () => { await handleImTheNextOneWithDialog(); },
+				onToggleAbsence: async (id) => { await handleToggleAbsence(id); },
+				updateReviewer: async (id, name, email) => await updateReviewer(id, name, email),
+				addReviewer: async (name, email) => await addReviewer(name, email),
+				removeReviewer: async (id) => { await removeReviewer(id); },
+				handleResetCounts,
+				exportData,
+			}}
+		>
+			<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 ">
 			<PageHeader
 				teamSlug={teamSlug}
-				compactLayout={compactLayout}
-				showAssignments={showAssignments}
-				showTags={showTags}
-				showEmails={showEmails}
-				isRefreshing={isRefreshing}
-				reviewers={reviewers}
-				nextReviewer={nextReviewer}
-				assignmentFeed={{ lastAssigned: assignmentFeed.lastAssigned ?? undefined }}
 				reviewersDrawerOpen={reviewersDrawerOpen}
-				onToggleCompactLayout={toggleCompactLayout}
-				onToggleShowAssignments={toggleShowAssignments}
-				onToggleShowTags={toggleShowTags}
-				onToggleShowEmails={toggleShowEmails}
-				onOpenSnapshotDialog={handleOpenSnapshotDialog}
-				onManualRefresh={handleManualRefresh}
-				formatLastUpdated={formatLastUpdated}
 				setReviewersDrawerOpen={setReviewersDrawerOpen}
-				onToggleAbsence={handleToggleAbsence}
-				onDataUpdate={handleDataUpdate}
-				updateReviewer={updateReviewer}
-				addReviewer={addReviewer}
-				removeReviewer={removeReviewer}
-				handleResetCounts={handleResetCounts}
-				exportData={exportData}
 			/>
 
-			{compactLayout ? (
-				<CompactLayout
-					reviewers={reviewers}
-					nextReviewer={nextReviewer}
-					assignmentFeed={assignmentFeed}
-					hasTags={hasTags}
-					userInfo={userInfo}
-					teamSlug={teamSlug}
-					onDataUpdate={handleDataUpdate}
-					assignPR={assignPR}
-					undoAssignment={undoAssignment}
-					handleImTheNextOneWithDialog={handleImTheNextOneWithDialog}
-				/>
-			) : (
-				<ClassicLayout
-					reviewers={reviewers}
-					nextReviewer={nextReviewer}
-					assignmentFeed={assignmentFeed}
-					showAssignments={showAssignments}
-					showTags={showTags}
-					showEmails={showEmails}
-					hasTags={hasTags}
-					userInfo={userInfo}
-					teamSlug={teamSlug}
-					onToggleAbsence={handleToggleAbsence}
-					onDataUpdate={handleDataUpdate}
-					updateReviewer={updateReviewer}
-					addReviewer={addReviewer}
-					removeReviewer={removeReviewer}
-					handleResetCounts={handleResetCounts}
-					exportData={exportData}
-					assignPR={assignPR}
-					undoAssignment={undoAssignment}
-					handleImTheNextOneWithDialog={handleImTheNextOneWithDialog}
-				/>
-			)}
+			{compactLayout ? <CompactLayout /> : <ClassicLayout />}
 
 			{/* Hidden input for import functionality */}
 			<input
@@ -379,11 +361,11 @@ export default function PRReviewAssignment({
 			<SkipConfirmationDialog
 				isOpen={skipConfirmDialogOpen}
 				onOpenChange={setSkipConfirmDialogOpen}
-				nextReviewer={nextReviewer ?? null}
 				nextAfterSkip={nextAfterSkip}
 				onConfirm={handleConfirmSkipToNext}
 				onCancel={handleCancelSkip}
 			/>
-		</div>
+			</div>
+		</PRReviewProvider>
 	);
 }

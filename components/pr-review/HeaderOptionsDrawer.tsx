@@ -32,36 +32,24 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-interface HeaderOptionsDrawerProps {
-	compactLayout: boolean;
-	showAssignments: boolean;
-	showTags: boolean;
-	showEmails: boolean;
-	isRefreshing: boolean;
-	onToggleCompactLayout: () => void;
-	onToggleShowAssignments: () => void;
-	onToggleShowTags: () => void;
-	onToggleShowEmails: () => void;
-	onOpenSnapshotDialog: () => void;
-	onManualRefresh: () => void;
-	formatLastUpdated: () => string;
-}
+import { usePRReview } from "./PRReviewContext";
 
-export function HeaderOptionsDrawer({
-	compactLayout,
-	showAssignments,
-	showTags,
-	showEmails,
-	isRefreshing,
-	onToggleCompactLayout,
-	onToggleShowAssignments,
-	onToggleShowTags,
-	onToggleShowEmails,
-	onOpenSnapshotDialog,
-	onManualRefresh,
-	formatLastUpdated,
-}: HeaderOptionsDrawerProps) {
+export function HeaderOptionsDrawer() {
 	const t = useTranslations();
+	const {
+		compactLayout,
+		showAssignments,
+		showTags,
+		showEmails,
+		isRefreshing,
+		toggleCompactLayout,
+		toggleShowAssignments,
+		toggleShowTags,
+		toggleShowEmails,
+		openSnapshotDialog,
+		handleManualRefresh,
+		formatLastUpdated,
+	} = usePRReview();
 
 	return (
 		<Drawer>
@@ -97,7 +85,7 @@ export function HeaderOptionsDrawer({
 								variant="outline"
 								size="sm"
 								className="w-full justify-start"
-								onClick={onToggleCompactLayout}
+								onClick={toggleCompactLayout}
 							>
 								<LayoutGrid className="h-4 w-4 mr-2" />
 								{compactLayout
@@ -108,7 +96,7 @@ export function HeaderOptionsDrawer({
 								variant="outline"
 								size="sm"
 								className="w-full justify-start"
-								onClick={onToggleShowAssignments}
+								onClick={toggleShowAssignments}
 							>
 								{showAssignments ? (
 									<>
@@ -126,7 +114,7 @@ export function HeaderOptionsDrawer({
 								variant="outline"
 								size="sm"
 								className="w-full justify-start"
-								onClick={onToggleShowTags}
+								onClick={toggleShowTags}
 							>
 								{showTags ? (
 									<>
@@ -144,7 +132,7 @@ export function HeaderOptionsDrawer({
 								variant="outline"
 								size="sm"
 								className="w-full justify-start"
-								onClick={onToggleShowEmails}
+								onClick={toggleShowEmails}
 							>
 								{showEmails ? (
 									<>
@@ -173,7 +161,7 @@ export function HeaderOptionsDrawer({
 								variant="outline"
 								size="sm"
 								className="w-full justify-start"
-								onClick={onOpenSnapshotDialog}
+								onClick={openSnapshotDialog}
 							>
 								<Clock className="h-4 w-4 mr-2" />
 								{t("pr.history")}
@@ -185,7 +173,7 @@ export function HeaderOptionsDrawer({
 											variant="outline"
 											size="sm"
 											className="w-full justify-start"
-											onClick={onManualRefresh}
+											onClick={handleManualRefresh}
 											disabled={isRefreshing}
 										>
 											<RefreshCw

@@ -33,20 +33,11 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
-interface TrackBasedAssignmentProps {
-	reviewers: Doc<"reviewers">[];
-	onDataUpdate: () => Promise<void>;
-	user?: { email: string; firstName?: string; lastName?: string } | null;
-	teamSlug?: string;
-}
+import { usePRReview } from "./PRReviewContext";
 
-export function TrackBasedAssignment({
-	reviewers,
-	onDataUpdate,
-	user,
-	teamSlug,
-}: TrackBasedAssignmentProps) {
+export function TrackBasedAssignment() {
 	const t = useTranslations();
+	const { reviewers, onDataUpdate, userInfo: user, teamSlug } = usePRReview();
 
 	const [selectedTagId, setSelectedTagId] = useState<Id<"tags"> | undefined>(
 		undefined,

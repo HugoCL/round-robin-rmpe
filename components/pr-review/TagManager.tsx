@@ -36,11 +36,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 
-interface TagManagerProps {
-	reviewers: Doc<"reviewers">[];
-	onDataUpdate: () => Promise<void>;
-	teamSlug?: string;
-}
+import { usePRReview } from "./PRReviewContext";
 
 const DEFAULT_COLORS = [
 	"#3B82F6", // Blue
@@ -55,12 +51,9 @@ const DEFAULT_COLORS = [
 	"#6B7280", // Gray
 ];
 
-export function TagManager({
-	reviewers,
-	onDataUpdate,
-	teamSlug,
-}: TagManagerProps) {
+export function TagManager() {
 	const t = useTranslations();
+	const { reviewers, onDataUpdate, teamSlug } = usePRReview();
 
 	// Use Convex hooks for real-time data
 	const tags =

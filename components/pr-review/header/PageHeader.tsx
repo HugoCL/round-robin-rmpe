@@ -33,76 +33,16 @@ import { ReviewersTable } from "../ReviewersTable";
 import { TagManager } from "../TagManager";
 import { AddReviewerDialog } from "../dialogs/AddReviewerDialog";
 import { DeleteReviewerDialog } from "../dialogs/DeleteReviewerDialog";
-import type { Doc } from "@/convex/_generated/dataModel";
+import { usePRReview } from "../PRReviewContext";
 
-interface PageHeaderProps {
-	teamSlug?: string;
-	compactLayout: boolean;
-	showAssignments: boolean;
-	showTags: boolean;
-	showEmails: boolean;
-	isRefreshing: boolean;
-	reviewers: Doc<"reviewers">[];
-	nextReviewer: Doc<"reviewers"> | null;
-	assignmentFeed: {
-		lastAssigned?: {
-			reviewerId: string;
-			timestamp: number;
-		};
-	};
-	reviewersDrawerOpen: boolean;
-	onToggleCompactLayout: () => void;
-	onToggleShowAssignments: () => void;
-	onToggleShowTags: () => void;
-	onToggleShowEmails: () => void;
-	onOpenSnapshotDialog: () => void;
-	onManualRefresh: () => void;
-	formatLastUpdated: () => string;
-	setReviewersDrawerOpen: (isOpen: boolean) => void;
-	onToggleAbsence: (id: Doc<"reviewers">["_id"]) => void;
-	onDataUpdate: () => void;
-	updateReviewer: (
-		id: Doc<"reviewers">["_id"],
-		data: Partial<Doc<"reviewers">>,
-	) => void;
-	addReviewer: (name: string, email: string) => Promise<void>;
-	removeReviewer: (id: Doc<"reviewers">["_id"]) => void;
-	handleResetCounts: () => void;
-	exportData: () => void;
-}
+interface PageHeaderProps { teamSlug?: string; reviewersDrawerOpen: boolean; setReviewersDrawerOpen: (o: boolean)=>void; }
 
 /**
  * PageHeader component displays the main title, team switcher, and action buttons.
- * @param {PageHeaderProps} props - The props for the component.
  */
-export function PageHeader({
-	teamSlug,
-	compactLayout,
-	showAssignments,
-	showTags,
-	showEmails,
-	isRefreshing,
-	reviewers,
-	nextReviewer,
-	assignmentFeed,
-	reviewersDrawerOpen,
-	onToggleCompactLayout,
-	onToggleShowAssignments,
-	onToggleShowTags,
-	onToggleShowEmails,
-	onOpenSnapshotDialog,
-	onManualRefresh,
-	formatLastUpdated,
-	setReviewersDrawerOpen,
-	onToggleAbsence,
-	onDataUpdate,
-	updateReviewer,
-	addReviewer,
-	removeReviewer,
-	handleResetCounts,
-	exportData,
-}: PageHeaderProps) {
+export function PageHeader({ teamSlug, reviewersDrawerOpen, setReviewersDrawerOpen }: PageHeaderProps) {
 	const t = useTranslations();
+	const { compactLayout, addReviewer, removeReviewer, reviewers, handleResetCounts, exportData } = usePRReview();
 
 	return (
 		<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -111,20 +51,7 @@ export function PageHeader({
 				<TeamSwitcher teamSlug={teamSlug} />
 			</div>
 			<div className="flex items-center gap-2">
-				<HeaderOptionsDrawer
-					compactLayout={compactLayout}
-					showAssignments={showAssignments}
-					showTags={showTags}
-					showEmails={showEmails}
-					isRefreshing={isRefreshing}
-					onToggleCompactLayout={onToggleCompactLayout}
-					onToggleShowAssignments={onToggleShowAssignments}
-					onToggleShowTags={onToggleShowTags}
-					onToggleShowEmails={onToggleShowEmails}
-					onOpenSnapshotDialog={onOpenSnapshotDialog}
-					onManualRefresh={onManualRefresh}
-					formatLastUpdated={formatLastUpdated}
-				/>
+						<HeaderOptionsDrawer />
 
 				{compactLayout && (
 					<Drawer
@@ -149,28 +76,13 @@ export function PageHeader({
 								</DrawerDescription>
 							</DrawerHeader>
 							<div className="px-4 pb-4 max-h-[60vh] overflow-y-auto">
-								<ReviewersTable
-									reviewers={reviewers}
-									nextReviewer={nextReviewer}
-									assignmentFeed={assignmentFeed}
-									showAssignments={showAssignments}
-									showTags={showTags}
-									showEmails={showEmails}
-									onToggleAbsence={onToggleAbsence}
-									onDataUpdate={onDataUpdate}
-									updateReviewer={updateReviewer}
-									teamSlug={teamSlug}
-								/>
+								<ReviewersTable teamSlug={teamSlug} />
 							</div>
 							<DrawerFooter className="flex flex-col gap-4">
 								<div className="flex flex-wrap gap-2 justify-center">
-									<TagManager
-										reviewers={reviewers}
-										onDataUpdate={onDataUpdate}
-										teamSlug={teamSlug}
-									/>
+									<TagManager />
 									<AddReviewerDialog
-										onAddReviewer={addReviewer}
+										onAddReviewer={async (name, email) => { await addReviewer(name, email); return true; }}
 										trigger={
 											<Button variant="outline" size="sm">
 												<UserPlus className="h-4 w-4 mr-2" />
@@ -193,16 +105,11 @@ export function PageHeader({
 													e.preventDefault();
 												}}
 											>
-												<DeleteReviewerDialog
-													reviewers={reviewers}
-													onDeleteReviewer={removeReviewer}
-													trigger={
-														<div className="flex items-center w-full">
-															<UserMinus className="h-4 w-4 mr-2" />
-															{t("pr.deleteReviewer")}
-														</div>
-													}
-												/>
+																<DeleteReviewerDialog
+																	reviewers={reviewers}
+																	onDeleteReviewer={removeReviewer}
+																	trigger={<div className="flex items-center w-full"><UserMinus className="h-4 w-4 mr-2" />{t("pr.deleteReviewer")}</div>}
+																/>
 											</DropdownMenuItem>
 											<DropdownMenuSeparator />
 											<DropdownMenuItem onClick={handleResetCounts}>
