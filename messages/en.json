@@ -190,6 +190,25 @@
   "exportData": "Export Data",
   "missingTeam": "No team selected. Please pick or create a team first."
   },
+  "team": {
+    "notFoundTitle": "Team does not exist",
+    "notFoundDescription": "The team <code>{slug}</code> was not found. You can create it now.",
+    "createThisTeamCta": "Create a team",
+  "createTitle": "Create a team",
+  "createDescription": "Create a team to start assigning PR reviews. Each team has its own reviewers, tags and history.",
+  "backHome": "Back to home",
+  "formTitle": "Create your first team",
+  "formDescription": "Teams let you keep reviewers, tags, and history separate while sharing the same database.",
+  "nameLabel": "Team name",
+  "namePlaceholder": "e.g. Platform, Mobile, Infra",
+  "slugLabel": "Team slug (URL)",
+  "slugPlaceholder": "auto-generated from name",
+  "slugWillUsePrefix": "Will use:",
+  "createButton": "Create team",
+  "creatingEllipsis": "Creating…",
+  "errorProvideName": "Please provide a team name.",
+  "createError": "Failed to create team"
+  },
   "history": {
     "title": "Assignment History",
     "assignedBy": "Assigned by",

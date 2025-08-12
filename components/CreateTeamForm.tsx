@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import {
@@ -28,6 +28,7 @@ function slugify(input: string): string {
 export default function CreateTeamForm() {
 	const router = useRouter();
 	const locale = useLocale();
+	const t = useTranslations();
 	const createTeam = useMutation(api.mutations.createTeam);
 
 	const [name, setName] = useState("");
@@ -47,7 +48,7 @@ export default function CreateTeamForm() {
 		try {
 			const finalSlug = derivedSlug;
 			if (!name.trim() || !finalSlug) {
-				setError("Please provide a team name.");
+				setError(t("team.errorProvideName"));
 				setSubmitting(false);
 				return;
 			}
@@ -55,58 +56,53 @@ export default function CreateTeamForm() {
 			router.replace(`/${locale}/${finalSlug}`);
 		} catch (err) {
 			const message =
-				err instanceof Error ? err.message : "Failed to create team";
+				err instanceof Error ? err.message : t("team.createError", { default: "Failed to create team" });
 			setError(message);
 			setSubmitting(false);
 		}
 	};
 
 	return (
-		<div className="container mx-auto py-10 max-w-xl">
-			<Card>
-				<CardHeader>
-					<CardTitle>Create your first team</CardTitle>
-					<CardDescription>
-						Teams let you keep reviewers, tags, and history separate while
-						sharing the same database.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<form onSubmit={onSubmit} className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="team-name">Team name</Label>
-							<Input
+		<Card className="max-w-xl w-full">
+			<CardHeader>
+				<CardTitle>{t("team.formTitle")}</CardTitle>
+				<CardDescription>{t("team.formDescription")}</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<form onSubmit={onSubmit} className="space-y-4">
+					<div className="space-y-2">
+						<Label htmlFor="team-name">{t("team.nameLabel")}</Label>
+						<Input
 								id="team-name"
-								placeholder="e.g. Platform, Mobile, Infra"
+								placeholder={t("team.namePlaceholder")}
 								value={name}
 								onChange={(e) => setName(e.target.value)}
 							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="team-slug">Team slug (URL)</Label>
-							<Input
+					</div>
+					<div className="space-y-2">
+						<Label htmlFor="team-slug">{t("team.slugLabel")}</Label>
+						<Input
 								id="team-slug"
-								placeholder="auto-generated from name"
+								placeholder={t("team.slugPlaceholder")}
 								value={slug}
 								onChange={(e) => setSlug(e.target.value)}
 							/>
-							<p className="text-xs text-muted-foreground">
-								Will use: <span className="font-mono">{derivedSlug || ""}</span>
-							</p>
-						</div>
-						{error && (
-							<p className="text-sm text-destructive" role="alert">
-								{error}
-							</p>
-						)}
-						<div className="pt-2">
-							<Button type="submit" disabled={submitting}>
-								{submitting ? "Creating…" : "Create team"}
-							</Button>
-						</div>
-					</form>
-				</CardContent>
-			</Card>
-		</div>
+						<p className="text-xs text-muted-foreground">
+							{t("team.slugWillUsePrefix")} <span className="font-mono">{derivedSlug || ""}</span>
+						</p>
+					</div>
+					{error && (
+						<p className="text-sm text-destructive" role="alert">
+							{error}
+						</p>
+					)}
+					<div className="pt-2">
+						<Button type="submit" disabled={submitting}>
+							{submitting ? t("team.creatingEllipsis") : t("team.createButton")}
+						</Button>
+					</div>
+				</form>
+			</CardContent>
+		</Card>
 	);
 }

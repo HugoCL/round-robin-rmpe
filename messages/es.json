@@ -238,6 +238,25 @@
   "exportData": "Exportar Datos",
   "missingTeam": "No hay equipo seleccionado. Primero elige o crea un equipo."
   },
+  "team": {
+    "notFoundTitle": "El equipo no existe",
+    "notFoundDescription": "El equipo <code>{slug}</code> no se encontró. Puedes crearlo ahora.",
+    "createThisTeamCta": "Crear un equipo",
+  "createTitle": "Crear un equipo",
+  "createDescription": "Crea un equipo para comenzar a asignar revisiones de PR. Cada equipo tiene sus propios revisores, etiquetas e historial.",
+  "backHome": "Volver al inicio",
+  "formTitle": "Crea tu primer equipo",
+  "formDescription": "Los equipos te permiten mantener revisores, etiquetas e historial separados mientras comparten la misma base de datos.",
+  "nameLabel": "Nombre del equipo",
+  "namePlaceholder": "ej. Plataforma, Mobile, Infra",
+  "slugLabel": "Slug del equipo (URL)",
+  "slugPlaceholder": "auto-generado desde el nombre",
+  "slugWillUsePrefix": "Se usará:",
+  "createButton": "Crear equipo",
+  "creatingEllipsis": "Creando…",
+  "errorProvideName": "Por favor ingresa un nombre de equipo.",
+  "createError": "Falló la creación del equipo"
+  },
   "history": {
     "title": "Historial de Asignaciones",
     "assignedBy": "Asignado por",
