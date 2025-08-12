@@ -223,7 +223,18 @@
   },
   "googleChat": {
     "greeting": "📋 Hello {reviewer}!",
-    "assignmentMessage": "{assigner} has assigned you the review of this <{prUrl}|PR>"
+  "assignmentMessage": "{assigner} has assigned you the review of this <{prUrl}|PR>",
+  "prUrlLabel": "PR URL",
+  "customizeToggle": "Customize message",
+  "textareaPlaceholder": "Base message or generate one with AI",
+  "generate": "Generate with AI",
+  "generateNew": "Generate new",
+  "generating": "Generating…",
+  "confirm": "Use this",
+  "confirmed": "Confirmed",
+  "edit": "Edit",
+  "confirmHint": "Confirm the message before assigning to send it. If you don't confirm we'll use the default template.",
+  "preview": "Preview:"
   },
   "shortcuts": {
     "title": "Keyboard Shortcuts",

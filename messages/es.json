@@ -271,7 +271,18 @@
   },
   "googleChat": {
     "greeting": "📋 ¡Hola {reviewer}!",
-    "assignmentMessage": "{assigner} te ha asignado la revisión de este <{prUrl}|PR>"
+  "assignmentMessage": "{assigner} te ha asignado la revisión de este <{prUrl}|PR>",
+  "prUrlLabel": "PR URL",
+  "customizeToggle": "Personalizar mensaje",
+  "textareaPlaceholder": "Mensaje base o genera uno con IA",
+  "generate": "Generar con IA",
+  "generateNew": "Generar nuevo",
+  "generating": "Generando…",
+  "confirm": "Usar este",
+  "confirmed": "Confirmado",
+  "edit": "Editar",
+  "confirmHint": "Confirma el mensaje antes de asignar para enviarlo. Si no confirmas usaremos la plantilla por defecto.",
+  "preview": "Vista previa:"
   },
   "shortcuts": {
     "title": "Atajos de Teclado",

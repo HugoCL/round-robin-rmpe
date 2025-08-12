@@ -15,6 +15,8 @@ export const sendGoogleChatMessage = action({
         assignerEmail: v.optional(v.string()),
         assignerName: v.optional(v.string()),
         sendOnlyNames: v.optional(v.boolean()),
+        // If provided, this message text will be sent as-is (no template building)
+        customMessage: v.optional(v.string()),
     },
     handler: async (_ctx, {
         reviewerName,
@@ -23,7 +25,8 @@ export const sendGoogleChatMessage = action({
         locale = 'en',
         assignerEmail,
         assignerName,
-        sendOnlyNames = true
+        sendOnlyNames = true,
+        customMessage,
     }) => {
         const GOOGLE_CHAT_WEBHOOK_URL = process.env.GOOGLE_CHAT_WEBHOOK_URL;
 
@@ -35,31 +38,52 @@ export const sendGoogleChatMessage = action({
         }
 
         try {
-            // Import translations dynamically based on locale
-            const messages = await import(`../messages/${locale}.json`);
-            const t = messages.default || messages;
+            let messageText: string;
 
-            // Create mentions - use names if sendOnlyNames is true, otherwise use email format
-            const reviewerMention = sendOnlyNames ? reviewerName : `<users/${reviewerEmail}>`;
-            const assignerMention = (assignerEmail || assignerName) ?
-                (sendOnlyNames ? (assignerName || 'Unknown') : `<users/${assignerEmail}>`) : null;
+            if (customMessage && customMessage.trim().length > 0) {
+                // Replace handlebars placeholders with actual values / formatted link
+                const base = customMessage.trim();
+                const reviewerMention = sendOnlyNames ? reviewerName : `<users/${reviewerEmail}>`;
+                const assignerMention = (assignerEmail || assignerName) ?
+                    (sendOnlyNames ? (assignerName || 'Unknown') : `<users/${assignerEmail}>`) : (assignerName || '');
 
-            // Build the message with proper mentions using i18n
-            const greetingText = t.googleChat.greeting.replace('{reviewer}', reviewerMention);
+                // Google Chat link style: <url|PR>
+                const prLinked = `<${prUrl}|PR>`;
 
-            let messageText = greetingText;
-
-            if (assignerMention) {
-                const assignmentText = t.googleChat.assignmentMessage
-                    .replace('{assigner}', assignerMention)
-                    .replace('{prUrl}', prUrl);
-                messageText += `\n${assignmentText}`;
+                const replaced = base
+                    .replace(/{{\s*reviewer_name\s*}}/gi, reviewerMention)
+                    .replace(/{{\s*requester_name\s*}}/gi, assignerMention)
+                    .replace(/{{\s*pr\s*}}/gi, prLinked)
+                    .replace(/{{\s*PR\s*}}/g, prLinked);
+                // Remove redundant preceding 'PR' if user wrote 'PR: {{PR}}' or 'PR {{PR}}'
+                messageText = replaced.replace(/\bPR:?\s*(<[^>]+\|PR>)/g, '$1');
             } else {
-                // Fallback when no assigner is provided
-                const assignmentText = t.googleChat.assignmentMessage
-                    .replace('{assigner}', 'Someone')
-                    .replace('{prUrl}', prUrl);
-                messageText += `\n${assignmentText}`;
+                // Import translations dynamically based on locale
+                const messages = await import(`../messages/${locale}.json`);
+                const t = messages.default || messages;
+
+                // Create mentions - use names if sendOnlyNames is true, otherwise use email format
+                const reviewerMention = sendOnlyNames ? reviewerName : `<users/${reviewerEmail}>`;
+                const assignerMention = (assignerEmail || assignerName) ?
+                    (sendOnlyNames ? (assignerName || 'Unknown') : `<users/${assignerEmail}>`) : null;
+
+                // Build the message with proper mentions using i18n
+                const greetingText = t.googleChat.greeting.replace('{reviewer}', reviewerMention);
+
+                messageText = greetingText;
+
+                if (assignerMention) {
+                    const assignmentText = t.googleChat.assignmentMessage
+                        .replace('{assigner}', assignerMention)
+                        .replace('{prUrl}', prUrl);
+                    messageText += `\n${assignmentText}`;
+                } else {
+                    // Fallback when no assigner is provided
+                    const assignmentText = t.googleChat.assignmentMessage
+                        .replace('{assigner}', 'Someone')
+                        .replace('{prUrl}', prUrl);
+                    messageText += `\n${assignmentText}`;
+                }
             }
 
             const message = {

@@ -1,10 +1,11 @@
 "use client";
 
-import { Undo2, User, MessageSquare } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Undo2, User, MessageSquare, Sparkles, RotateCcw, Pencil } from "lucide-react";
+import { useState, useEffect, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { generatePRChatMessage } from "@/app/actions/generatePRChatMessage";
 import type { Doc } from "@/convex/_generated/dataModel";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,88 @@ export function AssignmentCard() {
 
 	const [sendMessage, setSendMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
+	const [customMessage, setCustomMessage] = useState("");
+	const [isGenerating, setIsGenerating] = useState(false);
+	const [isPending, startTransition] = useTransition();
+	const [hasConfirmedMessage, setHasConfirmedMessage] = useState(false);
+	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
+	const [userEditedMessage, setUserEditedMessage] = useState(false);
+	const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
+
+	// Build default template (mirrors server fallback) when needed
+	const buildDefaultTemplate = () => {
+		if (!nextReviewer) return "";
+		// Use translation templates (with fallback) and include PR link only when available
+		const greetingTpl = t("googleChat.greeting");
+		const assignmentTpl = t("googleChat.assignmentMessage");
+		const greetingResolved = greetingTpl === "googleChat.greeting"
+			? (locale.startsWith("es") ? "📋 ¡Hola {reviewer}!" : "📋 Hello {reviewer}!")
+			: greetingTpl;
+		const assignmentResolved = assignmentTpl === "googleChat.assignmentMessage"
+			? (locale.startsWith("es")
+				? "{assigner} te ha asignado la revisión de este <{prUrl}|PR>"
+				: "{assigner} has assigned you the review of this <{prUrl}|PR>")
+			: assignmentTpl;
+		const reviewerLine = greetingResolved.replace("{reviewer}", nextReviewer.name);
+		const assignerName = user?.firstName && user?.lastName
+			? `${user.firstName} ${user.lastName}`
+			: user?.firstName || user?.lastName || (locale.startsWith("es") ? "Alguien" : "Someone");
+		if (!prUrl) return reviewerLine; // wait for PR URL before adding second line with link
+		const assignment = assignmentResolved
+			.replace("{assigner}", assignerName)
+			.replace("{prUrl}", prUrl);
+		return `${reviewerLine}\n${assignment}`;
+	};
+
+	// When enabling custom message, or when dependencies change and user hasn't edited, pre-fill
+	useEffect(() => {
+		if (enableCustomMessage && !userEditedMessage) {
+			const defMsg = buildDefaultTemplate();
+			if (defMsg && defMsg !== customMessage) {
+				setCustomMessage(defMsg);
+			}
+		}
+	}, [enableCustomMessage, nextReviewer, prUrl, locale]);
+
+	// Derived preview replacing handlebars so user sees final message
+	const previewMessage = (() => {
+		if (!enableCustomMessage || !customMessage) return "";
+		if (!nextReviewer) return customMessage;
+		const reviewerMention = nextReviewer.name; // UI preview uses plain name
+		const requesterName = user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.firstName || user?.lastName || user?.email || "");
+		const prLinked = prUrl ? `<${prUrl}|PR>` : "PR";
+		return customMessage
+			.replace(/{{\s*reviewer_name\s*}}/gi, reviewerMention)
+			.replace(/{{\s*requester_name\s*}}/gi, requesterName)
+			.replace(/{{\s*pr\s*}}/gi, prLinked)
+			.replace(/{{\s*PR\s*}}/g, prLinked)
+			.replace(/\bPR:?\s*(<[^>]+\|PR>)/g, '$1');
+	})();
+
+	// Simple helper to call Vercel AI Gateway (model + system prompt handled server side proxy or direct)
+	const generateMessage = async () => {
+		if (!nextReviewer) return;
+		setIsGenerating(true);
+		startTransition(async () => {
+			try {
+				const requesterName = user?.firstName || user?.lastName ? `${user?.firstName || ""} ${user?.lastName || ""}`.trim() : (user?.email || "");
+				const { response } = await generatePRChatMessage({
+					reviewer_name: nextReviewer.name,
+					requester_name: requesterName,
+					pr: prUrl,
+				});
+				if (response) {
+					setCustomMessage(response);
+					setHasConfirmedMessage(false);
+					setHasGeneratedOnce(true);
+				}
+			} catch (e) {
+				console.error("Failed to generate message", e);
+			} finally {
+				setIsGenerating(false);
+			}
+		});
+	};
 
 	// Use Convex action for Google Chat
 	const sendGoogleChatAction = useAction(api.actions.sendGoogleChatMessage);
@@ -70,6 +153,7 @@ export function AssignmentCard() {
 						assignerEmail: user?.email,
 						assignerName,
 						sendOnlyNames: true,
+						customMessage: enableCustomMessage && hasConfirmedMessage && customMessage.trim().length > 0 ? customMessage : undefined,
 					});
 					if (!result.success) {
 						console.error("Failed to send Google Chat message:", result.error);
@@ -223,12 +307,7 @@ export function AssignmentCard() {
 						<div className="w-full mb-6">
 							<div className="bg-muted/30 rounded-lg p-4 space-y-3 border border-muted/50">
 								<div className="space-y-1">
-									<Label
-										htmlFor="pr-url"
-										className="text-xs text-muted-foreground"
-									>
-										PR URL
-									</Label>
+									<Label htmlFor="pr-url" className="text-xs text-muted-foreground">{t("googleChat.prUrlLabel")}</Label>
 									<Input
 										id="pr-url"
 										placeholder="https://github.com/owner/repo/pull/123"
@@ -237,6 +316,59 @@ export function AssignmentCard() {
 										className="text-sm"
 									/>
 								</div>
+
+								{/* Toggle for custom message */}
+								<div className="pt-2 border-t border-muted/50 flex items-center justify-between">
+									<Label htmlFor="toggle-custom-msg" className="text-xs text-muted-foreground flex items-center gap-1">
+										<MessageSquare className="h-3 w-3" /> {t("googleChat.customizeToggle")}
+									</Label>
+									<Switch id="toggle-custom-msg" checked={enableCustomMessage} onCheckedChange={(val)=>{setEnableCustomMessage(val); setHasConfirmedMessage(false); if(!val){setCustomMessage(""); setUserEditedMessage(false);} }} />
+								</div>
+
+								{enableCustomMessage && (
+									<div className="space-y-2 pt-2">
+										<textarea
+											className="w-full text-sm rounded-md border bg-background p-2 resize-none h-28"
+											value={customMessage}
+											onChange={(e) => { if (hasConfirmedMessage) return; setCustomMessage(e.target.value); setHasConfirmedMessage(false); setUserEditedMessage(true); }}
+											disabled={hasConfirmedMessage}
+											placeholder={t("googleChat.textareaPlaceholder")}
+										/>
+										<div className="flex flex-wrap gap-2 justify-between items-center">
+											<div className="flex gap-2">
+												<Button type="button" variant="outline" size="sm" disabled={hasConfirmedMessage || isGenerating || !prUrl.trim() || !nextReviewer} onClick={() => { setUserEditedMessage(false); generateMessage(); }}>
+													{isGenerating ? (
+														<><Sparkles className="h-3 w-3 mr-1 animate-pulse" /> {t("googleChat.generating")}</>
+													) : (
+														<><Sparkles className="h-3 w-3 mr-1" /> {hasGeneratedOnce ? t("googleChat.generateNew") : t("googleChat.generate")}</>
+													)}
+												</Button>
+											</div>
+											{!hasConfirmedMessage && (
+												<Button type="button" size="sm" disabled={!customMessage.trim()} variant={hasConfirmedMessage ? "default" : "secondary"} onClick={() => setHasConfirmedMessage(true)}>
+													{t("googleChat.confirm")}
+												</Button>
+											)}
+											{hasConfirmedMessage && (
+												<div className="flex items-center gap-2">
+													<Button type="button" size="sm" variant="default" disabled>{t("googleChat.confirmed")}</Button>
+													<Button type="button" size="sm" variant="ghost" onClick={() => setHasConfirmedMessage(false)} title={t("googleChat.edit")}>
+														<Pencil className="h-3 w-3 mr-1" /> {t("googleChat.edit")}
+													</Button>
+												</div>
+											)}
+										</div>
+										{!hasConfirmedMessage && customMessage.trim().length > 0 && (
+											<p className="text-[10px] text-muted-foreground">{t("googleChat.confirmHint")}</p>
+										)}
+										{customMessage.trim().length > 0 && (
+											<div className="mt-2 p-2 bg-muted rounded text-left text-xs whitespace-pre-wrap border border-muted-foreground/10">
+												<span className="font-semibold block mb-1 text-muted-foreground">{t("googleChat.preview")}</span>
+												{previewMessage}
+											</div>
+										)}
+									</div>
+								)}
 							</div>
 						</div>
 					)}
