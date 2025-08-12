@@ -82,20 +82,6 @@ export function AssignmentCard() {
 		}
 	}, [enableCustomMessage, nextReviewer, prUrl, locale]);
 
-	// Derived preview replacing handlebars so user sees final message
-	const previewMessage = (() => {
-		if (!enableCustomMessage || !customMessage) return "";
-		if (!nextReviewer) return customMessage;
-		const reviewerMention = nextReviewer.name; // UI preview uses plain name
-		const requesterName = user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.firstName || user?.lastName || user?.email || "");
-		const prLinked = prUrl ? `<${prUrl}|PR>` : "PR";
-		return customMessage
-			.replace(/{{\s*reviewer_name\s*}}/gi, reviewerMention)
-			.replace(/{{\s*requester_name\s*}}/gi, requesterName)
-			.replace(/{{\s*pr\s*}}/gi, prLinked)
-			.replace(/{{\s*PR\s*}}/g, prLinked)
-			.replace(/\bPR:?\s*(<[^>]+\|PR>)/g, '$1');
-	})();
 
 	// Simple helper to call Vercel AI Gateway (model + system prompt handled server side proxy or direct)
 	const generateMessage = async () => {
@@ -360,12 +346,6 @@ export function AssignmentCard() {
 										</div>
 										{!hasConfirmedMessage && customMessage.trim().length > 0 && (
 											<p className="text-[10px] text-muted-foreground">{t("googleChat.confirmHint")}</p>
-										)}
-										{customMessage.trim().length > 0 && (
-											<div className="mt-2 p-2 bg-muted rounded text-left text-xs whitespace-pre-wrap border border-muted-foreground/10">
-												<span className="font-semibold block mb-1 text-muted-foreground">{t("googleChat.preview")}</span>
-												{previewMessage}
-											</div>
 										)}
 									</div>
 								)}
