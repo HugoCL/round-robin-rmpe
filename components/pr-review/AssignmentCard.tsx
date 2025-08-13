@@ -18,6 +18,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 import { usePRReview } from "./PRReviewContext";
 
@@ -46,13 +47,24 @@ export function AssignmentCard() {
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [userEditedMessage, setUserEditedMessage] = useState(false);
 	const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
+	const [selectedMods, setSelectedMods] = useState<string[]>([]);
+
+	// Available mods based on locale
+	const availableMods = [
+		{ id: 'funny', label: locale.startsWith('es') ? 'Divertido' : 'Funny', emoji: '😄' },
+		{ id: 'references', label: locale.startsWith('es') ? 'Con Referencias' : 'With References', emoji: '🎬' },
+		{ id: 'spanglish', label: 'Spanglish', emoji: '🇺🇸🇪🇸' },
+		{ id: 'formal', label: locale.startsWith('es') ? 'Formal' : 'Formal', emoji: '🎩' },
+		{ id: 'motivational', label: locale.startsWith('es') ? 'Motivacional' : 'Motivational', emoji: '💪' },
+		{ id: 'pirate', label: locale.startsWith('es') ? 'Pirata' : 'Pirate', emoji: '🏴‍☠️' },
+	];
 
 	// Build default template (mirrors server fallback) when needed
 	const buildDefaultTemplate = () => {
 		if (!nextReviewer) return "";
 		// Use translation templates (with fallback) and include PR link only when available
-		const greetingTpl = t("googleChat.greeting");
-		const assignmentTpl = t("googleChat.assignmentMessage");
+		const greetingTpl = t("googleChat.greeting", { reviewer: "{reviewer}" });
+		const assignmentTpl = t("googleChat.assignmentMessage", { assigner: "{assigner}", prUrl: "{prUrl}" });
 		const greetingResolved = greetingTpl === "googleChat.greeting"
 			? (locale.startsWith("es") ? "📋 ¡Hola {reviewer}!" : "📋 Hello {reviewer}!")
 			: greetingTpl;
@@ -94,6 +106,7 @@ export function AssignmentCard() {
 					reviewer_name: nextReviewer.name,
 					requester_name: requesterName,
 					pr: prUrl,
+					mods: selectedMods.length ? selectedMods : undefined,
 				});
 				if (response) {
 					setCustomMessage(response);
@@ -320,6 +333,38 @@ export function AssignmentCard() {
 											disabled={hasConfirmedMessage}
 											placeholder={t("googleChat.textareaPlaceholder")}
 										/>
+
+										{/* Mod chips */}
+										<div className="space-y-2">
+											<Label className="text-xs text-muted-foreground">
+												{locale.startsWith('es') ? 'Modificadores de estilo:' : 'Style modifiers:'}
+											</Label>
+											<div className="flex flex-wrap gap-2">
+												{availableMods.map((mod) => {
+													const isActive = selectedMods.includes(mod.id);
+													return (
+														<Badge
+															key={mod.id}
+															variant={isActive ? "default" : "outline"}
+															className="cursor-pointer hover:bg-primary/80 transition-colors text-xs"
+															onClick={() => {
+																if (hasConfirmedMessage) return;
+																setSelectedMods((prev) =>
+																	prev.includes(mod.id)
+																		? prev.filter((m) => m !== mod.id)
+																		: [...prev, mod.id],
+																);
+															setHasConfirmedMessage(false);
+														}}
+													>
+														<span className="mr-1">{mod.emoji}</span>
+														{mod.label}
+													</Badge>
+													);
+												})}
+											</div>
+										</div>
+
 										<div className="flex flex-wrap gap-2 justify-between items-center">
 											<div className="flex gap-2">
 												<Button type="button" variant="outline" size="sm" disabled={hasConfirmedMessage || isGenerating || !prUrl.trim() || !nextReviewer} onClick={() => { setUserEditedMessage(false); generateMessage(); }}>
