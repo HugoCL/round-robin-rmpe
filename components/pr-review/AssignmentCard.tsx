@@ -56,7 +56,7 @@ export function AssignmentCard() {
 		{ id: 'spanglish', label: 'Spanglish', emoji: '🇺🇸🇪🇸' },
 		{ id: 'formal', label: locale.startsWith('es') ? 'Formal' : 'Formal', emoji: '🎩' },
 		{ id: 'motivational', label: locale.startsWith('es') ? 'Motivacional' : 'Motivational', emoji: '💪' },
-		{ id: 'pirate', label: locale.startsWith('es') ? 'Pirata' : 'Pirate', emoji: '🏴‍☠️' },
+		{ id: 'pirate', label: locale.startsWith('es') ? 'Pirata' : 'Pirate', emoji: '🏴\u200d☠️' },
 	];
 
 	// Build default template (mirrors server fallback) when needed
@@ -309,7 +309,7 @@ export function AssignmentCard() {
 									<Label htmlFor="pr-url" className="text-xs text-muted-foreground">{t("googleChat.prUrlLabel")}</Label>
 									<Input
 										id="pr-url"
-										placeholder="https://github.com/owner/repo/pull/123"
+										placeholder={t("placeholders.githubPrUrl")}
 										value={prUrl}
 										onChange={(e) => setPrUrl(e.target.value)}
 										className="text-sm"
@@ -337,7 +337,8 @@ export function AssignmentCard() {
 										{/* Mod chips */}
 										<div className="space-y-2">
 											<Label className="text-xs text-muted-foreground">
-												{locale.startsWith('es') ? 'Modificadores de estilo:' : 'Style modifiers:'}
+-												{locale.startsWith('es') ? 'Modificadores de estilo:' : 'Style modifiers:'}
++												{t("modifiers.styleModifiers")}
 											</Label>
 											<div className="flex flex-wrap gap-2">
 												{availableMods.map((mod) => {

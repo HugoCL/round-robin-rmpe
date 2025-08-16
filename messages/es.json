@@ -347,5 +347,29 @@
   "you-are-not-authenticated": "No estás autenticado",
   "change-history": "Historial de Cambios",
   "manage-reviewers-and-their-assignments": "Administrar revisores y sus tareas",
-  "reset-counts": "Restablecer recuentos"
+  "reset-counts": "Restablecer recuentos",
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "morePagesLabel": "Más páginas",
+    "goToPreviousPage": "Ir a la página anterior",
+    "goToNextPage": "Ir a la página siguiente",
+    "pagination": "paginación"
+  },
+  "accessibility": {
+    "close": "Cerrar",
+    "toggleSidebar": "Alternar barra lateral",
+    "breadcrumb": "miga de pan",
+    "more": "Más"
+  },
+  "placeholders": {
+    "selectTeam": "Selecciona equipo",
+    "githubPrUrl": "https://github.com/owner/repo/pull/123"
+  },
+  "skipConfirmation": {
+    "message": "¡Hola {nextReviewer}! Serás omitido (sin incrementar tu contador) y este PR será asignado a {nextAfterSkip}. ¿Confirmas?"
+  },
+  "modifiers": {
+    "styleModifiers": "Modificadores de estilo:"
+  }
 }

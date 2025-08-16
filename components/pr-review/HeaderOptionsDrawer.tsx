@@ -183,9 +183,9 @@ export function HeaderOptionsDrawer() {
 										</Button>
 									</TooltipTrigger>
 									<TooltipContent>
-										<p>Last updated: {formatLastUpdated()}</p>
+										<p>{t("last-updated")} {formatLastUpdated()}</p>
 										<p className="text-xs text-muted-foreground">
-											Updates automatically every minute
+											{t("updates-automatically-every-minute-when-tab-is-active")}
 										</p>
 									</TooltipContent>
 								</Tooltip>

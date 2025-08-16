@@ -48,11 +48,10 @@ export function SkipConfirmationDialog({
 				<div className="py-4">
 					{nextReviewer && nextAfterSkip && (
 						<p className="text-center">
-							Hey <span className="font-bold">{nextReviewer.name}</span>! You'll
-							be skipped (without incrementing your count) and this PR will be
-							assigned to{" "}
-							<span className="font-bold">{nextAfterSkip.name}</span>. Do you
-							confirm?
+							{t("skipConfirmation.message", { 
+								nextReviewer: nextReviewer.name, 
+								nextAfterSkip: nextAfterSkip.name 
+							})}
 						</p>
 					)}
 				</div>

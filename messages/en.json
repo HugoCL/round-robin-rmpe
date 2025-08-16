@@ -299,5 +299,29 @@
   "updates-automatically-every-minute-when-tab-is-active": "• Updates automatically every minute when tab is active",
   "reset-counts": "Reset Counts",
   "change-history": "Change History",
-  "manage-reviewers-and-their-assignments": "Manage reviewers and their assignments"
+  "manage-reviewers-and-their-assignments": "Manage reviewers and their assignments",
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "morePagesLabel": "More pages",
+    "goToPreviousPage": "Go to previous page",
+    "goToNextPage": "Go to next page",
+    "pagination": "pagination"
+  },
+  "accessibility": {
+    "close": "Close",
+    "toggleSidebar": "Toggle Sidebar",
+    "breadcrumb": "breadcrumb",
+    "more": "More"
+  },
+  "placeholders": {
+    "selectTeam": "Select team",
+    "githubPrUrl": "https://github.com/owner/repo/pull/123"
+  },
+  "skipConfirmation": {
+    "message": "Hey {nextReviewer}! You'll be skipped (without incrementing your count) and this PR will be assigned to {nextAfterSkip}. Do you confirm?"
+  },
+  "modifiers": {
+    "styleModifiers": "Style modifiers:"
+  }
 }
