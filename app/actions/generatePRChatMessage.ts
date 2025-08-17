@@ -60,7 +60,7 @@ export async function generatePRChatMessage({ reviewer_name, requester_name, pr,
         return {
             response: trimmed,
         }
-    } catch (e) {
+    } catch (_e) {
         return { response: 'Error generando mensaje' };
     }
 }

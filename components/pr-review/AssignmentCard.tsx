@@ -1,7 +1,7 @@
 "use client";
 
-import { Undo2, User, MessageSquare, Sparkles, RotateCcw, Pencil } from "lucide-react";
-import { useState, useEffect, useTransition } from "react";
+import { Undo2, User, MessageSquare, Sparkles, Pencil } from "lucide-react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -42,7 +42,7 @@ export function AssignmentCard() {
 	const [prUrl, setPrUrl] = useState("");
 	const [customMessage, setCustomMessage] = useState("");
 	const [isGenerating, setIsGenerating] = useState(false);
-	const [isPending, startTransition] = useTransition();
+	const [_isPending, startTransition] = useTransition();
 	const [hasConfirmedMessage, setHasConfirmedMessage] = useState(false);
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [userEditedMessage, setUserEditedMessage] = useState(false);
@@ -60,7 +60,7 @@ export function AssignmentCard() {
 	];
 
 	// Build default template (mirrors server fallback) when needed
-	const buildDefaultTemplate = () => {
+	const buildDefaultTemplate = useCallback(() => {
 		if (!nextReviewer) return "";
 		// Use translation templates (with fallback) and include PR link only when available
 		const greetingTpl = t("googleChat.greeting", { reviewer: "{reviewer}" });
@@ -82,7 +82,7 @@ export function AssignmentCard() {
 			.replace("{assigner}", assignerName)
 			.replace("{prUrl}", prUrl);
 		return `${reviewerLine}\n${assignment}`;
-	};
+	}, [nextReviewer, t, locale, user, prUrl]);
 
 	// When enabling custom message, or when dependencies change and user hasn't edited, pre-fill
 	useEffect(() => {
@@ -92,7 +92,7 @@ export function AssignmentCard() {
 				setCustomMessage(defMsg);
 			}
 		}
-	}, [enableCustomMessage, nextReviewer, prUrl, locale]);
+	}, [enableCustomMessage, userEditedMessage, customMessage, buildDefaultTemplate]);
 
 
 	// Simple helper to call Vercel AI Gateway (model + system prompt handled server side proxy or direct)
@@ -337,8 +337,7 @@ export function AssignmentCard() {
 										{/* Mod chips */}
 										<div className="space-y-2">
 											<Label className="text-xs text-muted-foreground">
--												{locale.startsWith('es') ? 'Modificadores de estilo:' : 'Style modifiers:'}
-+												{t("modifiers.styleModifiers")}
+												{t("styleModifiers")}
 											</Label>
 											<div className="flex flex-wrap gap-2">
 												{availableMods.map((mod) => {
