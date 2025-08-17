@@ -1,4 +1,3 @@
-# Lefthook configuration: run Biome on staged files with safe fixes, then lint everything touched
 pre-commit:
   parallel: false
   commands:

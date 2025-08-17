@@ -41,6 +41,13 @@
 			"type": "shell",
 			"command": "npx next build",
 			"group": "build"
+		},
+		{
+			"label": "Install deps + lefthook",
+			"type": "shell",
+			"command": "pnpm install",
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }

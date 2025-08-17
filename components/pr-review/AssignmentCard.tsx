@@ -1,13 +1,11 @@
 "use client";
 
-import { Undo2, User, MessageSquare, Sparkles, Pencil } from "lucide-react";
-import { useState, useEffect, useTransition, useCallback } from "react";
-import { useTranslations, useLocale } from "next-intl";
 import { useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { MessageSquare, Pencil, Sparkles, Undo2, User } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { generatePRChatMessage } from "@/app/actions/generatePRChatMessage";
-import type { Doc } from "@/convex/_generated/dataModel";
-
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -15,10 +13,11 @@ import {
 	CardFooter,
 	CardHeader,
 } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 
 import { usePRReview } from "./PRReviewContext";
 
@@ -51,12 +50,32 @@ export function AssignmentCard() {
 
 	// Available mods based on locale
 	const availableMods = [
-		{ id: 'funny', label: locale.startsWith('es') ? 'Divertido' : 'Funny', emoji: '😄' },
-		{ id: 'references', label: locale.startsWith('es') ? 'Con Referencias' : 'With References', emoji: '🎬' },
-		{ id: 'spanglish', label: 'Spanglish', emoji: '🇺🇸🇪🇸' },
-		{ id: 'formal', label: locale.startsWith('es') ? 'Formal' : 'Formal', emoji: '🎩' },
-		{ id: 'motivational', label: locale.startsWith('es') ? 'Motivacional' : 'Motivational', emoji: '💪' },
-		{ id: 'pirate', label: locale.startsWith('es') ? 'Pirata' : 'Pirate', emoji: '🏴\u200d☠️' },
+		{
+			id: "funny",
+			label: locale.startsWith("es") ? "Divertido" : "Funny",
+			emoji: "😄",
+		},
+		{
+			id: "references",
+			label: locale.startsWith("es") ? "Con Referencias" : "With References",
+			emoji: "🎬",
+		},
+		{ id: "spanglish", label: "Spanglish", emoji: "🇺🇸🇪🇸" },
+		{
+			id: "formal",
+			label: locale.startsWith("es") ? "Formal" : "Formal",
+			emoji: "🎩",
+		},
+		{
+			id: "motivational",
+			label: locale.startsWith("es") ? "Motivacional" : "Motivational",
+			emoji: "💪",
+		},
+		{
+			id: "pirate",
+			label: locale.startsWith("es") ? "Pirata" : "Pirate",
+			emoji: "🏴\u200d☠️",
+		},
 	];
 
 	// Build default template (mirrors server fallback) when needed
@@ -64,19 +83,32 @@ export function AssignmentCard() {
 		if (!nextReviewer) return "";
 		// Use translation templates (with fallback) and include PR link only when available
 		const greetingTpl = t("googleChat.greeting", { reviewer: "{reviewer}" });
-		const assignmentTpl = t("googleChat.assignmentMessage", { assigner: "{assigner}", prUrl: "{prUrl}" });
-		const greetingResolved = greetingTpl === "googleChat.greeting"
-			? (locale.startsWith("es") ? "📋 ¡Hola {reviewer}!" : "📋 Hello {reviewer}!")
-			: greetingTpl;
-		const assignmentResolved = assignmentTpl === "googleChat.assignmentMessage"
-			? (locale.startsWith("es")
-				? "{assigner} te ha asignado la revisión de este <{prUrl}|PR>"
-				: "{assigner} has assigned you the review of this <{prUrl}|PR>")
-			: assignmentTpl;
-		const reviewerLine = greetingResolved.replace("{reviewer}", nextReviewer.name);
-		const assignerName = user?.firstName && user?.lastName
-			? `${user.firstName} ${user.lastName}`
-			: user?.firstName || user?.lastName || (locale.startsWith("es") ? "Alguien" : "Someone");
+		const assignmentTpl = t("googleChat.assignmentMessage", {
+			assigner: "{assigner}",
+			prUrl: "{prUrl}",
+		});
+		const greetingResolved =
+			greetingTpl === "googleChat.greeting"
+				? locale.startsWith("es")
+					? "📋 ¡Hola {reviewer}!"
+					: "📋 Hello {reviewer}!"
+				: greetingTpl;
+		const assignmentResolved =
+			assignmentTpl === "googleChat.assignmentMessage"
+				? locale.startsWith("es")
+					? "{assigner} te ha asignado la revisión de este <{prUrl}|PR>"
+					: "{assigner} has assigned you the review of this <{prUrl}|PR>"
+				: assignmentTpl;
+		const reviewerLine = greetingResolved.replace(
+			"{reviewer}",
+			nextReviewer.name,
+		);
+		const assignerName =
+			user?.firstName && user?.lastName
+				? `${user.firstName} ${user.lastName}`
+				: user?.firstName ||
+					user?.lastName ||
+					(locale.startsWith("es") ? "Alguien" : "Someone");
 		if (!prUrl) return reviewerLine; // wait for PR URL before adding second line with link
 		const assignment = assignmentResolved
 			.replace("{assigner}", assignerName)
@@ -92,8 +124,12 @@ export function AssignmentCard() {
 				setCustomMessage(defMsg);
 			}
 		}
-	}, [enableCustomMessage, userEditedMessage, customMessage, buildDefaultTemplate]);
-
+	}, [
+		enableCustomMessage,
+		userEditedMessage,
+		customMessage,
+		buildDefaultTemplate,
+	]);
 
 	// Simple helper to call Vercel AI Gateway (model + system prompt handled server side proxy or direct)
 	const generateMessage = async () => {
@@ -101,7 +137,10 @@ export function AssignmentCard() {
 		setIsGenerating(true);
 		startTransition(async () => {
 			try {
-				const requesterName = user?.firstName || user?.lastName ? `${user?.firstName || ""} ${user?.lastName || ""}`.trim() : (user?.email || "");
+				const requesterName =
+					user?.firstName || user?.lastName
+						? `${user?.firstName || ""} ${user?.lastName || ""}`.trim()
+						: user?.email || "";
 				const { response } = await generatePRChatMessage({
 					reviewer_name: nextReviewer.name,
 					requester_name: requesterName,
@@ -152,7 +191,12 @@ export function AssignmentCard() {
 						assignerEmail: user?.email,
 						assignerName,
 						sendOnlyNames: true,
-						customMessage: enableCustomMessage && hasConfirmedMessage && customMessage.trim().length > 0 ? customMessage : undefined,
+						customMessage:
+							enableCustomMessage &&
+							hasConfirmedMessage &&
+							customMessage.trim().length > 0
+								? customMessage
+								: undefined,
 					});
 					if (!result.success) {
 						console.error("Failed to send Google Chat message:", result.error);
@@ -306,7 +350,12 @@ export function AssignmentCard() {
 						<div className="w-full mb-6">
 							<div className="bg-muted/30 rounded-lg p-4 space-y-3 border border-muted/50">
 								<div className="space-y-1">
-									<Label htmlFor="pr-url" className="text-xs text-muted-foreground">{t("googleChat.prUrlLabel")}</Label>
+									<Label
+										htmlFor="pr-url"
+										className="text-xs text-muted-foreground"
+									>
+										{t("googleChat.prUrlLabel")}
+									</Label>
 									<Input
 										id="pr-url"
 										placeholder={t("placeholders.githubPrUrl")}
@@ -318,10 +367,25 @@ export function AssignmentCard() {
 
 								{/* Toggle for custom message */}
 								<div className="pt-2 border-t border-muted/50 flex items-center justify-between">
-									<Label htmlFor="toggle-custom-msg" className="text-xs text-muted-foreground flex items-center gap-1">
-										<MessageSquare className="h-3 w-3" /> {t("googleChat.customizeToggle")}
+									<Label
+										htmlFor="toggle-custom-msg"
+										className="text-xs text-muted-foreground flex items-center gap-1"
+									>
+										<MessageSquare className="h-3 w-3" />{" "}
+										{t("googleChat.customizeToggle")}
 									</Label>
-									<Switch id="toggle-custom-msg" checked={enableCustomMessage} onCheckedChange={(val)=>{setEnableCustomMessage(val); setHasConfirmedMessage(false); if(!val){setCustomMessage(""); setUserEditedMessage(false);} }} />
+									<Switch
+										id="toggle-custom-msg"
+										checked={enableCustomMessage}
+										onCheckedChange={(val) => {
+											setEnableCustomMessage(val);
+											setHasConfirmedMessage(false);
+											if (!val) {
+												setCustomMessage("");
+												setUserEditedMessage(false);
+											}
+										}}
+									/>
 								</div>
 
 								{enableCustomMessage && (
@@ -329,7 +393,12 @@ export function AssignmentCard() {
 										<textarea
 											className="w-full text-sm rounded-md border bg-background p-2 resize-none h-28"
 											value={customMessage}
-											onChange={(e) => { if (hasConfirmedMessage) return; setCustomMessage(e.target.value); setHasConfirmedMessage(false); setUserEditedMessage(true); }}
+											onChange={(e) => {
+												if (hasConfirmedMessage) return;
+												setCustomMessage(e.target.value);
+												setHasConfirmedMessage(false);
+												setUserEditedMessage(true);
+											}}
 											disabled={hasConfirmedMessage}
 											placeholder={t("googleChat.textareaPlaceholder")}
 										/>
@@ -354,12 +423,12 @@ export function AssignmentCard() {
 																		? prev.filter((m) => m !== mod.id)
 																		: [...prev, mod.id],
 																);
-															setHasConfirmedMessage(false);
-														}}
-													>
-														<span className="mr-1">{mod.emoji}</span>
-														{mod.label}
-													</Badge>
+																setHasConfirmedMessage(false);
+															}}
+														>
+															<span className="mr-1">{mod.emoji}</span>
+															{mod.label}
+														</Badge>
 													);
 												})}
 											</div>
@@ -367,31 +436,78 @@ export function AssignmentCard() {
 
 										<div className="flex flex-wrap gap-2 justify-between items-center">
 											<div className="flex gap-2">
-												<Button type="button" variant="outline" size="sm" disabled={hasConfirmedMessage || isGenerating || !prUrl.trim() || !nextReviewer} onClick={() => { setUserEditedMessage(false); generateMessage(); }}>
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													disabled={
+														hasConfirmedMessage ||
+														isGenerating ||
+														!prUrl.trim() ||
+														!nextReviewer
+													}
+													onClick={() => {
+														setUserEditedMessage(false);
+														generateMessage();
+													}}
+												>
 													{isGenerating ? (
-														<><Sparkles className="h-3 w-3 mr-1 animate-pulse" /> {t("googleChat.generating")}</>
+														<>
+															<Sparkles className="h-3 w-3 mr-1 animate-pulse" />{" "}
+															{t("googleChat.generating")}
+														</>
 													) : (
-														<><Sparkles className="h-3 w-3 mr-1" /> {hasGeneratedOnce ? t("googleChat.generateNew") : t("googleChat.generate")}</>
+														<>
+															<Sparkles className="h-3 w-3 mr-1" />{" "}
+															{hasGeneratedOnce
+																? t("googleChat.generateNew")
+																: t("googleChat.generate")}
+														</>
 													)}
 												</Button>
 											</div>
 											{!hasConfirmedMessage && (
-												<Button type="button" size="sm" disabled={!customMessage.trim()} variant={hasConfirmedMessage ? "default" : "secondary"} onClick={() => setHasConfirmedMessage(true)}>
+												<Button
+													type="button"
+													size="sm"
+													disabled={!customMessage.trim()}
+													variant={
+														hasConfirmedMessage ? "default" : "secondary"
+													}
+													onClick={() => setHasConfirmedMessage(true)}
+												>
 													{t("googleChat.confirm")}
 												</Button>
 											)}
 											{hasConfirmedMessage && (
 												<div className="flex items-center gap-2">
-													<Button type="button" size="sm" variant="default" disabled>{t("googleChat.confirmed")}</Button>
-													<Button type="button" size="sm" variant="ghost" onClick={() => setHasConfirmedMessage(false)} title={t("googleChat.edit")}>
-														<Pencil className="h-3 w-3 mr-1" /> {t("googleChat.edit")}
+													<Button
+														type="button"
+														size="sm"
+														variant="default"
+														disabled
+													>
+														{t("googleChat.confirmed")}
+													</Button>
+													<Button
+														type="button"
+														size="sm"
+														variant="ghost"
+														onClick={() => setHasConfirmedMessage(false)}
+														title={t("googleChat.edit")}
+													>
+														<Pencil className="h-3 w-3 mr-1" />{" "}
+														{t("googleChat.edit")}
 													</Button>
 												</div>
 											)}
 										</div>
-										{!hasConfirmedMessage && customMessage.trim().length > 0 && (
-											<p className="text-[10px] text-muted-foreground">{t("googleChat.confirmHint")}</p>
-										)}
+										{!hasConfirmedMessage &&
+											customMessage.trim().length > 0 && (
+												<p className="text-[10px] text-muted-foreground">
+													{t("googleChat.confirmHint")}
+												</p>
+											)}
 									</div>
 								)}
 							</div>
