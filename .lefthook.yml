@@ -1,0 +1,11 @@
+# Lefthook configuration: run Biome on staged files with safe fixes, then lint everything touched
+pre-commit:
+  parallel: false
+  commands:
+    biome-fix:
+      glob: "**/*.{js,jsx,ts,tsx,css,md,json}"
+      run: pnpm exec biome check --write {staged_files}
+      stage_fixed: true
+    biome-lint:
+      glob: "**/*.{js,jsx,ts,tsx,css,md,json}"
+      run: pnpm exec biome lint {staged_files}
