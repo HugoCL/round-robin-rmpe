@@ -305,12 +305,12 @@ export function AssignmentCard() {
 								isAssigning ? "-translate-y-12" : "translate-y-0"
 							}`}
 						>
-							<div className="mb-4">
-								<span className="text-sm font-medium text-primary uppercase tracking-wide">
+							<div className="mb-2">
+								<span className="text-xs font-medium text-primary uppercase tracking-wide">
 									{t("pr.nextReviewer")}
 								</span>
 							</div>
-							<h3 className="text-5xl font-bold text-primary">
+							<h3 className="text-4xl md:text-5xl font-bold text-primary">
 								{nextReviewer.name}
 							</h3>
 						</div>
@@ -519,8 +519,10 @@ export function AssignmentCard() {
 							disabled={
 								!nextReviewer || isAssigning || (sendMessage && !prUrl.trim())
 							}
-							className="flex-1 bg-primary hover:bg-primary/90 max-w-md"
+							className="flex-1 max-w-md"
 							size="lg"
+							variant="primary"
+							shape="pill"
 						>
 							{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
 						</Button>

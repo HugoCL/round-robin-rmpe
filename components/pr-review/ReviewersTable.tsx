@@ -1,11 +1,10 @@
 "use client";
 
-import { Check, Edit, X } from "lucide-react";
-import { useState } from "react";
-import { useTranslations } from "next-intl";
 import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+import { Check, Edit, X } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,11 +18,16 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
-import { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
 import { useConvexTags } from "@/hooks/useConvexTags";
+import { cn } from "@/lib/utils";
+import { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
 
-interface ReviewersTableProps { teamSlug?: string }
+interface ReviewersTableProps {
+	teamSlug?: string;
+}
 
 import { usePRReview } from "./PRReviewContext";
 
@@ -137,21 +141,30 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 				{reviewers.map((reviewer) => (
 					<TableRow
 						key={reviewer._id}
-						className={reviewer.isAbsent ? "opacity-60" : ""}
+						className={cn(
+							"group transition-colors",
+							reviewer.isAbsent ? "opacity-60" : "hover:bg-muted/40",
+						)}
 					>
 						<TableCell className="font-medium">
-							<div className="flex items-center gap-2">
-								<span>{reviewer.name}</span>
+							<div className="flex items-center gap-3">
+								<Avatar className="h-8 w-8">
+									<AvatarFallback>
+										{reviewer.name?.slice(0, 2).toUpperCase()}
+									</AvatarFallback>
+								</Avatar>
+								<span className="truncate max-w-[16ch]">{reviewer.name}</span>
 								{nextReviewer?._id === reviewer._id && (
-									<Badge className="bg-green-500 text-white">
+									<Badge variant="primarySoft" size="xs">
 										{t("pr.next")}
 									</Badge>
 								)}
-								{assignmentFeed.lastAssigned && assignmentFeed.lastAssigned.reviewerId === reviewer._id && (
-									<Badge className="bg-blue-500 text-white">
-										{t("pr.lastAssigned")}
-									</Badge>
-								)}
+								{assignmentFeed.lastAssigned &&
+									assignmentFeed.lastAssigned.reviewerId === reviewer._id && (
+										<Badge variant="neutral" size="xs">
+											{t("pr.lastAssigned")}
+										</Badge>
+									)}
 							</div>
 						</TableCell>
 						{showEmails && (
@@ -221,11 +234,22 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 							</div>
 						</TableCell>
 						<TableCell>
-												<EditReviewerDialog
-													reviewer={reviewer}
-													onUpdateReviewer={async (id, name, email) => updateReviewer(id, name, email)}
-													trigger={<Button size="icon" variant="ghost" className="h-8 w-8"><Edit className="h-4 w-4 text-muted-foreground" /></Button>}
-												/>
+							<EditReviewerDialog
+								reviewer={reviewer}
+								onUpdateReviewer={async (id, name, email) =>
+									updateReviewer(id, name, email)
+								}
+								trigger={
+									<Button
+										size="icon"
+										variant="ghost"
+										className="h-8 w-8 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+										aria-label={t("common.edit")}
+									>
+										<Edit className="h-4 w-4 text-muted-foreground" />
+									</Button>
+								}
+							/>
 						</TableCell>
 					</TableRow>
 				))}

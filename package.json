@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "biome lint",
     "biome:fix": "biome check",
-  "biome:fix-unsafe": "biome check --unsafe --write",
-  "prepare": "lefthook install"
+    "biome:fix-unsafe": "biome check --unsafe --write",
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.30.1",
