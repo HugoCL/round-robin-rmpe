@@ -376,26 +376,26 @@ export default function PRReviewAssignment({
 			return;
 		if (!userInfo?.email) return;
 
-		const last =
-			convexAssignmentFeed.items[convexAssignmentFeed.items.length - 1];
-		const key = `${last.reviewerId}-${last.timestamp}`;
+		// Feed is stored newest-first in Convex (most recent at index 0).
+		const newest = convexAssignmentFeed.items[0];
+		const key = `${newest.reviewerId}-${newest.timestamp}`;
 
-		// On first render, initialize and skip playing
+		// On first render, initialize with the newest item and skip playing
 		if (lastProcessedAssignmentRef.current === null) {
 			lastProcessedAssignmentRef.current = key;
 			return;
 		}
 
-		// Only react to new items
+		// Only react to truly new items (a different newest key)
 		if (lastProcessedAssignmentRef.current === key) return;
 		lastProcessedAssignmentRef.current = key;
 
 		// Skip non-assignment events
-		if (last.skipped || last.isAbsentSkip) return;
+		if (newest.skipped || newest.isAbsentSkip) return;
 
 		// Find the assigned reviewer's email
 		const assignedReviewer = (reviewers || []).find(
-			(r) => String(r._id) === String(last.reviewerId),
+			(r) => String(r._id) === String(newest.reviewerId),
 		);
 		const assignedEmail = assignedReviewer?.email?.toLowerCase();
 		const currentEmail = userInfo.email.toLowerCase();

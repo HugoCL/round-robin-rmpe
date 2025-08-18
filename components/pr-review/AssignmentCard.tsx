@@ -1,10 +1,18 @@
 "use client";
 
 import { useAction } from "convex/react";
-import { MessageSquare, Pencil, Sparkles, Undo2, User } from "lucide-react";
+import {
+	Lightbulb,
+	MessageSquare,
+	Pencil,
+	Sparkles,
+	Undo2,
+	User,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { generatePRChatMessage } from "@/app/actions/generatePRChatMessage";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -262,6 +270,12 @@ export function AssignmentCard() {
 	// Get the next reviewer after current
 	const nextAfterCurrent = findNextAfterCurrent();
 
+	// Suggestion: if the logged-in user is the next reviewer, suggest using "I'm the Next One"
+	const isCurrentUserNext = (() => {
+		if (!user?.email || !nextReviewer?.email) return false;
+		return user.email.toLowerCase() === nextReviewer.email.toLowerCase();
+	})();
+
 	return (
 		<Card className="h-full flex flex-col">
 			<CardHeader className="flex-shrink-0">
@@ -314,6 +328,30 @@ export function AssignmentCard() {
 								{nextReviewer.name}
 							</h3>
 						</div>
+
+						{/* Inline hint when you are next */}
+						{isCurrentUserNext && (
+							<div className="flex justify-center mt-2">
+								<Alert className="max-w-xl w-full bg-background">
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-2">
+											<Lightbulb className="h-4 w-4 text-muted-foreground" />
+											<span className="text-sm leading-5">
+												{t("pr.youAreNext")}
+											</span>
+										</div>
+										<Button
+											size="sm"
+											variant="outline"
+											className="whitespace-nowrap"
+											onClick={onImTheNextOne}
+										>
+											{t("pr.suggestImTheNext")}
+										</Button>
+									</div>
+								</Alert>
+							</div>
+						)}
 
 						{/* Next after current (upcoming) */}
 						{nextAfterCurrent && (
