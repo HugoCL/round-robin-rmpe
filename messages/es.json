@@ -87,7 +87,8 @@
 		"language": "Idioma",
 		"viewOptions": "Opciones de Vista",
 		"historyAndData": "Historial y Datos",
-		"help": "Ayuda"
+		"help": "Ayuda",
+		"viewPR": "Ver PR"
 	},
 	"pr": {
 		"manageData": "Gestionar Datos",

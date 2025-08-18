@@ -163,6 +163,7 @@ export default function PRReviewAssignment({
 				wasSkipped: item.skipped,
 				isAbsentSkip: item.isAbsentSkip,
 				actionBy: item.actionBy?.email, // flatten to string per AssignmentItem type
+				prUrl: item.prUrl,
 				tagId: item.tagId,
 			})) || [],
 		lastAssigned: convexAssignmentFeed?.lastAssigned
@@ -483,8 +484,8 @@ export default function PRReviewAssignment({
 				onDataUpdate: async () => {
 					await handleDataUpdate();
 				},
-				assignPR: async () => {
-					await assignPR();
+				assignPR: async (opts) => {
+					await assignPR(opts);
 				},
 				undoAssignment: async () => {
 					await undoAssignment();

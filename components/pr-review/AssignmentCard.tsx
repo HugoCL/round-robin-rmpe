@@ -182,7 +182,7 @@ export function AssignmentCard() {
 	const handleAssignPR = async () => {
 		setIsAssigning(true);
 		try {
-			await onAssignPR();
+			await onAssignPR({ prUrl: prUrl.trim() || undefined });
 			// Send message to Google Chat if enabled
 			if (sendMessage && prUrl.trim() && nextReviewer) {
 				try {

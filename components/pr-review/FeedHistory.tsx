@@ -1,11 +1,12 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Doc } from "@/convex/_generated/dataModel";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 
 export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 	const t = useTranslations();
@@ -71,6 +72,18 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 												.join(" ") || item.actionBy.email}
 										</p>
 									)}
+									{item.prUrl && (
+										<p className="text-xs mt-1">
+											<Link
+												href={item.prUrl}
+												target="_blank"
+												rel="noreferrer"
+												className="text-blue-600 hover:underline"
+											>
+												{t("common.viewPR")}
+											</Link>
+										</p>
+									)}
 									{item.tagId && (
 										<div className="mt-1">{getTagBadge(item.tagId)}</div>
 									)}
@@ -83,7 +96,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 									)}
 									{item.skipped && (
 										<Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:border-transparent hover:text-white">
-										{t("pr.skip")}
+											{t("pr.skip")}
 										</Badge>
 									)}
 									{!item.forced && !item.skipped && (

@@ -39,7 +39,8 @@
 		"viewOptions": "View Options",
 		"historyAndData": "History & Data",
 		"help": "Help",
-		"update": "Update"
+		"update": "Update",
+		"viewPR": "View PR"
 	},
 	"pr": {
 		"manageData": "Manage Data",
