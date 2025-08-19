@@ -10,7 +10,7 @@ import {
 	User,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useId, useState, useTransition } from "react";
 import { generatePRChatMessage } from "@/app/actions/generatePRChatMessage";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +55,11 @@ export function AssignmentCard() {
 	const [userEditedMessage, setUserEditedMessage] = useState(false);
 	const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
 	const [selectedMods, setSelectedMods] = useState<string[]>([]);
+
+	// Unique IDs for inputs to satisfy lint rule and avoid duplicate IDs
+	const sendMessageId = useId();
+	const prUrlInputId = useId();
+	const toggleCustomMsgId = useId();
 
 	// Available mods based on locale
 	const availableMods = [
@@ -126,7 +131,8 @@ export function AssignmentCard() {
 
 	// When enabling custom message, or when dependencies change and user hasn't edited, pre-fill
 	useEffect(() => {
-		if (enableCustomMessage && !userEditedMessage) {
+		// Only prefill when there's no message yet to avoid overwriting AI/user messages
+		if (enableCustomMessage && !userEditedMessage && !customMessage.trim()) {
 			const defMsg = buildDefaultTemplate();
 			if (defMsg && defMsg !== customMessage) {
 				setCustomMessage(defMsg);
@@ -284,7 +290,7 @@ export function AssignmentCard() {
 					<div className="flex items-center space-x-2">
 						<MessageSquare className="h-4 w-4 text-green-600" />
 						<Switch
-							id="send-message"
+							id={sendMessageId}
 							checked={sendMessage}
 							onCheckedChange={setSendMessage}
 							className="data-[state=checked]:bg-green-600"
@@ -389,13 +395,13 @@ export function AssignmentCard() {
 							<div className="bg-muted/30 rounded-lg p-4 space-y-3 border border-muted/50">
 								<div className="space-y-1">
 									<Label
-										htmlFor="pr-url"
+										htmlFor={prUrlInputId}
 										className="text-xs text-muted-foreground"
 									>
 										{t("googleChat.prUrlLabel")}
 									</Label>
 									<Input
-										id="pr-url"
+										id={prUrlInputId}
 										placeholder={t("placeholders.githubPrUrl")}
 										value={prUrl}
 										onChange={(e) => setPrUrl(e.target.value)}
@@ -406,14 +412,14 @@ export function AssignmentCard() {
 								{/* Toggle for custom message */}
 								<div className="pt-2 border-t border-muted/50 flex items-center justify-between">
 									<Label
-										htmlFor="toggle-custom-msg"
+										htmlFor={toggleCustomMsgId}
 										className="text-xs text-muted-foreground flex items-center gap-1"
 									>
 										<MessageSquare className="h-3 w-3" />{" "}
 										{t("googleChat.customizeToggle")}
 									</Label>
 									<Switch
-										id="toggle-custom-msg"
+										id={toggleCustomMsgId}
 										checked={enableCustomMessage}
 										onCheckedChange={(val) => {
 											setEnableCustomMessage(val);
@@ -444,7 +450,7 @@ export function AssignmentCard() {
 										{/* Mod chips */}
 										<div className="space-y-2">
 											<Label className="text-xs text-muted-foreground">
-												{t("styleModifiers")}
+												{t("modifiers.styleModifiers")}
 											</Label>
 											<div className="flex flex-wrap gap-2">
 												{availableMods.map((mod) => {

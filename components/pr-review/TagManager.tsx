@@ -1,12 +1,18 @@
 "use client";
 
-import { X, Edit2, Palette, Save } from "lucide-react";
-import { useState } from "react";
-import { useTranslations } from "next-intl";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { Edit2, Palette, Save, X } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -18,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -26,14 +31,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 
 import { usePRReview } from "./PRReviewContext";
@@ -78,6 +78,10 @@ export function TagManager() {
 		[reviewerId: Id<"reviewers">]: { [tagId: Id<"tags">]: boolean };
 	}>({});
 	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+	// unique ids for inputs to satisfy linter
+	const tagNameId = useId();
+	const tagDescriptionId = useId();
 
 	const handleAddTag = async () => {
 		if (!teamSlug) {
@@ -124,6 +128,7 @@ export function TagManager() {
 			setLoading(false);
 		}
 	};
+
 	const handleUpdateTag = async () => {
 		if (!editingTag) return;
 
@@ -194,7 +199,7 @@ export function TagManager() {
 
 		setLoading(true);
 		try {
-			const promises = [];
+			const promises = [] as Promise<unknown>[];
 
 			for (const [reviewerId, tagChanges] of Object.entries(pendingChanges)) {
 				for (const [tagId, shouldAssign] of Object.entries(tagChanges)) {
@@ -317,9 +322,9 @@ export function TagManager() {
 						<CardContent className="space-y-4">
 							<div className="grid grid-cols-2 gap-4">
 								<div>
-									<Label htmlFor="tagName">{t("tags.tagName")}</Label>
+									<Label htmlFor={tagNameId}>{t("tags.tagName")}</Label>
 									<Input
-										id="tagName"
+										id={tagNameId}
 										value={editingTag ? editingTag.name : newTagName}
 										onChange={(e) => {
 											if (editingTag) {
@@ -373,11 +378,11 @@ export function TagManager() {
 								</div>
 							</div>
 							<div>
-								<Label htmlFor="tagDescription">
+								<Label htmlFor={tagDescriptionId}>
 									{t("tags.description")} ({t("common.optional")})
 								</Label>
 								<Textarea
-									id="tagDescription"
+									id={tagDescriptionId}
 									value={
 										editingTag
 											? editingTag.description || ""

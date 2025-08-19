@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -9,12 +9,13 @@
 		"ignoreUnknown": false,
 		"includes": [
 			"**",
-			"!**/.next/**",
-			"!**/node_modules/**",
-			"!**/dist/**",
-			"!**/build/**",
-			"!**/.vercel/**",
-			"!**/convex/_generated/**"
+			"!**/.next",
+			"!**/node_modules",
+			"!**/dist",
+			"!**/build",
+			"!**/.vercel",
+			"!**/convex/_generated",
+			"!**/components/ui"
 		]
 	},
 	"formatter": {

@@ -2,7 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 // Extend Window typing to allow vendor-prefixed AudioContext in older browsers
 declare global {
@@ -49,6 +49,7 @@ export default function PRReviewAssignment({
 	const t = useTranslations();
 	const { user, isLoaded } = useUser();
 	const { signOut } = useClerk();
+	const importInputId = useId();
 
 	// State for managing UI preferences and dialogs
 	const [snapshots, setSnapshots] = useState<BackupEntry[]>([]);
@@ -515,9 +516,8 @@ export default function PRReviewAssignment({
 
 				{compactLayout ? <CompactLayout /> : <ClassicLayout />}
 
-				{/* Hidden input for import functionality */}
 				<input
-					id="import-file"
+					id={importInputId}
 					type="file"
 					accept=".json"
 					onChange={importFileHandler}

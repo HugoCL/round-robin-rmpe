@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useId, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -12,9 +12,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { api } from "@/convex/_generated/api";
 
 function slugify(input: string): string {
 	return input
@@ -36,6 +36,10 @@ export default function CreateTeamForm() {
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
+	// unique ids for inputs
+	const nameId = useId();
+	const slugId = useId();
+
 	const derivedSlug = useMemo(
 		() => (slug ? slugify(slug) : slugify(name)),
 		[name, slug],
@@ -56,7 +60,9 @@ export default function CreateTeamForm() {
 			router.replace(`/${locale}/${finalSlug}`);
 		} catch (err) {
 			const message =
-				err instanceof Error ? err.message : t("team.createError", { default: "Failed to create team" });
+				err instanceof Error
+					? err.message
+					: t("team.createError", { default: "Failed to create team" });
 			setError(message);
 			setSubmitting(false);
 		}
@@ -71,24 +77,25 @@ export default function CreateTeamForm() {
 			<CardContent>
 				<form onSubmit={onSubmit} className="space-y-4">
 					<div className="space-y-2">
-						<Label htmlFor="team-name">{t("team.nameLabel")}</Label>
+						<Label htmlFor={nameId}>{t("team.nameLabel")}</Label>
 						<Input
-								id="team-name"
-								placeholder={t("team.namePlaceholder")}
-								value={name}
-								onChange={(e) => setName(e.target.value)}
-							/>
+							id={nameId}
+							placeholder={t("team.namePlaceholder")}
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+						/>
 					</div>
 					<div className="space-y-2">
-						<Label htmlFor="team-slug">{t("team.slugLabel")}</Label>
+						<Label htmlFor={slugId}>{t("team.slugLabel")}</Label>
 						<Input
-								id="team-slug"
-								placeholder={t("team.slugPlaceholder")}
-								value={slug}
-								onChange={(e) => setSlug(e.target.value)}
-							/>
+							id={slugId}
+							placeholder={t("team.slugPlaceholder")}
+							value={slug}
+							onChange={(e) => setSlug(e.target.value)}
+						/>
 						<p className="text-xs text-muted-foreground">
-							{t("team.slugWillUsePrefix")} <span className="font-mono">{derivedSlug || ""}</span>
+							{t("team.slugWillUsePrefix")}{" "}
+							<span className="font-mono">{derivedSlug || ""}</span>
 						</p>
 					</div>
 					{error && (

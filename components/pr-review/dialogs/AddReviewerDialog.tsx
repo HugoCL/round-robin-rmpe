@@ -1,8 +1,8 @@
 "use client";
 
 import { UserPlus } from "lucide-react";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -31,12 +31,19 @@ export function AddReviewerDialog({
 	const [isOpen, setIsOpen] = useState(false);
 	const [isAdding, setIsAdding] = useState(false);
 
+	// unique ids for inputs
+	const reviewerNameId = useId();
+	const reviewerEmailId = useId();
+
 	const handleAddReviewer = async () => {
 		if (!newReviewerName.trim() || !newReviewerEmail.trim()) return;
 
 		setIsAdding(true);
 		try {
-			const success = await onAddReviewer(newReviewerName.trim(), newReviewerEmail.trim());
+			const success = await onAddReviewer(
+				newReviewerName.trim(),
+				newReviewerEmail.trim(),
+			);
 			if (success) {
 				setNewReviewerName("");
 				setNewReviewerEmail("");
@@ -70,33 +77,33 @@ export function AddReviewerDialog({
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
 					<div className="grid grid-cols-4 items-center gap-4">
-					<Label htmlFor="reviewer-name" className="text-right">
-						{t("common.name")}
-					</Label>
-					<Input
-						id="reviewer-name"
-						placeholder={t("reviewer.enterName")}
-						value={newReviewerName}
-						onChange={(e) => setNewReviewerName(e.target.value)}
-						onKeyDown={handleKeyDown}
-						className="col-span-3"
-						autoFocus
-					/>
-				</div>
-				<div className="grid grid-cols-4 items-center gap-4">
-					<Label htmlFor="reviewer-email" className="text-right">
-						{t("common.email")}
-					</Label>
-					<Input
-						id="reviewer-email"
-						type="email"
-						placeholder={t("reviewer.enterEmail")}
-						value={newReviewerEmail}
-						onChange={(e) => setNewReviewerEmail(e.target.value)}
-						onKeyDown={handleKeyDown}
-						className="col-span-3"
-					/>
-				</div>
+						<Label htmlFor={reviewerNameId} className="text-right">
+							{t("common.name")}
+						</Label>
+						<Input
+							id={reviewerNameId}
+							placeholder={t("reviewer.enterName")}
+							value={newReviewerName}
+							onChange={(e) => setNewReviewerName(e.target.value)}
+							onKeyDown={handleKeyDown}
+							className="col-span-3"
+							autoFocus
+						/>
+					</div>
+					<div className="grid grid-cols-4 items-center gap-4">
+						<Label htmlFor={reviewerEmailId} className="text-right">
+							{t("common.email")}
+						</Label>
+						<Input
+							id={reviewerEmailId}
+							type="email"
+							placeholder={t("reviewer.enterEmail")}
+							value={newReviewerEmail}
+							onChange={(e) => setNewReviewerEmail(e.target.value)}
+							onKeyDown={handleKeyDown}
+							className="col-span-3"
+						/>
+					</div>
 				</div>
 				<DialogFooter>
 					<Button
@@ -108,7 +115,9 @@ export function AddReviewerDialog({
 					</Button>
 					<Button
 						onClick={handleAddReviewer}
-						disabled={!newReviewerName.trim() || !newReviewerEmail.trim() || isAdding}
+						disabled={
+							!newReviewerName.trim() || !newReviewerEmail.trim() || isAdding
+						}
 					>
 						{isAdding ? t("common.adding") : t("pr.addReviewer")}
 					</Button>

@@ -1,11 +1,9 @@
 "use client";
 
 import { Edit } from "lucide-react";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
-
 import {
 	Dialog,
 	DialogContent,
@@ -17,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 
 interface EditReviewerDialogProps {
 	reviewer: Doc<"reviewers">;
@@ -38,6 +37,10 @@ export function EditReviewerDialog({
 	const [reviewerEmail, setReviewerEmail] = useState(reviewer.email);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isUpdating, setIsUpdating] = useState(false);
+
+	// unique ids
+	const nameId = useId();
+	const emailId = useId();
 
 	const handleUpdateReviewer = async () => {
 		if (!reviewerName.trim() || !reviewerEmail.trim()) return;
@@ -81,18 +84,18 @@ export function EditReviewerDialog({
 					</Button>
 				)}
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[425px]">
+			<DialogContent className="sm:max-w[425px]">
 				<DialogHeader>
 					<DialogTitle>{t("reviewer.editReviewer")}</DialogTitle>
 					<DialogDescription>{t("reviewer.editDescription")}</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
 					<div className="grid grid-cols-4 items-center gap-4">
-						<Label htmlFor="edit-reviewer-name" className="text-right">
+						<Label htmlFor={nameId} className="text-right">
 							{t("common.name")}
 						</Label>
 						<Input
-							id="edit-reviewer-name"
+							id={nameId}
 							placeholder={t("reviewer.enterName")}
 							value={reviewerName}
 							onChange={(e) => setReviewerName(e.target.value)}
@@ -102,11 +105,11 @@ export function EditReviewerDialog({
 						/>
 					</div>
 					<div className="grid grid-cols-4 items-center gap-4">
-						<Label htmlFor="edit-reviewer-email" className="text-right">
+						<Label htmlFor={emailId} className="text-right">
 							{t("common.email")}
 						</Label>
 						<Input
-							id="edit-reviewer-email"
+							id={emailId}
 							type="email"
 							placeholder={t("reviewer.enterEmail")}
 							value={reviewerEmail}
