@@ -324,6 +324,19 @@
 	"skipConfirmation": {
 		"message": "Hey {nextReviewer}! You'll be skipped (without incrementing your count) and this PR will be assigned to {nextAfterSkip}. Do you confirm?"
 	},
+	"shortcutConfirm": {
+		"title": "Confirm Shortcut",
+		"assignDescription": "You triggered Assign PR with the keyboard.",
+		"skipDescription": "You triggered Skip Reviewer with the keyboard.",
+		"undoDescription": "You triggered Undo Last Assignment with the keyboard.",
+		"assignDetail": "This will assign the PR to {nextReviewer}.",
+		"skipDetail": "This will move {currentReviewer} to the end and assign the PR to {nextAfterSkip}.",
+		"undoDetail": "This will undo the last assignment (from {lastAssignedFrom} to {lastAssignedTo}).",
+		"confirmHint": "Press Y to confirm or N to cancel.",
+		"actionAssign": "Assign PR",
+		"actionSkip": "Skip Reviewer",
+		"actionUndo": "Undo Assignment"
+	},
 	"modifiers": {
 		"styleModifiers": "Style modifiers:"
 	}

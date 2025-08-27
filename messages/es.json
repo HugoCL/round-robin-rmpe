@@ -372,6 +372,19 @@
 	"skipConfirmation": {
 		"message": "¡Hola {nextReviewer}! Serás omitido (sin incrementar tu contador) y este PR será asignado a {nextAfterSkip}. ¿Confirmas?"
 	},
+	"shortcutConfirm": {
+		"title": "Confirmar Atajo",
+		"assignDescription": "Activaste Asignar PR con el teclado.",
+		"skipDescription": "Activaste Omitir Revisor con el teclado.",
+		"undoDescription": "Activaste Deshacer Última Asignación con el teclado.",
+		"assignDetail": "Esto asignará el PR a {nextReviewer}.",
+		"skipDetail": "Esto moverá a {currentReviewer} al final y asignará el PR a {nextAfterSkip}.",
+		"undoDetail": "Esto deshará la última asignación (de {lastAssignedFrom} a {lastAssignedTo}).",
+		"confirmHint": "Presiona Y para confirmar o N para cancelar.",
+		"actionAssign": "Asignar PR",
+		"actionSkip": "Omitir Revisor",
+		"actionUndo": "Deshacer Asignación"
+	},
 	"modifiers": {
 		"styleModifiers": "Modificadores de estilo:"
 	}

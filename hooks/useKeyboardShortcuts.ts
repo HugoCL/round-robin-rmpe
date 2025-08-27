@@ -4,16 +4,23 @@ interface KeyboardShortcutsProps {
 	onAssignPR: () => Promise<void>;
 	onSkipReviewer: () => Promise<void>;
 	onUndoAssignment: () => Promise<void>;
-	onRefresh: () => void;
 	isNextReviewerAvailable: boolean;
+	/**
+	 * Called instead of executing the action immediately. Should open a confirmation UI.
+	 * Provide the action key (assign|skip|undo|refresh) and a runner to execute when confirmed.
+	 */
+	onShortcutTriggered?: (
+		action: "assign" | "skip" | "undo",
+		run: () => void,
+	) => void;
 }
 
 export function useKeyboardShortcuts({
 	onAssignPR,
 	onSkipReviewer,
 	onUndoAssignment,
-	onRefresh,
 	isNextReviewerAvailable,
+	onShortcutTriggered,
 }: KeyboardShortcutsProps) {
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -27,23 +34,32 @@ export function useKeyboardShortcuts({
 				case "a":
 					if (isNextReviewerAvailable) {
 						event.preventDefault();
-						onAssignPR();
+						const run = () => {
+							void onAssignPR();
+						};
+						if (onShortcutTriggered) return onShortcutTriggered("assign", run);
+						run();
 					}
 					break;
 				case "s":
 					if (isNextReviewerAvailable) {
 						event.preventDefault();
-						onSkipReviewer();
+						const run = () => {
+							void onSkipReviewer();
+						};
+						if (onShortcutTriggered) return onShortcutTriggered("skip", run);
+						run();
 					}
 					break;
-				case "z":
+				case "z": {
 					event.preventDefault();
-					onUndoAssignment();
+					const runUndo = () => {
+						void onUndoAssignment();
+					};
+					if (onShortcutTriggered) return onShortcutTriggered("undo", runUndo);
+					runUndo();
 					break;
-				case "r":
-					event.preventDefault();
-					onRefresh();
-					break;
+				}
 			}
 		};
 
@@ -56,7 +72,7 @@ export function useKeyboardShortcuts({
 		onAssignPR,
 		onSkipReviewer,
 		onUndoAssignment,
-		onRefresh,
 		isNextReviewerAvailable,
+		onShortcutTriggered,
 	]);
 }

@@ -1,21 +1,21 @@
 // Dialogs
+
+// Other components
+export { AssignmentCard } from "./AssignmentCard";
 export { AddReviewerDialog } from "./dialogs/AddReviewerDialog";
 export { DeleteReviewerDialog } from "./dialogs/DeleteReviewerDialog";
 export { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
 export { ForceAssignDialog } from "./dialogs/ForceAssignDialog";
+export { ShortcutConfirmationDialog } from "./dialogs/ShortcutConfirmationDialog";
 export { SkipConfirmationDialog } from "./dialogs/SkipConfirmationDialog";
 export { SnapshotDialog } from "./dialogs/SnapshotDialog";
-
-// Layouts
-export { ClassicLayout } from "./layouts/ClassicLayout";
-export { CompactLayout } from "./layouts/CompactLayout";
+export { HeaderOptionsDrawer } from "./HeaderOptionsDrawer";
 
 // Header
 export { PageHeader } from "./header/PageHeader";
-
-// Other components
-export { AssignmentCard } from "./AssignmentCard";
-export { HeaderOptionsDrawer } from "./HeaderOptionsDrawer";
+// Layouts
+export { ClassicLayout } from "./layouts/ClassicLayout";
+export { CompactLayout } from "./layouts/CompactLayout";
 export { default as PRReviewAssignment } from "./PRReviewAssignment";
 export { RecentAssignments } from "./RecentAssignments";
 export { ReviewersTable } from "./ReviewersTable";

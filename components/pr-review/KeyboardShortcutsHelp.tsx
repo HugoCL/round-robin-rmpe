@@ -1,8 +1,8 @@
 "use client";
 
 import { Keyboard } from "lucide-react";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -31,11 +31,6 @@ export function KeyboardShortcutsHelp() {
 		{
 			key: "Ctrl/Cmd + Z",
 			description: t("shortcuts.undoAssignment"),
-			note: t("shortcuts.alwaysAvailable"),
-		},
-		{
-			key: "Ctrl/Cmd + R",
-			description: t("shortcuts.refreshData"),
 			note: t("shortcuts.alwaysAvailable"),
 		},
 	];

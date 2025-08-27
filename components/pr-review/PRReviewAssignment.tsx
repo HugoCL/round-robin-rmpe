@@ -18,6 +18,10 @@ import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Assignment, UserInfo } from "@/lib/types";
+import {
+	type ShortcutAction,
+	ShortcutConfirmationDialog,
+} from "./dialogs/ShortcutConfirmationDialog";
 import { SkipConfirmationDialog } from "./dialogs/SkipConfirmationDialog";
 import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
@@ -64,6 +68,11 @@ export default function PRReviewAssignment({
 	);
 	const [compactLayout, setCompactLayout] = useState(false);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
+	const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
+	const [pendingShortcut, setPendingShortcut] = useState<ShortcutAction | null>(
+		null,
+	);
+	const pendingRunnerRef = useRef<(() => void) | null>(null);
 	// Track the last processed assignment to avoid duplicate notifications
 	const lastProcessedAssignmentRef = useRef<string | null>(null);
 	// Reusable AudioContext for short beeps
@@ -108,9 +117,28 @@ export default function PRReviewAssignment({
 		onAssignPR: assignPR,
 		onSkipReviewer: skipReviewer,
 		onUndoAssignment: undoAssignment,
-		onRefresh: handleManualRefresh,
 		isNextReviewerAvailable: !!nextReviewer,
+		onShortcutTriggered: (action, run) => {
+			setPendingShortcut(action);
+			pendingRunnerRef.current = run;
+			setShortcutDialogOpen(true);
+		},
 	});
+
+	const handleConfirmShortcut = () => {
+		if (pendingRunnerRef.current && pendingShortcut) {
+			pendingRunnerRef.current();
+		}
+		setShortcutDialogOpen(false);
+		setPendingShortcut(null);
+		pendingRunnerRef.current = null;
+	};
+
+	const handleCancelShortcut = () => {
+		setShortcutDialogOpen(false);
+		setPendingShortcut(null);
+		pendingRunnerRef.current = null;
+	};
 
 	// Load user preferences from localStorage on component mount
 	useEffect(() => {
@@ -538,6 +566,22 @@ export default function PRReviewAssignment({
 					nextAfterSkip={nextAfterSkip}
 					onConfirm={handleConfirmSkipToNext}
 					onCancel={handleCancelSkip}
+				/>
+
+				<ShortcutConfirmationDialog
+					isOpen={shortcutDialogOpen}
+					action={pendingShortcut}
+					nextReviewerName={nextReviewer?.name}
+					currentReviewerName={nextReviewer?.name}
+					nextAfterSkipName={nextAfterSkip?.name}
+					lastAssignmentFrom={assignmentFeed.items[0]?.actionBy || null}
+					lastAssignmentTo={assignmentFeed.items[0]?.reviewerName || null}
+					onConfirm={() => handleConfirmShortcut()}
+					onCancel={handleCancelShortcut}
+					onOpenChange={(open) => {
+						if (!open) handleCancelShortcut();
+						else setShortcutDialogOpen(true);
+					}}
 				/>
 			</div>
 		</PRReviewProvider>
