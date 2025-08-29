@@ -15,6 +15,7 @@ export const sendGoogleChatMessage = action({
 		locale: v.optional(v.string()),
 		assignerEmail: v.optional(v.string()),
 		assignerName: v.optional(v.string()),
+		assignerChatId: v.optional(v.string()),
 		sendOnlyNames: v.optional(v.boolean()),
 		// If provided, this message text will be sent as-is (no template building)
 		customMessage: v.optional(v.string()),
@@ -29,6 +30,7 @@ export const sendGoogleChatMessage = action({
 			locale = "en",
 			assignerEmail,
 			assignerName,
+			assignerChatId,
 			sendOnlyNames = false,
 			customMessage,
 		},
@@ -46,27 +48,45 @@ export const sendGoogleChatMessage = action({
 			let messageText: string;
 
 			if (customMessage && customMessage.trim().length > 0) {
+				// If a Chat ID exists but caller requested names only, override to allow tagging
+				if (reviewerChatId && sendOnlyNames) {
+					sendOnlyNames = false;
+				}
 				// Replace handlebars placeholders with actual values / formatted link
-				const base = customMessage.trim();
+				let base = customMessage.trim();
 				// Prefer explicit Chat user ID if provided
 				// Build mentions: only use Chat user ID mention if present; otherwise plain name
 				const reviewerMention =
 					reviewerChatId && !sendOnlyNames
 						? `<users/${reviewerChatId}>`
 						: reviewerName;
+
 				const assignerMention =
-					assignerEmail || assignerName
-						? sendOnlyNames
-							? assignerName || "Unknown"
-							: assignerEmail
-								? `<users/${assignerEmail}>`
-								: assignerName || "Unknown"
-						: assignerName || "";
+					assignerChatId && !sendOnlyNames
+						? `<users/${assignerChatId}>`
+						: assignerName?.trim()
+							? assignerName
+							: assignerEmail?.trim()
+								? assignerEmail
+								: "Someone";
 
 				// Google Chat link style: <url|PR>
 				const prLinked = `<${prUrl}|PR>`;
 
+				// If user forgot to include any reviewer placeholder and we have a chat id and tagging is enabled, inject mention once at start
+				if (
+					reviewerChatId &&
+					!sendOnlyNames &&
+					!/\{\{\s*reviewer_name\s*\}\}/i.test(base) &&
+					!base.includes(reviewerMention) &&
+					!/<users\//.test(base)
+				) {
+					base = `${reviewerMention} ${base}`;
+				}
+
+				// Replace new link placeholder pattern before legacy ones
 				const replaced = base
+					.replace(/<URL_PLACEHOLDER\|PR>/g, `<${prUrl}|PR>`)
 					.replace(/{{\s*reviewer_name\s*}}/gi, reviewerMention)
 					.replace(/{{\s*requester_name\s*}}/gi, assignerMention)
 					.replace(/{{\s*pr\s*}}/gi, prLinked)
@@ -84,13 +104,13 @@ export const sendGoogleChatMessage = action({
 						? `<users/${reviewerChatId}>`
 						: reviewerName;
 				const assignerMention =
-					assignerEmail || assignerName
-						? sendOnlyNames
-							? assignerName || "Unknown"
-							: assignerEmail
-								? `<users/${assignerEmail}>`
-								: assignerName || "Unknown"
-						: null;
+					assignerChatId && !sendOnlyNames
+						? `<users/${assignerChatId}>`
+						: assignerName?.trim()
+							? assignerName
+							: assignerEmail?.trim()
+								? assignerEmail
+								: null;
 
 				// Build the message with proper mentions using i18n
 				const greetingText = t.googleChat.greeting.replace(

@@ -3,17 +3,10 @@ import { generateObject } from "ai";
 import z from "zod/v4";
 
 interface GenerateArgs {
-	reviewer_name: string;
-	requester_name: string;
-	pr: string;
-	locale?: string;
-	mods?: string[];
+	mods?: string[]; // stylistic modifiers
 }
 
 export async function generatePRChatMessage({
-	reviewer_name,
-	requester_name,
-	pr,
 	mods,
 }: GenerateArgs): Promise<{ response: string }> {
 	const gatewayUrl = process.env.AI_GATEWAY_API_KEY;
@@ -22,49 +15,102 @@ export async function generatePRChatMessage({
 	}
 
 	// Base system prompt
-	let system = `Ayuda a crear mensajes para avisar al compañero que debe revisar un PR. Tono amistoso y divertido. Siempre en español latino. Mantén los placeholders tal cual: {{reviewer_name}}, {{requester_name}}, {{PR}} si aparecen. Si ya vienen reemplazados, respétalos.`;
+	let system = `Eres un asistente que genera mensajes breves para avisar que hay que revisar un Pull Request.
 
-	// Modify system prompt based on selected mods
+	REQUISITOS ESTRICTOS (NO LOS ROMPAS):
+	1. Siempre debes incluir EXACTAMENTE estos placeholders una sola vez cada uno: {{reviewer_name}} {{requester_name}} <URL_PLACEHOLDER|PR>
+	2. No reemplaces ni traduzcas los placeholders. No cambies "URL_PLACEHOLDER" ni "PR" dentro del formato de enlace.
+	3. El formato del enlace debe ser exactamente: <URL_PLACEHOLDER|PR> (con los símbolos <, > y la barra vertical).
+	4. No añadas otros enlaces ni repitas el placeholder de PR.
+	5. Mensaje de 1 o 2 líneas, máximo 280 caracteres (límite duro 400). Tono amistoso, divertido, español latino neutral (a menos que se te diga lo contrario).
+	6. Puedes usar emojis moderados. Sin comillas ni markdown.
+	7. No inventes datos; sólo placeholders.
+
+	Si violas una regla se usará un fallback.`;
+
+	// Strengthen style modifier weighting: build an ESTILO block summarizing chosen modifiers first
 	if (mods && mods.length > 0) {
+		const styleDirectives: string[] = [];
 		for (const mod of mods) {
 			switch (mod) {
 				case "funny":
-					system += ` Hazlo extra divertido con humor y chistes relacionados al código o desarrollo.`;
+					styleDirectives.push(
+						"Humor notorio y chistes de programación (sin sarcasmo negativo)",
+					);
 					break;
 				case "references":
-					system += ` Incluye referencias a películas, series, libros o cultura pop de manera creativa.`;
+					styleDirectives.push(
+						"Al menos 1 referencia breve y natural a cultura pop / películas / series / refranes / memes.",
+					);
 					break;
 				case "spanglish":
-					system += ` Úsalo en spanglish mezclando español e inglés de manera natural y divertida.`;
+					styleDirectives.push(
+						"Mezcla evidente de español e inglés (Spanglish) en varias palabras, mantén placeholders intactos",
+					);
 					break;
 				case "formal":
-					system += ` Mantén un tono más formal y profesional pero aún amigable.`;
+					styleDirectives.push(
+						"Registro formal y profesional, cordial, sin jerga excesiva",
+					);
 					break;
 				case "motivational":
-					system += ` Hazlo motivacional e inspirador, como si fueras un coach de desarrollo.`;
+					styleDirectives.push(
+						"Tono motivacional / inspirador, refuerza impacto o trabajo en equipo",
+					);
 					break;
 				case "pirate":
-					system += ` Escríbelo como si fueras un pirata, usando jerga pirata adaptada al desarrollo de software.`;
+					styleDirectives.push(
+						"Jerga pirata evidente (¡arrr!, abordaje, tesoro del PR) adaptada al desarrollo",
+					);
 					break;
 			}
 		}
+		if (styleDirectives.length > 0) {
+			// Prepend an emphasized style block so model treats it as high priority after rules
+			system += `\n\nESTILO (aplica TODAS las seleccionadas, sin sacrificar reglas de placeholders):\n- ${styleDirectives.join("\n- ")}\n`;
+		}
 	}
 
-	const prompt = `Genera un mensaje. Datos:\n- Revisor: ${reviewer_name}\n- Solicitante: ${requester_name}\n- PR: ${pr}\nResponde en como mucho 2 líneas y máximo 280 caracteres. Devuélvelo como texto plano sin comillas. El mensaje generado debe ser de menos de 400 caracteres`;
+	const prompt = `Genera el mensaje cumpliendo estrictamente las reglas.`;
 
 	try {
-		const { object } = await generateObject({
-			schema: z.object({
-				response: z.string().min(1).max(400),
-			}),
-			model: "openai/gpt-4.1-mini",
-			prompt: prompt,
-			system: system,
-		});
-		const trimmed = object.response ? object.response.trim() : "";
-		return {
-			response: trimmed,
-		};
+		let attempts = 0;
+		let finalText = "";
+		const REQUIRED = [
+			"{{reviewer_name}}",
+			"{{requester_name}}",
+			"<URL_PLACEHOLDER|PR>",
+		] as const;
+
+		while (attempts < 2) {
+			attempts++;
+			const { object } = await generateObject({
+				schema: z.object({
+					response: z.string().min(1).max(400),
+				}),
+				model: "openai/gpt-4.1-mini",
+				prompt,
+				system,
+			});
+			const candidate = object.response ? object.response.trim() : "";
+
+			const hasAll = REQUIRED.every((p) => candidate.includes(p));
+			const duplicates = REQUIRED.some(
+				(p) => candidate.split(p).length - 1 > 1,
+			);
+			if (hasAll && !duplicates) {
+				finalText = candidate;
+				break;
+			}
+			if (attempts === 1) continue;
+		}
+
+		if (!finalText) {
+			finalText = `Hey {{reviewer_name}} 👋 hay un nuevo PR <URL_PLACEHOLDER|PR> de {{requester_name}} listo para tu review. ¡Gracias!`;
+		}
+
+		if (finalText.length > 400) finalText = finalText.slice(0, 397) + "...";
+		return { response: finalText };
 	} catch (_e) {
 		return { response: "Error generando mensaje" };
 	}

@@ -6,6 +6,7 @@ export interface UserInfo {
 	email: string;
 	firstName?: string;
 	lastName?: string;
+	googleChatUserId?: string; // optional chat user id for tagging assigner
 }
 
 export interface AssignmentItem {
