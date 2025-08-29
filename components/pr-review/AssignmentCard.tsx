@@ -363,6 +363,11 @@ export function AssignmentCard() {
 										placeholder={t("placeholders.githubPrUrl")}
 										value={prUrl}
 										onChange={(e) => setPrUrl(e.target.value)}
+										autoComplete="off"
+										name="prUrl"
+										inputMode="url"
+										spellCheck={false}
+										data-form-autocomplete="off"
 										className="text-sm"
 									/>
 								</div>
