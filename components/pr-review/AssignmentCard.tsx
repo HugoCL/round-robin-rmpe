@@ -200,11 +200,14 @@ export function AssignmentCard() {
 					const result = await sendGoogleChatAction({
 						reviewerName: nextReviewer.name,
 						reviewerEmail: nextReviewer.email,
+						reviewerChatId:
+							(nextReviewer as unknown as { googleChatUserId?: string })
+								.googleChatUserId || undefined,
 						prUrl,
 						locale,
 						assignerEmail: user?.email,
 						assignerName,
-						sendOnlyNames: true,
+						sendOnlyNames: false,
 						customMessage:
 							enableCustomMessage &&
 							hasConfirmedMessage &&

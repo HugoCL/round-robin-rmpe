@@ -134,6 +134,8 @@
 		"editDescription": "Update the name and email of the reviewer.",
 		"enterName": "Enter reviewer name",
 		"enterEmail": "Enter reviewer email",
+		"googleChatUserIdLabel": "Chat User ID",
+		"googleChatUserIdPlaceholder": "Google Chat user ID (optional)",
 		"deleteTitle": "Remove Reviewer",
 		"deleteDescription": "Are you sure you want to remove {name} from the reviewer list? This action cannot be undone.",
 		"forceAssignTitle": "Force Assign Reviewer",

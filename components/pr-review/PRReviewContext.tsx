@@ -39,8 +39,13 @@ export interface PRReviewContextValue {
 		id: Id<"reviewers">,
 		name: string,
 		email: string,
+		googleChatUserId?: string,
 	) => Promise<boolean>;
-	addReviewer: (name: string, email: string) => Promise<boolean>;
+	addReviewer: (
+		name: string,
+		email: string,
+		googleChatUserId?: string,
+	) => Promise<boolean>;
 	removeReviewer: (id: Id<"reviewers">) => Promise<void>;
 	handleResetCounts: () => void;
 	exportData: () => void;

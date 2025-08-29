@@ -216,7 +216,11 @@ export function useConvexPRReviewData(
 		}
 	};
 
-	const addReviewer = async (name: string, email: string) => {
+	const addReviewer = async (
+		name: string,
+		email: string,
+		googleChatUserId?: string,
+	) => {
 		if (!teamSlug) {
 			toast({
 				title: t("common.error"),
@@ -248,6 +252,7 @@ export function useConvexPRReviewData(
 				teamSlug,
 				name: name.trim(),
 				email: email.trim(),
+				googleChatUserId: googleChatUserId?.trim() || undefined,
 			});
 
 			toast({
@@ -268,7 +273,12 @@ export function useConvexPRReviewData(
 		}
 	};
 
-	const updateReviewer = async (id: string, name: string, email: string) => {
+	const updateReviewer = async (
+		id: string,
+		name: string,
+		email: string,
+		googleChatUserId?: string,
+	) => {
 		if (!name.trim()) {
 			toast({
 				title: t("data.addReviewerEmptyNameTitle"),
@@ -292,6 +302,7 @@ export function useConvexPRReviewData(
 				id: id as Id<"reviewers">,
 				name: name.trim(),
 				email: email.trim(),
+				googleChatUserId: googleChatUserId?.trim() || undefined,
 			});
 
 			toast({

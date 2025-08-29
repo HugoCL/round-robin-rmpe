@@ -23,6 +23,7 @@ interface EditReviewerDialogProps {
 		id: Id<"reviewers">,
 		name: string,
 		email: string,
+		googleChatUserId?: string,
 	) => Promise<boolean>;
 	trigger?: React.ReactNode;
 }
@@ -37,10 +38,14 @@ export function EditReviewerDialog({
 	const [reviewerEmail, setReviewerEmail] = useState(reviewer.email);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isUpdating, setIsUpdating] = useState(false);
+	const [googleChatUserId, setGoogleChatUserId] = useState(
+		reviewer.googleChatUserId || "",
+	);
 
 	// unique ids
 	const nameId = useId();
 	const emailId = useId();
+	const chatId = useId();
 
 	const handleUpdateReviewer = async () => {
 		if (!reviewerName.trim() || !reviewerEmail.trim()) return;
@@ -51,6 +56,7 @@ export function EditReviewerDialog({
 				reviewer._id,
 				reviewerName.trim(),
 				reviewerEmail.trim(),
+				googleChatUserId.trim() || undefined,
 			);
 			if (success) {
 				setIsOpen(false);
@@ -72,6 +78,7 @@ export function EditReviewerDialog({
 			// Reset form when opening
 			setReviewerName(reviewer.name);
 			setReviewerEmail(reviewer.email);
+			setGoogleChatUserId(reviewer.googleChatUserId || "");
 		}
 	};
 
@@ -102,6 +109,21 @@ export function EditReviewerDialog({
 							onKeyDown={handleKeyDown}
 							className="col-span-3"
 							autoFocus
+						/>
+					</div>
+					<div className="grid grid-cols-4 items-center gap-4">
+						<Label htmlFor={chatId} className="text-right">
+							{t("reviewer.googleChatUserIdLabel", { default: "Chat User ID" })}
+						</Label>
+						<Input
+							id={chatId}
+							placeholder={t("reviewer.googleChatUserIdPlaceholder", {
+								default: "Optional Google Chat user ID",
+							})}
+							value={googleChatUserId}
+							onChange={(e) => setGoogleChatUserId(e.target.value)}
+							onKeyDown={handleKeyDown}
+							className="col-span-3"
 						/>
 					</div>
 					<div className="grid grid-cols-4 items-center gap-4">

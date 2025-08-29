@@ -236,8 +236,8 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 						<TableCell>
 							<EditReviewerDialog
 								reviewer={reviewer}
-								onUpdateReviewer={async (id, name, email) =>
-									updateReviewer(id, name, email)
+								onUpdateReviewer={async (id, name, email, googleChatUserId) =>
+									updateReviewer(id, name, email, googleChatUserId)
 								}
 								trigger={
 									<Button

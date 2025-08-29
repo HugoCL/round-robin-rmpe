@@ -182,6 +182,8 @@
 		"editDescription": "Actualiza el nombre y email del revisor.",
 		"enterName": "Ingresa el nombre del revisor",
 		"enterEmail": "Ingresa el email del revisor",
+		"googleChatUserIdLabel": "ID Usuario Chat",
+		"googleChatUserIdPlaceholder": "ID de Google Chat (opcional)",
 		"deleteTitle": "Eliminar Revisor",
 		"deleteDescription": "¿Estás seguro de que quieres eliminar a {name} de la lista de revisores? Esta acción no se puede deshacer.",
 		"forceAssignTitle": "Forzar Asignación de Revisor",

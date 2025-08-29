@@ -525,9 +525,10 @@ export default function PRReviewAssignment({
 				onToggleAbsence: async (id) => {
 					await handleToggleAbsence(id);
 				},
-				updateReviewer: async (id, name, email) =>
-					await updateReviewer(id, name, email),
-				addReviewer: async (name, email) => await addReviewer(name, email),
+				updateReviewer: async (id, name, email, googleChatUserId) =>
+					await updateReviewer(id, name, email, googleChatUserId),
+				addReviewer: async (name, email, googleChatUserId) =>
+					await addReviewer(name, email, googleChatUserId),
 				removeReviewer: async (id) => {
 					await removeReviewer(id);
 				},

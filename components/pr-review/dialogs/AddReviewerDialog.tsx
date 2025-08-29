@@ -17,7 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface AddReviewerDialogProps {
-	onAddReviewer: (name: string, email: string) => Promise<boolean>;
+	onAddReviewer: (
+		name: string,
+		email: string,
+		googleChatUserId?: string,
+	) => Promise<boolean>;
 	trigger?: React.ReactNode;
 }
 
@@ -30,10 +34,12 @@ export function AddReviewerDialog({
 	const [newReviewerEmail, setNewReviewerEmail] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
 	const [isAdding, setIsAdding] = useState(false);
+	const [googleChatUserId, setGoogleChatUserId] = useState("");
 
 	// unique ids for inputs
 	const reviewerNameId = useId();
 	const reviewerEmailId = useId();
+	const reviewerChatId = useId();
 
 	const handleAddReviewer = async () => {
 		if (!newReviewerName.trim() || !newReviewerEmail.trim()) return;
@@ -43,10 +49,12 @@ export function AddReviewerDialog({
 			const success = await onAddReviewer(
 				newReviewerName.trim(),
 				newReviewerEmail.trim(),
+				googleChatUserId.trim() || undefined,
 			);
 			if (success) {
 				setNewReviewerName("");
 				setNewReviewerEmail("");
+				setGoogleChatUserId("");
 				setIsOpen(false);
 			}
 		} finally {
@@ -100,6 +108,21 @@ export function AddReviewerDialog({
 							placeholder={t("reviewer.enterEmail")}
 							value={newReviewerEmail}
 							onChange={(e) => setNewReviewerEmail(e.target.value)}
+							onKeyDown={handleKeyDown}
+							className="col-span-3"
+						/>
+					</div>
+					<div className="grid grid-cols-4 items-center gap-4">
+						<Label htmlFor={reviewerChatId} className="text-right">
+							{t("reviewer.googleChatUserIdLabel", { default: "Chat User ID" })}
+						</Label>
+						<Input
+							id={reviewerChatId}
+							placeholder={t("reviewer.googleChatUserIdPlaceholder", {
+								default: "Optional Google Chat user ID",
+							})}
+							value={googleChatUserId}
+							onChange={(e) => setGoogleChatUserId(e.target.value)}
 							onKeyDown={handleKeyDown}
 							className="col-span-3"
 						/>

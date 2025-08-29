@@ -87,8 +87,9 @@ export const addReviewer = mutation({
 		teamSlug: v.string(),
 		name: v.string(),
 		email: v.string(),
+		googleChatUserId: v.optional(v.string()),
 	},
-	handler: async (ctx, { teamSlug, name, email }) => {
+	handler: async (ctx, { teamSlug, name, email, googleChatUserId }) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 		// Check if email already exists
 		const existingReviewer = await ctx.db
@@ -116,6 +117,7 @@ export const addReviewer = mutation({
 			teamId: team._id,
 			name: name.trim(),
 			email: email.trim().toLowerCase(),
+			googleChatUserId: googleChatUserId?.trim() || undefined,
 			assignmentCount: minCount,
 			isAbsent: false,
 			createdAt: Date.now(),
@@ -134,8 +136,9 @@ export const updateReviewer = mutation({
 		id: v.id("reviewers"),
 		name: v.string(),
 		email: v.string(),
+		googleChatUserId: v.optional(v.string()),
 	},
-	handler: async (ctx, { id, name, email }) => {
+	handler: async (ctx, { id, name, email, googleChatUserId }) => {
 		const reviewer = await ctx.db.get(id);
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
@@ -157,6 +160,7 @@ export const updateReviewer = mutation({
 		await ctx.db.patch(id, {
 			name: name.trim(),
 			email: email.trim().toLowerCase(),
+			googleChatUserId: googleChatUserId?.trim() || undefined,
 		});
 
 		// Create backup snapshot
@@ -703,6 +707,7 @@ export const importReviewersData = mutation({
 				isAbsent: v.boolean(),
 				createdAt: v.optional(v.number()),
 				tags: v.optional(v.array(v.string())),
+				googleChatUserId: v.optional(v.string()),
 			}),
 		),
 	},
@@ -723,6 +728,7 @@ export const importReviewersData = mutation({
 				teamId: team._id,
 				name: reviewerData.name,
 				email: reviewerData.email,
+				googleChatUserId: reviewerData.googleChatUserId,
 				assignmentCount: reviewerData.assignmentCount,
 				isAbsent: reviewerData.isAbsent,
 				createdAt: reviewerData.createdAt || Date.now(),
@@ -792,6 +798,7 @@ async function createSnapshot(
 		id: reviewer._id,
 		name: reviewer.name,
 		email: reviewer.email,
+		googleChatUserId: reviewer.googleChatUserId,
 		assignmentCount: reviewer.assignmentCount,
 		isAbsent: reviewer.isAbsent,
 		createdAt: reviewer.createdAt,
@@ -857,6 +864,7 @@ export const restoreFromBackup = mutation({
 					teamId: team._id,
 					name: reviewerData.name,
 					email: reviewerData.email,
+					googleChatUserId: reviewerData.googleChatUserId,
 					assignmentCount: reviewerData.assignmentCount,
 					isAbsent: reviewerData.isAbsent,
 					createdAt: reviewerData.createdAt,
