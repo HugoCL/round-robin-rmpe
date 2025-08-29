@@ -3,8 +3,6 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // Google Chat integration action
 export const sendGoogleChatMessage = action({
 	args: {
@@ -16,12 +14,13 @@ export const sendGoogleChatMessage = action({
 		assignerEmail: v.optional(v.string()),
 		assignerName: v.optional(v.string()),
 		assignerChatId: v.optional(v.string()),
+		teamSlug: v.optional(v.string()),
 		sendOnlyNames: v.optional(v.boolean()),
 		// If provided, this message text will be sent as-is (no template building)
 		customMessage: v.optional(v.string()),
 	},
 	handler: async (
-		_ctx,
+		ctx,
 		{
 			reviewerName,
 			reviewerEmail,
@@ -31,6 +30,7 @@ export const sendGoogleChatMessage = action({
 			assignerEmail,
 			assignerName,
 			assignerChatId,
+			teamSlug,
 			sendOnlyNames = false,
 			customMessage,
 		},
@@ -45,6 +45,20 @@ export const sendGoogleChatMessage = action({
 		}
 
 		try {
+			// If no assignerChatId provided by client but we have email + teamSlug, attempt server-side lookup
+			if (!assignerChatId && assignerEmail && teamSlug) {
+				try {
+					const reviewers = await ctx.runQuery(api.queries.getReviewers, {
+						teamSlug,
+					});
+					const assigner = reviewers.find(
+						(r) => r.email.toLowerCase() === assignerEmail.toLowerCase(),
+					);
+					assignerChatId = assigner?.googleChatUserId || undefined;
+				} catch (e) {
+					console.warn("Failed to lookup assignerChatId server-side", e);
+				}
+			}
 			let messageText: string;
 
 			if (customMessage && customMessage.trim().length > 0) {

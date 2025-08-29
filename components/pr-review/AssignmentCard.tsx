@@ -26,6 +26,7 @@ export function AssignmentCard() {
 	const t = useTranslations();
 	const locale = useLocale();
 	const {
+		teamSlug,
 		nextReviewer,
 		reviewers,
 		assignmentFeed,
@@ -152,17 +153,6 @@ export function AssignmentCard() {
 							? `${user.firstName} ${user.lastName}`
 							: user?.firstName || user?.lastName || "Unknown";
 
-					const assignerReviewerEntry = user?.email
-						? reviewers.find(
-								(r) => r.email.toLowerCase() === user.email.toLowerCase(),
-							)
-						: undefined;
-					const assignerChatId = (
-						assignerReviewerEntry as unknown as {
-							googleChatUserId?: string;
-						}
-					)?.googleChatUserId;
-
 					const result = await sendGoogleChatAction({
 						reviewerName: nextReviewer.name,
 						reviewerEmail: nextReviewer.email,
@@ -173,7 +163,7 @@ export function AssignmentCard() {
 						locale: "es", // force Spanish
 						assignerEmail: user?.email,
 						assignerName,
-						assignerChatId: assignerChatId || undefined,
+						teamSlug: teamSlug || undefined,
 						sendOnlyNames: false,
 						customMessage:
 							enableCustomMessage && customMessage.trim().length > 0
