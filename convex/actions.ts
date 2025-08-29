@@ -49,14 +49,18 @@ export const sendGoogleChatMessage = action({
 				// Replace handlebars placeholders with actual values / formatted link
 				const base = customMessage.trim();
 				// Prefer explicit Chat user ID if provided
-				const reviewerMention = sendOnlyNames
-					? reviewerName
-					: `<users/${reviewerChatId || reviewerEmail}>`;
+				// Build mentions: only use Chat user ID mention if present; otherwise plain name
+				const reviewerMention =
+					reviewerChatId && !sendOnlyNames
+						? `<users/${reviewerChatId}>`
+						: reviewerName;
 				const assignerMention =
 					assignerEmail || assignerName
 						? sendOnlyNames
 							? assignerName || "Unknown"
-							: `<users/${reviewerChatId || reviewerEmail}>`
+							: assignerEmail
+								? `<users/${assignerEmail}>`
+								: assignerName || "Unknown"
 						: assignerName || "";
 
 				// Google Chat link style: <url|PR>
@@ -75,14 +79,17 @@ export const sendGoogleChatMessage = action({
 				const t = messages.default || messages;
 
 				// Create mentions - use names if sendOnlyNames is true, otherwise use email format
-				const reviewerMention = sendOnlyNames
-					? reviewerName
-					: `<users/${reviewerChatId || reviewerEmail}>`;
+				const reviewerMention =
+					reviewerChatId && !sendOnlyNames
+						? `<users/${reviewerChatId}>`
+						: reviewerName;
 				const assignerMention =
 					assignerEmail || assignerName
 						? sendOnlyNames
 							? assignerName || "Unknown"
-							: `<users/${reviewerChatId || reviewerEmail}>`
+							: assignerEmail
+								? `<users/${assignerEmail}>`
+								: assignerName || "Unknown"
 						: null;
 
 				// Build the message with proper mentions using i18n
