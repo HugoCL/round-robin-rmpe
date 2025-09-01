@@ -35,6 +35,9 @@ export const sendGoogleChatMessage = action({
 			customMessage,
 		},
 	) => {
+		// Normalize / sanitize potentially empty or whitespace chat IDs early to avoid rendering `<users/>`
+		reviewerChatId = reviewerChatId?.trim() || undefined;
+		assignerChatId = assignerChatId?.trim() || undefined;
 		const GOOGLE_CHAT_WEBHOOK_URL = process.env.GOOGLE_CHAT_WEBHOOK_URL;
 
 		if (!GOOGLE_CHAT_WEBHOOK_URL) {
@@ -54,12 +57,25 @@ export const sendGoogleChatMessage = action({
 					const assigner = reviewers.find(
 						(r) => r.email.toLowerCase() === assignerEmail.toLowerCase(),
 					);
-					assignerChatId = assigner?.googleChatUserId || undefined;
+					assignerChatId = assigner?.googleChatUserId?.trim() || undefined;
 				} catch (e) {
 					console.warn("Failed to lookup assignerChatId server-side", e);
 				}
 			}
 			let messageText: string;
+
+			// Helper to build a safe mention; returns plain name if ID absent or sendOnlyNames=true
+			const buildMention = (
+				name: string | undefined,
+				chatId: string | undefined,
+				fallback: string,
+			): string => {
+				if (!name && !chatId) return fallback;
+				if (sendOnlyNames || !chatId) return name || fallback;
+				// Guard against empty/invalid IDs (must be at least one non-space char)
+				if (!/\S/.test(chatId)) return name || fallback;
+				return `<users/${chatId}>`;
+			};
 
 			if (customMessage && customMessage.trim().length > 0) {
 				// If a Chat ID exists but caller requested names only, override to allow tagging
@@ -70,19 +86,16 @@ export const sendGoogleChatMessage = action({
 				let base = customMessage.trim();
 				// Prefer explicit Chat user ID if provided
 				// Build mentions: only use Chat user ID mention if present; otherwise plain name
-				const reviewerMention =
-					reviewerChatId && !sendOnlyNames
-						? `<users/${reviewerChatId}>`
-						: reviewerName;
-
-				const assignerMention =
-					assignerChatId && !sendOnlyNames
-						? `<users/${assignerChatId}>`
-						: assignerName?.trim()
-							? assignerName
-							: assignerEmail?.trim()
-								? assignerEmail
-								: "Someone";
+				const reviewerMention = buildMention(
+					reviewerName,
+					reviewerChatId,
+					reviewerName,
+				);
+				const assignerMention = buildMention(
+					assignerName?.trim() || assignerEmail?.trim(),
+					assignerChatId,
+					"Someone",
+				);
 
 				// Google Chat link style: <url|PR>
 				const prLinked = `<${prUrl}|PR>`;
@@ -113,18 +126,19 @@ export const sendGoogleChatMessage = action({
 				const t = messages.default || messages;
 
 				// Create mentions - use names if sendOnlyNames is true, otherwise use email format
-				const reviewerMention =
-					reviewerChatId && !sendOnlyNames
-						? `<users/${reviewerChatId}>`
-						: reviewerName;
-				const assignerMention =
-					assignerChatId && !sendOnlyNames
-						? `<users/${assignerChatId}>`
-						: assignerName?.trim()
-							? assignerName
-							: assignerEmail?.trim()
-								? assignerEmail
-								: null;
+				const reviewerMention = buildMention(
+					reviewerName,
+					reviewerChatId,
+					reviewerName,
+				);
+				const assignerFallback =
+					assignerName?.trim() || assignerEmail?.trim() || undefined;
+				const assignerMentionRaw = buildMention(
+					assignerFallback,
+					assignerChatId,
+					"Someone",
+				);
+				const assignerMention = assignerFallback ? assignerMentionRaw : null;
 
 				// Build the message with proper mentions using i18n
 				const greetingText = t.googleChat.greeting.replace(
@@ -166,6 +180,23 @@ export const sendGoogleChatMessage = action({
 					success: false,
 					error: `HTTP ${response.status}: ${response.statusText}`,
 				};
+			}
+
+			// Fire and forget logging of the message (keep last 3)
+			try {
+				await ctx.runMutation(api.mutations.logSentMessage, {
+					text: messageText,
+					reviewerName,
+					reviewerEmail,
+					assignerName,
+					assignerEmail,
+					prUrl,
+					teamSlug,
+					locale,
+					isCustom: Boolean(customMessage && customMessage.trim().length > 0),
+				});
+			} catch (e) {
+				console.warn("Failed to log debug message", e);
 			}
 
 			return { success: true };

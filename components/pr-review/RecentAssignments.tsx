@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
@@ -56,10 +57,17 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 												<Link
 													href={item.prUrl}
 													target="_blank"
-													rel="noreferrer"
-													className="text-blue-600 hover:underline"
+													rel="noreferrer noopener"
+													aria-label={t("common.viewPR")}
+													className="inline-flex items-center gap-1"
 												>
-													{t("common.viewPR")}
+													<Badge
+														variant="outline"
+														className="cursor-pointer hover:bg-primary/10 transition-colors"
+													>
+														{t("common.viewPR")}
+														<ExternalLink className="h-3 w-3 ml-1" />
+													</Badge>
 												</Link>
 											</p>
 										)}

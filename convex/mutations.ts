@@ -893,3 +893,40 @@ export const restoreFromBackup = mutation({
 		}
 	},
 });
+
+// Log a sent Google Chat message for debugging (keep only last 3)
+export const logSentMessage = mutation({
+	args: {
+		text: v.string(),
+		reviewerName: v.optional(v.string()),
+		reviewerEmail: v.optional(v.string()),
+		assignerName: v.optional(v.string()),
+		assignerEmail: v.optional(v.string()),
+		prUrl: v.optional(v.string()),
+		teamSlug: v.optional(v.string()),
+		locale: v.optional(v.string()),
+		isCustom: v.optional(v.boolean()),
+	},
+	handler: async (ctx, args) => {
+		// Insert new message
+		await ctx.db.insert("debugMessages", {
+			...args,
+			createdAt: Date.now(),
+		});
+
+		// Retrieve all messages ordered by newest first
+		const all = await ctx.db
+			.query("debugMessages")
+			.withIndex("by_created_at")
+			.order("desc")
+			.collect();
+
+		if (all.length > 3) {
+			const toDelete = all.slice(3); // keep first 3
+			for (const doc of toDelete) {
+				await ctx.db.delete(doc._id);
+			}
+		}
+		return { success: true };
+	},
+});

@@ -76,6 +76,20 @@ export default defineSchema({
 		),
 	}).index("by_team", ["teamId"]),
 
+	// Store last few sent Google Chat messages for debugging (keep trimmed via mutation)
+	debugMessages: defineTable({
+		text: v.string(),
+		reviewerName: v.optional(v.string()),
+		reviewerEmail: v.optional(v.string()),
+		assignerName: v.optional(v.string()),
+		assignerEmail: v.optional(v.string()),
+		prUrl: v.optional(v.string()),
+		teamSlug: v.optional(v.string()),
+		locale: v.optional(v.string()),
+		isCustom: v.optional(v.boolean()),
+		createdAt: v.number(),
+	}).index("by_created_at", ["createdAt"]),
+
 	backups: defineTable({
 		teamId: v.optional(v.id("teams")),
 		reviewers: v.array(
