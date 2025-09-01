@@ -62,19 +62,20 @@ export const sendGoogleChatMessage = action({
 					console.warn("Failed to lookup assignerChatId server-side", e);
 				}
 			}
-			let messageText: string;
+			let messageText = ""; // init to satisfy TS definite assignment
 
-			// Helper to build a safe mention; returns plain name if ID absent or sendOnlyNames=true
-			const buildMention = (
+			// Build composite display: Name (@<users/ID>) so Google Chat shows both
+			const buildComposite = (
 				name: string | undefined,
 				chatId: string | undefined,
 				fallback: string,
-			): string => {
-				if (!name && !chatId) return fallback;
-				if (sendOnlyNames || !chatId) return name || fallback;
-				// Guard against empty/invalid IDs (must be at least one non-space char)
-				if (!/\S/.test(chatId)) return name || fallback;
-				return `<users/${chatId}>`;
+			): { composite: string; rawMention: string | null } => {
+				const resolvedName = name || fallback;
+				if (sendOnlyNames || !chatId || !/\S/.test(chatId)) {
+					return { composite: resolvedName, rawMention: null };
+				}
+				const raw = `<users/${chatId}>`;
+				return { composite: `${resolvedName} (${raw})`, rawMention: raw };
 			};
 
 			if (customMessage && customMessage.trim().length > 0) {
@@ -86,12 +87,12 @@ export const sendGoogleChatMessage = action({
 				let base = customMessage.trim();
 				// Prefer explicit Chat user ID if provided
 				// Build mentions: only use Chat user ID mention if present; otherwise plain name
-				const reviewerMention = buildMention(
+				const reviewerComposite = buildComposite(
 					reviewerName,
 					reviewerChatId,
-					reviewerName,
+					reviewerName || "Reviewer",
 				);
-				const assignerMention = buildMention(
+				const assignerComposite = buildComposite(
 					assignerName?.trim() || assignerEmail?.trim(),
 					assignerChatId,
 					"Someone",
@@ -105,21 +106,13 @@ export const sendGoogleChatMessage = action({
 				const prLinked = `<${prUrl}|PR>`;
 
 				// If user forgot to include any reviewer placeholder and we have a chat id and tagging is enabled, inject mention once at start
-				if (
-					reviewerChatId &&
-					!sendOnlyNames &&
-					!/\{\{\s*reviewer_name\s*\}\}/i.test(base) &&
-					!base.includes(reviewerMention) &&
-					!/<users\//.test(base)
-				) {
-					base = `${reviewerMention} ${base}`;
-				}
+				// No auto-injection now; rely on placeholders or user-provided formatting
 
 				// Replace new link placeholder pattern before legacy ones
 				const replaced = base
 					.replace(/<URL_PLACEHOLDER\|PR>/g, `<${prUrl}|PR>`)
-					.replace(/{{\s*reviewer_name\s*}}/gi, reviewerMention)
-					.replace(/{{\s*requester_name\s*}}/gi, assignerMention)
+					.replace(/{{\s*reviewer_name\s*}}/gi, reviewerComposite.composite)
+					.replace(/{{\s*requester_name\s*}}/gi, assignerComposite.composite)
 					.replace(/{{\s*pr\s*}}/gi, prLinked)
 					.replace(/{{\s*PR\s*}}/g, prLinked);
 				// Remove redundant preceding 'PR' if user wrote 'PR: {{PR}}' or 'PR {{PR}}'
@@ -130,31 +123,28 @@ export const sendGoogleChatMessage = action({
 				const t = messages.default || messages;
 
 				// Create mentions - use names if sendOnlyNames is true, otherwise use email format
-				const reviewerMention = buildMention(
+				const reviewerComposite = buildComposite(
 					reviewerName,
 					reviewerChatId,
-					reviewerName,
+					reviewerName || "Reviewer",
 				);
 				const assignerFallback =
 					assignerName?.trim() || assignerEmail?.trim() || undefined;
-				const assignerMentionRaw = buildMention(
-					assignerFallback,
-					assignerChatId,
-					"Someone",
-				);
-				const assignerMention = assignerFallback ? assignerMentionRaw : null;
+				const assignerComposite = assignerFallback
+					? buildComposite(assignerFallback, assignerChatId, assignerFallback)
+					: null;
 
 				// Build the message with proper mentions using i18n
 				const greetingText = t.googleChat.greeting.replace(
 					"{reviewer}",
-					reviewerMention,
+					reviewerComposite.composite,
 				);
 
 				messageText = greetingText;
 
-				if (assignerMention) {
+				if (assignerComposite) {
 					const assignmentText = t.googleChat.assignmentMessage
-						.replace("{assigner}", assignerMention)
+						.replace("{assigner}", assignerComposite.composite)
 						.replace("{prUrl}", prUrl);
 					messageText += `\n${assignmentText}`;
 				} else {
@@ -166,11 +156,7 @@ export const sendGoogleChatMessage = action({
 				}
 			}
 
-			// Sanitization: remove any exclamation mark immediately after a user mention token
-			// e.g. <users/12345>! -> <users/12345>
-			if (messageText) {
-				messageText = messageText.replace(/(<users\/[^>]+>)!/g, "$1");
-			}
+			// (messageText already built; exclamation after mentions sanitized earlier for custom messages via base)
 
 			const message = {
 				text: messageText,
