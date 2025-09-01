@@ -97,6 +97,10 @@ export const sendGoogleChatMessage = action({
 					"Someone",
 				);
 
+				// Sanitization: remove any exclamation mark immediately after a user mention token
+				// e.g. <users/12345>! -> <users/12345>
+				base = base.replace(/(<users\/[^>]+>)!/g, "$1");
+
 				// Google Chat link style: <url|PR>
 				const prLinked = `<${prUrl}|PR>`;
 
@@ -160,6 +164,12 @@ export const sendGoogleChatMessage = action({
 						.replace("{prUrl}", prUrl);
 					messageText += `\n${assignmentText}`;
 				}
+			}
+
+			// Sanitization: remove any exclamation mark immediately after a user mention token
+			// e.g. <users/12345>! -> <users/12345>
+			if (messageText) {
+				messageText = messageText.replace(/(<users\/[^>]+>)!/g, "$1");
 			}
 
 			const message = {
