@@ -3,7 +3,7 @@
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useAction } from "convex/react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 
 // Extend Window typing to allow vendor-prefixed AudioContext in older browsers
@@ -55,7 +55,8 @@ export default function PRReviewAssignment({
 	const t = useTranslations();
 	const { user, isLoaded } = useUser();
 	const { signOut } = useClerk();
-	const importInputId = useId();
+	// Hidden file input id used by ClassicLayout dropdown import action
+	const IMPORT_INPUT_ID = "import-file";
 
 	// State for managing UI preferences and dialogs
 	const [snapshots, setSnapshots] = useState<BackupEntry[]>([]);
@@ -607,8 +608,9 @@ export default function PRReviewAssignment({
 
 				{compactLayout ? <CompactLayout /> : <ClassicLayout />}
 
+				{/* Hidden file input for importing reviewer data. Triggered by ClassicLayout via document.getElementById('import-file')?.click() */}
 				<input
-					id={importInputId}
+					id={IMPORT_INPUT_ID}
 					type="file"
 					accept=".json"
 					onChange={importFileHandler}

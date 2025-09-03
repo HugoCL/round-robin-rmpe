@@ -372,7 +372,27 @@ export function useConvexPRReviewData(
 	};
 
 	const exportData = () => {
-		const dataStr = JSON.stringify(reviewers, null, 2);
+		// Only export fields that can be re-imported (exclude Convex system fields like _id, _creationTime, teamId)
+		interface ExportReviewerShape {
+			name: string;
+			email: string;
+			assignmentCount: number;
+			isAbsent: boolean;
+			createdAt: number;
+			tags: string[];
+			googleChatUserId?: string;
+		}
+		const exportable: ExportReviewerShape[] = reviewers.map((r) => ({
+			name: r.name,
+			email: r.email,
+			assignmentCount: r.assignmentCount,
+			isAbsent: r.isAbsent,
+			createdAt: r.createdAt,
+			tags: r.tags || [],
+			googleChatUserId: (r as unknown as { googleChatUserId?: string })
+				.googleChatUserId,
+		}));
+		const dataStr = JSON.stringify(exportable, null, 2);
 		const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
 
 		const exportFileDefaultName = `pr-reviewers-${new Date().toISOString().slice(0, 10)}.json`;
@@ -396,25 +416,85 @@ export function useConvexPRReviewData(
 		reader.onload = async (e) => {
 			try {
 				const importedData = JSON.parse(e.target?.result as string);
-				if (Array.isArray(importedData)) {
-					// Ensure all imported reviewers have createdAt
-					const dataWithCreatedAt = importedData.map((reviewer) => {
-						if (!reviewer.createdAt) {
-							return { ...reviewer, createdAt: Date.now() };
-						}
-						return reviewer;
-					});
-
-					await importReviewersDataMutation({
-						teamSlug,
-						reviewersData: dataWithCreatedAt,
-					});
-
-					toast({
-						title: t("data.dataImportedTitle"),
-						description: t("data.dataImportedDescription"),
-					});
+				if (!Array.isArray(importedData)) {
+					throw new Error("Invalid format: root is not an array");
 				}
+
+				// Only allow keys expected by validator
+				const allowedKeys = new Set([
+					"name",
+					"email",
+					"assignmentCount",
+					"isAbsent",
+					"createdAt",
+					"tags",
+					"googleChatUserId",
+				]);
+
+				interface ImportReviewerDraft {
+					name: string;
+					email: string;
+					assignmentCount: number;
+					isAbsent: boolean;
+					createdAt: number;
+					tags?: string[];
+					googleChatUserId?: string;
+				}
+				const sanitized: ImportReviewerDraft[] = [];
+				let skipped = 0;
+				for (const raw of importedData) {
+					if (typeof raw !== "object" || raw === null) {
+						skipped++;
+						continue;
+					}
+					// Build a new object with only allowed keys
+					const obj: Partial<ImportReviewerDraft> & Record<string, unknown> =
+						{};
+					for (const k of Object.keys(raw)) {
+						if (allowedKeys.has(k)) obj[k] = raw[k];
+					}
+					// Required fields validation
+					if (
+						typeof obj.name !== "string" ||
+						!obj.name.trim() ||
+						typeof obj.email !== "string" ||
+						!obj.email.trim() ||
+						typeof obj.assignmentCount !== "number" ||
+						typeof obj.isAbsent !== "boolean"
+					) {
+						skipped++;
+						continue;
+					}
+					// Normalize optional fields
+					if (obj.tags && !Array.isArray(obj.tags)) delete obj.tags;
+					if (obj.tags) {
+						obj.tags = (obj.tags as unknown[]).filter(
+							(t) => typeof t === "string",
+						);
+					}
+					if (!obj.createdAt || typeof obj.createdAt !== "number") {
+						obj.createdAt = Date.now();
+					}
+					// Final cast for mutation
+					sanitized.push(obj as ImportReviewerDraft);
+				}
+
+				if (sanitized.length === 0) {
+					throw new Error("No valid reviewer records to import");
+				}
+
+				await importReviewersDataMutation({
+					teamSlug,
+					reviewersData: sanitized,
+				});
+
+				toast({
+					title: t("data.dataImportedTitle"),
+					description:
+						skipped > 0
+							? t("data.dataImportedDescription") + ` (Skipped ${skipped})`
+							: t("data.dataImportedDescription"),
+				});
 			} catch (_error) {
 				toast({
 					title: t("data.importFormatFailedTitle"),
