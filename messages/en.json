@@ -97,6 +97,7 @@
 		"assignedToMe": "Assigned To Me",
 		"iAssigned": "I Assigned",
 		"markAllApproved": "Mark All",
+		"confirmMarkAll": "Mark all as completed?",
 		"none": "None",
 		"statusLabel": "Status",
 		"statusPending": "Pending Review",

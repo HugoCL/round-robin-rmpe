@@ -48,24 +48,13 @@ export function MyAssignmentsPanel() {
 						variant="ghost"
 						size="icon"
 						className="h-8 w-8 mt-1"
-						title={t("pr.markAllApproved", {
-							defaultValue: locale.startsWith("es")
-								? "Marcar todas"
-								: "Mark all",
-						})}
+						title={t("pr.markAllApproved")}
 						disabled={
 							assignedToMe.length === 0 || processing === "__bulk_assignedToMe"
 						}
 						onClick={async () => {
 							if (assignedToMe.length === 0) return;
-							if (
-								!confirm(
-									locale.startsWith("es")
-										? "¿Marcar todas como completadas?"
-										: "Mark all as completed?",
-								)
-							)
-								return;
+							if (!confirm(t("pr.confirmMarkAll"))) return;
 							setProcessing("__bulk_assignedToMe");
 							try {
 								for (const a of assignedToMe) {
@@ -167,24 +156,13 @@ export function MyAssignmentsPanel() {
 						variant="ghost"
 						size="icon"
 						className="h-8 w-8 mt-1"
-						title={t("pr.markAllApproved", {
-							defaultValue: locale.startsWith("es")
-								? "Marcar todas"
-								: "Mark all",
-						})}
+						title={t("pr.markAllApproved")}
 						disabled={
 							iAssigned.length === 0 || processing === "__bulk_iAssigned"
 						}
 						onClick={async () => {
 							if (iAssigned.length === 0) return;
-							if (
-								!confirm(
-									locale.startsWith("es")
-										? "¿Marcar todas como completadas?"
-										: "Mark all as completed?",
-								)
-							)
-								return;
+							if (!confirm(t("pr.confirmMarkAll"))) return;
 							setProcessing("__bulk_iAssigned");
 							try {
 								for (const a of iAssigned) {
