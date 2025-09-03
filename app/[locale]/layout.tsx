@@ -1,7 +1,7 @@
-import type React from "react";
+import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
+import type React from "react";
 import { routing } from "@/i18n/routing";
 
 type Props = {

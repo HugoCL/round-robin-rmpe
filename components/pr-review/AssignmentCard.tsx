@@ -1,6 +1,6 @@
 "use client";
 
-import { useAction } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { Lightbulb, Undo2, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -13,7 +13,7 @@ import {
 	CardHeader,
 } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
-import type { Doc } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { ChatMessageCustomizer } from "./ChatMessageCustomizer";
 import { usePRReview } from "./PRReviewContext";
 
@@ -37,11 +37,34 @@ export function AssignmentCard() {
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 
 	const sendGoogleChatAction = useAction(api.actions.sendGoogleChatMessage);
+	const createActivePRAssignment = useMutation(
+		api.mutations.createActivePRAssignment,
+	);
 
 	const handleAssignPR = async () => {
 		setIsAssigning(true);
 		try {
+			const currentNext = nextReviewer; // capture before assignment changes
 			await onAssignPR({ prUrl: prUrl.trim() || undefined });
+			// Create active assignment row if we have PR URL and participants
+			if (currentNext && user?.email && teamSlug) {
+				// Find assigner reviewer record (could be same as assignee sometimes?)
+				const assigner = reviewers.find(
+					(r) => r.email.toLowerCase() === user.email.toLowerCase(),
+				);
+				if (assigner) {
+					try {
+						await createActivePRAssignment({
+							teamSlug,
+							assigneeId: currentNext._id as unknown as Id<"reviewers">,
+							assignerId: assigner._id as unknown as Id<"reviewers">,
+							prUrl: prUrl.trim() || undefined,
+						});
+					} catch (err) {
+						console.error("Failed to create active PR assignment row", err);
+					}
+				}
+			}
 			if (sendMessage && prUrl.trim() && nextReviewer) {
 				try {
 					const assignerName =

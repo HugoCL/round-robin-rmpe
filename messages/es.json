@@ -141,7 +141,22 @@
 		"suggestImTheNext": "Usar \"Soy el Siguiente\"",
 		"actions": "Acciones",
 		"available": "Disponible",
-		"absent": "Ausente"
+		"absent": "Ausente",
+		"assignedToMe": "Asignadas a Mí",
+		"iAssigned": "Yo Asigné",
+		"none": "Ninguna",
+		"statusLabel": "Estado",
+		"statusPending": "Pendiente de Revisión",
+		"statusReviewed": "Revisada (esperando confirmación)",
+		"reviewedApproved": "Revisada y Aprobada",
+		"wasReviewedApproved": "Fue Revisada y Aprobada",
+		"assignmentsSection": "Mis Asignaciones Activas",
+		"toggleCollapse": "Colapsar",
+		"toggleExpand": "Expandir",
+		"assignedBy": "Asignado por",
+		"reviewer": "Revisor",
+		"noPrLink": "Sin enlace de PR",
+		"unknownUser": "Desconocido"
 	},
 	"tags": {
 		"title": "Etiquetas",

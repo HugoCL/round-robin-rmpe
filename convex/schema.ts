@@ -76,6 +76,20 @@ export default defineSchema({
 		),
 	}).index("by_team", ["teamId"]),
 
+	// Active PR assignments requiring mutual confirmation
+	prAssignments: defineTable({
+		teamId: v.optional(v.id("teams")),
+		prUrl: v.optional(v.string()),
+		assigneeId: v.id("reviewers"), // reviewer who must review
+		assignerId: v.id("reviewers"), // reviewer who requested review
+		status: v.string(), // pending | reviewed | approved (will be deleted after approved)
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_assignee", ["assigneeId"])
+		.index("by_assigner", ["assignerId"])
+		.index("by_team", ["teamId"]),
+
 	// Store last few sent Google Chat messages for debugging (keep trimmed via mutation)
 	debugMessages: defineTable({
 		text: v.string(),

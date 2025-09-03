@@ -5,8 +5,8 @@
 
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useRef, useState } from "react";
 // DEPRECATED: This file is replaced by useConvexPRReviewData.ts
 // The following imports are commented out to avoid TypeScript errors
 // since the Redis implementation has been removed
@@ -50,33 +50,36 @@ export function usePRReviewData(user?: UserInfo | null) {
 	const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
 	// Function to fetch reviewers data and assignment feed
-	const fetchData = useCallback(async (showLoadingState = false) => {
-		if (showLoadingState) {
-			setIsRefreshing(true);
-		}
-
-		try {
-			const [reviewersData, feedData] = await Promise.all([
-				getReviewers(),
-				getAssignmentFeed(),
-			]);
-
-			setReviewers(reviewersData);
-			setAssignmentFeed(feedData);
-			setLastUpdated(new Date());
-		} catch (error) {
-			console.error("Error loading data:", error);
-			toast({
-				title: t("data.refreshFailedTitle"),
-				description: t("data.refreshFailedDescription"),
-				variant: "destructive",
-			});
-		} finally {
+	const fetchData = useCallback(
+		async (showLoadingState = false) => {
 			if (showLoadingState) {
-				setIsRefreshing(false);
+				setIsRefreshing(true);
 			}
-		}
-	}, [t]);
+
+			try {
+				const [reviewersData, feedData] = await Promise.all([
+					getReviewers(),
+					getAssignmentFeed(),
+				]);
+
+				setReviewers(reviewersData);
+				setAssignmentFeed(feedData);
+				setLastUpdated(new Date());
+			} catch (error) {
+				console.error("Error loading data:", error);
+				toast({
+					title: t("data.refreshFailedTitle"),
+					description: t("data.refreshFailedDescription"),
+					variant: "destructive",
+				});
+			} finally {
+				if (showLoadingState) {
+					setIsRefreshing(false);
+				}
+			}
+		},
+		[t],
+	);
 
 	// Load reviewers from Redis on initial load
 	useEffect(() => {
@@ -168,7 +171,9 @@ export function usePRReviewData(user?: UserInfo | null) {
 
 		if (availableReviewers.length > 0) {
 			// Find the minimum assignment count among available reviewers
-			const minCount = Math.min(...availableReviewers.map((r) => r.assignmentCount));
+			const minCount = Math.min(
+				...availableReviewers.map((r) => r.assignmentCount),
+			);
 
 			// Get all available reviewers with the minimum count
 			const candidatesWithMinCount = availableReviewers.filter(
@@ -245,7 +250,12 @@ export function usePRReviewData(user?: UserInfo | null) {
 		if (!nextReviewer) return;
 
 		// Increment the counter in Redis
-		const success = await incrementReviewerCount(nextReviewer.id, false, false, user || undefined);
+		const success = await incrementReviewerCount(
+			nextReviewer.id,
+			false,
+			false,
+			user || undefined,
+		);
 
 		if (success) {
 			// Refresh data to get updated reviewers and feed
@@ -253,7 +263,9 @@ export function usePRReviewData(user?: UserInfo | null) {
 
 			toast({
 				title: t("data.prAssignedTitle"),
-				description: t("data.prAssignedDescription", { name: nextReviewer.name }),
+				description: t("data.prAssignedDescription", {
+					name: nextReviewer.name,
+				}),
 			});
 		} else {
 			toast({
@@ -268,7 +280,12 @@ export function usePRReviewData(user?: UserInfo | null) {
 		if (!nextReviewer) return;
 
 		// Increment the counter in Redis with skipped flag
-		const success = await incrementReviewerCount(nextReviewer.id, true, false, user || undefined);
+		const success = await incrementReviewerCount(
+			nextReviewer.id,
+			true,
+			false,
+			user || undefined,
+		);
 
 		if (success) {
 			// Refresh data to get updated reviewers and feed
@@ -276,7 +293,9 @@ export function usePRReviewData(user?: UserInfo | null) {
 
 			toast({
 				title: t("messages.reviewerSkippedTitle"),
-				description: t("messages.reviewerSkippedDescription", { name: nextReviewer.name }),
+				description: t("messages.reviewerSkippedDescription", {
+					name: nextReviewer.name,
+				}),
 			});
 		} else {
 			toast({
@@ -314,7 +333,12 @@ export function usePRReviewData(user?: UserInfo | null) {
 	) => {
 		// Increment only the reviewer who is actually getting the assignment (nextAfterSkip)
 		// The currentNext reviewer is being skipped, so they shouldn't get their counter incremented
-		const success = await incrementReviewerCount(nextAfterSkip.id, false, false, user || undefined);
+		const success = await incrementReviewerCount(
+			nextAfterSkip.id,
+			false,
+			false,
+			user || undefined,
+		);
 
 		if (success) {
 			// Refresh data which will automatically find the new next reviewer
@@ -324,7 +348,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 				title: t("data.assignmentCompletedTitle"),
 				description: t("data.assignmentCompletedDescription", {
 					skippedName: currentNext.name,
-					assignedName: nextAfterSkip.name
+					assignedName: nextAfterSkip.name,
 				}),
 			});
 		} else {
@@ -493,9 +517,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 	};
 
 	const handleResetCounts = async () => {
-		if (
-			confirm(t("messages.resetCountsConfirmation"))
-		) {
+		if (confirm(t("messages.resetCountsConfirmation"))) {
 			// Reset in Redis
 			const success = await resetAllCounts();
 

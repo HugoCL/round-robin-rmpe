@@ -78,7 +78,7 @@ export const sendGoogleChatMessage = action({
 				return { composite: `${resolvedName} (${raw})`, rawMention: raw };
 			};
 
-			// Note: 'messageText' legacy variable removed; using only builtMessage.
+			// Note: Legacy variable `messageText` fully removed in favor of `builtMessage`.
 			if (customMessage && customMessage.trim().length > 0) {
 				// If a Chat ID exists but caller requested names only, override to allow tagging
 				if (reviewerChatId && sendOnlyNames) {

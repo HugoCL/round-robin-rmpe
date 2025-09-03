@@ -1,10 +1,10 @@
 "use client";
 
 import { Trash2, UserMinus } from "lucide-react";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
 import {
 	Dialog,
 	DialogContent,
@@ -21,7 +21,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 
 interface DeleteReviewerDialogProps {

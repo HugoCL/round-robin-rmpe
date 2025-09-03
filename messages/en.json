@@ -93,7 +93,22 @@
 		"suggestImTheNext": "Use \"I'm the Next\"",
 		"actions": "Actions",
 		"available": "Available",
-		"absent": "Absent"
+		"absent": "Absent",
+		"assignedToMe": "Assigned To Me",
+		"iAssigned": "I Assigned",
+		"none": "None",
+		"statusLabel": "Status",
+		"statusPending": "Pending Review",
+		"statusReviewed": "Reviewed (waiting confirmation)",
+		"reviewedApproved": "Reviewed & Approved",
+		"wasReviewedApproved": "Was Reviewed & Approved",
+		"assignmentsSection": "My Active Assignments",
+		"toggleCollapse": "Collapse",
+		"toggleExpand": "Expand",
+		"assignedBy": "Assigned by",
+		"reviewer": "Reviewer",
+		"noPrLink": "No PR link provided",
+		"unknownUser": "Unknown"
 	},
 	"tags": {
 		"title": "Tags",

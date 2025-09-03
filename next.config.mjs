@@ -1,4 +1,4 @@
-import createNextIntlPlugin from 'next-intl/plugin';
+import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin();
 
@@ -17,7 +17,7 @@ const nextConfig = {
 		webpackBuildWorker: true,
 		parallelServerBuildTraces: true,
 		parallelServerCompiles: true,
-		viewTransition: true
+		viewTransition: true,
 	},
 };
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import {
 	Clock,
 	Eye,
@@ -11,6 +10,7 @@ import {
 	Settings,
 	Tags,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsHelp";
 import { Button } from "@/components/ui/button";
@@ -183,9 +183,13 @@ export function HeaderOptionsDrawer() {
 										</Button>
 									</TooltipTrigger>
 									<TooltipContent>
-										<p>{t("last-updated")} {formatLastUpdated()}</p>
+										<p>
+											{t("last-updated")} {formatLastUpdated()}
+										</p>
 										<p className="text-xs text-muted-foreground">
-											{t("updates-automatically-every-minute-when-tab-is-active")}
+											{t(
+												"updates-automatically-every-minute-when-tab-is-active",
+											)}
 										</p>
 									</TooltipContent>
 								</Tooltip>

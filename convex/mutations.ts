@@ -522,6 +522,50 @@ export const assignPR = mutation({
 	},
 });
 
+// Create an active PR assignment row (called from UI after assignPR succeeds)
+export const createActivePRAssignment = mutation({
+	args: {
+		teamSlug: v.string(),
+		assigneeId: v.id("reviewers"),
+		assignerId: v.id("reviewers"),
+		prUrl: v.optional(v.string()),
+	},
+	handler: async (ctx, { teamSlug, assigneeId, assignerId, prUrl }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		// Basic validation: ensure reviewers exist
+		const assignee = await ctx.db.get(assigneeId);
+		const assigner = await ctx.db.get(assignerId);
+		if (!assignee || !assigner) throw new Error("Reviewer(s) not found");
+		const now = Date.now();
+		const id = await ctx.db.insert("prAssignments", {
+			teamId: team._id,
+			prUrl: prUrl?.trim(),
+			assigneeId,
+			assignerId,
+			status: "pending",
+			createdAt: now,
+			updatedAt: now,
+		});
+		return { success: true, id };
+	},
+});
+
+// Complete an assignment (either assignee or assigner can complete directly now)
+export const completePRAssignment = mutation({
+	args: { id: v.id("prAssignments"), reviewerId: v.id("reviewers") },
+	handler: async (ctx, { id, reviewerId }) => {
+		const row = await ctx.db.get(id);
+		if (!row) throw new Error("Assignment not found");
+		// Allow either party related to the assignment to complete it
+		if (row.assigneeId !== reviewerId && row.assignerId !== reviewerId) {
+			throw new Error("Not participant");
+		}
+		// Regardless of current status just delete (treat any existing rows as pending)
+		await ctx.db.delete(id);
+		return { success: true };
+	},
+});
+
 export const undoLastAssignment = mutation({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {

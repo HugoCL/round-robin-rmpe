@@ -1,4 +1,20 @@
 import { v } from "convex/values";
+
+type EnrichedAssignment = {
+	_id: Id<"prAssignments">;
+	teamId: Id<"teams">;
+	prUrl?: string | undefined;
+	assigneeId: Id<"reviewers">;
+	assignerId: Id<"reviewers">;
+	status: string;
+	createdAt: number;
+	updatedAt: number;
+	assigneeName?: string;
+	assignerName?: string;
+	assigneeEmail?: string;
+	assignerEmail?: string;
+};
+
 import type { Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
 
@@ -240,5 +256,95 @@ export const getLastMessages = query({
 			.order("desc")
 			.take(3);
 		return messages;
+	},
+});
+
+// Active PR assignments for a reviewer (as assignee)
+export const getActiveAssignmentsForReviewer = query({
+	args: { teamSlug: v.string(), email: v.string() },
+	handler: async (ctx, { teamSlug, email }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		// Find reviewer by email
+		const reviewer = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team_email", (q) =>
+				q.eq("teamId", team._id).eq("email", email.toLowerCase()),
+			)
+			.first();
+		if (!reviewer) return [];
+		const rows = await ctx.db
+			.query("prAssignments")
+			.withIndex("by_assignee", (q) => q.eq("assigneeId", reviewer._id))
+			.collect();
+		const enriched: EnrichedAssignment[] = [];
+		for (const row of rows) {
+			if (row.teamId !== team._id) continue;
+			const assignee = await ctx.db.get(row.assigneeId as Id<"reviewers">);
+			const assigner = await ctx.db.get(row.assignerId as Id<"reviewers">);
+			enriched.push({
+				_id: row._id,
+				teamId: row.teamId as Id<"teams">,
+				prUrl: row.prUrl,
+				assigneeId: row.assigneeId as Id<"reviewers">,
+				assignerId: row.assignerId as Id<"reviewers">,
+				status: "pending", // flattened model: treat existing row as pending until completion
+				createdAt: row.createdAt,
+				updatedAt: row.updatedAt,
+				assigneeName:
+					assignee && "name" in assignee ? assignee.name : undefined,
+				assignerName:
+					assigner && "name" in assigner ? assigner.name : undefined,
+				assigneeEmail:
+					assignee && "email" in assignee ? assignee.email : undefined,
+				assignerEmail:
+					assigner && "email" in assigner ? assigner.email : undefined,
+			});
+		}
+		return enriched;
+	},
+});
+
+// Active PR assignments created by reviewer (as assigner)
+export const getActiveAssignmentsByReviewer = query({
+	args: { teamSlug: v.string(), email: v.string() },
+	handler: async (ctx, { teamSlug, email }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		// Find reviewer by email
+		const reviewer = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team_email", (q) =>
+				q.eq("teamId", team._id).eq("email", email.toLowerCase()),
+			)
+			.first();
+		if (!reviewer) return [];
+		const rows = await ctx.db
+			.query("prAssignments")
+			.withIndex("by_assigner", (q) => q.eq("assignerId", reviewer._id))
+			.collect();
+		const enriched: EnrichedAssignment[] = [];
+		for (const row of rows) {
+			if (row.teamId !== team._id) continue;
+			const assignee = await ctx.db.get(row.assigneeId as Id<"reviewers">);
+			const assigner = await ctx.db.get(row.assignerId as Id<"reviewers">);
+			enriched.push({
+				_id: row._id,
+				teamId: row.teamId as Id<"teams">,
+				prUrl: row.prUrl,
+				assigneeId: row.assigneeId as Id<"reviewers">,
+				assignerId: row.assignerId as Id<"reviewers">,
+				status: "pending",
+				createdAt: row.createdAt,
+				updatedAt: row.updatedAt,
+				assigneeName:
+					assignee && "name" in assignee ? assignee.name : undefined,
+				assignerName:
+					assigner && "name" in assigner ? assigner.name : undefined,
+				assigneeEmail:
+					assignee && "email" in assignee ? assignee.email : undefined,
+				assignerEmail:
+					assigner && "email" in assigner ? assigner.email : undefined,
+			});
+		}
+		return enriched;
 	},
 });

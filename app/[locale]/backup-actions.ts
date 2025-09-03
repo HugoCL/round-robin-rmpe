@@ -20,7 +20,8 @@ export interface BackupData {
 	data: Reviewer[];
 }
 
-const BACKUP_KEY_PREFIX = process.env.REDIS_KEY_BACKUP_PREFIX || "pr-reviewers-snapshot";
+const BACKUP_KEY_PREFIX =
+	process.env.REDIS_KEY_BACKUP_PREFIX || "pr-reviewers-snapshot";
 const MAX_SNAPSHOTS = 10;
 
 // Create a snapshot after a change
@@ -127,10 +128,7 @@ export async function restoreFromSnapshot(key: string): Promise<boolean> {
 
 		if (success) {
 			// Create a new snapshot to record this restore action
-			await createSnapshot(
-				snapshot.data,
-				`Restored from snapshot`,
-			);
+			await createSnapshot(snapshot.data, `Restored from snapshot`);
 		}
 
 		return success;

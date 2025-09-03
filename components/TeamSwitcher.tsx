@@ -1,9 +1,8 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	Select,
 	SelectContent,
@@ -11,17 +10,18 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
- 
+import { api } from "@/convex/_generated/api";
+
 export function TeamSwitcher({ teamSlug }: { teamSlug?: string }) {
 	const locale = useLocale();
 	const router = useRouter();
 	const teams = useQuery(api.queries.getTeams) ?? [];
 	const t = useTranslations();
- 
+
 	const onChange = (value: string) => {
 		router.push(`/${locale}/${value}`);
 	};
- 
+
 	return (
 		<Select value={teamSlug} onValueChange={onChange}>
 			<SelectTrigger className="w-56">

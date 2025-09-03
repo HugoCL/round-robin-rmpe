@@ -1,11 +1,11 @@
 "use client";
 
-import PRReviewAssignment from "@/components/pr-review/PRReviewAssignment";
-import { useParams } from "next/navigation";
-import { useTranslations, useLocale } from "next-intl";
 import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import PRReviewAssignment from "@/components/pr-review/PRReviewAssignment";
+import { api } from "@/convex/_generated/api";
 
 export default function TeamPage() {
 	const params = useParams<{ team: string }>();

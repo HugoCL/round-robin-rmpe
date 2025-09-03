@@ -1,7 +1,5 @@
 {
-  "node": {
-    "externalPackages": [
-      "@clerk/nextjs"
-    ]
-  }
+	"node": {
+		"externalPackages": ["@clerk/nextjs"]
+	}
 }

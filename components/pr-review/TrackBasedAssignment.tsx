@@ -1,12 +1,10 @@
 "use client";
 
-import { Tag, Users } from "lucide-react";
-import { useState } from "react";
-import { useTranslations } from "next-intl";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { toast } from "@/hooks/use-toast";
+import { Tag, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -31,7 +29,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { toast } from "@/hooks/use-toast";
 
 import { usePRReview } from "./PRReviewContext";
 
@@ -49,6 +49,9 @@ export function TrackBasedAssignment() {
 	const tags =
 		useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") || [];
 	const assignPRMutation = useMutation(api.mutations.assignPR);
+	const createActivePRAssignment = useMutation(
+		api.mutations.createActivePRAssignment,
+	);
 	const getNextReviewerByTag = useQuery(
 		api.queries.getNextReviewerByTag,
 		selectedTagId && teamSlug ? { teamSlug, tagId: selectedTagId } : "skip",
@@ -75,6 +78,21 @@ export function TrackBasedAssignment() {
 			});
 
 			if (result.success && result.reviewer) {
+				// Create active assignment row (tag-based) with no PR URL
+				try {
+					const assigner = reviewers.find(
+						(r) => r.email.toLowerCase() === user?.email.toLowerCase(),
+					);
+					if (assigner && teamSlug) {
+						await createActivePRAssignment({
+							teamSlug,
+							assigneeId: nextReviewer._id as Id<"reviewers">,
+							assignerId: assigner._id as Id<"reviewers">,
+						});
+					}
+				} catch (e) {
+					console.warn("Failed to create active assignment (track)", e);
+				}
 				// Update the parent component's data first
 				await onDataUpdate();
 

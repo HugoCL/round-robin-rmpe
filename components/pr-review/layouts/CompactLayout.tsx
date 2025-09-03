@@ -1,18 +1,20 @@
 import { AssignmentCard } from "../AssignmentCard";
-import { FeedHistory } from "../FeedHistory";
+import { CollapsibleAssignmentsPanel } from "../CollapsibleAssignmentsPanel";
 import { ForceAssignDialog } from "../dialogs/ForceAssignDialog";
-import { TrackBasedAssignment } from "../TrackBasedAssignment";
-
+import { FeedHistory } from "../FeedHistory";
 /**
  * CompactLayout component displays a compact layout for the PR review assignment page.
  */
 import { usePRReview } from "../PRReviewContext";
+import { TrackBasedAssignment } from "../TrackBasedAssignment";
 
 export function CompactLayout() {
 	const { hasTags, teamSlug } = usePRReview();
 	return (
 		<div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)]">
 			<div className="flex-1 lg:w-[60%] flex flex-col space-y-6">
+				<CollapsibleAssignmentsPanel />
+
 				{/* Assignment Card */}
 				<div className="flex-1">
 					<AssignmentCard />
@@ -21,9 +23,7 @@ export function CompactLayout() {
 				{/* Force Assign Dialog */}
 				<div className="border rounded-lg p-4 bg-muted/50 space-y-4">
 					<ForceAssignDialog />
-					{hasTags && (
-						<TrackBasedAssignment />
-					)}
+					{hasTags && <TrackBasedAssignment />}
 				</div>
 			</div>
 

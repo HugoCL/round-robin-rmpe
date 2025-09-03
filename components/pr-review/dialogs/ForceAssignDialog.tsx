@@ -48,8 +48,11 @@ export function ForceAssignDialog() {
 		);
 	}, []);
 
-	// Use Convex mutation for force assignment
+	// Use Convex mutation for force assignment & active assignment creation
 	const assignPRMutation = useMutation(api.mutations.assignPR);
+	const createActivePRAssignment = useMutation(
+		api.mutations.createActivePRAssignment,
+	);
 
 	const handleForceAssign = async () => {
 		if (!selectedReviewerId) {
@@ -75,6 +78,22 @@ export function ForceAssignDialog() {
 			});
 
 			if (result.success && result.reviewer) {
+				// Create active assignment row (force)
+				try {
+					const assigner = reviewers.find(
+						(r) => r.email.toLowerCase() === user?.email.toLowerCase(),
+					);
+					if (assigner && teamSlug) {
+						await createActivePRAssignment({
+							teamSlug,
+							assigneeId: selectedReviewerId as Id<"reviewers">,
+							assignerId: assigner._id as Id<"reviewers">,
+							prUrl: prUrl.trim() || undefined,
+						});
+					}
+				} catch (e) {
+					console.warn("Failed to create active assignment (force)", e);
+				}
 				// Refresh data to get updated reviewers and feed
 				await onDataUpdate();
 

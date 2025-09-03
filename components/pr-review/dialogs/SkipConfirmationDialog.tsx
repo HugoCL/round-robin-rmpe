@@ -2,9 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import type { Doc } from "@/convex/_generated/dataModel";
-import { usePRReview } from "../PRReviewContext";
-
 import {
 	Dialog,
 	DialogContent,
@@ -13,6 +10,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import type { Doc } from "@/convex/_generated/dataModel";
+import { usePRReview } from "../PRReviewContext";
 
 interface SkipConfirmationDialogProps {
 	isOpen: boolean;
@@ -48,9 +47,9 @@ export function SkipConfirmationDialog({
 				<div className="py-4">
 					{nextReviewer && nextAfterSkip && (
 						<p className="text-center">
-							{t("skipConfirmation.message", { 
-								nextReviewer: nextReviewer.name, 
-								nextAfterSkip: nextAfterSkip.name 
+							{t("skipConfirmation.message", {
+								nextReviewer: nextReviewer.name,
+								nextAfterSkip: nextAfterSkip.name,
 							})}
 						</p>
 					)}
