@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -11,6 +11,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
 
 export type ShortcutAction = "assign" | "skip" | "undo";
 
@@ -41,6 +42,29 @@ export function ShortcutConfirmationDialog({
 	lastAssignmentTo,
 }: ShortcutConfirmationDialogProps) {
 	const t = useTranslations();
+
+	// Unified chat message customization state
+	const [sendMessage, setSendMessage] = useState(false);
+	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
+	const [prUrl, setPrUrl] = useState("");
+	const [customMessage, setCustomMessage] = useState("");
+
+	// Expose chosen message via CustomEvent so parent can pick it up without prop drilling changes
+	useEffect(() => {
+		if (!isOpen) return;
+		const detail = {
+			shouldSend: sendMessage,
+			customEnabled: enableCustomMessage,
+			prUrl: prUrl.trim() || undefined,
+			message:
+				enableCustomMessage && customMessage.trim().length > 0
+					? customMessage
+					: undefined,
+		};
+		window.dispatchEvent(
+			new CustomEvent("shortcutDialogMessageState", { detail }),
+		);
+	}, [sendMessage, enableCustomMessage, prUrl, customMessage, isOpen]);
 
 	const base: Record<ShortcutAction, string> = {
 		assign: t("shortcutConfirm.assignDescription"),
@@ -125,6 +149,25 @@ export function ShortcutConfirmationDialog({
 						</DialogDescription>
 					)}
 				</DialogHeader>
+				{action && (action === "assign" || action === "skip") && (
+					<ChatMessageCustomizer
+						prUrl={prUrl}
+						onPrUrlChange={setPrUrl}
+						sendMessage={sendMessage}
+						onSendMessageChange={setSendMessage}
+						enabled={enableCustomMessage}
+						onEnabledChange={setEnableCustomMessage}
+						message={customMessage}
+						onMessageChange={setCustomMessage}
+						nextReviewerName={nextReviewerName || undefined}
+						compact
+						autoTemplate={
+							nextReviewerName
+								? `📋 Hola {{reviewer_name}}! Se te asignó este <URL_PLACEHOLDER|PR>`
+								: undefined
+						}
+					/>
+				)}
 				<DialogFooter>
 					<Button variant="outline" onClick={onCancel}>
 						{t("common.cancel")}

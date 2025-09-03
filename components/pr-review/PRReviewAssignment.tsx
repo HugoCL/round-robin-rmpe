@@ -1,8 +1,10 @@
 "use client";
 
 import { useClerk, useUser } from "@clerk/nextjs";
+import { useAction } from "convex/react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { api } from "@/convex/_generated/api";
 
 // Extend Window typing to allow vendor-prefixed AudioContext in older browsers
 declare global {
@@ -73,6 +75,14 @@ export default function PRReviewAssignment({
 		null,
 	);
 	const pendingRunnerRef = useRef<(() => void) | null>(null);
+	// Capture message customization state emitted from dialog
+	const lastMessageState = useRef<null | {
+		shouldSend: boolean;
+		customEnabled: boolean;
+		prUrl?: string;
+		message?: string;
+	}>(null);
+	const sendChatMessage = useAction(api.actions.sendGoogleChatMessage);
 	// Track the last processed assignment to avoid duplicate notifications
 	const lastProcessedAssignmentRef = useRef<string | null>(null);
 	// Reusable AudioContext for short beeps
@@ -125,9 +135,49 @@ export default function PRReviewAssignment({
 		},
 	});
 
-	const handleConfirmShortcut = () => {
+	const handleConfirmShortcut = async () => {
 		if (pendingRunnerRef.current && pendingShortcut) {
-			pendingRunnerRef.current();
+			// Capture the reviewer before action (for assign)
+			const preReviewer = nextReviewer;
+			await pendingRunnerRef.current();
+			// After running, decide whether to send a message
+			if (
+				lastMessageState.current?.shouldSend &&
+				lastMessageState.current.prUrl
+			) {
+				try {
+					let target = preReviewer;
+					// For skip action, target might change; attempt to derive from assignment feed latest
+					if (pendingShortcut === "skip" || pendingShortcut === "assign") {
+						const newest = assignmentFeed.items[0];
+						if (newest) {
+							target =
+								reviewers.find(
+									(r) => String(r._id) === String(newest.reviewerId),
+								) || target;
+						}
+					}
+					if (target) {
+						const reviewerWithChat = target as unknown as {
+							googleChatUserId?: string;
+							name: string;
+							email: string;
+						};
+						await sendChatMessage({
+							reviewerName: target.name,
+							reviewerEmail: target.email,
+							reviewerChatId: reviewerWithChat.googleChatUserId,
+							prUrl: lastMessageState.current.prUrl,
+							customMessage: lastMessageState.current.message,
+							assignerEmail: userInfo?.email,
+							assignerName: userInfo?.firstName || userInfo?.email,
+							teamSlug,
+						});
+					}
+				} catch (e) {
+					console.warn("Failed to send chat message from shortcut", e);
+				}
+			}
 		}
 		setShortcutDialogOpen(false);
 		setPendingShortcut(null);
@@ -139,6 +189,18 @@ export default function PRReviewAssignment({
 		setPendingShortcut(null);
 		pendingRunnerRef.current = null;
 	};
+
+	// Listen for customization events from dialog
+	useEffect(() => {
+		const handler = (e: Event) => {
+			if (!(e instanceof CustomEvent)) return;
+			const detail = e.detail as typeof lastMessageState.current;
+			lastMessageState.current = detail;
+		};
+		window.addEventListener("shortcutDialogMessageState", handler);
+		return () =>
+			window.removeEventListener("shortcutDialogMessageState", handler);
+	}, []);
 
 	// Load user preferences from localStorage on component mount
 	useEffect(() => {

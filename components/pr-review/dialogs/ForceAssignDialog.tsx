@@ -1,11 +1,9 @@
 "use client";
 
+import { useAction, useMutation } from "convex/react";
 import { AlertTriangle, UserCheck } from "lucide-react";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -23,15 +21,32 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
+import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
 
 import { usePRReview } from "../PRReviewContext";
 
 export function ForceAssignDialog() {
 	const t = useTranslations();
-	const { reviewers, onDataUpdate, userInfo: user } = usePRReview();
+	const { reviewers, onDataUpdate, userInfo: user, teamSlug } = usePRReview();
 	const [forceDialogOpen, setForceDialogOpen] = useState(false);
 	const [selectedReviewerId, setSelectedReviewerId] = useState<string>("");
+	// Chat message customization state (unified component)
+	const [sendMessage, setSendMessage] = useState(false);
+	const [prUrl, setPrUrl] = useState("");
+	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
+	const [customMessage, setCustomMessage] = useState("");
+
+	const sendChatMessage = useAction(api.actions.sendGoogleChatMessage);
+
+	const buildDefaultTemplate = useCallback(() => {
+		return (
+			"📋 Hola {{reviewer_name}}!\n" +
+			"{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>"
+		);
+	}, []);
 
 	// Use Convex mutation for force assignment
 	const assignPRMutation = useMutation(api.mutations.assignPR);
@@ -63,6 +78,29 @@ export function ForceAssignDialog() {
 				// Refresh data to get updated reviewers and feed
 				await onDataUpdate();
 
+				// Optionally send chat message
+				if (sendMessage && prUrl.trim()) {
+					try {
+						await sendChatMessage({
+							reviewerName: result.reviewer.name,
+							reviewerEmail: result.reviewer.email,
+							reviewerChatId: (
+								result.reviewer as unknown as { googleChatUserId?: string }
+							).googleChatUserId,
+							prUrl: prUrl.trim(),
+							assignerEmail: user?.email,
+							assignerName: user?.firstName || user?.email,
+							teamSlug,
+							customMessage:
+								enableCustomMessage && customMessage.trim().length > 0
+									? customMessage
+									: undefined,
+						});
+					} catch (e) {
+						console.warn("Failed to send chat message for forced assign", e);
+					}
+				}
+
 				// Show appropriate toast based on reviewer status
 				if (result.reviewer.isAbsent) {
 					toast({
@@ -83,6 +121,10 @@ export function ForceAssignDialog() {
 				// Close the dialog
 				setForceDialogOpen(false);
 				setSelectedReviewerId("");
+				setSendMessage(false);
+				setEnableCustomMessage(false);
+				setCustomMessage("");
+				setPrUrl("");
 			} else {
 				toast({
 					title: t("common.error"),
@@ -108,7 +150,7 @@ export function ForceAssignDialog() {
 					{t("pr.forceAssign")} PR
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[425px]">
+			<DialogContent className="sm:max-w-[520px]">
 				<DialogHeader>
 					<DialogTitle>{t("reviewer.forceAssignTitle")}</DialogTitle>
 					<DialogDescription>
@@ -144,6 +186,22 @@ export function ForceAssignDialog() {
 								<span>{t("tags.absent")}</span>
 							</div>
 						)}
+
+					<ChatMessageCustomizer
+						prUrl={prUrl}
+						onPrUrlChange={setPrUrl}
+						sendMessage={sendMessage}
+						onSendMessageChange={setSendMessage}
+						enabled={enableCustomMessage}
+						onEnabledChange={setEnableCustomMessage}
+						message={customMessage}
+						onMessageChange={setCustomMessage}
+						nextReviewerName={
+							reviewers.find((r) => r._id === selectedReviewerId)?.name
+						}
+						compact
+						autoTemplate={buildDefaultTemplate()}
+					/>
 				</div>
 				<DialogFooter>
 					<Button variant="outline" onClick={() => setForceDialogOpen(false)}>

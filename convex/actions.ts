@@ -62,7 +62,7 @@ export const sendGoogleChatMessage = action({
 					console.warn("Failed to lookup assignerChatId server-side", e);
 				}
 			}
-			let messageText = ""; // init to satisfy TS definite assignment
+			let builtMessage = ""; // init to satisfy TS definite assignment
 
 			// Build composite display: Name (@<users/ID>) so Google Chat shows both
 			const buildComposite = (
@@ -78,6 +78,7 @@ export const sendGoogleChatMessage = action({
 				return { composite: `${resolvedName} (${raw})`, rawMention: raw };
 			};
 
+			// Note: 'messageText' legacy variable removed; using only builtMessage.
 			if (customMessage && customMessage.trim().length > 0) {
 				// If a Chat ID exists but caller requested names only, override to allow tagging
 				if (reviewerChatId && sendOnlyNames) {
@@ -116,7 +117,7 @@ export const sendGoogleChatMessage = action({
 					.replace(/{{\s*pr\s*}}/gi, prLinked)
 					.replace(/{{\s*PR\s*}}/g, prLinked);
 				// Remove redundant preceding 'PR' if user wrote 'PR: {{PR}}' or 'PR {{PR}}'
-				messageText = replaced.replace(/\bPR:?\s*(<[^>]+\|PR>)/g, "$1");
+				builtMessage = replaced.replace(/\bPR:?\s*(<[^>]+\|PR>)/g, "$1");
 			} else {
 				// Import translations dynamically based on locale
 				const messages = await import(`../messages/${locale}.json`);
@@ -140,26 +141,26 @@ export const sendGoogleChatMessage = action({
 					reviewerComposite.composite,
 				);
 
-				messageText = greetingText;
+				builtMessage = greetingText;
 
 				if (assignerComposite) {
 					const assignmentText = t.googleChat.assignmentMessage
 						.replace("{assigner}", assignerComposite.composite)
 						.replace("{prUrl}", prUrl);
-					messageText += `\n${assignmentText}`;
+					builtMessage += `\n${assignmentText}`;
 				} else {
 					// Fallback when no assigner is provided
 					const assignmentText = t.googleChat.assignmentMessage
 						.replace("{assigner}", "Someone")
 						.replace("{prUrl}", prUrl);
-					messageText += `\n${assignmentText}`;
+					builtMessage += `\n${assignmentText}`;
 				}
 			}
 
-			// (messageText already built; exclamation after mentions sanitized earlier for custom messages via base)
+			// builtMessage finalized
 
 			const message = {
-				text: messageText,
+				text: builtMessage,
 				thread: { threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD " },
 			};
 
@@ -181,7 +182,7 @@ export const sendGoogleChatMessage = action({
 			// Fire and forget logging of the message (keep last 3)
 			try {
 				await ctx.runMutation(api.mutations.logSentMessage, {
-					text: messageText,
+					text: builtMessage,
 					reviewerName,
 					reviewerEmail,
 					assignerName,

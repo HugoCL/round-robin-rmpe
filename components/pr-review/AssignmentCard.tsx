@@ -1,12 +1,10 @@
 "use client";
 
 import { useAction } from "convex/react";
-import { Lightbulb, MessageSquare, Sparkles, Undo2, User } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useId, useState, useTransition } from "react";
-import { generatePRChatMessage } from "@/app/actions/generatePRChatMessage";
+import { Lightbulb, Undo2, User } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -14,17 +12,13 @@ import {
 	CardFooter,
 	CardHeader,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
-
+import { ChatMessageCustomizer } from "./ChatMessageCustomizer";
 import { usePRReview } from "./PRReviewContext";
 
 export function AssignmentCard() {
 	const t = useTranslations();
-	const locale = useLocale();
 	const {
 		teamSlug,
 		nextReviewer,
@@ -35,124 +29,25 @@ export function AssignmentCard() {
 		handleImTheNextOneWithDialog: onImTheNextOne,
 		userInfo: user,
 	} = usePRReview();
-	const [isAssigning, setIsAssigning] = useState(false);
-	const [previousNextReviewer, setPreviousNextReviewer] =
-		useState<Doc<"reviewers"> | null>(null);
 
+	const [isAssigning, setIsAssigning] = useState(false);
 	const [sendMessage, setSendMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
 	const [customMessage, setCustomMessage] = useState("");
-	const [isGenerating, setIsGenerating] = useState(false);
-	const [_isPending, startTransition] = useTransition();
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
-	const [userEditedMessage, setUserEditedMessage] = useState(false);
-	const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
-	const [selectedMods, setSelectedMods] = useState<string[]>([]);
 
-	// Unique IDs for inputs to satisfy lint rule and avoid duplicate IDs
-	const sendMessageId = useId();
-	const prUrlInputId = useId();
-	const toggleCustomMsgId = useId();
-
-	// Available mods based on locale
-	const availableMods = [
-		{
-			id: "funny",
-			label: locale.startsWith("es") ? "Divertido" : "Funny",
-			emoji: "😄",
-		},
-		{
-			id: "references",
-			label: locale.startsWith("es") ? "Con Referencias" : "With References",
-			emoji: "🎬",
-		},
-		{ id: "spanglish", label: "Spanglish", emoji: "🇺🇸🇪🇸" },
-		{
-			id: "formal",
-			label: locale.startsWith("es") ? "Formal" : "Formal",
-			emoji: "🎩",
-		},
-		{
-			id: "motivational",
-			label: locale.startsWith("es") ? "Motivacional" : "Motivational",
-			emoji: "💪",
-		},
-		{
-			id: "pirate",
-			label: locale.startsWith("es") ? "Pirata" : "Pirate",
-			emoji: "🏴\u200d☠️",
-		},
-	];
-
-	const buildDefaultTemplate = useCallback(() => {
-		if (!nextReviewer) return "";
-		// Always Spanish regardless of UI locale
-		return (
-			"📋 ¡Hola {{reviewer_name}}!\n" +
-			"{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>"
-		);
-	}, [nextReviewer]);
-
-	// When enabling custom message, or when dependencies change and user hasn't edited, pre-fill
-	useEffect(() => {
-		// Only prefill when there's no message yet to avoid overwriting AI/user messages
-		if (enableCustomMessage && !userEditedMessage && !customMessage.trim()) {
-			const defMsg = buildDefaultTemplate();
-			if (defMsg && defMsg !== customMessage) {
-				setCustomMessage(defMsg);
-			}
-		}
-	}, [
-		enableCustomMessage,
-		userEditedMessage,
-		customMessage,
-		buildDefaultTemplate,
-	]);
-
-	// Simple helper to call Vercel AI Gateway (model + system prompt handled server side proxy or direct)
-	const generateMessage = async () => {
-		if (!nextReviewer) return;
-		setIsGenerating(true);
-		startTransition(async () => {
-			try {
-				const { response } = await generatePRChatMessage({
-					mods: selectedMods.length ? selectedMods : undefined,
-				});
-				if (response) {
-					setCustomMessage(response);
-					setHasGeneratedOnce(true);
-				}
-			} catch (e) {
-				console.error("Failed to generate message", e);
-			} finally {
-				setIsGenerating(false);
-			}
-		});
-	};
-
-	// Use Convex action for Google Chat
 	const sendGoogleChatAction = useAction(api.actions.sendGoogleChatMessage);
 
-	// Track changes in nextReviewer to trigger animations
-	useEffect(() => {
-		if (nextReviewer?._id !== previousNextReviewer?._id) {
-			setPreviousNextReviewer(nextReviewer);
-		}
-	}, [nextReviewer, previousNextReviewer]);
-
-	// Wrapper function to handle assignment with animation
 	const handleAssignPR = async () => {
 		setIsAssigning(true);
 		try {
 			await onAssignPR({ prUrl: prUrl.trim() || undefined });
-			// Send message to Google Chat if enabled
 			if (sendMessage && prUrl.trim() && nextReviewer) {
 				try {
 					const assignerName =
 						user?.firstName && user?.lastName
 							? `${user.firstName} ${user.lastName}`
 							: user?.firstName || user?.lastName || "Unknown";
-
 					const result = await sendGoogleChatAction({
 						reviewerName: nextReviewer.name,
 						reviewerEmail: nextReviewer.email,
@@ -160,7 +55,7 @@ export function AssignmentCard() {
 							(nextReviewer as unknown as { googleChatUserId?: string })
 								.googleChatUserId || undefined,
 						prUrl,
-						locale: "es", // force Spanish
+						locale: "es",
 						assignerEmail: user?.email,
 						assignerName,
 						teamSlug: teamSlug || undefined,
@@ -170,11 +65,10 @@ export function AssignmentCard() {
 								? customMessage
 								: undefined,
 					});
-					if (!result.success) {
+					if (!result.success)
 						console.error("Failed to send Google Chat message:", result.error);
-					}
-				} catch (error) {
-					console.error("Failed to send Google Chat message:", error);
+				} catch (err) {
+					console.error("Failed to send Google Chat message:", err);
 				}
 			}
 		} finally {
@@ -182,84 +76,50 @@ export function AssignmentCard() {
 		}
 	};
 
-	// Helper function to find the next reviewer after the current next one
 	const findNextAfterCurrent = (): Doc<"reviewers"> | null => {
 		if (!nextReviewer || reviewers.length === 0) return null;
-
-		// Find the minimum assignment count among all non-absent reviewers
 		const availableReviewers = reviewers.filter((r) => !r.isAbsent);
 		if (availableReviewers.length === 0) return null;
-
-		// Find all reviewers with the minimum count, excluding the current next reviewer
 		const minCount = Math.min(
 			...availableReviewers.map((r) => r.assignmentCount),
 		);
-		const candidatesWithMinCount = availableReviewers.filter(
+		const candidatesWithMin = availableReviewers.filter(
 			(r) => r.assignmentCount === minCount && r._id !== nextReviewer._id,
 		);
-
-		// If there are candidates with the same count, sort by creation time
-		if (candidatesWithMinCount.length > 0) {
-			const sortedCandidates = [...candidatesWithMinCount].sort(
-				(a, b) => a.createdAt - b.createdAt,
+		if (candidatesWithMin.length > 0) {
+			return (
+				[...candidatesWithMin].sort((a, b) => a.createdAt - b.createdAt)[0] ||
+				null
 			);
-			return sortedCandidates[0] || null;
 		}
-
-		// If the current next reviewer has the minimum count, find the next lowest
-		const nextMinCount = Math.min(
-			...availableReviewers
-				.filter((r) => r.assignmentCount > minCount)
-				.map((r) => r.assignmentCount),
+		const higher = availableReviewers.filter(
+			(r) => r.assignmentCount > minCount,
 		);
-
-		if (nextMinCount !== Infinity) {
-			const nextCandidates = availableReviewers.filter(
-				(r) => r.assignmentCount === nextMinCount,
-			);
-			const sortedNextCandidates = [...nextCandidates].sort(
-				(a, b) => a.createdAt - b.createdAt,
-			);
-			return sortedNextCandidates[0] || null;
-		}
-
-		return null;
+		if (!higher.length) return null;
+		const nextMin = Math.min(...higher.map((r) => r.assignmentCount));
+		const nextCandidates = availableReviewers.filter(
+			(r) => r.assignmentCount === nextMin,
+		);
+		return (
+			[...nextCandidates].sort((a, b) => a.createdAt - b.createdAt)[0] || null
+		);
 	};
 
-	// Get the last assigned reviewer (optional chaining avoids non-null assertions)
 	const lastAssignedReviewer = assignmentFeed.lastAssigned?.reviewerId
 		? reviewers.find((r) => r._id === assignmentFeed.lastAssigned?.reviewerId)
 		: null;
-
-	// Get the next reviewer after current
 	const nextAfterCurrent = findNextAfterCurrent();
-
-	// Suggestion: if the logged-in user is the next reviewer, suggest using "I'm the Next One"
-	const isCurrentUserNext = (() => {
-		if (!user?.email || !nextReviewer?.email) return false;
-		return user.email.toLowerCase() === nextReviewer.email.toLowerCase();
-	})();
+	const isCurrentUserNext =
+		!!user?.email &&
+		!!nextReviewer?.email &&
+		user.email.toLowerCase() === nextReviewer.email.toLowerCase();
 
 	return (
 		<Card className="h-full flex flex-col">
-			<CardHeader className="flex-shrink-0">
-				<div className="flex justify-between items-end">
-					{/* Google Chat Toggle */}
-					<div className="flex items-center space-x-2">
-						<MessageSquare className="h-4 w-4 text-green-600" />
-						<Switch
-							id={sendMessageId}
-							checked={sendMessage}
-							onCheckedChange={setSendMessage}
-							className="data-[state=checked]:bg-green-600"
-						/>
-					</div>
-				</div>
-			</CardHeader>
+			<CardHeader className="flex-shrink-0" />
 			<CardContent className="flex-1 flex items-center justify-center">
 				{nextReviewer ? (
 					<div className="text-center py-8 w-full space-y-6 overflow-hidden">
-						{/* Last assigned reviewer (greyed out) */}
 						{lastAssignedReviewer && (
 							<div
 								className={`transition-transform duration-500 ease-in-out ${
@@ -277,7 +137,6 @@ export function AssignmentCard() {
 							</div>
 						)}
 
-						{/* Current next reviewer */}
 						<div
 							className={`transition-transform duration-500 ease-in-out ${
 								isAssigning ? "-translate-y-12" : "translate-y-0"
@@ -293,7 +152,6 @@ export function AssignmentCard() {
 							</h3>
 						</div>
 
-						{/* Inline hint when you are next */}
 						{isCurrentUserNext && (
 							<div className="flex justify-center mt-2">
 								<Alert className="max-w-xl w-full bg-background">
@@ -317,7 +175,6 @@ export function AssignmentCard() {
 							</div>
 						)}
 
-						{/* Next after current (upcoming) */}
 						{nextAfterCurrent && (
 							<div
 								className={`transition-transform duration-500 ease-in-out ${
@@ -345,129 +202,22 @@ export function AssignmentCard() {
 				)}
 			</CardContent>
 			<CardFooter className="flex-shrink-0 space-y-6">
-				{/* Action Buttons Section */}
 				<div className="w-full space-y-4">
-					{/* PR URL Input Section - Only shown when Google Chat is enabled */}
-					{sendMessage && (
-						<div className="w-full mb-6">
-							<div className="bg-muted/30 rounded-lg p-4 space-y-3 border border-muted/50">
-								<div className="space-y-1">
-									<Label
-										htmlFor={prUrlInputId}
-										className="text-xs text-muted-foreground"
-									>
-										{t("googleChat.prUrlLabel")}
-									</Label>
-									<Input
-										id={prUrlInputId}
-										placeholder={t("placeholders.githubPrUrl")}
-										value={prUrl}
-										onChange={(e) => setPrUrl(e.target.value)}
-										autoComplete="off"
-										name="prUrl"
-										inputMode="url"
-										spellCheck={false}
-										data-form-autocomplete="off"
-										className="text-sm"
-									/>
-								</div>
+					<ChatMessageCustomizer
+						prUrl={prUrl}
+						onPrUrlChange={setPrUrl}
+						sendMessage={sendMessage}
+						onSendMessageChange={setSendMessage}
+						enabled={enableCustomMessage}
+						onEnabledChange={(val) => {
+							setEnableCustomMessage(val);
+							if (!val) setCustomMessage("");
+						}}
+						message={customMessage}
+						onMessageChange={setCustomMessage}
+						nextReviewerName={nextReviewer?.name}
+					/>
 
-								{/* Toggle for custom message */}
-								<div className="pt-2 border-t border-muted/50 flex items-center justify-between">
-									<Label
-										htmlFor={toggleCustomMsgId}
-										className="text-xs text-muted-foreground flex items-center gap-1"
-									>
-										<MessageSquare className="h-3 w-3" />{" "}
-										{t("googleChat.customizeToggle")}
-									</Label>
-									<Switch
-										id={toggleCustomMsgId}
-										checked={enableCustomMessage}
-										onCheckedChange={(val) => {
-											setEnableCustomMessage(val);
-											if (!val) {
-												setCustomMessage("");
-												setUserEditedMessage(false);
-											}
-										}}
-									/>
-								</div>
-
-								{enableCustomMessage && (
-									<div className="space-y-2 pt-2">
-										<textarea
-											className="w-full text-sm rounded-md border bg-background p-2 resize-none h-28"
-											value={customMessage}
-											onChange={(e) => {
-												setCustomMessage(e.target.value);
-												setUserEditedMessage(true);
-											}}
-											placeholder={t("googleChat.textareaPlaceholder")}
-										/>
-
-										{/* Mod chips */}
-										<div className="space-y-2">
-											<Label className="text-xs text-muted-foreground">
-												{t("modifiers.styleModifiers")}
-											</Label>
-											<div className="flex flex-wrap gap-2">
-												{availableMods.map((mod) => {
-													const isActive = selectedMods.includes(mod.id);
-													return (
-														<Badge
-															key={mod.id}
-															variant={isActive ? "default" : "outline"}
-															className="cursor-pointer hover:bg-primary/80 transition-colors text-xs"
-															onClick={() => {
-																setSelectedMods((prev) =>
-																	prev.includes(mod.id)
-																		? prev.filter((m) => m !== mod.id)
-																		: [...prev, mod.id],
-																);
-															}}
-														>
-															<span className="mr-1">{mod.emoji}</span>
-															{mod.label}
-														</Badge>
-													);
-												})}
-											</div>
-										</div>
-
-										<div className="flex flex-wrap gap-2 items-center">
-											<Button
-												type="button"
-												variant="outline"
-												size="sm"
-												disabled={
-													isGenerating || !prUrl.trim() || !nextReviewer
-												}
-												onClick={() => {
-													setUserEditedMessage(false);
-													generateMessage();
-												}}
-											>
-												{isGenerating ? (
-													<>
-														<Sparkles className="h-3 w-3 mr-1 animate-pulse" />{" "}
-														{t("googleChat.generating")}
-													</>
-												) : (
-													<>
-														<Sparkles className="h-3 w-3 mr-1" />{" "}
-														{hasGeneratedOnce
-															? t("googleChat.generateNew")
-															: t("googleChat.generate")}
-													</>
-												)}
-											</Button>
-										</div>
-									</div>
-								)}
-							</div>
-						</div>
-					)}
 					<div className="flex justify-center">
 						<Button
 							onClick={handleAssignPR}
@@ -493,7 +243,6 @@ export function AssignmentCard() {
 							<Undo2 className="h-4 w-4 mr-2" />
 							{t("pr.undoLastAssignment")}
 						</Button>
-
 						<Button
 							variant="outline"
 							className="w-full"
