@@ -96,6 +96,7 @@
 		"absent": "Absent",
 		"assignedToMe": "Assigned To Me",
 		"iAssigned": "I Assigned",
+		"markAllApproved": "Mark All",
 		"none": "None",
 		"statusLabel": "Status",
 		"statusPending": "Pending Review",
