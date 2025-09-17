@@ -39,10 +39,10 @@ export function MyAssignmentsPanel() {
 	}
 
 	return (
-		<div className="grid md:grid-cols-2 gap-4">
+		<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 			{/* Assigned To Me */}
-			<Card className="h-full flex flex-col">
-				<CardHeader className="flex-shrink-0 flex flex-row items-start justify-between space-y-0 space-x-3">
+			<Card className="h-full flex flex-col min-w-0">
+				<CardHeader className="flex-shrink-0 flex flex-row flex-wrap items-center justify-between gap-2">
 					<CardTitle>{t("pr.assignedToMe")}</CardTitle>
 					<Button
 						variant="ghost"
@@ -81,12 +81,12 @@ export function MyAssignmentsPanel() {
 							<p className="text-sm text-muted-foreground">{t("pr.none")}</p>
 						</div>
 					) : (
-						<div className="space-y-3 h-full overflow-y-auto pr-1">
+						<div className="space-y-3 h-full overflow-y-auto overflow-x-hidden pr-1">
 							{assignedToMe.map((a) => {
 								return (
 									<div
 										key={a._id}
-										className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+										className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
 									>
 										<div className="flex-1 min-w-0">
 											<p className="font-semibold text-sm md:text-base break-all">
@@ -101,7 +101,7 @@ export function MyAssignmentsPanel() {
 														aria-label={t("common.viewPR")}
 														className="inline-flex items-center gap-1 text-primary hover:underline"
 													>
-														<span className="truncate max-w-[220px] md:max-w-[260px] inline-block align-middle">
+														<span className="truncate max-w-full sm:max-w-[220px] md:max-w-[260px] inline-block align-middle">
 															{a.prUrl}
 														</span>
 														<ExternalLink className="h-3 w-3" />
@@ -116,7 +116,7 @@ export function MyAssignmentsPanel() {
 												{formatTime(a.createdAt)}
 											</p>
 										</div>
-										<div className="flex flex-col items-end gap-2 ml-3">
+										<div className="flex flex-col items-start sm:items-end gap-2 sm:ml-3">
 											<Badge className="bg-amber-50 text-amber-700 border-amber-200">
 												{t("pr.statusPending")}
 											</Badge>
@@ -149,8 +149,8 @@ export function MyAssignmentsPanel() {
 				</CardContent>
 			</Card>
 			{/* I Assigned */}
-			<Card className="h-full flex flex-col">
-				<CardHeader className="flex-shrink-0 flex flex-row items-start justify-between space-y-0 space-x-3">
+			<Card className="h-full flex flex-col min-w-0">
+				<CardHeader className="flex-shrink-0 flex flex-row flex-wrap items-center justify-between gap-2">
 					<CardTitle>{t("pr.iAssigned")}</CardTitle>
 					<Button
 						variant="ghost"
@@ -189,12 +189,12 @@ export function MyAssignmentsPanel() {
 							<p className="text-sm text-muted-foreground">{t("pr.none")}</p>
 						</div>
 					) : (
-						<div className="space-y-3 h-full overflow-y-auto pr-1">
+						<div className="space-y-3 h-full overflow-y-auto overflow-x-hidden pr-1">
 							{iAssigned.map((a) => {
 								return (
 									<div
 										key={a._id}
-										className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+										className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
 									>
 										<div className="flex-1 min-w-0">
 											<p className="font-semibold text-sm md:text-base break-all">
@@ -209,7 +209,7 @@ export function MyAssignmentsPanel() {
 														aria-label={t("common.viewPR")}
 														className="inline-flex items-center gap-1 text-primary hover:underline"
 													>
-														<span className="truncate max-w-[220px] md:max-w-[260px] inline-block align-middle">
+														<span className="truncate max-w-full sm:max-w-[220px] md:max-w-[260px] inline-block align-middle">
 															{a.prUrl}
 														</span>
 														<ExternalLink className="h-3 w-3" />
@@ -224,7 +224,7 @@ export function MyAssignmentsPanel() {
 												{formatTime(a.createdAt)}
 											</p>
 										</div>
-										<div className="flex flex-col items-end gap-2 ml-3">
+										<div className="flex flex-col items-start sm:items-end gap-2 sm:ml-3">
 											<Badge className="bg-amber-50 text-amber-700 border-amber-200">
 												{t("pr.statusPending")}
 											</Badge>
