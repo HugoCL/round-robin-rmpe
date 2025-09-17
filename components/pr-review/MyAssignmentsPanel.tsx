@@ -5,7 +5,6 @@ import { enUS, es } from "date-fns/locale";
 import { Check, CheckSquare2, ExternalLink, Loader2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -101,8 +100,8 @@ export function MyAssignmentsPanel() {
 														aria-label={t("common.viewPR")}
 														className="inline-flex items-center gap-1 text-primary hover:underline"
 													>
-														<span className="truncate max-w-full sm:max-w-[220px] md:max-w-[260px] inline-block align-middle">
-															{a.prUrl}
+														<span className="inline-block align-middle">
+															{t("common.viewPR")}
 														</span>
 														<ExternalLink className="h-3 w-3" />
 													</a>
@@ -117,9 +116,6 @@ export function MyAssignmentsPanel() {
 											</p>
 										</div>
 										<div className="flex flex-col items-start sm:items-end gap-2 sm:ml-3">
-											<Badge className="bg-amber-50 text-amber-700 border-amber-200">
-												{t("pr.statusPending")}
-											</Badge>
 											<Button
 												variant="ghost"
 												size="icon"
@@ -209,8 +205,8 @@ export function MyAssignmentsPanel() {
 														aria-label={t("common.viewPR")}
 														className="inline-flex items-center gap-1 text-primary hover:underline"
 													>
-														<span className="truncate max-w-full sm:max-w-[220px] md:max-w-[260px] inline-block align-middle">
-															{a.prUrl}
+														<span className="inline-block align-middle">
+															{t("common.viewPR")}
 														</span>
 														<ExternalLink className="h-3 w-3" />
 													</a>
@@ -225,9 +221,6 @@ export function MyAssignmentsPanel() {
 											</p>
 										</div>
 										<div className="flex flex-col items-start sm:items-end gap-2 sm:ml-3">
-											<Badge className="bg-amber-50 text-amber-700 border-amber-200">
-												{t("pr.statusPending")}
-											</Badge>
 											<Button
 												variant="ghost"
 												size="icon"
