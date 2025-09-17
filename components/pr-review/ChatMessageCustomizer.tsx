@@ -81,10 +81,9 @@ export function ChatMessageCustomizer({
 		if (sendMessage && enabled && !userEdited && !message.trim()) {
 			if (autoTemplate) onMessageChange(autoTemplate);
 			else if (nextReviewerName) {
+				// Always use Spanish default template regardless of app locale
 				onMessageChange(
-					locale.startsWith("es")
-						? `📋 ¡Hola {{reviewer_name}}!\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`
-						: `📋 Hello {{reviewer_name}}!\n{{requester_name}} assigned you this <URL_PLACEHOLDER|PR>`,
+					`📋 ¡Hola {{reviewer_name}}!\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`,
 				);
 			}
 		}
@@ -96,7 +95,6 @@ export function ChatMessageCustomizer({
 		autoTemplate,
 		nextReviewerName,
 		onMessageChange,
-		locale,
 	]);
 
 	const generateMessage = async () => {
