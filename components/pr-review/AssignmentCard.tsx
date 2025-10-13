@@ -33,6 +33,7 @@ export function AssignmentCard() {
 	const [isAssigning, setIsAssigning] = useState(false);
 	const [sendMessage, setSendMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
+	const [contextUrl, setContextUrl] = useState("");
 	const [customMessage, setCustomMessage] = useState("");
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 
@@ -78,6 +79,7 @@ export function AssignmentCard() {
 							(nextReviewer as unknown as { googleChatUserId?: string })
 								.googleChatUserId || undefined,
 						prUrl,
+						contextUrl: contextUrl.trim() || undefined,
 						locale: "es",
 						assignerEmail: user?.email,
 						assignerName,
@@ -229,6 +231,8 @@ export function AssignmentCard() {
 					<ChatMessageCustomizer
 						prUrl={prUrl}
 						onPrUrlChange={setPrUrl}
+						contextUrl={contextUrl}
+						onContextUrlChange={setContextUrl}
 						sendMessage={sendMessage}
 						onSendMessageChange={setSendMessage}
 						enabled={enableCustomMessage}

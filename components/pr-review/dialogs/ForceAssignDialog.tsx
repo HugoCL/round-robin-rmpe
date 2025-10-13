@@ -36,6 +36,7 @@ export function ForceAssignDialog() {
 	// Chat message customization state (unified component)
 	const [sendMessage, setSendMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
+	const [contextUrl, setContextUrl] = useState("");
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [customMessage, setCustomMessage] = useState("");
 
@@ -107,6 +108,7 @@ export function ForceAssignDialog() {
 								result.reviewer as unknown as { googleChatUserId?: string }
 							).googleChatUserId,
 							prUrl: prUrl.trim(),
+							contextUrl: contextUrl.trim() || undefined,
 							assignerEmail: user?.email,
 							assignerName: user?.firstName || user?.email,
 							teamSlug,
@@ -209,6 +211,8 @@ export function ForceAssignDialog() {
 					<ChatMessageCustomizer
 						prUrl={prUrl}
 						onPrUrlChange={setPrUrl}
+						contextUrl={contextUrl}
+						onContextUrlChange={setContextUrl}
 						sendMessage={sendMessage}
 						onSendMessageChange={setSendMessage}
 						enabled={enableCustomMessage}

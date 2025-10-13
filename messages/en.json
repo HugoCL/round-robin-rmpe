@@ -247,6 +247,8 @@
 		"greeting": "📋 Hello {reviewer}",
 		"assignmentMessage": "{assigner} has assigned you the review of this <{prUrl}|PR>",
 		"prUrlLabel": "PR URL",
+		"contextUrlLabel": "Context URL (optional)",
+		"contextUrlHint": "Will be appended as: Más información (URL|aquí)",
 		"customizeToggle": "Customize message",
 		"sendMessageToggle": "Send message",
 		"textareaPlaceholder": "Base message or generate one with AI",
@@ -340,7 +342,8 @@
 	},
 	"placeholders": {
 		"selectTeam": "Select team",
-		"githubPrUrl": "https://github.com/owner/repo/pull/123"
+		"githubPrUrl": "https://github.com/owner/repo/pull/123",
+		"contextUrl": "https://..."
 	},
 	"skipConfirmation": {
 		"message": "Hey {nextReviewer}! You'll be skipped (without incrementing your count) and this PR will be assigned to {nextAfterSkip}. Do you confirm?"

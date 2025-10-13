@@ -10,6 +10,7 @@ export const sendGoogleChatMessage = action({
 		reviewerEmail: v.string(),
 		reviewerChatId: v.optional(v.string()),
 		prUrl: v.string(),
+		contextUrl: v.optional(v.string()),
 		locale: v.optional(v.string()),
 		assignerEmail: v.optional(v.string()),
 		assignerName: v.optional(v.string()),
@@ -26,6 +27,7 @@ export const sendGoogleChatMessage = action({
 			reviewerEmail,
 			reviewerChatId,
 			prUrl,
+			contextUrl,
 			locale = "en",
 			assignerEmail,
 			assignerName,
@@ -118,6 +120,11 @@ export const sendGoogleChatMessage = action({
 					.replace(/{{\s*PR\s*}}/g, prLinked);
 				// Remove redundant preceding 'PR' if user wrote 'PR: {{PR}}' or 'PR {{PR}}'
 				builtMessage = replaced.replace(/\bPR:?\s*(<[^>]+\|PR>)/g, "$1");
+
+				// Add context URL if provided
+				if (contextUrl?.trim()) {
+					builtMessage += `\n\nMás información <${contextUrl}|aquí>`;
+				}
 			} else {
 				// Import translations dynamically based on locale
 				const messages = await import(`../messages/${locale}.json`);

@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 export interface ChatMessageCustomizerProps {
 	prUrl: string;
 	onPrUrlChange: (v: string) => void;
+	contextUrl?: string;
+	onContextUrlChange?: (v: string) => void;
 	sendMessage: boolean;
 	onSendMessageChange: (v: boolean) => void;
 	enabled: boolean; // custom message enabled
@@ -26,6 +28,8 @@ export interface ChatMessageCustomizerProps {
 export function ChatMessageCustomizer({
 	prUrl,
 	onPrUrlChange,
+	contextUrl = "",
+	onContextUrlChange,
 	sendMessage,
 	onSendMessageChange,
 	enabled,
@@ -39,6 +43,7 @@ export function ChatMessageCustomizer({
 	const t = useTranslations();
 	const locale = useLocale();
 	const prUrlId = useId();
+	const contextUrlId = useId();
 	const toggleCustomId = useId();
 	const sendToggleId = useId();
 	const [userEdited, setUserEdited] = useState(false);
@@ -86,12 +91,15 @@ export function ChatMessageCustomizer({
 	// Prefill template when enabling custom message
 	useEffect(() => {
 		if (sendMessage && enabled && !userEdited && !message.trim()) {
-			if (autoTemplate) onMessageChange(autoTemplate);
-			else if (nextReviewerName) {
+			if (autoTemplate) {
+				onMessageChange(autoTemplate);
+			} else if (nextReviewerName) {
 				// Always use Spanish default template regardless of app locale
-				onMessageChange(
-					`📋 ¡Hola {{reviewer_name}}!\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`,
-				);
+				const baseMessage = `📋 ¡Hola {{reviewer_name}}!\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`;
+				const contextPart = contextUrl?.trim()
+					? `\n\nMás información <${contextUrl}|aquí>`
+					: "";
+				onMessageChange(baseMessage + contextPart);
 			}
 		}
 	}, [
@@ -101,6 +109,7 @@ export function ChatMessageCustomizer({
 		message,
 		autoTemplate,
 		nextReviewerName,
+		contextUrl,
 		onMessageChange,
 	]);
 
@@ -112,7 +121,11 @@ export function ChatMessageCustomizer({
 					mods: selectedMods.length ? selectedMods : undefined,
 				});
 				if (response) {
-					onMessageChange(response);
+					// Append context URL if provided
+					const finalMessage = contextUrl?.trim()
+						? `${response}\n\nMás información <${contextUrl}|aquí>`
+						: response;
+					onMessageChange(finalMessage);
 					setUserEdited(true);
 					setHasGeneratedOnce(true);
 				}
@@ -169,6 +182,38 @@ export function ChatMessageCustomizer({
 							data-form-autocomplete="off"
 							className="text-sm"
 						/>
+					</div>
+
+					<div className="space-y-1">
+						<Label
+							htmlFor={contextUrlId}
+							className="text-xs text-muted-foreground"
+						>
+							{t("googleChat.contextUrlLabel", {
+								defaultValue: "Context URL (optional)",
+							})}
+						</Label>
+						<Input
+							id={contextUrlId}
+							placeholder={t("placeholders.contextUrl", {
+								defaultValue: "https://...",
+							})}
+							value={contextUrl}
+							onChange={(e) => onContextUrlChange?.(e.target.value)}
+							autoComplete="off"
+							inputMode="url"
+							spellCheck={false}
+							data-form-autocomplete="off"
+							className="text-sm"
+						/>
+						{contextUrl?.trim() && (
+							<p className="text-[10px] text-muted-foreground italic">
+								{t("googleChat.contextUrlHint", {
+									defaultValue:
+										"Will be appended as: Más información <URL|aquí>",
+								})}
+							</p>
+						)}
 					</div>
 
 					<div className="pt-2 border-t border-muted/50 flex items-center justify-between">

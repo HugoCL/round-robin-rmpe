@@ -43,6 +43,7 @@ export function SkipConfirmationDialog({
 	const { nextReviewer } = usePRReview();
 	const [sendMessage, setSendMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
+	const [contextUrl, setContextUrl] = useState("");
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [customMessage, setCustomMessage] = useState("");
 
@@ -50,6 +51,7 @@ export function SkipConfirmationDialog({
 		if (!isOpen) {
 			setSendMessage(false);
 			setPrUrl("");
+			setContextUrl("");
 			setEnableCustomMessage(false);
 			setCustomMessage("");
 		}
@@ -100,6 +102,8 @@ export function SkipConfirmationDialog({
 					<ChatMessageCustomizer
 						prUrl={prUrl}
 						onPrUrlChange={setPrUrl}
+						contextUrl={contextUrl}
+						onContextUrlChange={setContextUrl}
 						sendMessage={sendMessage}
 						onSendMessageChange={setSendMessage}
 						enabled={enableCustomMessage}

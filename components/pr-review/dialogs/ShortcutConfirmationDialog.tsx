@@ -47,6 +47,7 @@ export function ShortcutConfirmationDialog({
 	const [sendMessage, setSendMessage] = useState(false);
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
+	const [contextUrl, setContextUrl] = useState("");
 	const [customMessage, setCustomMessage] = useState("");
 
 	// Expose chosen message via CustomEvent so parent can pick it up without prop drilling changes
@@ -153,6 +154,8 @@ export function ShortcutConfirmationDialog({
 					<ChatMessageCustomizer
 						prUrl={prUrl}
 						onPrUrlChange={setPrUrl}
+						contextUrl={contextUrl}
+						onContextUrlChange={setContextUrl}
 						sendMessage={sendMessage}
 						onSendMessageChange={setSendMessage}
 						enabled={enableCustomMessage}
