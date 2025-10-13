@@ -120,11 +120,6 @@ export const sendGoogleChatMessage = action({
 					.replace(/{{\s*PR\s*}}/g, prLinked);
 				// Remove redundant preceding 'PR' if user wrote 'PR: {{PR}}' or 'PR {{PR}}'
 				builtMessage = replaced.replace(/\bPR:?\s*(<[^>]+\|PR>)/g, "$1");
-
-				// Add context URL if provided
-				if (contextUrl?.trim()) {
-					builtMessage += `\n\nMás información <${contextUrl}|aquí>`;
-				}
 			} else {
 				// Import translations dynamically based on locale
 				const messages = await import(`../messages/${locale}.json`);
@@ -166,8 +161,50 @@ export const sendGoogleChatMessage = action({
 
 			// builtMessage finalized
 
+			// Build Google Chat card with buttons for PR and context
+			const buttons = [
+				{
+					text: "Ver PR",
+					onClick: {
+						openLink: {
+							url: prUrl,
+						},
+					},
+				},
+			];
+
+			// Add context button if context URL is provided
+			if (contextUrl?.trim()) {
+				buttons.push({
+					text: "Ver Contexto",
+					onClick: {
+						openLink: {
+							url: contextUrl,
+						},
+					},
+				});
+			}
+
 			const message = {
-				text: builtMessage,
+				text: builtMessage, // Show full message as text (with mentions working)
+				cardsV2: [
+					{
+						cardId: "pr-assignment-card",
+						card: {
+							sections: [
+								{
+									widgets: [
+										{
+											buttonList: {
+												buttons: buttons,
+											},
+										},
+									],
+								},
+							],
+						},
+					},
+				],
 				thread: { threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD " },
 			};
 

@@ -40,6 +40,7 @@ export default defineSchema({
 		skipped: v.boolean(),
 		isAbsentSkip: v.boolean(),
 		prUrl: v.optional(v.string()),
+		contextUrl: v.optional(v.string()),
 		tagId: v.optional(v.string()),
 		actionBy: v.optional(
 			v.object({
@@ -64,6 +65,7 @@ export default defineSchema({
 				skipped: v.boolean(),
 				isAbsentSkip: v.boolean(),
 				prUrl: v.optional(v.string()),
+				contextUrl: v.optional(v.string()),
 				tagId: v.optional(v.string()),
 				actionBy: v.optional(
 					v.object({

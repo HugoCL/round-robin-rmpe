@@ -46,7 +46,10 @@ export function AssignmentCard() {
 		setIsAssigning(true);
 		try {
 			const currentNext = nextReviewer; // capture before assignment changes
-			await onAssignPR({ prUrl: prUrl.trim() || undefined });
+			await onAssignPR({
+				prUrl: prUrl.trim() || undefined,
+				contextUrl: contextUrl.trim() || undefined,
+			});
 			// Create active assignment row if we have PR URL and participants
 			if (currentNext && user?.email && teamSlug) {
 				// Find assigner reviewer record (could be same as assignee sometimes?)

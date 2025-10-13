@@ -336,6 +336,7 @@ async function updateAssignmentFeed(
 		skipped: boolean;
 		isAbsentSkip: boolean;
 		prUrl?: string;
+		contextUrl?: string;
 		tagId?: string;
 		actionBy?: {
 			email: string;
@@ -424,6 +425,7 @@ export const assignPR = mutation({
 		skipped: v.optional(v.boolean()),
 		isAbsentSkip: v.optional(v.boolean()),
 		prUrl: v.optional(v.string()),
+		contextUrl: v.optional(v.string()),
 		tagId: v.optional(v.id("tags")),
 		actionBy: v.optional(
 			v.object({
@@ -441,6 +443,7 @@ export const assignPR = mutation({
 			skipped = false,
 			isAbsentSkip = false,
 			prUrl,
+			contextUrl,
 			tagId,
 			actionBy,
 		},
@@ -467,6 +470,7 @@ export const assignPR = mutation({
 			skipped,
 			isAbsentSkip,
 			prUrl,
+			contextUrl,
 			tagId,
 			actionBy,
 		});
@@ -483,6 +487,7 @@ export const assignPR = mutation({
 					skipped,
 					isAbsentSkip,
 					prUrl,
+					contextUrl,
 					tagId,
 					actionBy,
 				},

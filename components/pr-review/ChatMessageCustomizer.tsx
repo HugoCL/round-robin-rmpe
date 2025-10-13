@@ -96,10 +96,7 @@ export function ChatMessageCustomizer({
 			} else if (nextReviewerName) {
 				// Always use Spanish default template regardless of app locale
 				const baseMessage = `📋 ¡Hola {{reviewer_name}}!\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`;
-				const contextPart = contextUrl?.trim()
-					? `\n\nMás información <${contextUrl}|aquí>`
-					: "";
-				onMessageChange(baseMessage + contextPart);
+				onMessageChange(baseMessage);
 			}
 		}
 	}, [
@@ -109,7 +106,6 @@ export function ChatMessageCustomizer({
 		message,
 		autoTemplate,
 		nextReviewerName,
-		contextUrl,
 		onMessageChange,
 	]);
 
@@ -121,11 +117,7 @@ export function ChatMessageCustomizer({
 					mods: selectedMods.length ? selectedMods : undefined,
 				});
 				if (response) {
-					// Append context URL if provided
-					const finalMessage = contextUrl?.trim()
-						? `${response}\n\nMás información <${contextUrl}|aquí>`
-						: response;
-					onMessageChange(finalMessage);
+					onMessageChange(response);
 					setUserEdited(true);
 					setHasGeneratedOnce(true);
 				}
@@ -209,8 +201,7 @@ export function ChatMessageCustomizer({
 						{contextUrl?.trim() && (
 							<p className="text-[10px] text-muted-foreground italic">
 								{t("googleChat.contextUrlHint", {
-									defaultValue:
-										"Will be appended as: Más información <URL|aquí>",
+									defaultValue: 'Will add a "Ver Contexto" button',
 								})}
 							</p>
 						)}

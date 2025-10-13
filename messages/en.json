@@ -40,7 +40,8 @@
 		"historyAndData": "History & Data",
 		"help": "Help",
 		"update": "Update",
-		"viewPR": "View PR"
+		"viewPR": "View PR",
+		"viewContext": "View Context"
 	},
 	"pr": {
 		"manageData": "Manage Data",
@@ -248,7 +249,7 @@
 		"assignmentMessage": "{assigner} has assigned you the review of this <{prUrl}|PR>",
 		"prUrlLabel": "PR URL",
 		"contextUrlLabel": "Context URL (optional)",
-		"contextUrlHint": "Will be appended as: Más información (URL|aquí)",
+		"contextUrlHint": "Will be shown as 'View Context' button in the message",
 		"customizeToggle": "Customize message",
 		"sendMessageToggle": "Send message",
 		"textareaPlaceholder": "Base message or generate one with AI",

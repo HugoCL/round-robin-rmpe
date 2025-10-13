@@ -74,7 +74,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 										</p>
 									)}
 									{item.prUrl && (
-										<p className="text-xs mt-1">
+										<p className="text-xs mt-1 flex gap-2 flex-wrap">
 											<Link
 												href={item.prUrl}
 												target="_blank"
@@ -90,6 +90,23 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 													<ExternalLink className="h-3 w-3 ml-1" />
 												</Badge>
 											</Link>
+											{item.contextUrl && (
+												<Link
+													href={item.contextUrl}
+													target="_blank"
+													rel="noreferrer noopener"
+													aria-label={t("common.viewContext")}
+													className="inline-flex items-center gap-1"
+												>
+													<Badge
+														variant="outline"
+														className="cursor-pointer hover:bg-primary/10 transition-colors"
+													>
+														{t("common.viewContext")}
+														<ExternalLink className="h-3 w-3 ml-1" />
+													</Badge>
+												</Link>
+											)}
 										</p>
 									)}
 									{item.tagId && (

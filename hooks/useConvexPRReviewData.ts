@@ -74,13 +74,14 @@ export function useConvexPRReviewData(
 		nextReviewer === undefined ||
 		assignmentFeed === undefined;
 
-	const assignPR = async (opts?: { prUrl?: string }) => {
+	const assignPR = async (opts?: { prUrl?: string; contextUrl?: string }) => {
 		if (!nextReviewer) return;
 
 		try {
 			await assignPRMutation({
 				reviewerId: nextReviewer._id,
 				prUrl: opts?.prUrl,
+				contextUrl: opts?.contextUrl,
 				actionBy: user || undefined,
 			});
 

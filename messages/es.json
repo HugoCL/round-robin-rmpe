@@ -88,7 +88,8 @@
 		"viewOptions": "Opciones de Vista",
 		"historyAndData": "Historial y Datos",
 		"help": "Ayuda",
-		"viewPR": "Ver PR"
+		"viewPR": "Ver PR",
+		"viewContext": "Ver Contexto"
 	},
 	"pr": {
 		"manageData": "Gestionar Datos",
@@ -296,7 +297,7 @@
 		"assignmentMessage": "{assigner} te ha asignado la revisión de este <{prUrl}|PR>",
 		"prUrlLabel": "PR URL",
 		"contextUrlLabel": "URL de contexto (opcional)",
-		"contextUrlHint": "Se agregará como: Más información (URL|aquí)",
+		"contextUrlHint": "Se mostrará como botón 'Ver Contexto' en el mensaje",
 		"customizeToggle": "Personalizar mensaje",
 		"sendMessageToggle": "Enviar mensaje",
 		"textareaPlaceholder": "Mensaje base o genera uno con IA",
