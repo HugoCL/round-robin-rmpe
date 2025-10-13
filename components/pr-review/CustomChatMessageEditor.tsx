@@ -97,8 +97,10 @@ export function CustomChatMessageEditor({
 				{enabled && (
 					<p className="text-[10px] text-muted-foreground leading-snug">
 						{t("googleChat.placeholdersHint", {
-							defaultValue:
-								"Use {{reviewer_name}}, {{requester_name}} y {{PR}}",
+							reviewer: "{{reviewer_name}}",
+							requester: "{{requester_name}}",
+							pr: "{{PR}}",
+							defaultValue: "Use {reviewer}, {requester} and {pr}",
 						})}
 					</p>
 				)}

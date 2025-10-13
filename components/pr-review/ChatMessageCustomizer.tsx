@@ -76,6 +76,13 @@ export function ChatMessageCustomizer({
 		},
 	];
 
+	const placeholdersHint = t("googleChat.placeholdersHint", {
+		reviewer: "{{reviewer_name}}",
+		requester: "{{requester_name}}",
+		pr: "{{PR}}",
+		defaultValue: "Use {reviewer}, {requester} and {pr}",
+	});
+
 	// Prefill template when enabling custom message
 	useEffect(() => {
 		if (sendMessage && enabled && !userEdited && !message.trim()) {
@@ -258,28 +265,9 @@ export function ChatMessageCustomizer({
 								</>
 							)}
 
-							{(() => {
-								const fallbackEn =
-									"Use {{reviewer_name}}, {{requester_name}} & <URL_PLACEHOLDER|PR>";
-								const fallbackEs =
-									"Usa {{reviewer_name}}, {{requester_name}} y <URL_PLACEHOLDER|PR>";
-								const raw = t("googleChat.placeholdersHint", {
-									defaultValue: locale.startsWith("es")
-										? fallbackEs
-										: fallbackEn,
-								});
-								const resolved =
-									raw === "googleChat.placeholdersHint"
-										? locale.startsWith("es")
-											? fallbackEs
-											: fallbackEn
-										: raw;
-								return (
-									<p className="text-[10px] text-muted-foreground leading-snug">
-										{resolved}
-									</p>
-								);
-							})()}
+							<p className="text-[10px] text-muted-foreground leading-snug">
+								{placeholdersHint}
+							</p>
 						</div>
 					)}
 				</>

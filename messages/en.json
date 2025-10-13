@@ -250,7 +250,7 @@
 		"customizeToggle": "Customize message",
 		"sendMessageToggle": "Send message",
 		"textareaPlaceholder": "Base message or generate one with AI",
-		"placeholdersHint": "Use {{reviewer_name}}, {{requester_name}} and {{PR}}",
+		"placeholdersHint": "Use {reviewer}, {requester} and {pr}",
 		"generate": "Generate with AI",
 		"generateNew": "Generate new",
 		"generating": "Generating…",
