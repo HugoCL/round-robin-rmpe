@@ -1,5 +1,4 @@
 import { AssignmentCard } from "../AssignmentCard";
-import { CollapsibleAssignmentsPanel } from "../CollapsibleAssignmentsPanel";
 import { ForceAssignDialog } from "../dialogs/ForceAssignDialog";
 import { FeedHistory } from "../FeedHistory";
 /**
@@ -13,8 +12,6 @@ export function CompactLayout() {
 	return (
 		<div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)]">
 			<div className="flex-1 lg:w-[60%] flex flex-col space-y-6">
-				<CollapsibleAssignmentsPanel />
-
 				{/* Assignment Card */}
 				<div className="flex-1">
 					<AssignmentCard />

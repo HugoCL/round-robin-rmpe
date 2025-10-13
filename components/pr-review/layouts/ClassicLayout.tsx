@@ -18,7 +18,6 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AssignmentCard } from "../AssignmentCard";
-import { CollapsibleAssignmentsPanel } from "../CollapsibleAssignmentsPanel";
 import { AddReviewerDialog } from "../dialogs/AddReviewerDialog";
 import { DeleteReviewerDialog } from "../dialogs/DeleteReviewerDialog";
 import { ForceAssignDialog } from "../dialogs/ForceAssignDialog";
@@ -44,13 +43,8 @@ export function ClassicLayout() {
 		exportData,
 	} = usePRReview();
 
-	// Start collapsed by default
-	// (Assignments collapse state handled by CollapsibleAssignmentsPanel)
-
 	return (
 		<div className="space-y-6">
-			<CollapsibleAssignmentsPanel />
-
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				<Card className="md:col-span-1 lg:col-span-2">
 					<CardHeader>
