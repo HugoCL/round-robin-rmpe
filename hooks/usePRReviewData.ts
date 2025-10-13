@@ -330,6 +330,7 @@ export function usePRReviewData(user?: UserInfo | null) {
 	const confirmSkipToNext = async (
 		currentNext: Reviewer,
 		nextAfterSkip: Reviewer,
+		_opts?: { prUrl?: string },
 	) => {
 		// Increment only the reviewer who is actually getting the assignment (nextAfterSkip)
 		// The currentNext reviewer is being skipped, so they shouldn't get their counter incremented

@@ -167,11 +167,13 @@ export function useConvexPRReviewData(
 	const confirmSkipToNext = async (
 		currentNext: Doc<"reviewers">,
 		nextAfterSkip: Doc<"reviewers">,
+		opts?: { prUrl?: string },
 	) => {
 		try {
 			await assignPRMutation({
 				reviewerId: nextAfterSkip._id,
 				actionBy: user || undefined,
+				prUrl: opts?.prUrl,
 			});
 
 			toast({

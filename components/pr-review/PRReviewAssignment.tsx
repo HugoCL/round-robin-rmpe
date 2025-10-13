@@ -24,7 +24,10 @@ import {
 	type ShortcutAction,
 	ShortcutConfirmationDialog,
 } from "./dialogs/ShortcutConfirmationDialog";
-import { SkipConfirmationDialog } from "./dialogs/SkipConfirmationDialog";
+import {
+	SkipConfirmationDialog,
+	type SkipConfirmationOptions,
+} from "./dialogs/SkipConfirmationDialog";
 import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
 import { ClassicLayout } from "./layouts/ClassicLayout";
@@ -69,6 +72,7 @@ export default function PRReviewAssignment({
 	const [nextAfterSkip, setNextAfterSkip] = useState<Doc<"reviewers"> | null>(
 		null,
 	);
+	const [skipConfirmSubmitting, setSkipConfirmSubmitting] = useState(false);
 	const [compactLayout, setCompactLayout] = useState(false);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 	const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
@@ -284,11 +288,57 @@ export default function PRReviewAssignment({
 	};
 
 	// Confirms the skip action
-	const handleConfirmSkipToNext = async () => {
-		if (!nextReviewer || !nextAfterSkip) return;
-		await confirmSkipToNext(nextReviewer, nextAfterSkip);
-		setSkipConfirmDialogOpen(false);
-		setNextAfterSkip(null);
+	const handleConfirmSkipToNext = async (
+		options: SkipConfirmationOptions,
+	): Promise<void> => {
+		if (!nextReviewer || !nextAfterSkip || skipConfirmSubmitting) return;
+		const trimmedPrUrl = options.prUrl.trim();
+		const trimmedCustomMessage = options.enableCustomMessage
+			? options.customMessage.trim()
+			: "";
+		setSkipConfirmSubmitting(true);
+		try {
+			await confirmSkipToNext(nextReviewer, nextAfterSkip, {
+				prUrl: trimmedPrUrl || undefined,
+			});
+
+			if (options.sendMessage && trimmedPrUrl) {
+				try {
+					const reviewerWithChat = nextAfterSkip as unknown as {
+						googleChatUserId?: string;
+					};
+					const assignerName =
+						userInfo?.firstName && userInfo?.lastName
+							? `${userInfo.firstName} ${userInfo.lastName}`
+							: userInfo?.firstName || userInfo?.lastName || userInfo?.email;
+					await sendChatMessage({
+						reviewerName: nextAfterSkip.name,
+						reviewerEmail: nextAfterSkip.email,
+						reviewerChatId: reviewerWithChat.googleChatUserId,
+						prUrl: trimmedPrUrl,
+						assignerEmail: userInfo?.email,
+						assignerName,
+						teamSlug,
+						customMessage:
+							trimmedCustomMessage.length > 0
+								? trimmedCustomMessage
+								: undefined,
+						locale: "es",
+						sendOnlyNames: false,
+					});
+				} catch (err) {
+					console.warn(
+						"Failed to send Google Chat message for skip confirmation",
+						err,
+					);
+				}
+			}
+
+			setSkipConfirmDialogOpen(false);
+		} finally {
+			setNextAfterSkip(null);
+			setSkipConfirmSubmitting(false);
+		}
 	};
 
 	// Cancels the skip action
@@ -631,6 +681,7 @@ export default function PRReviewAssignment({
 					nextAfterSkip={nextAfterSkip}
 					onConfirm={handleConfirmSkipToNext}
 					onCancel={handleCancelSkip}
+					isSubmitting={skipConfirmSubmitting}
 				/>
 
 				<ShortcutConfirmationDialog

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -11,14 +12,23 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
 import { usePRReview } from "../PRReviewContext";
+
+export interface SkipConfirmationOptions {
+	sendMessage: boolean;
+	prUrl: string;
+	enableCustomMessage: boolean;
+	customMessage: string;
+}
 
 interface SkipConfirmationDialogProps {
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
 	nextAfterSkip: Doc<"reviewers"> | null;
-	onConfirm: () => void;
+	onConfirm: (options: SkipConfirmationOptions) => Promise<void>;
 	onCancel: () => void;
+	isSubmitting?: boolean;
 }
 
 export function SkipConfirmationDialog({
@@ -27,9 +37,43 @@ export function SkipConfirmationDialog({
 	nextAfterSkip,
 	onConfirm,
 	onCancel,
+	isSubmitting = false,
 }: SkipConfirmationDialogProps) {
 	const t = useTranslations();
 	const { nextReviewer } = usePRReview();
+	const [sendMessage, setSendMessage] = useState(false);
+	const [prUrl, setPrUrl] = useState("");
+	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
+	const [customMessage, setCustomMessage] = useState("");
+
+	useEffect(() => {
+		if (!isOpen) {
+			setSendMessage(false);
+			setPrUrl("");
+			setEnableCustomMessage(false);
+			setCustomMessage("");
+		}
+	}, [isOpen]);
+
+	useEffect(() => {
+		if (!nextAfterSkip) {
+			setSendMessage(false);
+			setEnableCustomMessage(false);
+			setCustomMessage("");
+		}
+	}, [nextAfterSkip]);
+
+	const handleConfirm = async () => {
+		await onConfirm({
+			sendMessage,
+			prUrl: prUrl.trim(),
+			enableCustomMessage,
+			customMessage: customMessage.trim(),
+		});
+	};
+
+	const disableConfirm =
+		isSubmitting || (sendMessage && prUrl.trim().length === 0);
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -53,12 +97,26 @@ export function SkipConfirmationDialog({
 							})}
 						</p>
 					)}
+					<ChatMessageCustomizer
+						prUrl={prUrl}
+						onPrUrlChange={setPrUrl}
+						sendMessage={sendMessage}
+						onSendMessageChange={setSendMessage}
+						enabled={enableCustomMessage}
+						onEnabledChange={setEnableCustomMessage}
+						message={customMessage}
+						onMessageChange={setCustomMessage}
+						nextReviewerName={nextAfterSkip?.name}
+						compact
+					/>
 				</div>
 				<DialogFooter>
 					<Button variant="outline" onClick={onCancel}>
 						{t("common.cancel")}
 					</Button>
-					<Button onClick={onConfirm}>{t("common.confirm")}</Button>
+					<Button onClick={handleConfirm} disabled={disableConfirm}>
+						{isSubmitting ? t("tags.assigning") : t("common.confirm")}
+					</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
