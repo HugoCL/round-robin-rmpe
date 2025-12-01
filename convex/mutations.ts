@@ -39,6 +39,21 @@ export const createTeam = mutation({
 	},
 });
 
+// Update team settings (including webhook URL)
+export const updateTeamSettings = mutation({
+	args: {
+		teamSlug: v.string(),
+		googleChatWebhookUrl: v.optional(v.string()),
+	},
+	handler: async (ctx, { teamSlug, googleChatWebhookUrl }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		await ctx.db.patch(team._id, {
+			googleChatWebhookUrl: googleChatWebhookUrl?.trim() || undefined,
+		});
+		return { success: true };
+	},
+});
+
 // Initialize default data
 export const initializeData = mutation({
 	args: { teamSlug: v.string() },

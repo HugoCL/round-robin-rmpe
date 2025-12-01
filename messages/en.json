@@ -232,6 +232,15 @@
 		"errorProvideName": "Please provide a team name.",
 		"createError": "Failed to create team"
 	},
+	"teamSettings": {
+		"title": "Team Settings",
+		"description": "Configure settings for this team.",
+		"webhookUrlLabel": "Google Chat Webhook URL",
+		"webhookUrlPlaceholder": "https://chat.googleapis.com/v1/spaces/...",
+		"webhookUrlHint": "The webhook URL for sending PR assignment notifications to Google Chat. Get this from your Google Chat space settings.",
+		"webhookSaved": "Webhook URL saved successfully",
+		"saveFailed": "Failed to save team settings. Please try again."
+	},
 	"history": {
 		"title": "Assignment History",
 		"assignedBy": "Assigned by",

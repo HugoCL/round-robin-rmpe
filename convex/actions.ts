@@ -15,7 +15,7 @@ export const sendGoogleChatMessage = action({
 		assignerEmail: v.optional(v.string()),
 		assignerName: v.optional(v.string()),
 		assignerChatId: v.optional(v.string()),
-		teamSlug: v.optional(v.string()),
+		teamSlug: v.string(), // Now required to fetch team-specific webhook
 		sendOnlyNames: v.optional(v.boolean()),
 		// If provided, this message text will be sent as-is (no template building)
 		customMessage: v.optional(v.string()),
@@ -36,16 +36,21 @@ export const sendGoogleChatMessage = action({
 			sendOnlyNames = false,
 			customMessage,
 		},
-	) => {
+	): Promise<{ success: boolean; error?: string }> => {
 		// Normalize / sanitize potentially empty or whitespace chat IDs early to avoid rendering `<users/>`
 		reviewerChatId = reviewerChatId?.trim() || undefined;
 		assignerChatId = assignerChatId?.trim() || undefined;
-		const GOOGLE_CHAT_WEBHOOK_URL = process.env.GOOGLE_CHAT_WEBHOOK_URL;
+
+		// Fetch team-specific webhook URL from database
+		const team = (await ctx.runQuery(api.queries.getTeam, { teamSlug })) as {
+			googleChatWebhookUrl?: string;
+		} | null;
+		const GOOGLE_CHAT_WEBHOOK_URL = team?.googleChatWebhookUrl?.trim();
 
 		if (!GOOGLE_CHAT_WEBHOOK_URL) {
 			return {
 				success: false,
-				error: "Google Chat webhook URL not configured",
+				error: "Google Chat webhook URL not configured for this team",
 			};
 		}
 

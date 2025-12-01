@@ -9,6 +9,7 @@ import {
 	RefreshCw,
 	Settings,
 	Tags,
+	Webhook,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -32,11 +33,13 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { TeamSettingsDialog } from "./dialogs/TeamSettingsDialog";
 import { usePRReview } from "./PRReviewContext";
 
 export function HeaderOptionsDrawer() {
 	const t = useTranslations();
 	const {
+		teamSlug,
 		compactLayout,
 		showAssignments,
 		showTags,
@@ -194,6 +197,30 @@ export function HeaderOptionsDrawer() {
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
+						</div>
+					</div>
+
+					<Separator />
+
+					{/* Team Settings */}
+					<div>
+						<h3 className="text-sm font-medium mb-3">
+							{t("teamSettings.title")}
+						</h3>
+						<div className="space-y-2">
+							<TeamSettingsDialog
+								teamSlug={teamSlug}
+								trigger={
+									<Button
+										variant="outline"
+										size="sm"
+										className="w-full justify-start"
+									>
+										<Webhook className="h-4 w-4 mr-2" />
+										{t("teamSettings.webhookUrlLabel")}
+									</Button>
+								}
+							/>
 						</div>
 					</div>
 

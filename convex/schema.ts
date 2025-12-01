@@ -6,6 +6,7 @@ export default defineSchema({
 		name: v.string(),
 		slug: v.string(),
 		createdAt: v.optional(v.number()),
+		googleChatWebhookUrl: v.optional(v.string()),
 	})
 		.index("by_slug", ["slug"]) // enforce uniqueness at write-time
 		.index("by_created_at", ["createdAt"]),

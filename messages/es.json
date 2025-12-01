@@ -280,6 +280,15 @@
 		"errorProvideName": "Por favor ingresa un nombre de equipo.",
 		"createError": "Falló la creación del equipo"
 	},
+	"teamSettings": {
+		"title": "Configuración del Equipo",
+		"description": "Configura los ajustes para este equipo.",
+		"webhookUrlLabel": "URL del Webhook de Google Chat",
+		"webhookUrlPlaceholder": "https://chat.googleapis.com/v1/spaces/...",
+		"webhookUrlHint": "La URL del webhook para enviar notificaciones de asignación de PR a Google Chat. Obtenla desde la configuración de tu espacio de Google Chat.",
+		"webhookSaved": "URL del webhook guardada exitosamente",
+		"saveFailed": "Error al guardar la configuración del equipo. Por favor intenta de nuevo."
+	},
 	"history": {
 		"title": "Historial de Asignaciones",
 		"assignedBy": "Asignado por",

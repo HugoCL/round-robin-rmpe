@@ -162,7 +162,7 @@ export default function PRReviewAssignment({
 								) || target;
 						}
 					}
-					if (target) {
+					if (target && teamSlug) {
 						const reviewerWithChat = target as unknown as {
 							googleChatUserId?: string;
 							name: string;
@@ -302,7 +302,7 @@ export default function PRReviewAssignment({
 				prUrl: trimmedPrUrl || undefined,
 			});
 
-			if (options.sendMessage && trimmedPrUrl) {
+			if (options.sendMessage && trimmedPrUrl && teamSlug) {
 				try {
 					const reviewerWithChat = nextAfterSkip as unknown as {
 						googleChatUserId?: string;

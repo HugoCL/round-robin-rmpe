@@ -69,7 +69,7 @@ export function AssignmentCard() {
 					}
 				}
 			}
-			if (sendMessage && prUrl.trim() && nextReviewer) {
+			if (sendMessage && prUrl.trim() && nextReviewer && teamSlug) {
 				try {
 					const assignerName =
 						user?.firstName && user?.lastName
@@ -86,7 +86,7 @@ export function AssignmentCard() {
 						locale: "es",
 						assignerEmail: user?.email,
 						assignerName,
-						teamSlug: teamSlug || undefined,
+						teamSlug,
 						sendOnlyNames: false,
 						customMessage:
 							enableCustomMessage && customMessage.trim().length > 0

@@ -99,7 +99,7 @@ export function ForceAssignDialog() {
 				await onDataUpdate();
 
 				// Optionally send chat message
-				if (sendMessage && prUrl.trim()) {
+				if (sendMessage && prUrl.trim() && teamSlug) {
 					try {
 						await sendChatMessage({
 							reviewerName: result.reviewer.name,
