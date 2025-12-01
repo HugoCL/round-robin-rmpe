@@ -24,10 +24,6 @@ import {
 	type ShortcutAction,
 	ShortcutConfirmationDialog,
 } from "./dialogs/ShortcutConfirmationDialog";
-import {
-	SkipConfirmationDialog,
-	type SkipConfirmationOptions,
-} from "./dialogs/SkipConfirmationDialog";
 import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
 import { ClassicLayout } from "./layouts/ClassicLayout";
@@ -68,11 +64,6 @@ export default function PRReviewAssignment({
 	const [showAssignments, setShowAssignments] = useState(false);
 	const [showTags, setShowTags] = useState(true);
 	const [showEmails, setShowEmails] = useState(false);
-	const [skipConfirmDialogOpen, setSkipConfirmDialogOpen] = useState(false);
-	const [nextAfterSkip, setNextAfterSkip] = useState<Doc<"reviewers"> | null>(
-		null,
-	);
-	const [skipConfirmSubmitting, setSkipConfirmSubmitting] = useState(false);
 	const [compactLayout, setCompactLayout] = useState(false);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 	const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
@@ -112,8 +103,7 @@ export default function PRReviewAssignment({
 		backups,
 		assignPR,
 		skipReviewer,
-		handleImTheNextOne,
-		confirmSkipToNext,
+		autoSkipAndAssign,
 		undoAssignment,
 		addReviewer,
 		updateReviewer,
@@ -276,75 +266,6 @@ export default function PRReviewAssignment({
 
 	const handleDataUpdate = async () => {
 		await refreshTags();
-	};
-
-	// Opens the skip confirmation dialog
-	const handleImTheNextOneWithDialog = async () => {
-		const result = await handleImTheNextOne();
-		if (result.success && result.nextReviewer) {
-			setNextAfterSkip(result.nextReviewer);
-			setSkipConfirmDialogOpen(true);
-		}
-	};
-
-	// Confirms the skip action
-	const handleConfirmSkipToNext = async (
-		options: SkipConfirmationOptions,
-	): Promise<void> => {
-		if (!nextReviewer || !nextAfterSkip || skipConfirmSubmitting) return;
-		const trimmedPrUrl = options.prUrl.trim();
-		const trimmedCustomMessage = options.enableCustomMessage
-			? options.customMessage.trim()
-			: "";
-		setSkipConfirmSubmitting(true);
-		try {
-			await confirmSkipToNext(nextReviewer, nextAfterSkip, {
-				prUrl: trimmedPrUrl || undefined,
-			});
-
-			if (options.sendMessage && trimmedPrUrl && teamSlug) {
-				try {
-					const reviewerWithChat = nextAfterSkip as unknown as {
-						googleChatUserId?: string;
-					};
-					const assignerName =
-						userInfo?.firstName && userInfo?.lastName
-							? `${userInfo.firstName} ${userInfo.lastName}`
-							: userInfo?.firstName || userInfo?.lastName || userInfo?.email;
-					await sendChatMessage({
-						reviewerName: nextAfterSkip.name,
-						reviewerEmail: nextAfterSkip.email,
-						reviewerChatId: reviewerWithChat.googleChatUserId,
-						prUrl: trimmedPrUrl,
-						assignerEmail: userInfo?.email,
-						assignerName,
-						teamSlug,
-						customMessage:
-							trimmedCustomMessage.length > 0
-								? trimmedCustomMessage
-								: undefined,
-						locale: "es",
-						sendOnlyNames: false,
-					});
-				} catch (err) {
-					console.warn(
-						"Failed to send Google Chat message for skip confirmation",
-						err,
-					);
-				}
-			}
-
-			setSkipConfirmDialogOpen(false);
-		} finally {
-			setNextAfterSkip(null);
-			setSkipConfirmSubmitting(false);
-		}
-	};
-
-	// Cancels the skip action
-	const handleCancelSkip = () => {
-		setSkipConfirmDialogOpen(false);
-		setNextAfterSkip(null);
 	};
 
 	// Handles file import for data recovery
@@ -632,8 +553,8 @@ export default function PRReviewAssignment({
 				undoAssignment: async () => {
 					await undoAssignment();
 				},
-				handleImTheNextOneWithDialog: async () => {
-					await handleImTheNextOneWithDialog();
+				autoSkipAndAssign: async (opts) => {
+					await autoSkipAndAssign(opts);
 				},
 				onToggleAbsence: async (id) => {
 					await handleToggleAbsence(id);
@@ -675,21 +596,12 @@ export default function PRReviewAssignment({
 					onRestore={handleRestoreSnapshot}
 				/>
 
-				<SkipConfirmationDialog
-					isOpen={skipConfirmDialogOpen}
-					onOpenChange={setSkipConfirmDialogOpen}
-					nextAfterSkip={nextAfterSkip}
-					onConfirm={handleConfirmSkipToNext}
-					onCancel={handleCancelSkip}
-					isSubmitting={skipConfirmSubmitting}
-				/>
-
 				<ShortcutConfirmationDialog
 					isOpen={shortcutDialogOpen}
 					action={pendingShortcut}
 					nextReviewerName={nextReviewer?.name}
 					currentReviewerName={nextReviewer?.name}
-					nextAfterSkipName={nextAfterSkip?.name}
+					nextAfterSkipName={undefined}
 					lastAssignmentFrom={assignmentFeed.items[0]?.actionBy || null}
 					lastAssignmentTo={assignmentFeed.items[0]?.reviewerName || null}
 					onConfirm={() => handleConfirmShortcut()}

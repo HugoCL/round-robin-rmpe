@@ -1,10 +1,10 @@
 "use client";
 
 import { useAction, useMutation } from "convex/react";
-import { Lightbulb, Undo2, User } from "lucide-react";
+import { Info, Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { Alert } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -26,7 +26,7 @@ export function AssignmentCard() {
 		assignmentFeed,
 		assignPR: onAssignPR,
 		undoAssignment: onUndoAssignment,
-		handleImTheNextOneWithDialog: onImTheNextOne,
+		autoSkipAndAssign,
 		userInfo: user,
 	} = usePRReview();
 
@@ -42,7 +42,57 @@ export function AssignmentCard() {
 		api.mutations.createActivePRAssignment,
 	);
 
+	// Check if current user is the next reviewer
+	const isCurrentUserNext =
+		!!user?.email &&
+		!!nextReviewer?.email &&
+		user.email.toLowerCase() === nextReviewer.email.toLowerCase();
+
 	const handleAssignPR = async () => {
+		// If current user is next, auto-skip and assign to the next person directly
+		if (isCurrentUserNext) {
+			setIsAssigning(true);
+			try {
+				const nextAfter = findNextAfterCurrent();
+				await autoSkipAndAssign({
+					prUrl: prUrl.trim() || undefined,
+					contextUrl: contextUrl.trim() || undefined,
+				});
+				// Send Google Chat message if enabled
+				if (sendMessage && prUrl.trim() && nextAfter && teamSlug) {
+					try {
+						const assignerName =
+							user?.firstName && user?.lastName
+								? `${user.firstName} ${user.lastName}`
+								: user?.firstName || user?.lastName || "Unknown";
+						await sendGoogleChatAction({
+							reviewerName: nextAfter.name,
+							reviewerEmail: nextAfter.email,
+							reviewerChatId:
+								(nextAfter as unknown as { googleChatUserId?: string })
+									.googleChatUserId || undefined,
+							prUrl,
+							contextUrl: contextUrl.trim() || undefined,
+							locale: "es",
+							assignerEmail: user?.email,
+							assignerName,
+							teamSlug,
+							sendOnlyNames: false,
+							customMessage:
+								enableCustomMessage && customMessage.trim().length > 0
+									? customMessage
+									: undefined,
+						});
+					} catch (err) {
+						console.error("Failed to send Google Chat message:", err);
+					}
+				}
+			} finally {
+				setTimeout(() => setIsAssigning(false), 600);
+			}
+			return;
+		}
+
 		setIsAssigning(true);
 		try {
 			const currentNext = nextReviewer; // capture before assignment changes
@@ -137,10 +187,6 @@ export function AssignmentCard() {
 		? reviewers.find((r) => r._id === assignmentFeed.lastAssigned?.reviewerId)
 		: null;
 	const nextAfterCurrent = findNextAfterCurrent();
-	const isCurrentUserNext =
-		!!user?.email &&
-		!!nextReviewer?.email &&
-		user.email.toLowerCase() === nextReviewer.email.toLowerCase();
 
 	return (
 		<Card className="h-full flex flex-col">
@@ -180,25 +226,16 @@ export function AssignmentCard() {
 							</h3>
 						</div>
 
-						{isCurrentUserNext && (
-							<div className="flex justify-center mt-2">
-								<Alert className="max-w-xl w-full bg-background">
-									<div className="flex items-center justify-between gap-3">
-										<div className="flex items-center gap-2">
-											<Lightbulb className="h-4 w-4 text-muted-foreground" />
-											<span className="text-sm leading-5">
-												{t("pr.youAreNext")}
-											</span>
-										</div>
-										<Button
-											size="sm"
-											variant="outline"
-											className="whitespace-nowrap"
-											onClick={onImTheNextOne}
-										>
-											{t("pr.suggestImTheNext")}
-										</Button>
-									</div>
+						{/* Auto-skip notification when current user is next */}
+						{isCurrentUserNext && nextAfterCurrent && (
+							<div className="flex justify-center">
+								<Alert className="max-w-xl w-full bg-muted/50">
+									<Info className="h-4 w-4" />
+									<AlertDescription className="text-sm">
+										{t("pr.autoSkipDescription", {
+											nextReviewer: nextAfterCurrent.name,
+										})}
+									</AlertDescription>
 								</Alert>
 							</div>
 						)}
@@ -272,15 +309,6 @@ export function AssignmentCard() {
 						>
 							<Undo2 className="h-4 w-4 mr-2" />
 							{t("pr.undoLastAssignment")}
-						</Button>
-						<Button
-							variant="outline"
-							className="w-full"
-							onClick={onImTheNextOne}
-							disabled={!nextReviewer || isAssigning}
-						>
-							<User className="h-4 w-4 mr-2" />
-							{t("pr.imTheNextOne")}
 						</Button>
 					</div>
 				</div>

@@ -7,7 +7,6 @@ export { DeleteReviewerDialog } from "./dialogs/DeleteReviewerDialog";
 export { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
 export { ForceAssignDialog } from "./dialogs/ForceAssignDialog";
 export { ShortcutConfirmationDialog } from "./dialogs/ShortcutConfirmationDialog";
-export { SkipConfirmationDialog } from "./dialogs/SkipConfirmationDialog";
 export { SnapshotDialog } from "./dialogs/SnapshotDialog";
 export { HeaderOptionsDrawer } from "./HeaderOptionsDrawer";
 

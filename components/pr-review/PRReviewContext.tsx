@@ -33,7 +33,10 @@ export interface PRReviewContextValue {
 	// Reviewer actions
 	assignPR: (opts?: { prUrl?: string; contextUrl?: string }) => Promise<void>;
 	undoAssignment: () => Promise<void>;
-	handleImTheNextOneWithDialog: () => Promise<void>;
+	autoSkipAndAssign: (opts?: {
+		prUrl?: string;
+		contextUrl?: string;
+	}) => Promise<void>;
 	onToggleAbsence: (id: Id<"reviewers">) => Promise<void>;
 	updateReviewer: (
 		id: Id<"reviewers">,

@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
 import { toast } from "@/hooks/use-toast";
 import { api } from "../convex/_generated/api";
-import type { Doc, Id } from "../convex/_generated/dataModel";
+import type { Id } from "../convex/_generated/dataModel";
 
 interface UserInfo {
 	email: string;
@@ -125,11 +125,12 @@ export function useConvexPRReviewData(
 		}
 	};
 
-	const handleImTheNextOne = async (): Promise<{
-		success: boolean;
-		nextReviewer?: Doc<"reviewers">;
-	}> => {
-		if (!nextReviewer) return { success: false };
+	// Auto-skip and assign directly without dialog - for when current user is the next reviewer
+	const autoSkipAndAssign = async (opts?: {
+		prUrl?: string;
+		contextUrl?: string;
+	}) => {
+		if (!nextReviewer) return;
 
 		// Filter out absent reviewers and the current next reviewer
 		const availableReviewers = reviewers.filter(
@@ -142,7 +143,7 @@ export function useConvexPRReviewData(
 				description: t("messages.noOtherReviewersDescription"),
 				variant: "destructive",
 			});
-			return { success: false };
+			return;
 		}
 
 		// Find the minimum assignment count among available reviewers
@@ -162,25 +163,19 @@ export function useConvexPRReviewData(
 
 		const nextAfterSkip = sortedCandidates[0];
 
-		return { success: true, nextReviewer: nextAfterSkip };
-	};
-
-	const confirmSkipToNext = async (
-		currentNext: Doc<"reviewers">,
-		nextAfterSkip: Doc<"reviewers">,
-		opts?: { prUrl?: string },
-	) => {
+		// Directly assign to the next reviewer
 		try {
 			await assignPRMutation({
 				reviewerId: nextAfterSkip._id,
 				actionBy: user || undefined,
 				prUrl: opts?.prUrl,
+				contextUrl: opts?.contextUrl,
 			});
 
 			toast({
 				title: t("data.assignmentCompletedTitle"),
 				description: t("data.assignmentCompletedDescription", {
-					skippedName: currentNext.name,
+					skippedName: nextReviewer.name,
 					assignedName: nextAfterSkip.name,
 				}),
 			});
@@ -581,8 +576,7 @@ export function useConvexPRReviewData(
 		// Actions
 		assignPR,
 		skipReviewer,
-		handleImTheNextOne,
-		confirmSkipToNext,
+		autoSkipAndAssign,
 		undoAssignment,
 		addReviewer,
 		updateReviewer,
