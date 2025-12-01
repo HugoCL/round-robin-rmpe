@@ -1,6 +1,6 @@
 {
-	"title": "RMPE Revisión PR",
-	"description": "Herramienta de Revisión PR del Equipo RMPE",
+	"title": "Revisión PR",
+	"description": "Herramienta de Revisión de PRs",
 	"navigation": {
 		"home": "Inicio",
 		"about": "Acerca de",
