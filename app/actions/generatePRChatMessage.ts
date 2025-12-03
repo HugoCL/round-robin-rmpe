@@ -88,7 +88,7 @@ export async function generatePRChatMessage({
 				schema: z.object({
 					response: z.string().min(1).max(400),
 				}),
-				model: "openai/gpt-4.1-mini",
+				model: "openai/gpt-5.1-instant",
 				prompt,
 				system,
 			});
