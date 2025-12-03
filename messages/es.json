@@ -305,7 +305,7 @@
 		"restore": "Restaurar"
 	},
 	"googleChat": {
-		"greeting": "📋 Hola {reviewer}",
+		"greeting": "Hola {reviewer} 👋",
 		"assignmentMessage": "{assigner} te ha asignado la revisión de este <{prUrl}|PR>",
 		"prUrlLabel": "PR URL",
 		"contextUrlLabel": "URL de contexto (opcional)",

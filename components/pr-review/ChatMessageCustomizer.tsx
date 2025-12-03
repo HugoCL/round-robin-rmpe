@@ -95,7 +95,7 @@ export function ChatMessageCustomizer({
 				onMessageChange(autoTemplate);
 			} else if (nextReviewerName) {
 				// Always use Spanish default template regardless of app locale
-				const baseMessage = `📋 ¡Hola {{reviewer_name}}!\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`;
+				const baseMessage = `Hola {{reviewer_name}} 👋\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`;
 				onMessageChange(baseMessage);
 			}
 		}

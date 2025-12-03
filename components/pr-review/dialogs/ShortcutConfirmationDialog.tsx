@@ -166,7 +166,7 @@ export function ShortcutConfirmationDialog({
 						compact
 						autoTemplate={
 							nextReviewerName
-								? `📋 Hola {{reviewer_name}}! Se te asignó este <URL_PLACEHOLDER|PR>`
+								? `Hola {{reviewer_name}} 👋\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`
 								: undefined
 						}
 					/>

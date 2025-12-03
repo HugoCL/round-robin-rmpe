@@ -106,7 +106,7 @@ export async function generatePRChatMessage({
 		}
 
 		if (!finalText) {
-			finalText = `Hey {{reviewer_name}} 👋 hay un nuevo PR <URL_PLACEHOLDER|PR> de {{requester_name}} listo para tu review. ¡Gracias!`;
+			finalText = `Hola {{reviewer_name}} 👋\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`;
 		}
 
 		if (finalText.length > 400) finalText = finalText.slice(0, 397) + "...";
