@@ -2,3 +2,4 @@ onlyBuiltDependencies:
   - '@clerk/shared'
   - esbuild
   - lefthook
+  - sharp
