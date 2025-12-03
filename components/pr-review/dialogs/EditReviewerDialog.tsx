@@ -34,13 +34,21 @@ export function EditReviewerDialog({
 	trigger,
 }: EditReviewerDialogProps) {
 	const t = useTranslations();
-	const [reviewerName, setReviewerName] = useState(reviewer.name);
-	const [reviewerEmail, setReviewerEmail] = useState(reviewer.email);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isUpdating, setIsUpdating] = useState(false);
-	const [googleChatUserId, setGoogleChatUserId] = useState(
-		reviewer.googleChatUserId || "",
-	);
+
+	// Track edits only when user modifies a field
+	const [edits, setEdits] = useState<{
+		name?: string;
+		email?: string;
+		googleChatUserId?: string;
+	}>({});
+
+	// Derive current values from props + local edits
+	const reviewerName = edits.name ?? reviewer.name;
+	const reviewerEmail = edits.email ?? reviewer.email;
+	const googleChatUserId =
+		edits.googleChatUserId ?? reviewer.googleChatUserId ?? "";
 
 	// unique ids
 	const nameId = useId();
@@ -60,6 +68,7 @@ export function EditReviewerDialog({
 			);
 			if (success) {
 				setIsOpen(false);
+				setEdits({}); // Clear edits on success
 			}
 		} finally {
 			setIsUpdating(false);
@@ -74,11 +83,8 @@ export function EditReviewerDialog({
 
 	const handleOpenChange = (open: boolean) => {
 		setIsOpen(open);
-		if (open) {
-			// Reset form when opening
-			setReviewerName(reviewer.name);
-			setReviewerEmail(reviewer.email);
-			setGoogleChatUserId(reviewer.googleChatUserId || "");
+		if (!open) {
+			setEdits({}); // Clear edits when closing
 		}
 	};
 
@@ -105,7 +111,9 @@ export function EditReviewerDialog({
 							id={nameId}
 							placeholder={t("reviewer.enterName")}
 							value={reviewerName}
-							onChange={(e) => setReviewerName(e.target.value)}
+							onChange={(e) =>
+								setEdits((prev) => ({ ...prev, name: e.target.value }))
+							}
 							onKeyDown={handleKeyDown}
 							className="col-span-3"
 							autoFocus
@@ -121,7 +129,12 @@ export function EditReviewerDialog({
 								default: "Optional Google Chat user ID",
 							})}
 							value={googleChatUserId}
-							onChange={(e) => setGoogleChatUserId(e.target.value)}
+							onChange={(e) =>
+								setEdits((prev) => ({
+									...prev,
+									googleChatUserId: e.target.value,
+								}))
+							}
 							onKeyDown={handleKeyDown}
 							className="col-span-3"
 						/>
@@ -135,7 +148,9 @@ export function EditReviewerDialog({
 							type="email"
 							placeholder={t("reviewer.enterEmail")}
 							value={reviewerEmail}
-							onChange={(e) => setReviewerEmail(e.target.value)}
+							onChange={(e) =>
+								setEdits((prev) => ({ ...prev, email: e.target.value }))
+							}
 							onKeyDown={handleKeyDown}
 							className="col-span-3"
 						/>
