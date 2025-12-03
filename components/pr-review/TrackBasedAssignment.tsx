@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { Tag, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -33,6 +33,7 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 
+import { ChatMessageCustomizer } from "./ChatMessageCustomizer";
 import { usePRReview } from "./PRReviewContext";
 
 export function TrackBasedAssignment() {
@@ -45,6 +46,13 @@ export function TrackBasedAssignment() {
 	const [isOpen, setIsOpen] = useState(false);
 	const [isAssigning, setIsAssigning] = useState(false);
 
+	// Chat message state
+	const [sendMessage, setSendMessage] = useState(false);
+	const [prUrl, setPrUrl] = useState("");
+	const [contextUrl, setContextUrl] = useState("");
+	const [customMessage, setCustomMessage] = useState("");
+	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
+
 	// Use Convex hooks for real-time data
 	const tags =
 		useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") || [];
@@ -52,6 +60,7 @@ export function TrackBasedAssignment() {
 	const createActivePRAssignment = useMutation(
 		api.mutations.createActivePRAssignment,
 	);
+	const sendGoogleChatAction = useAction(api.actions.sendGoogleChatMessage);
 	const getNextReviewerByTag = useQuery(
 		api.queries.getNextReviewerByTag,
 		selectedTagId && teamSlug ? { teamSlug, tagId: selectedTagId } : "skip",
@@ -68,6 +77,7 @@ export function TrackBasedAssignment() {
 			const result = await assignPRMutation({
 				reviewerId: nextReviewer._id as Id<"reviewers">,
 				tagId: selectedTagId as Id<"tags">, // Pass the tag ID for tracking
+				prUrl: prUrl.trim() || undefined,
 				actionBy: user
 					? {
 							email: user.email,
@@ -78,7 +88,7 @@ export function TrackBasedAssignment() {
 			});
 
 			if (result.success && result.reviewer) {
-				// Create active assignment row (tag-based) with no PR URL
+				// Create active assignment row (tag-based)
 				try {
 					const assigner = reviewers.find(
 						(r) => r.email.toLowerCase() === user?.email.toLowerCase(),
@@ -88,11 +98,43 @@ export function TrackBasedAssignment() {
 							teamSlug,
 							assigneeId: nextReviewer._id as Id<"reviewers">,
 							assignerId: assigner._id as Id<"reviewers">,
+							prUrl: prUrl.trim() || undefined,
 						});
 					}
 				} catch (e) {
 					console.warn("Failed to create active assignment (track)", e);
 				}
+
+				// Send Google Chat message if enabled
+				if (sendMessage && prUrl.trim() && teamSlug) {
+					try {
+						const assignerName =
+							user?.firstName && user?.lastName
+								? `${user.firstName} ${user.lastName}`
+								: user?.firstName || user?.lastName || "Unknown";
+						await sendGoogleChatAction({
+							reviewerName: nextReviewer.name,
+							reviewerEmail: nextReviewer.email,
+							reviewerChatId:
+								(nextReviewer as unknown as { googleChatUserId?: string })
+									.googleChatUserId || undefined,
+							prUrl,
+							contextUrl: contextUrl.trim() || undefined,
+							locale: "es",
+							assignerEmail: user?.email,
+							assignerName,
+							teamSlug,
+							sendOnlyNames: false,
+							customMessage:
+								enableCustomMessage && customMessage.trim().length > 0
+									? customMessage
+									: undefined,
+						});
+					} catch (err) {
+						console.error("Failed to send Google Chat message:", err);
+					}
+				}
+
 				// Update the parent component's data first
 				await onDataUpdate();
 
@@ -110,6 +152,12 @@ export function TrackBasedAssignment() {
 				// Close dialog and reset state
 				setIsOpen(false);
 				setSelectedTagId(undefined);
+				// Reset message state
+				setSendMessage(false);
+				setPrUrl("");
+				setContextUrl("");
+				setCustomMessage("");
+				setEnableCustomMessage(false);
 			} else {
 				toast({
 					title: t("common.error"),
@@ -143,6 +191,11 @@ export function TrackBasedAssignment() {
 
 	const resetAndClose = () => {
 		setSelectedTagId(undefined);
+		setSendMessage(false);
+		setPrUrl("");
+		setContextUrl("");
+		setCustomMessage("");
+		setEnableCustomMessage(false);
 		setIsOpen(false);
 	};
 
@@ -299,6 +352,26 @@ export function TrackBasedAssignment() {
 							</CardContent>
 						</Card>
 					)}
+
+					{/* Chat Message Customizer */}
+					{selectedTagId && nextReviewer && (
+						<ChatMessageCustomizer
+							prUrl={prUrl}
+							onPrUrlChange={setPrUrl}
+							contextUrl={contextUrl}
+							onContextUrlChange={setContextUrl}
+							sendMessage={sendMessage}
+							onSendMessageChange={setSendMessage}
+							enabled={enableCustomMessage}
+							onEnabledChange={(val) => {
+								setEnableCustomMessage(val);
+								if (!val) setCustomMessage("");
+							}}
+							message={customMessage}
+							onMessageChange={setCustomMessage}
+							nextReviewerName={nextReviewer?.name}
+						/>
+					)}
 				</div>
 
 				<DialogFooter>
@@ -307,7 +380,12 @@ export function TrackBasedAssignment() {
 					</Button>
 					<Button
 						onClick={handleAssignPR}
-						disabled={!selectedTagId || !nextReviewer || isAssigning}
+						disabled={
+							!selectedTagId ||
+							!nextReviewer ||
+							isAssigning ||
+							(sendMessage && !prUrl.trim())
+						}
 					>
 						{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
 					</Button>
