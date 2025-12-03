@@ -271,8 +271,7 @@ export function TrackBasedAssignment() {
 											)?.color,
 										}}
 									/>
-									{tags.find((t: Doc<"tags">) => t._id === selectedTagId)?.name}{" "}
-									{t("tags.tagLabel")}
+									{tags.find((t: Doc<"tags">) => t._id === selectedTagId)?.name}
 								</CardTitle>
 								<CardDescription>
 									{
