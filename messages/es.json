@@ -84,12 +84,16 @@
 		"manage": "Gestionar",
 		"options": "Opciones",
 		"optionsDescription": "Personaliza tu vista y preferencias",
+		"compactViewDescription": "Ideal para colas densas",
 		"language": "Idioma",
 		"viewOptions": "Opciones de Vista",
 		"historyAndData": "Historial y Datos",
 		"help": "Ayuda",
 		"viewPR": "Ver PR",
 		"viewContext": "Ver Contexto"
+	},
+	"hints": {
+		"reviewConfirm": "Revisa y confirma antes de enviar"
 	},
 	"pr": {
 		"manageData": "Gestionar Datos",
@@ -118,9 +122,12 @@
 		"manageReviewers": "Gestionar Revisores",
 		"hideAssignments": "Ocultar Asignaciones",
 		"showAssignments": "Mostrar Asignaciones",
+		"showAssignmentsDescription": "Mostrar el panel de historial",
 		"showTags": "Mostrar Etiquetas",
 		"hideTags": "Ocultar Etiquetas",
+		"showTagsDescription": "Destaca las etiquetas de cada revisor",
 		"showEmails": "Mostrar Emails",
+		"showEmailsDescription": "Incluir columnas de contacto",
 		"hideEmails": "Ocultar Emails",
 		"lastAssignments": "Últimas 5 asignaciones de revisión PR",
 		"noAssignments": "Aún no hay asignaciones",

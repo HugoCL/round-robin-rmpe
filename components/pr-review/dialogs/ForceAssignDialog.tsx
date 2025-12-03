@@ -171,11 +171,19 @@ export function ForceAssignDialog() {
 					{t("pr.forceAssign")} PR
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[520px]">
+			<DialogContent className="sm:max-w-[540px]">
 				<DialogHeader>
-					<DialogTitle>{t("reviewer.forceAssignTitle")}</DialogTitle>
+					<div className="flex items-center gap-2">
+						<span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+							<UserCheck className="h-4 w-4" />
+						</span>
+						<DialogTitle>{t("reviewer.forceAssignTitle")}</DialogTitle>
+					</div>
 					<DialogDescription>
 						{t("reviewer.forceAssignDescription")}
+						<span className="block text-[11px] text-muted-foreground mt-1">
+							{t("hints.reviewConfirm")}
+						</span>
 					</DialogDescription>
 				</DialogHeader>
 				<div className="py-4">

@@ -140,13 +140,21 @@ export function ShortcutConfirmationDialog({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[425px]">
+			<DialogContent className="sm:max-w-[460px]">
 				<DialogHeader>
-					<DialogTitle>{t("shortcutConfirm.title")}</DialogTitle>
+					<div className="flex items-center gap-2">
+						<span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+							<span className="text-sm font-semibold">⌘</span>
+						</span>
+						<DialogTitle>{t("shortcutConfirm.title")}</DialogTitle>
+					</div>
 					{action && (
 						<DialogDescription>
 							{base[action]} {detailed ? <span>{detailed} </span> : null}
 							{t("shortcutConfirm.confirmHint")}
+							<span className="block text-[11px] text-muted-foreground mt-1">
+								Enter / Y to confirm · Esc / N to cancel
+							</span>
 						</DialogDescription>
 					)}
 				</DialogHeader>

@@ -6,17 +6,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false,
-		"includes": [
-			"**",
-			"!**/.next",
-			"!**/node_modules",
-			"!**/dist",
-			"!**/build",
-			"!**/.vercel",
-			"!**/convex/_generated",
-			"!**/components/ui"
-		]
+		"ignoreUnknown": false
 	},
 	"formatter": {
 		"enabled": true,
@@ -24,8 +14,20 @@
 	},
 	"linter": {
 		"enabled": true,
+		"includes": [
+			"**",
+			"!**/node_modules/**",
+			"!**/.next/**",
+			"!**/dist/**",
+			"!**/build/**",
+			"!**/.vercel/**",
+			"!**/convex/_generated/**"
+		],
 		"rules": {
-			"recommended": true
+			"recommended": true,
+			"suspicious": {
+				"noUnknownAtRules": "off"
+			}
 		}
 	},
 	"javascript": {

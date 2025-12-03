@@ -35,6 +35,7 @@
 		"manage": "Manage",
 		"options": "Options",
 		"optionsDescription": "Customize your view and preferences",
+		"compactViewDescription": "Great for dense queues",
 		"language": "Language",
 		"viewOptions": "View Options",
 		"historyAndData": "History & Data",
@@ -42,6 +43,9 @@
 		"update": "Update",
 		"viewPR": "View PR",
 		"viewContext": "View Context"
+	},
+	"hints": {
+		"reviewConfirm": "Review and confirm before sending"
 	},
 	"pr": {
 		"manageData": "Manage Data",
@@ -70,9 +74,12 @@
 		"manageReviewers": "Manage Reviewers",
 		"hideAssignments": "Hide Assignments",
 		"showAssignments": "Show Assignments",
+		"showAssignmentsDescription": "Show the feed panel",
 		"hideTags": "Hide Tags",
 		"showTags": "Show Tags",
+		"showTagsDescription": "Surface reviewer tags",
 		"showEmails": "Show Emails",
+		"showEmailsDescription": "Include contact columns",
 		"hideEmails": "Hide Emails",
 		"lastAssignments": "Last 5 PR review assignments",
 		"noAssignments": "No assignments yet",

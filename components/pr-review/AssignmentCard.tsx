@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useMutation } from "convex/react";
-import { Info, Undo2 } from "lucide-react";
+import { ArrowRight, Info, Sparkles, Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -189,41 +189,52 @@ export function AssignmentCard() {
 	const nextAfterCurrent = findNextAfterCurrent();
 
 	return (
-		<Card className="h-full flex flex-col">
+		<Card className="h-full flex flex-col overflow-hidden">
 			<CardHeader className="flex-shrink-0" />
 			<CardContent className="flex-1 flex items-center justify-center">
 				{nextReviewer ? (
 					<div className="text-center py-8 w-full space-y-6 overflow-hidden">
 						{lastAssignedReviewer && (
-							<div
-								className={`transition-transform duration-500 ease-in-out ${
-									isAssigning
-										? "-translate-y-24 opacity-0"
-										: "translate-y-0 opacity-100"
-								}`}
-							>
+							<div className="space-y-1">
 								<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 									{t("pr.lastAssigned")}
 								</span>
-								<h4 className="text-lg font-medium text-muted-foreground opacity-60">
+								<h4
+									className={`text-lg font-medium text-muted-foreground opacity-80 transition-all duration-300 ${
+										isAssigning
+											? "opacity-0 translate-y-1"
+											: "opacity-80 translate-y-0"
+									}`}
+								>
 									{lastAssignedReviewer.name}
 								</h4>
 							</div>
 						)}
 
-						<div
-							className={`transition-transform duration-500 ease-in-out ${
-								isAssigning ? "-translate-y-12" : "translate-y-0"
-							}`}
-						>
+						<div className="space-y-2">
 							<div className="mb-2">
-								<span className="text-xs font-medium text-primary uppercase tracking-wide">
+								<span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 dark:bg-white/12 dark:text-white dark:ring-white/20">
+									<Sparkles className="h-3 w-3" />
 									{t("pr.nextReviewer")}
 								</span>
 							</div>
-							<h3 className="text-4xl md:text-5xl font-bold text-primary">
-								{nextReviewer.name}
-							</h3>
+							<div className="relative mx-auto max-w-xl overflow-hidden rounded-2xl bg-gradient-to-br from-primary/45 via-primary/55 to-primary/40 p-8 shadow-xl ring-1 ring-primary/45 dark:from-primary/30 dark:via-primary/36 dark:to-primary/22 dark:ring-primary/40">
+								<div
+									className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.5),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.35),transparent_40%)] dark:bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.12),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.35),transparent_40%)]"
+									aria-hidden
+								/>
+								<div className="relative space-y-1">
+									<h3
+										className={`text-4xl md:text-5xl font-bold text-white drop-shadow-lg transition-all duration-300 ${
+											isAssigning
+												? "opacity-0 translate-y-1"
+												: "opacity-100 translate-y-0"
+										}`}
+									>
+										{nextReviewer.name}
+									</h3>
+								</div>
+							</div>
 						</div>
 
 						{/* Auto-skip notification when current user is next */}
@@ -241,15 +252,17 @@ export function AssignmentCard() {
 						)}
 
 						{nextAfterCurrent && (
-							<div
-								className={`transition-transform duration-500 ease-in-out ${
-									isAssigning ? "-translate-y-12" : "translate-y-0"
-								}`}
-							>
+							<div className="space-y-1">
 								<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 									{t("pr.upNext")}
 								</span>
-								<h4 className="text-lg font-medium text-muted-foreground">
+								<h4
+									className={`text-lg font-medium text-muted-foreground transition-all duration-300 ${
+										isAssigning
+											? "opacity-0 translate-y-1"
+											: "opacity-100 translate-y-0"
+									}`}
+								>
 									{nextAfterCurrent.name}
 								</h4>
 							</div>
@@ -285,31 +298,57 @@ export function AssignmentCard() {
 						nextReviewerName={nextReviewer?.name}
 					/>
 
-					<div className="flex justify-center">
-						<Button
-							onClick={handleAssignPR}
-							disabled={
-								!nextReviewer || isAssigning || (sendMessage && !prUrl.trim())
-							}
-							className="flex-1 max-w-md"
-							size="lg"
-							variant="primary"
-							shape="pill"
-						>
-							{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
-						</Button>
-					</div>
-
 					<div className="flex flex-col gap-3">
-						<Button
-							variant="secondary"
-							className="w-full"
-							onClick={onUndoAssignment}
-							disabled={isAssigning}
-						>
-							<Undo2 className="h-4 w-4 mr-2" />
-							{t("pr.undoLastAssignment")}
-						</Button>
+						<div className="flex gap-3">
+							<Button
+								onClick={handleAssignPR}
+								disabled={
+									!nextReviewer || isAssigning || (sendMessage && !prUrl.trim())
+								}
+								className="flex-[1.6] group relative overflow-hidden h-12"
+								size="lg"
+								variant="primary"
+								shape="pill"
+							>
+								<span
+									className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/30 to-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+									aria-hidden
+								/>
+								{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
+							</Button>
+
+							<Button
+								variant="secondary"
+								className="flex-1 h-12"
+								onClick={onUndoAssignment}
+								disabled={isAssigning}
+							>
+								<Undo2 className="h-4 w-4 mr-2" />
+								{t("pr.undoLastAssignment")}
+							</Button>
+						</div>
+
+						{isCurrentUserNext && nextAfterCurrent && (
+							<Button
+								variant="ghost"
+								className="w-full justify-center text-muted-foreground"
+								onClick={async () => {
+									setIsAssigning(true);
+									try {
+										await autoSkipAndAssign({
+											prUrl: prUrl.trim() || undefined,
+											contextUrl: contextUrl.trim() || undefined,
+										});
+									} finally {
+										setTimeout(() => setIsAssigning(false), 600);
+									}
+								}}
+								disabled={isAssigning}
+							>
+								{t("pr.skip")}
+								<ArrowRight className="h-4 w-4 ml-2" />
+							</Button>
+						)}
 					</div>
 				</div>
 			</CardFooter>

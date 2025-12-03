@@ -1,13 +1,16 @@
 import type React from "react";
 import "@/app/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Archivo } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { routing } from "@/i18n/routing";
 
-const archivo = Archivo({ subsets: ["latin"] });
+const spaceGrotesk = Space_Grotesk({
+	subsets: ["latin"],
+	variable: "--font-display",
+});
 
 export function generateStaticParams() {
 	return routing.locales.map((locale) => ({ locale }));
@@ -21,7 +24,7 @@ export default function RootLayout({
 	return (
 		<ClerkProvider>
 			<html lang="en" suppressHydrationWarning>
-				<body className={archivo.className}>
+				<body className={`${spaceGrotesk.className} antialiased min-h-screen`}>
 					<ConvexClientProvider>
 						<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 							{children}
