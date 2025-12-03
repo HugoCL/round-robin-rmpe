@@ -218,9 +218,9 @@ export function AssignmentCard() {
 									{t("pr.nextReviewer")}
 								</span>
 							</div>
-							<div className="relative mx-auto max-w-xl overflow-hidden rounded-2xl bg-gradient-to-br from-primary/45 via-primary/55 to-primary/40 p-8 shadow-xl ring-1 ring-primary/45 dark:from-primary/30 dark:via-primary/36 dark:to-primary/22 dark:ring-primary/40">
+							<div className="relative mx-auto max-w-xl overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/16 to-primary/10 p-7 shadow-md ring-1 ring-primary/14 border border-white/6 dark:from-primary/28 dark:via-primary/32 dark:to-primary/20 dark:ring-primary/30 dark:border-white/5">
 								<div
-									className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.5),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.35),transparent_40%)] dark:bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.12),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.35),transparent_40%)]"
+									className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.25),transparent_36%),radial-gradient(circle_at_78%_20%,rgba(59,130,246,0.14),transparent_45%)] dark:bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.08),transparent_36%),radial-gradient(circle_at_78%_20%,rgba(59,130,246,0.22),transparent_45%)]"
 									aria-hidden
 								/>
 								<div className="relative space-y-1">
