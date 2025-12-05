@@ -225,7 +225,7 @@ export function AssignmentCard() {
 								/>
 								<div className="relative space-y-1">
 									<h3
-										className={`text-4xl md:text-5xl font-bold text-white drop-shadow-lg transition-all duration-300 ${
+										className={`text-4xl md:text-5xl font-bold text-primary dark:text-white drop-shadow-lg transition-all duration-300 ${
 											isAssigning
 												? "opacity-0 translate-y-1"
 												: "opacity-100 translate-y-0"
