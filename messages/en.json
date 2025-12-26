@@ -264,7 +264,7 @@
 		"restore": "Restore"
 	},
 	"googleChat": {
-		"greeting": "📋 Hello {reviewer}",
+		"greeting": "Hello {reviewer} 👋",
 		"assignmentMessage": "{assigner} has assigned you the review of this <{prUrl}|PR>",
 		"prUrlLabel": "PR URL",
 		"contextUrlLabel": "Context URL (optional)",

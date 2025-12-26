@@ -2,7 +2,7 @@
 
 import { useAction, useMutation } from "convex/react";
 import { AlertTriangle, UserCheck } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,7 @@ import { usePRReview } from "../PRReviewContext";
 
 export function ForceAssignDialog() {
 	const t = useTranslations();
+	const locale = useLocale();
 	const { reviewers, onDataUpdate, userInfo: user, teamSlug } = usePRReview();
 	const [forceDialogOpen, setForceDialogOpen] = useState(false);
 	const [selectedReviewerId, setSelectedReviewerId] = useState<string>("");
@@ -79,6 +80,13 @@ export function ForceAssignDialog() {
 			});
 
 			if (result.success && result.reviewer) {
+				const forcedReviewer = reviewers.find(
+					(r) => r._id === selectedReviewerId,
+				);
+				const assignerName =
+					user?.firstName && user?.lastName
+						? `${user.firstName} ${user.lastName}`
+						: user?.firstName || user?.lastName || "Unknown";
 				// Create active assignment row (force)
 				try {
 					const assigner = reviewers.find(
@@ -98,20 +106,20 @@ export function ForceAssignDialog() {
 				// Refresh data to get updated reviewers and feed
 				await onDataUpdate();
 
-				// Optionally send chat message
-				if (sendMessage && prUrl.trim() && teamSlug) {
+				// Optionally send chat message (match normal assignment behavior)
+				if (sendMessage && prUrl.trim() && teamSlug && forcedReviewer) {
 					try {
 						await sendChatMessage({
-							reviewerName: result.reviewer.name,
-							reviewerEmail: result.reviewer.email,
-							reviewerChatId: (
-								result.reviewer as unknown as { googleChatUserId?: string }
-							).googleChatUserId,
+							reviewerName: forcedReviewer.name,
+							reviewerEmail: forcedReviewer.email,
+							reviewerChatId: forcedReviewer.googleChatUserId,
 							prUrl: prUrl.trim(),
 							contextUrl: contextUrl.trim() || undefined,
 							assignerEmail: user?.email,
-							assignerName: user?.firstName || user?.email,
+							assignerName,
+							locale,
 							teamSlug,
+							sendOnlyNames: false,
 							customMessage:
 								enableCustomMessage && customMessage.trim().length > 0
 									? customMessage

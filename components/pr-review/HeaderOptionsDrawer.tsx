@@ -48,6 +48,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { TeamSettingsDialog } from "./dialogs/TeamSettingsDialog";
 import { usePRReview } from "./PRReviewContext";
 
+type OptionTone = "layout" | "visibility" | "tags" | "email";
+
 type OptionToggleProps = {
 	id: string;
 	icon: React.ComponentType<{ className?: string }>;
@@ -55,19 +57,22 @@ type OptionToggleProps = {
 	description?: string;
 	checked: boolean;
 	onCheckedChange: (value: boolean) => void;
-	tone?: "layout" | "visibility" | "tags" | "email";
+	tone?: OptionTone;
 };
 
-function OptionToggle({
-	id,
-	icon: Icon,
-	label,
-	description,
-	checked,
-	onCheckedChange,
-	tone = "layout",
-}: OptionToggleProps) {
-	const toneClasses: Record<OptionToggleProps["tone"], string> = {
+function OptionToggle(props: OptionToggleProps) {
+	const {
+		id,
+		icon: Icon,
+		label,
+		description,
+		checked,
+		onCheckedChange,
+		tone = "layout",
+	} = props;
+
+	const toneKey: OptionTone = tone ?? "layout";
+	const toneClasses: Record<OptionTone, string> = {
 		layout:
 			"border-blue-200/80 bg-blue-50/70 text-blue-700 dark:border-blue-900/60 dark:bg-blue-900/30 dark:text-blue-100",
 		visibility:
@@ -80,7 +85,7 @@ function OptionToggle({
 	return (
 		<label
 			htmlFor={id}
-			className={`flex items-start justify-between gap-3 rounded-xl border px-3 py-2 transition-all hover:-translate-y-[1px] hover:shadow-sm ${toneClasses[tone]}`}
+			className={`flex items-start justify-between gap-3 rounded-xl border px-3 py-2 transition-all hover:-translate-y-[1px] hover:shadow-sm ${toneClasses[toneKey]}`}
 		>
 			<div className="flex items-center gap-3">
 				<span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70 text-current shadow-sm dark:bg-white/10">
