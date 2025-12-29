@@ -1031,12 +1031,42 @@ export const joinEvent = mutation({
 			};
 		}
 
+		// Try to find the googleChatUserId from reviewers table if not provided
+		let googleChatUserId = participant.googleChatUserId;
+		if (!googleChatUserId) {
+			// Look up reviewer by email in the same team
+			// First try exact match with index
+			let reviewer = await ctx.db
+				.query("reviewers")
+				.withIndex("by_team_email", (q) =>
+					q
+						.eq("teamId", event.teamId)
+						.eq("email", participant.email.toLowerCase()),
+				)
+				.first();
+
+			// If not found, try case-insensitive search
+			if (!reviewer) {
+				const teamReviewers = await ctx.db
+					.query("reviewers")
+					.withIndex("by_team", (q) => q.eq("teamId", event.teamId))
+					.collect();
+				reviewer =
+					teamReviewers.find(
+						(r) => r.email.toLowerCase() === participant.email.toLowerCase(),
+					) || null;
+			}
+
+			googleChatUserId = reviewer?.googleChatUserId?.trim() || undefined;
+		}
+
 		// Add participant
 		await ctx.db.patch(eventId, {
 			participants: [
 				...event.participants,
 				{
 					...participant,
+					googleChatUserId,
 					joinedAt: Date.now(),
 				},
 			],
