@@ -123,11 +123,23 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 				if (sendInvite) {
 					try {
 						const appBaseUrl = window.location.origin;
+						// Format date and time on client side to respect user's timezone
+						const formattedDate = scheduledAt.toLocaleDateString(locale, {
+							weekday: "long",
+							day: "numeric",
+							month: "long",
+						});
+						const formattedTime = scheduledAt.toLocaleTimeString(locale, {
+							hour: "2-digit",
+							minute: "2-digit",
+						});
 						await sendEventInviteAction({
 							eventId: result.eventId,
 							teamSlug,
 							appBaseUrl,
 							locale,
+							formattedDate,
+							formattedTime,
 						});
 					} catch (e) {
 						console.warn("Failed to send event invite:", e);

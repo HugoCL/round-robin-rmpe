@@ -389,10 +389,19 @@ export const sendEventInvite = action({
 		teamSlug: v.string(),
 		appBaseUrl: v.string(), // e.g., "https://app.example.com"
 		locale: v.optional(v.string()),
+		formattedDate: v.string(), // Pre-formatted date from client (respects user's timezone)
+		formattedTime: v.string(), // Pre-formatted time from client (respects user's timezone)
 	},
 	handler: async (
 		ctx,
-		{ eventId, teamSlug, appBaseUrl, locale = "es" },
+		{
+			eventId,
+			teamSlug,
+			appBaseUrl,
+			locale = "es",
+			formattedDate,
+			formattedTime,
+		},
 	): Promise<{ success: boolean; error?: string }> => {
 		// Get event details
 		const event = await ctx.runQuery(api.queries.getEventById, { eventId });
@@ -412,17 +421,9 @@ export const sendEventInvite = action({
 		}
 
 		try {
-			// Format the scheduled time
-			const scheduledDate = new Date(event.scheduledAt);
-			const timeStr = scheduledDate.toLocaleTimeString(locale, {
-				hour: "2-digit",
-				minute: "2-digit",
-			});
-			const dateStr = scheduledDate.toLocaleDateString(locale, {
-				weekday: "long",
-				day: "numeric",
-				month: "long",
-			});
+			// Use the pre-formatted date and time from client
+			const dateStr = formattedDate;
+			const timeStr = formattedTime;
 
 			// Build join URL
 			const joinUrl = `${appBaseUrl}/${locale}/${teamSlug}/events/${eventId}/join`;
