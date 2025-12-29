@@ -133,6 +133,7 @@ export default defineSchema({
 		title: v.string(),
 		description: v.optional(v.string()),
 		scheduledAt: v.number(), // Unix timestamp when the event starts
+		durationMinutes: v.optional(v.number()), // Duration in minutes (default: 20)
 		createdAt: v.number(),
 		createdBy: v.object({
 			odId: v.optional(v.string()), // reviewer ID if available

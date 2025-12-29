@@ -1164,6 +1164,42 @@ export const completeEvent = mutation({
 	},
 });
 
+// Default duration in minutes for events
+const DEFAULT_EVENT_DURATION_MINUTES = 20;
+
+// Auto-complete events that have exceeded their duration (called by cron)
+export const autoCompleteExpiredEvents = mutation({
+	args: {},
+	handler: async (ctx) => {
+		const now = Date.now();
+
+		// Get all started events
+		const startedEvents = await ctx.db
+			.query("events")
+			.filter((q) => q.eq(q.field("status"), "started"))
+			.collect();
+
+		let completedCount = 0;
+
+		for (const event of startedEvents) {
+			// Calculate when the event should end
+			const durationMinutes =
+				event.durationMinutes ?? DEFAULT_EVENT_DURATION_MINUTES;
+			const startTime = event.startNotificationSentAt ?? event.scheduledAt;
+			const endTime = startTime + durationMinutes * 60 * 1000;
+
+			if (now >= endTime) {
+				await ctx.db.patch(event._id, {
+					status: "completed",
+				});
+				completedCount++;
+			}
+		}
+
+		return { completedCount };
+	},
+});
+
 // Mark invite notification as sent
 export const markEventInviteSent = mutation({
 	args: {

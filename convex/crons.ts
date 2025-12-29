@@ -10,4 +10,11 @@ crons.interval(
 	api.actions.processEventStartNotifications,
 );
 
+// Auto-complete events that have exceeded their duration
+crons.interval(
+	"auto-complete-events",
+	{ minutes: 1 },
+	api.mutations.autoCompleteExpiredEvents,
+);
+
 export default crons;

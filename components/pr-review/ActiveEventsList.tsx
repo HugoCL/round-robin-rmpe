@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import {
 	Calendar,
+	Check,
 	Clock,
 	Trash2,
 	UserCheck,
@@ -49,6 +50,7 @@ export function ActiveEventsList() {
 	const joinEventMutation = useMutation(api.mutations.joinEvent);
 	const leaveEventMutation = useMutation(api.mutations.leaveEvent);
 	const cancelEventMutation = useMutation(api.mutations.cancelEvent);
+	const completeEventMutation = useMutation(api.mutations.completeEvent);
 	const addParticipantMutation = useMutation(api.mutations.addEventParticipant);
 
 	if (!events || events.length === 0) {
@@ -175,6 +177,26 @@ export function ActiveEventsList() {
 		}
 	};
 
+	const handleComplete = async (eventId: Id<"events">) => {
+		try {
+			const result = await completeEventMutation({ eventId });
+
+			if (result.success) {
+				toast({
+					title: t("events.completed"),
+					description: t("events.completedDescription"),
+				});
+			}
+		} catch (error) {
+			console.error("Error completing event:", error);
+			toast({
+				title: t("common.error"),
+				description: t("events.completeFailed"),
+				variant: "destructive",
+			});
+		}
+	};
+
 	const handleAddParticipant = async (
 		eventId: Id<"events">,
 		reviewerId: Id<"reviewers">,
@@ -263,23 +285,48 @@ export function ActiveEventsList() {
 										</p>
 									)}
 								</div>
-								{creator && event.status === "scheduled" && (
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant="ghost"
-													size="icon"
-													className="h-8 w-8 text-destructive hover:text-destructive"
-													onClick={() => handleCancel(event._id)}
-												>
-													<Trash2 className="h-4 w-4" />
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>{t("events.cancelEvent")}</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-								)}
+								<div className="flex gap-1">
+									{/* Complete button - visible to creator when event is started */}
+									{creator && event.status === "started" && (
+										<TooltipProvider>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8 text-green-600 hover:text-green-600"
+														onClick={() => handleComplete(event._id)}
+													>
+														<Check className="h-4 w-4" />
+													</Button>
+												</TooltipTrigger>
+												<TooltipContent>
+													{t("events.completeEvent")}
+												</TooltipContent>
+											</Tooltip>
+										</TooltipProvider>
+									)}
+									{/* Cancel button - visible to creator when scheduled */}
+									{creator && event.status === "scheduled" && (
+										<TooltipProvider>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8 text-destructive hover:text-destructive"
+														onClick={() => handleCancel(event._id)}
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												</TooltipTrigger>
+												<TooltipContent>
+													{t("events.cancelEvent")}
+												</TooltipContent>
+											</Tooltip>
+										</TooltipProvider>
+									)}
+								</div>
 							</div>
 
 							<div className="flex items-center gap-4 text-sm text-muted-foreground">

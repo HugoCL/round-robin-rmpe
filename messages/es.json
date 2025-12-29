@@ -482,6 +482,10 @@
 		"selectTeamMember": "Seleccionar miembro del equipo",
 		"participantAdded": "Participante Añadido",
 		"participantAddedDescription": "{name} ha sido añadido al evento",
-		"addParticipantFailed": "Error al añadir participante. Por favor intenta de nuevo."
+		"addParticipantFailed": "Error al añadir participante. Por favor intenta de nuevo.",
+		"completeEvent": "Finalizar Evento",
+		"completed": "Evento Finalizado",
+		"completedDescription": "El evento ha sido marcado como completado",
+		"completeFailed": "Error al finalizar el evento. Por favor intenta de nuevo."
 	}
 }

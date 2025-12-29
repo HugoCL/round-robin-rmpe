@@ -435,6 +435,10 @@
 		"selectTeamMember": "Select team member",
 		"participantAdded": "Participant Added",
 		"participantAddedDescription": "{name} has been added to the event",
-		"addParticipantFailed": "Failed to add participant. Please try again."
+		"addParticipantFailed": "Failed to add participant. Please try again.",
+		"completeEvent": "Complete Event",
+		"completed": "Event Completed",
+		"completedDescription": "The event has been marked as completed",
+		"completeFailed": "Failed to complete event. Please try again."
 	}
 }
