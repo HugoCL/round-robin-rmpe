@@ -377,3 +377,269 @@ export const skipToNextReviewer = action({
 		return { success: true, nextReviewer };
 	},
 });
+
+// ============================================
+// EVENT ACTIONS
+// ============================================
+
+// Send event invite to Google Chat with join link
+export const sendEventInvite = action({
+	args: {
+		eventId: v.id("events"),
+		teamSlug: v.string(),
+		appBaseUrl: v.string(), // e.g., "https://app.example.com"
+		locale: v.optional(v.string()),
+	},
+	handler: async (
+		ctx,
+		{ eventId, teamSlug, appBaseUrl, locale = "es" },
+	): Promise<{ success: boolean; error?: string }> => {
+		// Get event details
+		const event = await ctx.runQuery(api.queries.getEventById, { eventId });
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+
+		// Get team for webhook URL
+		const team = await ctx.runQuery(api.queries.getTeam, { teamSlug });
+		const webhookUrl = team?.googleChatWebhookUrl?.trim();
+
+		if (!webhookUrl) {
+			return {
+				success: false,
+				error: "Google Chat webhook URL not configured",
+			};
+		}
+
+		try {
+			// Format the scheduled time
+			const scheduledDate = new Date(event.scheduledAt);
+			const timeStr = scheduledDate.toLocaleTimeString(locale, {
+				hour: "2-digit",
+				minute: "2-digit",
+			});
+			const dateStr = scheduledDate.toLocaleDateString(locale, {
+				weekday: "long",
+				day: "numeric",
+				month: "long",
+			});
+
+			// Build join URL
+			const joinUrl = `${appBaseUrl}/${locale}/${teamSlug}/events/${eventId}/join`;
+
+			// Build the message
+			const messages =
+				locale === "es"
+					? {
+							title: "📅 Nuevo Evento",
+							createdBy: "Creado por",
+							scheduledFor: "Programado para",
+							at: "a las",
+							joinPrompt: "¿Vas a participar? Haz clic aquí para confirmar:",
+							joinButton: "Voy a participar",
+						}
+					: {
+							title: "📅 New Event",
+							createdBy: "Created by",
+							scheduledFor: "Scheduled for",
+							at: "at",
+							joinPrompt: "Will you participate? Click here to confirm:",
+							joinButton: "I'll participate",
+						};
+
+			const messageText = `*${messages.title}: ${event.title}*\n\n${
+				event.description ? `${event.description}\n\n` : ""
+			}${messages.createdBy}: ${event.createdBy.name}\n${messages.scheduledFor}: ${dateStr} ${messages.at} ${timeStr}\n\n${messages.joinPrompt}`;
+
+			const message = {
+				text: messageText,
+				cardsV2: [
+					{
+						cardId: "event-invite-card",
+						card: {
+							sections: [
+								{
+									widgets: [
+										{
+											buttonList: {
+												buttons: [
+													{
+														text: messages.joinButton,
+														onClick: {
+															openLink: {
+																url: joinUrl,
+															},
+														},
+													},
+												],
+											},
+										},
+									],
+								},
+							],
+						},
+					},
+				],
+			};
+
+			const response = await fetch(webhookUrl, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(message),
+			});
+
+			if (!response.ok) {
+				return {
+					success: false,
+					error: `HTTP ${response.status}: ${response.statusText}`,
+				};
+			}
+
+			// Mark invite as sent
+			await ctx.runMutation(api.mutations.markEventInviteSent, { eventId });
+
+			return { success: true };
+		} catch (error) {
+			console.error("Error sending event invite:", error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	},
+});
+
+// Send event start notification tagging all participants
+export const sendEventStartNotification = action({
+	args: {
+		eventId: v.id("events"),
+		teamSlug: v.string(),
+		locale: v.optional(v.string()),
+	},
+	handler: async (
+		ctx,
+		{ eventId, teamSlug, locale = "es" },
+	): Promise<{ success: boolean; error?: string }> => {
+		// Get event details
+		const event = await ctx.runQuery(api.queries.getEventById, { eventId });
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+
+		// Get team for webhook URL
+		const team = await ctx.runQuery(api.queries.getTeam, { teamSlug });
+		const webhookUrl = team?.googleChatWebhookUrl?.trim();
+
+		if (!webhookUrl) {
+			return {
+				success: false,
+				error: "Google Chat webhook URL not configured",
+			};
+		}
+
+		try {
+			const messages =
+				locale === "es"
+					? {
+							started: "🚀 ¡El evento ha comenzado!",
+							participants: "Participantes",
+							noParticipants: "No hay participantes confirmados",
+						}
+					: {
+							started: "🚀 The event has started!",
+							participants: "Participants",
+							noParticipants: "No confirmed participants",
+						};
+
+			// Build participant mentions
+			let participantMentions = "";
+			if (event.participants.length > 0) {
+				participantMentions = event.participants
+					.map((p) => {
+						if (p.googleChatUserId?.trim()) {
+							return `${p.name} (<users/${p.googleChatUserId}>)`;
+						}
+						return p.name;
+					})
+					.join(", ");
+			} else {
+				participantMentions = messages.noParticipants;
+			}
+
+			const messageText = `*${messages.started}*\n\n*${event.title}*\n\n${messages.participants}: ${participantMentions}`;
+
+			const message = {
+				text: messageText,
+			};
+
+			const response = await fetch(webhookUrl, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(message),
+			});
+
+			if (!response.ok) {
+				return {
+					success: false,
+					error: `HTTP ${response.status}: ${response.statusText}`,
+				};
+			}
+
+			// Mark start notification as sent and update status
+			await ctx.runMutation(api.mutations.markEventStartNotificationSent, {
+				eventId,
+			});
+			await ctx.runMutation(api.mutations.startEvent, { eventId });
+
+			return { success: true };
+		} catch (error) {
+			console.error("Error sending event start notification:", error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	},
+});
+
+// Process events that need start notifications (called by cron)
+export const processEventStartNotifications = action({
+	args: {},
+	handler: async (ctx): Promise<{ processed: number; errors: string[] }> => {
+		const events = await ctx.runQuery(
+			api.queries.getEventsNeedingStartNotification,
+			{},
+		);
+
+		const errors: string[] = [];
+		let processed = 0;
+
+		for (const event of events) {
+			// Get team slug for this event
+			const team = await ctx.runQuery(api.queries.getTeams, {});
+			const eventTeam = team.find((t) => t._id === event.teamId);
+
+			if (!eventTeam) {
+				errors.push(`Team not found for event ${event._id}`);
+				continue;
+			}
+
+			const result = await ctx.runAction(
+				api.actions.sendEventStartNotification,
+				{
+					eventId: event._id,
+					teamSlug: eventTeam.slug,
+					locale: "es",
+				},
+			);
+
+			if (result.success) {
+				processed++;
+			} else {
+				errors.push(`Event ${event._id}: ${result.error}`);
+			}
+		}
+
+		return { processed, errors };
+	},
+});

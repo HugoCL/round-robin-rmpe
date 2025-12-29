@@ -348,3 +348,79 @@ export const getActiveAssignmentsByReviewer = query({
 		return enriched;
 	},
 });
+
+// Get all active (scheduled or started) events for a team
+export const getActiveEvents = query({
+	args: { teamSlug: v.string() },
+	handler: async (ctx, { teamSlug }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const events = await ctx.db
+			.query("events")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.collect();
+
+		// Filter for active events and sort by scheduled time
+		return events
+			.filter((e) => e.status === "scheduled" || e.status === "started")
+			.sort((a, b) => a.scheduledAt - b.scheduledAt);
+	},
+});
+
+// Get upcoming events (scheduled, not yet started)
+export const getUpcomingEvents = query({
+	args: { teamSlug: v.string() },
+	handler: async (ctx, { teamSlug }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const events = await ctx.db
+			.query("events")
+			.withIndex("by_team_status", (q) =>
+				q.eq("teamId", team._id).eq("status", "scheduled"),
+			)
+			.collect();
+
+		return events.sort((a, b) => a.scheduledAt - b.scheduledAt);
+	},
+});
+
+// Get a single event by ID
+export const getEventById = query({
+	args: { eventId: v.id("events") },
+	handler: async (ctx, { eventId }) => {
+		return await ctx.db.get(eventId);
+	},
+});
+
+// Get event with team info (for join page)
+export const getEventWithTeam = query({
+	args: { eventId: v.id("events") },
+	handler: async (ctx, { eventId }) => {
+		const event = await ctx.db.get(eventId);
+		if (!event) return null;
+
+		const team = await ctx.db.get(event.teamId);
+		return {
+			event,
+			team: team ? { name: team.name, slug: team.slug } : null,
+		};
+	},
+});
+
+// Get events that need start notification (scheduled time has passed)
+export const getEventsNeedingStartNotification = query({
+	args: {},
+	handler: async (ctx) => {
+		const now = Date.now();
+		const events = await ctx.db
+			.query("events")
+			.withIndex("by_scheduled_at")
+			.collect();
+
+		// Filter: scheduled status, time has passed, notification not sent yet
+		return events.filter(
+			(e) =>
+				e.status === "scheduled" &&
+				e.scheduledAt <= now &&
+				!e.startNotificationSentAt,
+		);
+	},
+});

@@ -90,7 +90,9 @@
 		"historyAndData": "Historial y Datos",
 		"help": "Ayuda",
 		"viewPR": "Ver PR",
-		"viewContext": "Ver Contexto"
+		"viewContext": "Ver Contexto",
+		"signIn": "Iniciar Sesión",
+		"creating": "Creando..."
 	},
 	"hints": {
 		"reviewConfirm": "Revisa y confirma antes de enviar"
@@ -431,5 +433,50 @@
 	},
 	"modifiers": {
 		"styleModifiers": "Modificadores de estilo:"
+	},
+	"events": {
+		"createEvent": "Crear Evento",
+		"createDescription": "Programa un nuevo evento e invita a tu equipo a participar.",
+		"title": "Título",
+		"titlePlaceholder": "ej., Estimación, Planning, Retro",
+		"titleRequired": "Por favor ingresa un título para el evento",
+		"description": "Descripción",
+		"descriptionPlaceholder": "Describe de qué se trata este evento...",
+		"date": "Fecha",
+		"dateRequired": "Por favor selecciona una fecha para el evento",
+		"selectDate": "Seleccionar fecha",
+		"time": "Hora",
+		"sendInviteToChat": "Enviar invitación a Google Chat",
+		"created": "Evento Creado",
+		"createdDescription": "Tu evento ha sido programado exitosamente",
+		"createFailed": "Error al crear el evento. Por favor intenta de nuevo.",
+		"upcomingEvents": "Próximos Eventos",
+		"upcomingDescription": "Eventos programados para tu equipo",
+		"inProgress": "En Progreso",
+		"starting": "Iniciando...",
+		"join": "Voy a Participar",
+		"leave": "Abandonar",
+		"cancelEvent": "Cancelar Evento",
+		"joined": "¡Te uniste!",
+		"joinedDescription": "Te has unido al evento",
+		"alreadyJoined": "Ya estás participando en este evento",
+		"joinFailed": "Error al unirse al evento. Por favor intenta de nuevo.",
+		"left": "Abandonaste el Evento",
+		"leftDescription": "Has abandonado el evento",
+		"leaveFailed": "Error al abandonar el evento. Por favor intenta de nuevo.",
+		"cancelled": "Evento Cancelado",
+		"cancelledDescription": "El evento ha sido cancelado",
+		"cancelFailed": "Error al cancelar el evento. Por favor intenta de nuevo.",
+		"mustBeLoggedIn": "Debes iniciar sesión para unirte a eventos",
+		"participants": "participantes",
+		"signInRequired": "Inicio de Sesión Requerido",
+		"signInToJoin": "Por favor inicia sesión para unirte a este evento",
+		"notFound": "Evento No Encontrado",
+		"notFoundDescription": "Este evento no existe o ha sido eliminado",
+		"eventNoLongerActive": "Este evento ya no está activo",
+		"joining": "Uniéndose al evento...",
+		"joinedSuccessfully": "¡Estás dentro!",
+		"alreadyParticipating": "Ya Estás Participando",
+		"goToTeam": "Ir al Equipo"
 	}
 }

@@ -126,4 +126,36 @@ export default defineSchema({
 	})
 		.index("by_created_at", ["createdAt"])
 		.index("by_team", ["teamId"]),
+
+	// Team events (estimations, meetings, plannings, etc.)
+	events: defineTable({
+		teamId: v.id("teams"),
+		title: v.string(),
+		description: v.optional(v.string()),
+		scheduledAt: v.number(), // Unix timestamp when the event starts
+		createdAt: v.number(),
+		createdBy: v.object({
+			odId: v.optional(v.string()), // reviewer ID if available
+			email: v.string(),
+			name: v.string(),
+			googleChatUserId: v.optional(v.string()),
+		}),
+		// Participants who confirmed attendance
+		participants: v.array(
+			v.object({
+				odId: v.optional(v.string()), // reviewer ID if available
+				email: v.string(),
+				name: v.string(),
+				googleChatUserId: v.optional(v.string()),
+				joinedAt: v.number(),
+			}),
+		),
+		status: v.string(), // "scheduled" | "started" | "completed" | "cancelled"
+		// Track if notifications have been sent
+		inviteSentAt: v.optional(v.number()),
+		startNotificationSentAt: v.optional(v.number()),
+	})
+		.index("by_team", ["teamId"])
+		.index("by_team_status", ["teamId", "status"])
+		.index("by_scheduled_at", ["scheduledAt"]),
 });

@@ -9,6 +9,7 @@
  */
 
 import type * as actions from "../actions.js";
+import type * as crons from "../crons.js";
 import type * as migration from "../migration.js";
 import type * as mutations from "../mutations.js";
 import type * as queries from "../queries.js";
@@ -21,6 +22,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
 	actions: typeof actions;
+	crons: typeof crons;
 	migration: typeof migration;
 	mutations: typeof mutations;
 	queries: typeof queries;

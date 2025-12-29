@@ -42,7 +42,10 @@
 		"help": "Help",
 		"update": "Update",
 		"viewPR": "View PR",
-		"viewContext": "View Context"
+		"viewContext": "View Context",
+		"signIn": "Sign In",
+		"creating": "Creating...",
+		"info": "Info"
 	},
 	"hints": {
 		"reviewConfirm": "Review and confirm before sending"
@@ -383,5 +386,50 @@
 	},
 	"modifiers": {
 		"styleModifiers": "Style modifiers:"
+	},
+	"events": {
+		"createEvent": "Create Event",
+		"createDescription": "Schedule a new event and invite your team to participate.",
+		"title": "Title",
+		"titlePlaceholder": "e.g., Estimation, Planning, Retro",
+		"titleRequired": "Please enter a title for the event",
+		"description": "Description",
+		"descriptionPlaceholder": "Describe what this event is about...",
+		"date": "Date",
+		"dateRequired": "Please select a date for the event",
+		"selectDate": "Select date",
+		"time": "Time",
+		"sendInviteToChat": "Send invite to Google Chat",
+		"created": "Event Created",
+		"createdDescription": "Your event has been scheduled successfully",
+		"createFailed": "Failed to create event. Please try again.",
+		"upcomingEvents": "Upcoming Events",
+		"upcomingDescription": "Events scheduled for your team",
+		"inProgress": "In Progress",
+		"starting": "Starting...",
+		"join": "I'll Participate",
+		"leave": "Leave",
+		"cancelEvent": "Cancel Event",
+		"joined": "Joined!",
+		"joinedDescription": "You have joined the event",
+		"alreadyJoined": "You are already participating in this event",
+		"joinFailed": "Failed to join event. Please try again.",
+		"left": "Left Event",
+		"leftDescription": "You have left the event",
+		"leaveFailed": "Failed to leave event. Please try again.",
+		"cancelled": "Event Cancelled",
+		"cancelledDescription": "The event has been cancelled",
+		"cancelFailed": "Failed to cancel event. Please try again.",
+		"mustBeLoggedIn": "You must be logged in to join events",
+		"participants": "participants",
+		"signInRequired": "Sign In Required",
+		"signInToJoin": "Please sign in to join this event",
+		"notFound": "Event Not Found",
+		"notFoundDescription": "This event does not exist or has been deleted",
+		"eventNoLongerActive": "This event is no longer active",
+		"joining": "Joining event...",
+		"joinedSuccessfully": "You're In!",
+		"alreadyParticipating": "Already Participating",
+		"goToTeam": "Go to Team"
 	}
 }

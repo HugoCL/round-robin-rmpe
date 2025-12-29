@@ -958,6 +958,208 @@ export const restoreFromBackup = mutation({
 	},
 });
 
+// ============================================
+// EVENT MUTATIONS
+// ============================================
+
+// Create a new team event
+export const createEvent = mutation({
+	args: {
+		teamSlug: v.string(),
+		title: v.string(),
+		description: v.optional(v.string()),
+		scheduledAt: v.number(),
+		createdBy: v.object({
+			odId: v.optional(v.string()),
+			email: v.string(),
+			name: v.string(),
+			googleChatUserId: v.optional(v.string()),
+		}),
+	},
+	handler: async (
+		ctx,
+		{ teamSlug, title, description, scheduledAt, createdBy },
+	) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+
+		const eventId = await ctx.db.insert("events", {
+			teamId: team._id,
+			title: title.trim(),
+			description: description?.trim(),
+			scheduledAt,
+			createdAt: Date.now(),
+			createdBy,
+			participants: [],
+			status: "scheduled",
+		});
+
+		return { success: true, eventId };
+	},
+});
+
+// Join an event as a participant
+export const joinEvent = mutation({
+	args: {
+		eventId: v.id("events"),
+		participant: v.object({
+			odId: v.optional(v.string()),
+			email: v.string(),
+			name: v.string(),
+			googleChatUserId: v.optional(v.string()),
+		}),
+	},
+	handler: async (ctx, { eventId, participant }) => {
+		const event = await ctx.db.get(eventId);
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+
+		if (event.status === "cancelled" || event.status === "completed") {
+			return { success: false, error: "Event is no longer active" };
+		}
+
+		// Check if already participating
+		const alreadyJoined = event.participants.some(
+			(p) => p.email.toLowerCase() === participant.email.toLowerCase(),
+		);
+
+		if (alreadyJoined) {
+			return {
+				success: false,
+				error: "Already participating",
+				alreadyJoined: true,
+			};
+		}
+
+		// Add participant
+		await ctx.db.patch(eventId, {
+			participants: [
+				...event.participants,
+				{
+					...participant,
+					joinedAt: Date.now(),
+				},
+			],
+		});
+
+		return { success: true };
+	},
+});
+
+// Leave an event
+export const leaveEvent = mutation({
+	args: {
+		eventId: v.id("events"),
+		email: v.string(),
+	},
+	handler: async (ctx, { eventId, email }) => {
+		const event = await ctx.db.get(eventId);
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+
+		if (event.status === "cancelled" || event.status === "completed") {
+			return { success: false, error: "Event is no longer active" };
+		}
+
+		// Remove participant
+		await ctx.db.patch(eventId, {
+			participants: event.participants.filter(
+				(p) => p.email.toLowerCase() !== email.toLowerCase(),
+			),
+		});
+
+		return { success: true };
+	},
+});
+
+// Cancel an event
+export const cancelEvent = mutation({
+	args: {
+		eventId: v.id("events"),
+	},
+	handler: async (ctx, { eventId }) => {
+		const event = await ctx.db.get(eventId);
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+
+		await ctx.db.patch(eventId, {
+			status: "cancelled",
+		});
+
+		return { success: true };
+	},
+});
+
+// Mark event as started (called by cron or manually)
+export const startEvent = mutation({
+	args: {
+		eventId: v.id("events"),
+	},
+	handler: async (ctx, { eventId }) => {
+		const event = await ctx.db.get(eventId);
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+
+		if (event.status !== "scheduled") {
+			return { success: false, error: "Event cannot be started" };
+		}
+
+		await ctx.db.patch(eventId, {
+			status: "started",
+		});
+
+		return { success: true };
+	},
+});
+
+// Mark event as completed
+export const completeEvent = mutation({
+	args: {
+		eventId: v.id("events"),
+	},
+	handler: async (ctx, { eventId }) => {
+		const event = await ctx.db.get(eventId);
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+
+		await ctx.db.patch(eventId, {
+			status: "completed",
+		});
+
+		return { success: true };
+	},
+});
+
+// Mark invite notification as sent
+export const markEventInviteSent = mutation({
+	args: {
+		eventId: v.id("events"),
+	},
+	handler: async (ctx, { eventId }) => {
+		await ctx.db.patch(eventId, {
+			inviteSentAt: Date.now(),
+		});
+		return { success: true };
+	},
+});
+
+// Mark start notification as sent
+export const markEventStartNotificationSent = mutation({
+	args: {
+		eventId: v.id("events"),
+	},
+	handler: async (ctx, { eventId }) => {
+		await ctx.db.patch(eventId, {
+			startNotificationSentAt: Date.now(),
+		});
+		return { success: true };
+	},
+});
+
 // Log a sent Google Chat message for debugging (keep only last 3)
 export const logSentMessage = mutation({
 	args: {

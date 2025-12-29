@@ -1,4 +1,9 @@
+import { Calendar } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/button";
+import { ActiveEventsList } from "../ActiveEventsList";
 import { AssignmentCard } from "../AssignmentCard";
+import { CreateEventDialog } from "../dialogs/CreateEventDialog";
 import { ForceAssignDialog } from "../dialogs/ForceAssignDialog";
 import { FeedHistory } from "../FeedHistory";
 /**
@@ -9,6 +14,7 @@ import { TrackBasedAssignment } from "../TrackBasedAssignment";
 
 export function CompactLayout() {
 	const { hasTags, teamSlug } = usePRReview();
+	const t = useTranslations();
 	return (
 		<div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)]">
 			<div className="flex-1 lg:w-[60%] flex flex-col space-y-6">
@@ -21,7 +27,18 @@ export function CompactLayout() {
 				<div className="border rounded-lg p-4 bg-muted/50 space-y-4">
 					<ForceAssignDialog />
 					{hasTags && <TrackBasedAssignment />}
+					<CreateEventDialog
+						trigger={
+							<Button variant="outline" className="w-full">
+								<Calendar className="h-4 w-4 mr-2" />
+								{t("events.createEvent")}
+							</Button>
+						}
+					/>
 				</div>
+
+				{/* Active Events */}
+				<ActiveEventsList />
 			</div>
 
 			{/* History Section - 40% */}

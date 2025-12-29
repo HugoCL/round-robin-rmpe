@@ -1,4 +1,5 @@
 import {
+	Calendar,
 	Download,
 	MoreHorizontal,
 	RotateCw,
@@ -17,8 +18,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ActiveEventsList } from "../ActiveEventsList";
 import { AssignmentCard } from "../AssignmentCard";
 import { AddReviewerDialog } from "../dialogs/AddReviewerDialog";
+import { CreateEventDialog } from "../dialogs/CreateEventDialog";
 import { DeleteReviewerDialog } from "../dialogs/DeleteReviewerDialog";
 import { ForceAssignDialog } from "../dialogs/ForceAssignDialog";
 /**
@@ -123,7 +126,17 @@ export function ClassicLayout() {
 					<div className="space-y-4">
 						<ForceAssignDialog />
 						{hasTags && <TrackBasedAssignment />}
+						<CreateEventDialog
+							trigger={
+								<Button variant="outline" className="w-full">
+									<Calendar className="h-4 w-4 mr-2" />
+									{t("events.createEvent")}
+								</Button>
+							}
+						/>
 					</div>
+
+					<ActiveEventsList />
 
 					<RecentAssignments teamSlug={teamSlug} />
 				</div>
