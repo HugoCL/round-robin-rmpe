@@ -7,6 +7,7 @@ import {
 	Trash2,
 	UserCheck,
 	UserMinus,
+	UserPlus,
 	Users,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -19,6 +20,11 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import {
 	Tooltip,
 	TooltipContent,
@@ -33,7 +39,7 @@ import { usePRReview } from "./PRReviewContext";
 export function ActiveEventsList() {
 	const t = useTranslations();
 	const locale = useLocale();
-	const { teamSlug, userInfo } = usePRReview();
+	const { teamSlug, userInfo, reviewers } = usePRReview();
 
 	const events = useQuery(
 		api.queries.getActiveEvents,
@@ -43,6 +49,7 @@ export function ActiveEventsList() {
 	const joinEventMutation = useMutation(api.mutations.joinEvent);
 	const leaveEventMutation = useMutation(api.mutations.leaveEvent);
 	const cancelEventMutation = useMutation(api.mutations.cancelEvent);
+	const addParticipantMutation = useMutation(api.mutations.addEventParticipant);
 
 	if (!events || events.length === 0) {
 		return null;
@@ -168,6 +175,52 @@ export function ActiveEventsList() {
 		}
 	};
 
+	const handleAddParticipant = async (
+		eventId: Id<"events">,
+		reviewerId: Id<"reviewers">,
+	) => {
+		try {
+			const result = await addParticipantMutation({ eventId, reviewerId });
+
+			if (result.success) {
+				toast({
+					title: t("events.participantAdded"),
+					description: t("events.participantAddedDescription", {
+						name: result.addedName || "",
+					}),
+				});
+			} else if (result.alreadyJoined) {
+				toast({
+					title: t("common.info"),
+					description: t("events.alreadyJoined"),
+				});
+			} else {
+				toast({
+					title: t("common.error"),
+					description: result.error || t("events.addParticipantFailed"),
+					variant: "destructive",
+				});
+			}
+		} catch (error) {
+			console.error("Error adding participant:", error);
+			toast({
+				title: t("common.error"),
+				description: t("events.addParticipantFailed"),
+				variant: "destructive",
+			});
+		}
+	};
+
+	// Get reviewers that are not yet participants in an event
+	const getAvailableReviewers = (event: (typeof events)[0]) => {
+		return reviewers.filter(
+			(r) =>
+				!event.participants.some(
+					(p) => p.email.toLowerCase() === r.email.toLowerCase(),
+				),
+		);
+	};
+
 	return (
 		<Card>
 			<CardHeader className="pb-3">
@@ -275,6 +328,40 @@ export function ActiveEventsList() {
 											<UserCheck className="h-4 w-4 mr-1" />
 											{t("events.join")}
 										</Button>
+									)}
+
+									{/* Add participants popover - visible to creator */}
+									{creator && getAvailableReviewers(event).length > 0 && (
+										<Popover>
+											<PopoverTrigger asChild>
+												<Button variant="outline" size="sm">
+													<UserPlus className="h-4 w-4 mr-1" />
+													{t("events.addParticipant")}
+												</Button>
+											</PopoverTrigger>
+											<PopoverContent className="w-56 p-2" align="start">
+												<div className="space-y-1">
+													<p className="text-sm font-medium mb-2">
+														{t("events.selectTeamMember")}
+													</p>
+													<div className="max-h-48 overflow-y-auto space-y-1">
+														{getAvailableReviewers(event).map((reviewer) => (
+															<Button
+																key={reviewer._id}
+																variant="ghost"
+																size="sm"
+																className="w-full justify-start text-left"
+																onClick={() =>
+																	handleAddParticipant(event._id, reviewer._id)
+																}
+															>
+																{reviewer.name}
+															</Button>
+														))}
+													</div>
+												</div>
+											</PopoverContent>
+										</Popover>
 									)}
 								</div>
 							)}

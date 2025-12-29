@@ -1190,6 +1190,63 @@ export const markEventStartNotificationSent = mutation({
 	},
 });
 
+// Add a team member as event participant by reviewer ID
+export const addEventParticipant = mutation({
+	args: {
+		eventId: v.id("events"),
+		reviewerId: v.id("reviewers"),
+	},
+	handler: async (ctx, { eventId, reviewerId }) => {
+		const event = await ctx.db.get(eventId);
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+
+		if (event.status === "cancelled" || event.status === "completed") {
+			return { success: false, error: "Event is no longer active" };
+		}
+
+		// Get the reviewer details
+		const reviewer = await ctx.db.get(reviewerId);
+		if (!reviewer) {
+			return { success: false, error: "Reviewer not found" };
+		}
+
+		// Verify reviewer belongs to the same team
+		if (reviewer.teamId !== event.teamId) {
+			return { success: false, error: "Reviewer not in this team" };
+		}
+
+		// Check if already participating
+		const alreadyJoined = event.participants.some(
+			(p) => p.email.toLowerCase() === reviewer.email.toLowerCase(),
+		);
+
+		if (alreadyJoined) {
+			return {
+				success: false,
+				error: "Already participating",
+				alreadyJoined: true,
+			};
+		}
+
+		// Add participant with full reviewer data
+		await ctx.db.patch(eventId, {
+			participants: [
+				...event.participants,
+				{
+					email: reviewer.email,
+					name: reviewer.name,
+					googleChatUserId: reviewer.googleChatUserId?.trim() || undefined,
+					joinedAt: Date.now(),
+				},
+			],
+		});
+
+		return { success: true, addedName: reviewer.name };
+	},
+});
+
 // Log a sent Google Chat message for debugging (keep only last 3)
 export const logSentMessage = mutation({
 	args: {

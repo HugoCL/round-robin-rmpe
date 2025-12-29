@@ -430,6 +430,11 @@
 		"joining": "Joining event...",
 		"joinedSuccessfully": "You're In!",
 		"alreadyParticipating": "Already Participating",
-		"goToTeam": "Go to Team"
+		"goToTeam": "Go to Team",
+		"addParticipant": "Add Participant",
+		"selectTeamMember": "Select team member",
+		"participantAdded": "Participant Added",
+		"participantAddedDescription": "{name} has been added to the event",
+		"addParticipantFailed": "Failed to add participant. Please try again."
 	}
 }

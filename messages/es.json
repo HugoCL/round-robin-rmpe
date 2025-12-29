@@ -477,6 +477,11 @@
 		"joining": "Uniéndose al evento...",
 		"joinedSuccessfully": "¡Estás dentro!",
 		"alreadyParticipating": "Ya Estás Participando",
-		"goToTeam": "Ir al Equipo"
+		"goToTeam": "Ir al Equipo",
+		"addParticipant": "Añadir Participante",
+		"selectTeamMember": "Seleccionar miembro del equipo",
+		"participantAdded": "Participante Añadido",
+		"participantAddedDescription": "{name} ha sido añadido al evento",
+		"addParticipantFailed": "Error al añadir participante. Por favor intenta de nuevo."
 	}
 }
