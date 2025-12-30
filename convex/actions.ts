@@ -428,25 +428,15 @@ export const sendEventInvite = action({
 			// Build join URL
 			const joinUrl = `${appBaseUrl}/${locale}/${teamSlug}/events/${eventId}/join`;
 
-			// Build the message
-			const messages =
-				locale === "es"
-					? {
-							title: "📅 Nuevo Evento",
-							createdBy: "Creado por",
-							scheduledFor: "Programado para",
-							at: "a las",
-							joinPrompt: "¿Vas a participar? Haz clic aquí para confirmar:",
-							joinButton: "Voy a participar",
-						}
-					: {
-							title: "📅 New Event",
-							createdBy: "Created by",
-							scheduledFor: "Scheduled for",
-							at: "at",
-							joinPrompt: "Will you participate? Click here to confirm:",
-							joinButton: "I'll participate",
-						};
+			// Build the message - always in Spanish
+			const messages = {
+				title: "📅 Nuevo Evento",
+				createdBy: "Creado por",
+				scheduledFor: "Programado para",
+				at: "a las",
+				joinPrompt: "¿Vas a participar? Haz clic aquí para confirmar:",
+				joinButton: "Voy a participar",
+			};
 
 			const messageText = `*${messages.title}: ${event.title}*\n\n${
 				event.description ? `${event.description}\n\n` : ""
@@ -515,11 +505,11 @@ export const sendEventStartNotification = action({
 	args: {
 		eventId: v.id("events"),
 		teamSlug: v.string(),
-		locale: v.optional(v.string()),
+		locale: v.optional(v.string()), // kept for backwards compatibility but not used
 	},
 	handler: async (
 		ctx,
-		{ eventId, teamSlug, locale = "es" },
+		{ eventId, teamSlug },
 	): Promise<{ success: boolean; error?: string }> => {
 		// Get event details
 		const event = await ctx.runQuery(api.queries.getEventById, { eventId });
@@ -539,18 +529,12 @@ export const sendEventStartNotification = action({
 		}
 
 		try {
-			const messages =
-				locale === "es"
-					? {
-							started: "🚀 ¡El evento ha comenzado!",
-							participants: "Participantes",
-							noParticipants: "No hay participantes confirmados",
-						}
-					: {
-							started: "🚀 The event has started!",
-							participants: "Participants",
-							noParticipants: "No confirmed participants",
-						};
+			// Messages always in Spanish
+			const messages = {
+				started: "🚀 ¡El evento ha comenzado!",
+				participants: "Participantes",
+				noParticipants: "No hay participantes confirmados",
+			};
 
 			// Build participant mentions
 			let participantMentions = "";
