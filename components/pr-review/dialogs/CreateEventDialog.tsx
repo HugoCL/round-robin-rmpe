@@ -123,15 +123,19 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 				if (sendInvite) {
 					try {
 						const appBaseUrl = window.location.origin;
-						// Format date and time on client side to respect user's timezone
-						const formattedDate = scheduledAt.toLocaleDateString(locale, {
+						// Format date and time using Chile timezone for consistency
+						// This ensures all team members see the same time in messages
+						const formattedDate = scheduledAt.toLocaleDateString("es-CL", {
 							weekday: "long",
 							day: "numeric",
 							month: "long",
+							timeZone: "America/Santiago",
 						});
-						const formattedTime = scheduledAt.toLocaleTimeString(locale, {
+						const formattedTime = scheduledAt.toLocaleTimeString("es-CL", {
 							hour: "2-digit",
 							minute: "2-digit",
+							hour12: false,
+							timeZone: "America/Santiago",
 						});
 						await sendEventInviteAction({
 							eventId: result.eventId,
