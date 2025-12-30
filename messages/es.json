@@ -446,6 +446,8 @@
 		"dateRequired": "Por favor selecciona una fecha para el evento",
 		"selectDate": "Seleccionar fecha",
 		"time": "Hora",
+		"yourTime": "Tu hora",
+		"chileTimePreview": "🇨🇱 En Chile serán las {time}",
 		"sendInviteToChat": "Enviar invitación a Google Chat",
 		"created": "Evento Creado",
 		"createdDescription": "Tu evento ha sido programado exitosamente",

@@ -1,9 +1,9 @@
 "use client";
 
 import { useAction, useMutation } from "convex/react";
-import { Calendar, Clock, Plus } from "lucide-react";
+import { Calendar, Clock, Globe, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
@@ -32,6 +32,40 @@ interface CreateEventDialogProps {
 	trigger?: React.ReactNode;
 }
 
+// Get user's timezone name
+function getUserTimezone(): string {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone;
+	} catch {
+		return "Local";
+	}
+}
+
+// Convert a local time to Chile time for display
+function getChileTimePreview(date: Date | undefined, time: string): string {
+	if (!date || !time) return "";
+
+	const [hours, minutes] = time.split(":").map(Number);
+	if (Number.isNaN(hours) || Number.isNaN(minutes)) return "";
+
+	const localDate = new Date(date);
+	localDate.setHours(hours, minutes, 0, 0);
+
+	// Format the same moment in Chile timezone
+	return localDate.toLocaleTimeString("es-CL", {
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+		timeZone: "America/Santiago",
+	});
+}
+
+// Check if user is in Chile timezone
+function isUserInChile(): boolean {
+	const tz = getUserTimezone();
+	return tz === "America/Santiago" || tz.includes("Chile");
+}
+
 export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 	const t = useTranslations();
 	const locale = useLocale();
@@ -56,6 +90,13 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 	);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [sendInvite, setSendInvite] = useState(true);
+
+	const userTimezone = useMemo(() => getUserTimezone(), []);
+	const userInChile = useMemo(() => isUserInChile(), []);
+	const chileTimePreview = useMemo(
+		() => getChileTimePreview(date, time),
+		[date, time],
+	);
 
 	const createEventMutation = useMutation(api.mutations.createEvent);
 	const sendEventInviteAction = useAction(api.actions.sendEventInvite);
@@ -91,7 +132,8 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 		setIsSubmitting(true);
 
 		try {
-			// Combine date and time
+			// Combine date and time in user's local timezone
+			// JavaScript Date automatically handles the conversion to UTC
 			const [hours, minutes] = time.split(":").map(Number);
 			const scheduledAt = new Date(date);
 			scheduledAt.setHours(hours, minutes, 0, 0);
@@ -268,7 +310,22 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 								onChange={(e) => setTime(e.target.value)}
 								className="w-auto"
 							/>
+							<span className="text-xs text-muted-foreground">
+								(
+								{userTimezone.split("/").pop()?.replace("_", " ") ||
+									t("events.yourTime")}
+								)
+							</span>
 						</div>
+						{/* Show Chile time conversion if user is not in Chile */}
+						{!userInChile && chileTimePreview && (
+							<div className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/50 rounded px-2 py-1">
+								<Globe className="h-3.5 w-3.5" />
+								<span>
+									{t("events.chileTimePreview", { time: chileTimePreview })}
+								</span>
+							</div>
+						)}
 					</div>
 
 					{/* Send invite toggle */}
