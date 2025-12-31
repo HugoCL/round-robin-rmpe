@@ -38,6 +38,8 @@ export interface PRReviewContextValue {
 		contextUrl?: string;
 	}) => Promise<void>;
 	onToggleAbsence: (id: Id<"reviewers">) => Promise<void>;
+	onMarkAbsent: (id: Id<"reviewers">, absentUntil?: number) => Promise<void>;
+	onMarkAvailable: (id: Id<"reviewers">) => Promise<void>;
 	updateReviewer: (
 		id: Id<"reviewers">,
 		name: string,

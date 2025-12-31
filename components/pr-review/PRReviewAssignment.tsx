@@ -14,7 +14,6 @@ declare global {
 }
 
 import { Button } from "@/components/ui/button";
-import type { Doc } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
@@ -109,6 +108,8 @@ export default function PRReviewAssignment({
 		updateReviewer,
 		removeReviewer,
 		handleToggleAbsence,
+		handleMarkAbsent,
+		handleMarkAvailable,
 		handleResetCounts,
 		exportData,
 		importData,
@@ -558,6 +559,12 @@ export default function PRReviewAssignment({
 				},
 				onToggleAbsence: async (id) => {
 					await handleToggleAbsence(id);
+				},
+				onMarkAbsent: async (id, absentUntil) => {
+					await handleMarkAbsent(id, absentUntil);
+				},
+				onMarkAvailable: async (id) => {
+					await handleMarkAvailable(id);
 				},
 				updateReviewer: async (id, name, email, googleChatUserId) =>
 					await updateReviewer(id, name, email, googleChatUserId),

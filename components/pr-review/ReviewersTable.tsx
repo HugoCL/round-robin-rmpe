@@ -19,11 +19,12 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { useConvexTags } from "@/hooks/useConvexTags";
 import { cn } from "@/lib/utils";
 import { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
+import { MarkAbsentDialog } from "./dialogs/MarkAbsentDialog";
 
 interface ReviewersTableProps {
 	teamSlug?: string;
@@ -40,12 +41,17 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 		showAssignments,
 		showTags,
 		showEmails,
-		onToggleAbsence,
+		onMarkAbsent,
+		onMarkAvailable,
+		userInfo,
 		onDataUpdate,
 		updateReviewer,
 	} = usePRReview();
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<number>(0);
+	const [absentDialogOpen, setAbsentDialogOpen] = useState(false);
+	const [selectedReviewer, setSelectedReviewer] =
+		useState<Doc<"reviewers"> | null>(null);
 
 	// Use Convex for real-time tags
 	const { tags } = useConvexTags(teamSlug);
@@ -226,7 +232,16 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 								<Switch
 									id={`absence-${reviewer._id}`}
 									checked={!reviewer.isAbsent}
-									onCheckedChange={() => onToggleAbsence(reviewer._id)}
+									onCheckedChange={(checked) => {
+										if (!checked) {
+											// User is marking as absent - show dialog
+											setSelectedReviewer(reviewer);
+											setAbsentDialogOpen(true);
+										} else {
+											// User is marking as available - call directly
+											onMarkAvailable(reviewer._id);
+										}
+									}}
 								/>
 								<Label htmlFor={`absence-${reviewer._id}`}>
 									{reviewer.isAbsent ? t("pr.absent") : t("pr.available")}
@@ -254,6 +269,22 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 					</TableRow>
 				))}
 			</TableBody>
+
+			{/* Mark Absent Dialog */}
+			{selectedReviewer && (
+				<MarkAbsentDialog
+					isOpen={absentDialogOpen}
+					onOpenChange={(open) => {
+						setAbsentDialogOpen(open);
+						if (!open) setSelectedReviewer(null);
+					}}
+					reviewer={selectedReviewer}
+					currentUser={userInfo}
+					onMarkAbsent={async (absentUntil) => {
+						await onMarkAbsent(selectedReviewer._id, absentUntil);
+					}}
+				/>
+			)}
 		</Table>
 	);
 }

@@ -17,6 +17,7 @@ export default defineSchema({
 		googleChatUserId: v.optional(v.string()),
 		assignmentCount: v.number(),
 		isAbsent: v.boolean(),
+		absentUntil: v.optional(v.number()), // Timestamp when the reviewer is expected to return
 		createdAt: v.number(),
 		tags: v.array(v.id("tags")),
 	})

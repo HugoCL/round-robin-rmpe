@@ -43,6 +43,10 @@ export function useConvexPRReviewData(
 	const toggleAbsenceMutation = useMutation(
 		api.mutations.toggleReviewerAbsence,
 	);
+	const markAbsentMutation = useMutation(api.mutations.markReviewerAbsent);
+	const markAvailableMutation = useMutation(
+		api.mutations.markReviewerAvailable,
+	);
 	const resetAllCountsMutation = useMutation(api.mutations.resetAllCounts);
 	const updateAssignmentCountMutation = useMutation(
 		api.mutations.updateAssignmentCount,
@@ -348,6 +352,38 @@ export function useConvexPRReviewData(
 		}
 	};
 
+	const handleMarkAbsent = async (id: string, absentUntil?: number) => {
+		try {
+			await markAbsentMutation({ id: id as Id<"reviewers">, absentUntil });
+			toast({
+				title: t("absent.markedAbsentTitle"),
+				description: t("absent.markedAbsentDescription"),
+			});
+		} catch (_error) {
+			toast({
+				title: t("messages.statusUpdateFailedTitle"),
+				description: t("messages.statusUpdateFailedDescription"),
+				variant: "destructive",
+			});
+		}
+	};
+
+	const handleMarkAvailable = async (id: string) => {
+		try {
+			await markAvailableMutation({ id: id as Id<"reviewers"> });
+			toast({
+				title: t("absent.markedAvailableTitle"),
+				description: t("absent.markedAvailableDescription"),
+			});
+		} catch (_error) {
+			toast({
+				title: t("messages.statusUpdateFailedTitle"),
+				description: t("messages.statusUpdateFailedDescription"),
+				variant: "destructive",
+			});
+		}
+	};
+
 	const handleResetCounts = async () => {
 		if (confirm(t("messages.resetCountsConfirmation"))) {
 			try {
@@ -582,6 +618,8 @@ export function useConvexPRReviewData(
 		updateReviewer,
 		removeReviewer,
 		handleToggleAbsence,
+		handleMarkAbsent,
+		handleMarkAvailable,
 		handleResetCounts,
 		exportData,
 		importData,

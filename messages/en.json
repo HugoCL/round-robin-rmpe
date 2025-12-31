@@ -387,6 +387,24 @@
 	"modifiers": {
 		"styleModifiers": "Style modifiers:"
 	},
+	"absent": {
+		"markAbsentTitle": "Mark as Absent",
+		"greetingSelf": "Hey {name}! Let your team know when you'll be back.",
+		"greetingOther": "You're marking {name} as absent. When will they be back?",
+		"returnDate": "Return Date",
+		"returnTime": "Return Time",
+		"selectDate": "Pick a date",
+		"noReturnDateSet": "No return date set",
+		"returningTodayAt": "Returning today at {time}",
+		"returningLaterToday": "Returning later today",
+		"returningOn": "Returning on {date} {time}",
+		"optionalReturnInfo": "Specifying a return date/time is optional but helps your team plan.",
+		"markAbsent": "Mark as Absent",
+		"markedAbsentTitle": "Marked as Absent",
+		"markedAbsentDescription": "Status updated successfully",
+		"markedAvailableTitle": "Welcome Back!",
+		"markedAvailableDescription": "Your status has been updated to available"
+	},
 	"events": {
 		"createEvent": "Create Event",
 		"createDescription": "Schedule a new event and invite your team to participate.",

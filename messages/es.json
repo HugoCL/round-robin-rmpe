@@ -434,6 +434,24 @@
 	"modifiers": {
 		"styleModifiers": "Modificadores de estilo:"
 	},
+	"absent": {
+		"markAbsentTitle": "Marcar como Ausente",
+		"greetingSelf": "¡Hola {name}! Avísale a tu equipo cuándo estarás de vuelta.",
+		"greetingOther": "Estás marcando a {name} como ausente. ¿Cuándo volverá?",
+		"returnDate": "Fecha de Regreso",
+		"returnTime": "Hora de Regreso",
+		"selectDate": "Seleccionar fecha",
+		"noReturnDateSet": "Sin fecha de regreso establecida",
+		"returningTodayAt": "Regresa hoy a las {time}",
+		"returningLaterToday": "Regresa más tarde hoy",
+		"returningOn": "Regresa el {date} {time}",
+		"optionalReturnInfo": "Especificar una fecha/hora de regreso es opcional pero ayuda a tu equipo a planificar.",
+		"markAbsent": "Marcar como Ausente",
+		"markedAbsentTitle": "Marcado como Ausente",
+		"markedAbsentDescription": "Estado actualizado correctamente",
+		"markedAvailableTitle": "¡Bienvenido de vuelta!",
+		"markedAvailableDescription": "Tu estado ha sido actualizado a disponible"
+	},
 	"events": {
 		"createEvent": "Crear Evento",
 		"createDescription": "Programa un nuevo evento e invita a tu equipo a participar.",

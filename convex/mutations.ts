@@ -254,6 +254,75 @@ export const toggleReviewerAbsence = mutation({
 	},
 });
 
+// Mark a reviewer as absent with optional return date/time
+export const markReviewerAbsent = mutation({
+	args: {
+		id: v.id("reviewers"),
+		absentUntil: v.optional(v.number()), // Timestamp when the reviewer is expected to return
+	},
+	handler: async (ctx, { id, absentUntil }) => {
+		const reviewer = await ctx.db.get(id);
+		if (!reviewer) {
+			throw new Error("Reviewer not found");
+		}
+
+		await ctx.db.patch(id, {
+			isAbsent: true,
+			absentUntil: absentUntil,
+		});
+
+		// Create backup snapshot
+		const returnInfo = absentUntil
+			? ` (returning ${new Date(absentUntil).toISOString()})`
+			: "";
+		await createSnapshot(
+			ctx,
+			reviewer.teamId,
+			`Marked ${reviewer.name} as absent${returnInfo}`,
+		);
+
+		return { success: true };
+	},
+});
+
+// Mark a reviewer as available (back from absence)
+export const markReviewerAvailable = mutation({
+	args: {
+		id: v.id("reviewers"),
+	},
+	handler: async (ctx, { id }) => {
+		const reviewer = await ctx.db.get(id);
+		if (!reviewer) {
+			throw new Error("Reviewer not found");
+		}
+
+		// Get all reviewers to calculate most common assignment count
+		const allReviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
+			.collect();
+		const availableReviewers = allReviewers.filter(
+			(r) => !r.isAbsent || r._id === id,
+		);
+		const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
+
+		await ctx.db.patch(id, {
+			isAbsent: false,
+			absentUntil: undefined,
+			assignmentCount: mostCommonCount,
+		});
+
+		// Create backup snapshot
+		await createSnapshot(
+			ctx,
+			reviewer.teamId,
+			`Marked ${reviewer.name} as available and updated assignment count to ${mostCommonCount}`,
+		);
+
+		return { success: true };
+	},
+});
+
 export const updateAssignmentCount = mutation({
 	args: {
 		id: v.id("reviewers"),
