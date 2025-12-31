@@ -39,6 +39,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ChangelogDialog } from "../ChangelogDialog";
 import { AddReviewerDialog } from "../dialogs/AddReviewerDialog";
 import { DeleteReviewerDialog } from "../dialogs/DeleteReviewerDialog";
 import { HeaderOptionsDrawer } from "../HeaderOptionsDrawer";
@@ -142,6 +143,7 @@ export function PageHeader({
 				<TeamSwitcher teamSlug={teamSlug} />
 			</div>
 			<div className="flex items-center gap-2">
+				<ChangelogDialog />
 				<HeaderOptionsDrawer />
 
 				{compactLayout &&

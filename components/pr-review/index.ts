@@ -2,6 +2,7 @@
 
 // Other components
 export { AssignmentCard } from "./AssignmentCard";
+export { ChangelogDialog } from "./ChangelogDialog";
 export { AddReviewerDialog } from "./dialogs/AddReviewerDialog";
 export { DeleteReviewerDialog } from "./dialogs/DeleteReviewerDialog";
 export { EditReviewerDialog } from "./dialogs/EditReviewerDialog";

@@ -1,6 +1,7 @@
 "use client";
 
 import { format, isSameDay, setHours, setMinutes } from "date-fns";
+import { es } from "date-fns/locale";
 import { CalendarIcon, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
@@ -157,7 +158,7 @@ export function MarkAbsentDialog({
 								>
 									<CalendarIcon className="mr-2 h-4 w-4" />
 									{selectedDate
-										? format(selectedDate, "PPP")
+										? format(selectedDate, "PPP", { locale: es })
 										: t("absent.selectDate")}
 								</Button>
 							</PopoverTrigger>
@@ -172,6 +173,7 @@ export function MarkAbsentDialog({
 									disabled={(date) =>
 										date < new Date(new Date().setHours(0, 0, 0, 0))
 									}
+									locale={es}
 									initialFocus
 								/>
 							</PopoverContent>
