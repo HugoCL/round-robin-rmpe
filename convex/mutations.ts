@@ -323,6 +323,47 @@ export const markReviewerAvailable = mutation({
 	},
 });
 
+// Auto-mark reviewers as available when their absentUntil time has passed
+export const processAbsentReturns = mutation({
+	args: {},
+	handler: async (ctx) => {
+		const now = Date.now();
+
+		// Get all reviewers who are absent and have an absentUntil time that has passed
+		const allReviewers = await ctx.db.query("reviewers").collect();
+		const reviewersToReturn = allReviewers.filter(
+			(r) => r.isAbsent && r.absentUntil && r.absentUntil <= now,
+		);
+
+		for (const reviewer of reviewersToReturn) {
+			// Get all reviewers in the same team to calculate most common assignment count
+			const teamReviewers = await ctx.db
+				.query("reviewers")
+				.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
+				.collect();
+			const availableReviewers = teamReviewers.filter(
+				(r) => !r.isAbsent || r._id === reviewer._id,
+			);
+			const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
+
+			await ctx.db.patch(reviewer._id, {
+				isAbsent: false,
+				absentUntil: undefined,
+				assignmentCount: mostCommonCount,
+			});
+
+			// Create backup snapshot
+			await createSnapshot(
+				ctx,
+				reviewer.teamId,
+				`Auto-marked ${reviewer.name} as available (return time reached) and updated assignment count to ${mostCommonCount}`,
+			);
+		}
+
+		return { processed: reviewersToReturn.length };
+	},
+});
+
 export const updateAssignmentCount = mutation({
 	args: {
 		id: v.id("reviewers"),

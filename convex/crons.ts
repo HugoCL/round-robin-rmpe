@@ -17,4 +17,11 @@ crons.interval(
 	api.mutations.autoCompleteExpiredEvents,
 );
 
+// Auto-mark reviewers as available when their absentUntil time has passed
+crons.interval(
+	"process-absent-returns",
+	{ minutes: 1 },
+	api.mutations.processAbsentReturns,
+);
+
 export default crons;
