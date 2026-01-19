@@ -115,17 +115,17 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 								</div>
 								<div className="flex flex-col items-end gap-1">
 									{item.forced && (
-										<Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:border-transparent hover:text-white">
+										<Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:border-transparent hover:bg-amber-100 transition-colors">
 											{t("pr.forceAssign")}
 										</Badge>
 									)}
 									{item.skipped && (
-										<Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:border-transparent hover:text-white">
+										<Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:border-transparent hover:bg-blue-100 transition-colors">
 											{t("pr.skip")}
 										</Badge>
 									)}
 									{!item.forced && !item.skipped && (
-										<Badge className="bg-green-50 text-green-700 border-green-200 hover:border-transparent hover:text-white">
+										<Badge className="bg-green-50 text-green-700 border-green-200 hover:border-transparent hover:bg-green-100 transition-colors">
 											{t("pr.regular")}
 										</Badge>
 									)}

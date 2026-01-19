@@ -208,7 +208,7 @@ export function HeaderOptionsDrawer() {
 											<Button
 												variant="outline"
 												size="sm"
-												className="w-full justify-start  min-h-[46px]"
+												className="w-full justify-start min-h-11.5"
 												onClick={handleManualRefresh}
 												disabled={isRefreshing}
 											>
