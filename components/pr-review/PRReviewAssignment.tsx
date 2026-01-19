@@ -63,7 +63,7 @@ export default function PRReviewAssignment({
 	const [showAssignments, setShowAssignments] = useState(false);
 	const [showTags, setShowTags] = useState(true);
 	const [showEmails, setShowEmails] = useState(false);
-	const [compactLayout, setCompactLayout] = useState(false);
+	const [compactLayout, setCompactLayout] = useState(true);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 	const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
 	const [pendingShortcut, setPendingShortcut] = useState<ShortcutAction | null>(
@@ -213,6 +213,8 @@ export default function PRReviewAssignment({
 		const savedCompactLayout = localStorage.getItem("compactLayout");
 		if (savedCompactLayout !== null) {
 			setCompactLayout(savedCompactLayout === "true");
+		} else {
+			setCompactLayout(true);
 		}
 
 		const savedShowEmails = localStorage.getItem("showEmails");
