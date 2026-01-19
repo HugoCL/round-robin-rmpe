@@ -130,7 +130,7 @@ export function ChatMessageCustomizer({
 	};
 
 	return (
-		<div className="bg-muted/30 rounded-lg p-4 space-y-3 border border-muted/50">
+		<div className="bg-muted/30  p-4 space-y-3 border border-muted/50">
 			<div className="flex items-center justify-between">
 				<Label
 					htmlFor={sendToggleId}
@@ -231,7 +231,7 @@ export function ChatMessageCustomizer({
 					{enabled && (
 						<div className="space-y-2 pt-2">
 							<textarea
-								className="w-full text-sm rounded-md border bg-background p-2 resize-none h-28"
+								className="w-full text-sm  border bg-background p-2 resize-none h-28"
 								value={message}
 								onChange={(e) => {
 									onMessageChange(e.target.value);

@@ -85,10 +85,10 @@ function OptionToggle(props: OptionToggleProps) {
 	return (
 		<label
 			htmlFor={id}
-			className={`flex items-start justify-between gap-3 rounded-xl border px-3 py-2 transition-all hover:-translate-y-[1px] hover:shadow-sm ${toneClasses[toneKey]}`}
+			className={`flex items-start justify-between gap-3  border px-3 py-2 transition-all hover:-translate-y-[1px] hover:shadow-sm ${toneClasses[toneKey]}`}
 		>
 			<div className="flex items-center gap-3">
-				<span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70 text-current shadow-sm dark:bg-white/10">
+				<span className="flex h-10 w-10 shrink-0 items-center justify-center  bg-white/70 text-current shadow-sm dark:bg-white/10">
 					<Icon className="h-4 w-4" aria-hidden />
 				</span>
 				<div className="flex flex-col">
@@ -137,7 +137,7 @@ export function HeaderOptionsDrawer() {
 
 	const bodyContent = (
 		<div className="px-4 pb-5">
-			<div className="rounded-2xl bg-white/92 shadow-xl ring-1 ring-border/70 backdrop-blur dark:bg-slate-900/75 dark:ring-white/10">
+			<div className=" bg-white/92 shadow-xl ring-1 ring-border/70 backdrop-blur dark:bg-slate-900/75 dark:ring-white/10">
 				<div className="p-4 space-y-6">
 					<div className="space-y-3">
 						<h3 className="text-sm font-semibold flex items-center gap-2">
@@ -196,7 +196,7 @@ export function HeaderOptionsDrawer() {
 								<Button
 									variant="outline"
 									size="sm"
-									className="w-full justify-start rounded-lg min-h-[46px]"
+									className="w-full justify-start  min-h-[46px]"
 									onClick={openSnapshotDialog}
 								>
 									<Clock className="h-4 w-4 mr-2" />
@@ -208,7 +208,7 @@ export function HeaderOptionsDrawer() {
 											<Button
 												variant="outline"
 												size="sm"
-												className="w-full justify-start rounded-lg min-h-[46px]"
+												className="w-full justify-start  min-h-[46px]"
 												onClick={handleManualRefresh}
 												disabled={isRefreshing}
 											>
@@ -244,7 +244,7 @@ export function HeaderOptionsDrawer() {
 									<Button
 										variant="outline"
 										size="sm"
-										className="w-full justify-start rounded-lg min-h-[46px] text-left leading-tight whitespace-normal"
+										className="w-full justify-start  min-h-[46px] text-left leading-tight whitespace-normal"
 									>
 										<Webhook className="h-4 w-4 mr-2" />
 										{t("teamSettings.webhookUrlLabel")}

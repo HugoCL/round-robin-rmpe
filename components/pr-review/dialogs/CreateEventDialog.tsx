@@ -319,7 +319,7 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 						</div>
 						{/* Show Chile time conversion if user is not in Chile */}
 						{!userInChile && chileTimePreview && (
-							<div className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/50 rounded px-2 py-1">
+							<div className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/50  px-2 py-1">
 								<Globe className="h-3.5 w-3.5" />
 								<span>
 									{t("events.chileTimePreview", { time: chileTimePreview })}
@@ -335,7 +335,7 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 							id={sendInviteId}
 							checked={sendInvite}
 							onChange={(e) => setSendInvite(e.target.checked)}
-							className="rounded"
+							className=""
 						/>
 						<Label htmlFor={sendInviteId} className="text-sm font-normal">
 							{t("events.sendInviteToChat")}

@@ -50,15 +50,15 @@ function ChangelogContent({ entries }: { entries: ChangelogEntry[] }) {
 					{entries.map((entry, index) => (
 						<div key={`${entry.date}-${index}`} className="relative pl-6">
 							{/* Timeline dot */}
-							<div className="absolute left-[-3px] top-1 h-2 w-2 rounded-full bg-primary" />
+							<div className="absolute left-[-3px] top-1 h-2 w-2  bg-primary" />
 
 							{/* Date and type badges */}
 							<div className="mb-2 flex flex-wrap items-center gap-2">
-								<span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+								<span className="inline-flex items-center  bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
 									{formatDate(entry.date)}
 								</span>
 								<span
-									className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${changelogTypeColors[entry.type]}`}
+									className={`inline-flex items-center  px-2.5 py-0.5 text-xs font-medium ${changelogTypeColors[entry.type]}`}
 								>
 									{changelogTypeLabels[entry.type]}
 								</span>

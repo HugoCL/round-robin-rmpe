@@ -47,7 +47,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 			</CardHeader>
 			<CardContent className="flex-1 overflow-hidden">
 				{assignmentHistory.length === 0 ? (
-					<div className="text-center p-4 border rounded-lg bg-muted h-full flex items-center justify-center">
+					<div className="text-center p-4 border  bg-muted h-full flex items-center justify-center">
 						<p>{t("pr.noAssignments")}</p>
 					</div>
 				) : (
@@ -55,7 +55,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 						{assignmentHistory.map((item, index) => (
 							<div
 								key={`${item.timestamp}-${item.reviewerName}-${index}`}
-								className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+								className="flex items-center justify-between p-3 border  hover:bg-muted/50 transition-colors"
 							>
 								<div className="flex-1">
 									<p className="font-semibold text-lg">{item.reviewerName}</p>

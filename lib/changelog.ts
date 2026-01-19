@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-01-19",
+		type: "improvement",
+		title: "Ajustes de UI",
+		description:
+			"Actualizamos una de las librerías de UI para mejorar la experiencia visual.",
+	},
+	{
 		date: "2025-12-31",
 		type: "feature",
 		title: "Gestión de ausencias",

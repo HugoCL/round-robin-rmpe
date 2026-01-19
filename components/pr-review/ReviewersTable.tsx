@@ -199,7 +199,7 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 											type="number"
 											value={editValue}
 											onChange={(e) =>
-												setEditValue(Number.parseInt(e.target.value) || 0)
+												setEditValue(Number.parseInt(e.target.value, 10) || 0)
 											}
 											className="w-20"
 											min={0}

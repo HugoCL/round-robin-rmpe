@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useMutation } from "convex/react";
-import { ArrowRight, Info, Sparkles, Undo2 } from "lucide-react";
+import { Info, Sparkles, Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -219,12 +219,12 @@ export function AssignmentCard() {
 
 						<div className="space-y-2">
 							<div className="mb-2">
-								<span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 dark:bg-white/12 dark:text-white dark:ring-white/20">
+								<span className="inline-flex items-center gap-2  bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 dark:bg-white/12 dark:text-white dark:ring-white/20">
 									<Sparkles className="h-3 w-3" />
 									{t("pr.nextReviewer")}
 								</span>
 							</div>
-							<div className="relative mx-auto max-w-xl overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/16 to-primary/10 p-7 shadow-md ring-1 ring-primary/14 border border-white/6 dark:from-primary/28 dark:via-primary/32 dark:to-primary/20 dark:ring-primary/30 dark:border-white/5">
+							<div className="relative mx-auto max-w-xl overflow-hidden  bg-gradient-to-br from-primary/20 via-primary/16 to-primary/10 p-7 shadow-md ring-1 ring-primary/14 border border-white/6 dark:from-primary/28 dark:via-primary/32 dark:to-primary/20 dark:ring-primary/30 dark:border-white/5">
 								<div
 									className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.25),transparent_36%),radial-gradient(circle_at_78%_20%,rgba(59,130,246,0.14),transparent_45%)] dark:bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.08),transparent_36%),radial-gradient(circle_at_78%_20%,rgba(59,130,246,0.22),transparent_45%)]"
 									aria-hidden
@@ -275,7 +275,7 @@ export function AssignmentCard() {
 						)}
 					</div>
 				) : (
-					<div className="text-center p-6 border-2 border-muted rounded-lg bg-muted">
+					<div className="text-center p-6 border-2 border-muted  bg-muted">
 						<h3 className="text-xl font-medium text-muted-foreground mb-2">
 							{t("pr.noAvailableReviewersTitle")}
 						</h3>
@@ -311,15 +311,9 @@ export function AssignmentCard() {
 								disabled={
 									!nextReviewer || isAssigning || (sendMessage && !prUrl.trim())
 								}
-								className="flex-1 group relative overflow-hidden h-12 shadow-md hover:shadow-lg transition-all"
+								className="flex-1 h-12 text-base"
 								size="lg"
-								variant="primary"
-								shape="pill"
 							>
-								<span
-									className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/30 to-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-									aria-hidden
-								/>
 								{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
 							</Button>
 
@@ -327,9 +321,9 @@ export function AssignmentCard() {
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button
-											variant="secondary"
+											variant="outline"
 											size="icon"
-											className="h-12 w-12 shrink-0 rounded-full"
+											className="h-12 w-12 shrink-0"
 											onClick={onUndoAssignment}
 											disabled={isAssigning}
 										>

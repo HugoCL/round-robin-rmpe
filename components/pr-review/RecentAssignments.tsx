@@ -25,7 +25,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 			</CardHeader>
 			<CardContent>
 				{assignmentHistory.length === 0 ? (
-					<div className="text-center p-4 border rounded-lg bg-muted/50">
+					<div className="text-center p-4 border  bg-muted/50">
 						<p>{t("pr.noAssignments")}</p>
 					</div>
 				) : (
@@ -34,7 +34,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 							(item: Doc<"assignmentHistory">, index: number) => (
 								<div
 									key={`${item.reviewerName}-${item.timestamp}-${index}`}
-									className="flex items-center p-3 border rounded-lg bg-card/50"
+									className="flex items-center p-3 border  bg-card/50"
 								>
 									<div className="flex-1">
 										<p className="font-medium">{item.reviewerName}</p>

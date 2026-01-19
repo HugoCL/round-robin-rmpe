@@ -76,7 +76,7 @@ export function MyAssignmentsPanel() {
 				</CardHeader>
 				<CardContent className="flex-1 overflow-hidden">
 					{assignedToMe.length === 0 ? (
-						<div className="text-center p-4 border rounded-lg bg-muted h-full flex items-center justify-center">
+						<div className="text-center p-4 border  bg-muted h-full flex items-center justify-center">
 							<p className="text-sm text-muted-foreground">{t("pr.none")}</p>
 						</div>
 					) : (
@@ -85,7 +85,7 @@ export function MyAssignmentsPanel() {
 								return (
 									<div
 										key={a._id}
-										className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+										className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border  hover:bg-muted/50 transition-colors"
 									>
 										<div className="flex-1 min-w-0">
 											<p className="font-semibold text-sm md:text-base break-all">
@@ -181,7 +181,7 @@ export function MyAssignmentsPanel() {
 				</CardHeader>
 				<CardContent className="flex-1 overflow-hidden">
 					{iAssigned.length === 0 ? (
-						<div className="text-center p-4 border rounded-lg bg-muted h-full flex items-center justify-center">
+						<div className="text-center p-4 border  bg-muted h-full flex items-center justify-center">
 							<p className="text-sm text-muted-foreground">{t("pr.none")}</p>
 						</div>
 					) : (
@@ -190,7 +190,7 @@ export function MyAssignmentsPanel() {
 								return (
 									<div
 										key={a._id}
-										className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+										className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border  hover:bg-muted/50 transition-colors"
 									>
 										<div className="flex-1 min-w-0">
 											<p className="font-semibold text-sm md:text-base break-all">

@@ -1,11 +1,16 @@
 import type React from "react";
 import "@/app/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Space_Grotesk } from "next/font/google";
+import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { routing } from "@/i18n/routing";
+
+const jetbrainsMono = JetBrains_Mono({
+	subsets: ["latin"],
+	variable: "--font-sans",
+});
 
 const spaceGrotesk = Space_Grotesk({
 	subsets: ["latin"],
@@ -23,7 +28,11 @@ export default function RootLayout({
 }) {
 	return (
 		<ClerkProvider>
-			<html lang="en" suppressHydrationWarning>
+			<html
+				lang="en"
+				suppressHydrationWarning
+				className={jetbrainsMono.variable}
+			>
 				<body className={`${spaceGrotesk.className} antialiased min-h-screen`}>
 					<ConvexClientProvider>
 						<ThemeProvider attribute="class" defaultTheme="system" enableSystem>

@@ -34,7 +34,7 @@ export default function TeamPage() {
 						{t.rich("team.notFoundDescription", {
 							slug: teamSlug,
 							code: (chunks) => (
-								<code className="px-1 py-0.5 rounded bg-muted font-mono text-sm">
+								<code className="px-1 py-0.5  bg-muted font-mono text-sm">
 									{chunks}
 								</code>
 							),
@@ -43,13 +43,13 @@ export default function TeamPage() {
 					<div className="flex flex-col sm:flex-row gap-3 justify-center">
 						<Link
 							href={`/${locale}/create-team`}
-							className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-primary-foreground text-sm font-medium hover:opacity-90 transition"
+							className="inline-flex items-center justify-center  bg-primary px-4 py-2 text-primary-foreground text-sm font-medium hover:opacity-90 transition"
 						>
 							{t("team.createThisTeamCta")}
 						</Link>
 						<Link
 							href={`/${locale}`}
-							className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted transition"
+							className="inline-flex items-center justify-center  border px-4 py-2 text-sm font-medium hover:bg-muted transition"
 						>
 							{t("team.backHome")}
 						</Link>

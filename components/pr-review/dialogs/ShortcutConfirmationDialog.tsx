@@ -143,7 +143,7 @@ export function ShortcutConfirmationDialog({
 			<DialogContent className="sm:max-w-[460px]">
 				<DialogHeader>
 					<div className="flex items-center gap-2">
-						<span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+						<span className="inline-flex h-10 w-10 items-center justify-center  bg-primary/10 text-primary">
 							<span className="text-sm font-semibold">⌘</span>
 						</span>
 						<DialogTitle>{t("shortcutConfirm.title")}</DialogTitle>

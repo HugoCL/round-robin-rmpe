@@ -67,7 +67,7 @@ export function KeyboardShortcutsHelp() {
 											{key !== shortcut.key.split(" + ")[0] && (
 												<span className="mx-1">+</span>
 											)}
-											<kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded-md">
+											<kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 ">
 												{key}
 											</kbd>
 										</span>
@@ -76,7 +76,7 @@ export function KeyboardShortcutsHelp() {
 							</div>
 						))}
 					</div>
-					<div className="mt-6 p-3 bg-muted rounded-md">
+					<div className="mt-6 p-3 bg-muted ">
 						<p className="text-sm text-muted-foreground">
 							<strong>{t("shortcuts.note")}</strong> {t("shortcuts.globalNote")}
 						</p>

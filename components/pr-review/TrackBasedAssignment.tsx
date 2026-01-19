@@ -244,7 +244,7 @@ export function TrackBasedAssignment() {
 										<SelectItem key={tag._id} value={tag._id}>
 											<div className="flex items-center gap-2">
 												<div
-													className="w-3 h-3 rounded-full"
+													className="w-3 h-3 "
 													style={{ backgroundColor: tag.color }}
 												/>
 												<span>{tag.name}</span>
@@ -264,7 +264,7 @@ export function TrackBasedAssignment() {
 							<CardHeader>
 								<CardTitle className="text-lg flex items-center gap-2">
 									<div
-										className="w-4 h-4 rounded-full"
+										className="w-4 h-4 "
 										style={{
 											backgroundColor: tags.find(
 												(t: Doc<"tags">) => t._id === selectedTagId,

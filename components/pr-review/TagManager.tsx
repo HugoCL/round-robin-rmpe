@@ -357,7 +357,7 @@ export function TagManager() {
 													<SelectItem key={color} value={color}>
 														<div className="flex items-center gap-2">
 															<div
-																className="w-4 h-4 rounded-full"
+																className="w-4 h-4 "
 																style={{ backgroundColor: color }}
 															/>
 															{color}
@@ -367,7 +367,7 @@ export function TagManager() {
 											</SelectContent>
 										</Select>
 										<div
-											className="w-8 h-8 rounded-full border"
+											className="w-8 h-8  border"
 											style={{
 												backgroundColor: editingTag
 													? editingTag.color
@@ -436,11 +436,11 @@ export function TagManager() {
 							) : (
 								<div className="space-y-4">
 									{tags.map((tag: Doc<"tags">) => (
-										<div key={tag._id} className="border rounded-lg p-4">
+										<div key={tag._id} className="border  p-4">
 											<div className="flex items-center justify-between mb-3">
 												<div className="flex items-center gap-2">
 													<div
-														className="w-4 h-4 rounded-full"
+														className="w-4 h-4 "
 														style={{ backgroundColor: tag.color }}
 													/>
 													<span className="font-medium">{tag.name}</span>

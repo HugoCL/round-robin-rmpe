@@ -526,7 +526,7 @@ export function useConvexPRReviewData(
 					title: t("data.dataImportedTitle"),
 					description:
 						skipped > 0
-							? t("data.dataImportedDescription") + ` (Skipped ${skipped})`
+							? `${t("data.dataImportedDescription")} (Skipped ${skipped})`
 							: t("data.dataImportedDescription"),
 				});
 			} catch (_error) {

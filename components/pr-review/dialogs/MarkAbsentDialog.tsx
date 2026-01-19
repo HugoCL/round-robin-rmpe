@@ -200,7 +200,7 @@ export function MarkAbsentDialog({
 
 					{/* Preview */}
 					{(selectedDate || selectedTime) && (
-						<div className="rounded-md bg-muted p-3 text-sm">
+						<div className=" bg-muted p-3 text-sm">
 							<p className="text-muted-foreground">{formatReturnInfo()}</p>
 						</div>
 					)}

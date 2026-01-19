@@ -14,7 +14,8 @@
 			"!dist",
 			"!build",
 			"!.vercel",
-			"!convex/_generated"
+			"!convex/_generated",
+			"!/**/components/ui"
 		]
 	},
 	"formatter": {
@@ -27,7 +28,8 @@
 			"recommended": true,
 			"suspicious": {
 				"noUnknownAtRules": "off"
-			}
+			},
+			"a11y": "off"
 		}
 	},
 	"javascript": {

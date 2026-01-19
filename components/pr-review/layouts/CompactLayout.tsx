@@ -24,7 +24,7 @@ export function CompactLayout() {
 				</div>
 
 				{/* Force Assign Dialog */}
-				<div className="border rounded-lg p-4 bg-muted/50 space-y-4">
+				<div className="border  p-4 bg-muted/50 space-y-4">
 					<ForceAssignDialog />
 					{hasTags && <TrackBasedAssignment />}
 					<CreateEventDialog

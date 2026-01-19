@@ -10,11 +10,11 @@ export function CollapsibleAssignmentsPanel() {
 	const t = useTranslations();
 	const assignmentsPanelId = useId();
 	return (
-		<div className="rounded-lg border bg-card">
+		<div className=" border bg-card">
 			<div className="flex items-center px-2 py-1.5 border-b select-none">
 				<button
 					type="button"
-					className="flex items-center gap-2 flex-1 text-left px-2 py-1 rounded-md hover:bg-muted/50 focus:outline-none"
+					className="flex items-center gap-2 flex-1 text-left px-2 py-1  hover:bg-muted/50 focus:outline-none"
 					onClick={toggleShowAssignments}
 					aria-expanded={showAssignments}
 					aria-controls={assignmentsPanelId}

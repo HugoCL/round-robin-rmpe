@@ -85,7 +85,7 @@ export function CustomChatMessageEditor({
 
 				{enabled && (
 					<textarea
-						className="w-full text-sm rounded-md border bg-background p-2 resize-none h-24"
+						className="w-full text-sm  border bg-background p-2 resize-none h-24"
 						value={message}
 						onChange={(e) => {
 							onMessageChange(e.target.value);

@@ -46,8 +46,8 @@ export async function createSnapshot(
 
 		// Sort keys by timestamp (newest first)
 		const sortedKeys = keys.sort((a, b) => {
-			const timestampA = Number.parseInt(a.split("-").pop() || "0");
-			const timestampB = Number.parseInt(b.split("-").pop() || "0");
+			const timestampA = Number.parseInt(a.split("-").pop() || "0", 10);
+			const timestampB = Number.parseInt(b.split("-").pop() || "0", 10);
 			return timestampB - timestampA;
 		});
 
@@ -77,8 +77,8 @@ export async function getSnapshots(): Promise<BackupEntry[]> {
 
 		// Sort keys by timestamp (newest first)
 		const sortedKeys = keys.sort((a, b) => {
-			const timestampA = Number.parseInt(a.split("-").pop() || "0");
-			const timestampB = Number.parseInt(b.split("-").pop() || "0");
+			const timestampA = Number.parseInt(a.split("-").pop() || "0", 10);
+			const timestampB = Number.parseInt(b.split("-").pop() || "0", 10);
 			return timestampB - timestampA;
 		});
 

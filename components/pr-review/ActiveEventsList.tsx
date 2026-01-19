@@ -260,10 +260,7 @@ export function ActiveEventsList() {
 					const isPast = event.scheduledAt < Date.now();
 
 					return (
-						<div
-							key={event._id}
-							className="border rounded-lg p-3 space-y-2 bg-card"
-						>
+						<div key={event._id} className="border  p-3 space-y-2 bg-card">
 							<div className="flex items-start justify-between">
 								<div className="flex-1">
 									<h4 className="font-medium flex items-center gap-2">

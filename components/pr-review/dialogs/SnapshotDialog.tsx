@@ -63,7 +63,7 @@ export function SnapshotDialog({
 							{snapshots.map((snapshot) => (
 								<div
 									key={snapshot.key}
-									className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/50"
+									className="flex justify-between items-center p-3 border  hover:bg-muted/50"
 								>
 									<div>
 										<p className="font-medium">{snapshot.formattedDate}</p>
