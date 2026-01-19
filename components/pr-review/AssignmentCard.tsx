@@ -12,6 +12,12 @@ import {
 	CardFooter,
 	CardHeader,
 } from "@/components/ui/card";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { ChatMessageCustomizer } from "./ChatMessageCustomizer";
@@ -299,13 +305,13 @@ export function AssignmentCard() {
 					/>
 
 					<div className="flex flex-col gap-3">
-						<div className="flex gap-3">
+						<div className="flex items-center gap-3">
 							<Button
 								onClick={handleAssignPR}
 								disabled={
 									!nextReviewer || isAssigning || (sendMessage && !prUrl.trim())
 								}
-								className="flex-[1.6] group relative overflow-hidden h-12"
+								className="flex-1 group relative overflow-hidden h-12 shadow-md hover:shadow-lg transition-all"
 								size="lg"
 								variant="primary"
 								shape="pill"
@@ -317,38 +323,28 @@ export function AssignmentCard() {
 								{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
 							</Button>
 
-							<Button
-								variant="secondary"
-								className="flex-1 h-12"
-								onClick={onUndoAssignment}
-								disabled={isAssigning}
-							>
-								<Undo2 className="h-4 w-4 mr-2" />
-								{t("pr.undoLastAssignment")}
-							</Button>
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant="secondary"
+											size="icon"
+											className="h-12 w-12 shrink-0 rounded-full"
+											onClick={onUndoAssignment}
+											disabled={isAssigning}
+										>
+											<Undo2 className="h-5 w-5" />
+											<span className="sr-only">
+												{t("pr.undoLastAssignment")}
+											</span>
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>
+										<p>{t("pr.undoLastAssignment")}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
 						</div>
-
-						{isCurrentUserNext && nextAfterCurrent && (
-							<Button
-								variant="ghost"
-								className="w-full justify-center text-muted-foreground"
-								onClick={async () => {
-									setIsAssigning(true);
-									try {
-										await autoSkipAndAssign({
-											prUrl: prUrl.trim() || undefined,
-											contextUrl: contextUrl.trim() || undefined,
-										});
-									} finally {
-										setTimeout(() => setIsAssigning(false), 600);
-									}
-								}}
-								disabled={isAssigning}
-							>
-								{t("pr.skip")}
-								<ArrowRight className="h-4 w-4 ml-2" />
-							</Button>
-						)}
 					</div>
 				</div>
 			</CardFooter>
