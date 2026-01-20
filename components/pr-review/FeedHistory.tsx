@@ -41,18 +41,18 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 	};
 
 	return (
-		<Card className="h-full flex flex-col">
+		<Card>
 			<CardHeader className="flex-shrink-0">
 				<CardTitle>{t("history.title")}</CardTitle>
 			</CardHeader>
-			<CardContent className="flex-1 overflow-hidden">
+			<CardContent>
 				{assignmentHistory.length === 0 ? (
 					<div className="text-center p-4 border  bg-muted h-full flex items-center justify-center">
 						<p>{t("pr.noAssignments")}</p>
 					</div>
 				) : (
-					<div className="space-y-3 h-full overflow-y-auto">
-						{assignmentHistory.map((item, index) => (
+					<div className="space-y-3">
+						{assignmentHistory.slice(0, 6).map((item, index) => (
 							<div
 								key={`${item.timestamp}-${item.reviewerName}-${index}`}
 								className="flex items-center justify-between p-3 border  hover:bg-muted/50 transition-colors"

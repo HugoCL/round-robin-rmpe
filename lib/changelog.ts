@@ -41,6 +41,20 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-01-20",
+		type: "fix",
+		title: "Corrección de Google Chat ID",
+		description:
+			"Solucionamos un problema donde el ID de Google Chat no se guardaba correctamente al crear un nuevo usuario.",
+	},
+	{
+		date: "2026-01-20",
+		type: "improvement",
+		title: "Mejoras de visualización",
+		description:
+			"Optimizamos el layout para evitar que el contenido se corte cuando la UI está con zoom. También limitamos el historial de asignaciones a las últimas 6 entradas para una mejor experiencia.",
+	},
+	{
 		date: "2026-01-19",
 		type: "improvement",
 		title: "Ajustes de UI",

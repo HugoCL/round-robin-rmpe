@@ -16,7 +16,7 @@ export function CompactLayout() {
 	const { hasTags, teamSlug } = usePRReview();
 	const t = useTranslations();
 	return (
-		<div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)]">
+		<div className="flex flex-col lg:flex-row gap-6">
 			<div className="flex-1 lg:w-[60%] flex flex-col space-y-6">
 				{/* Assignment Card */}
 				<div className="flex-1">
