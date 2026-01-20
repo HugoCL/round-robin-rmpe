@@ -76,8 +76,8 @@ export function PageHeader({
 		<div className="flex flex-wrap gap-2 justify-center">
 			<TagManager />
 			<AddReviewerDialog
-				onAddReviewer={async (name, email) => {
-					await addReviewer(name, email);
+				onAddReviewer={async (name, email, googleChatUserId) => {
+					await addReviewer(name, email, googleChatUserId);
 					return true;
 				}}
 				trigger={
