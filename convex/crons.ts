@@ -20,8 +20,15 @@ crons.interval(
 // Auto-mark reviewers as available when their absentUntil time has passed
 crons.interval(
 	"process-absent-returns",
-	{ minutes: 1 },
+	{ minutes: 5 },
 	api.mutations.processAbsentReturns,
+);
+
+// Clean up old prAssignments and assignmentHistory records daily at midnight UTC
+crons.daily(
+	"cleanup-old-records",
+	{ hourUTC: 0, minuteUTC: 0 },
+	api.mutations.cleanupOldRecords,
 );
 
 export default crons;

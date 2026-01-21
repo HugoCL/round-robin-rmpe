@@ -1232,6 +1232,39 @@ export const cancelEvent = mutation({
 	},
 });
 
+export const cleanupOldRecords = mutation({
+	args: {},
+	handler: async (ctx) => {
+		const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+		const cutoffTimestamp = Date.now() - SEVEN_DAYS_MS;
+
+		// Clean up old prAssignments (based on createdAt)
+		const oldPrAssignments = await ctx.db
+			.query("prAssignments")
+			.filter((q) => q.lt(q.field("createdAt"), cutoffTimestamp))
+			.collect();
+
+		for (const assignment of oldPrAssignments) {
+			await ctx.db.delete(assignment._id);
+		}
+
+		// Clean up old assignmentHistory (based on timestamp)
+		const oldAssignmentHistory = await ctx.db
+			.query("assignmentHistory")
+			.withIndex("by_timestamp", (q) => q.lt("timestamp", cutoffTimestamp))
+			.collect();
+
+		for (const history of oldAssignmentHistory) {
+			await ctx.db.delete(history._id);
+		}
+
+		return {
+			deletedPrAssignments: oldPrAssignments.length,
+			deletedAssignmentHistory: oldAssignmentHistory.length,
+		};
+	},
+});
+
 // Mark event as started (called by cron or manually)
 export const startEvent = mutation({
 	args: {
