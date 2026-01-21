@@ -195,7 +195,7 @@ export function AssignmentCard() {
 	const nextAfterCurrent = findNextAfterCurrent();
 
 	return (
-		<Card className="h-full flex flex-col overflow-hidden">
+		<Card className="flex flex-col overflow-hidden">
 			<CardHeader className="flex-shrink-0" />
 			<CardContent className="flex-1 flex items-center justify-center">
 				{nextReviewer ? (
