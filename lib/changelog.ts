@@ -42,6 +42,13 @@ export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
 		date: "2026-01-21",
+		type: "feature",
+		title: "Cambio de tema claro/oscuro",
+		description:
+			"Añadimos un botón en el header para cambiar entre modo claro y oscuro de forma rápida.",
+	},
+	{
+		date: "2026-01-21",
 		type: "improvement",
 		title: "Mejoras en la tabla de revisores",
 		description:
