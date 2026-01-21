@@ -19,6 +19,7 @@ import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Assignment, UserInfo } from "@/lib/types";
+import { AnnouncementBanner } from "./AnnouncementBanner";
 import {
 	type ShortcutAction,
 	ShortcutConfirmationDialog,
@@ -585,6 +586,8 @@ export default function PRReviewAssignment({
 					reviewersDrawerOpen={reviewersDrawerOpen}
 					setReviewersDrawerOpen={setReviewersDrawerOpen}
 				/>
+
+				<AnnouncementBanner />
 
 				{compactLayout ? <CompactLayout /> : <ClassicLayout />}
 

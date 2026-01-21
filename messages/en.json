@@ -460,5 +460,9 @@
 		"completed": "Event Completed",
 		"completedDescription": "The event has been marked as completed",
 		"completeFailed": "Failed to complete event. Please try again."
+	},
+	"announcements": {
+		"classicViewDeprecation": "Classic View is being deprecated soon and the Compact View will become the only available view. You can try it now in Options > Compact View.",
+		"dismiss": "Dismiss"
 	}
 }

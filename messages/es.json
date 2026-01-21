@@ -507,5 +507,9 @@
 		"completed": "Evento Finalizado",
 		"completedDescription": "El evento ha sido marcado como completado",
 		"completeFailed": "Error al finalizar el evento. Por favor intenta de nuevo."
+	},
+	"announcements": {
+		"classicViewDeprecation": "La Vista Clásica será deprecada pronto y la Vista Compacta será la única vista disponible. Puedes probarla ahora en Opciones > Vista Compacta.",
+		"dismiss": "Descartar"
 	}
 }
