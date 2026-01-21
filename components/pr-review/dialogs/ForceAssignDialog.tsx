@@ -70,6 +70,7 @@ export function ForceAssignDialog() {
 			const result = await assignPRMutation({
 				reviewerId: selectedReviewerId as Id<"reviewers">,
 				forced: true, // Mark as forced assignment
+				prUrl: prUrl.trim() || undefined,
 				actionBy: user
 					? {
 							email: user.email,

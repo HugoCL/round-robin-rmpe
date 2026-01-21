@@ -260,6 +260,7 @@ export const sendGoogleChatMessage = action({
 export const forceAssignPR = action({
 	args: {
 		reviewerId: v.id("reviewers"),
+		prUrl: v.optional(v.string()),
 		actionBy: v.optional(
 			v.object({
 				email: v.string(),
@@ -270,12 +271,13 @@ export const forceAssignPR = action({
 	},
 	handler: async (
 		ctx,
-		{ reviewerId, actionBy },
+		{ reviewerId, prUrl, actionBy },
 	): Promise<{ success: boolean; reviewerId?: string; error?: string }> => {
 		// Use the mutation to assign the PR
 		const result = await ctx.runMutation(api.mutations.assignPR, {
 			reviewerId,
 			forced: true,
+			prUrl,
 			actionBy,
 		});
 
