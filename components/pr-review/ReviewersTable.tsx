@@ -246,6 +246,11 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 								<Label htmlFor={`absence-${reviewer._id}`}>
 									{reviewer.isAbsent ? t("pr.absent") : t("pr.available")}
 								</Label>
+								{reviewer.isAbsent && reviewer.absentUntil && (
+									<span className="text-[11px] text-muted-foreground whitespace-nowrap">
+										({new Date(reviewer.absentUntil).toLocaleDateString()})
+									</span>
+								)}
 							</div>
 						</TableCell>
 						<TableCell>

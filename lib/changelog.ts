@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-01-21",
+		type: "improvement",
+		title: "Mejoras en la tabla de revisores",
+		description:
+			"Los badges de 'Siguiente' y 'Último Asignado' ahora son más visibles con mejor contraste. Además, cuando un revisor está ausente, ahora se muestra la fecha en que volverá.",
+	},
+	{
 		date: "2026-01-20",
 		type: "fix",
 		title: "Corrección de Google Chat ID",
