@@ -18,6 +18,7 @@
 		"success": "Success",
 		"confirm": "Confirm",
 		"close": "Close",
+		"theme": "Theme",
 		"classicView": "Classic View",
 		"compactView": "Compact View",
 		"refresh": "Refresh",
@@ -460,6 +461,23 @@
 		"completed": "Event Completed",
 		"completedDescription": "The event has been marked as completed",
 		"completeFailed": "Failed to complete event. Please try again."
+	},
+	"notifications": {
+		"title": "Push Notifications",
+		"enable": "Enable notifications",
+		"disable": "Disable notifications",
+		"enabled": "Notifications enabled",
+		"blocked": "Notifications blocked",
+		"blockedByBrowser": "Blocked by browser",
+		"receiveAlerts": "You will receive notifications for PRs and events",
+		"enableToReceive": "Enable to receive alerts",
+		"blockedButton": "Blocked",
+		"label": "Notifications"
+	},
+	"changelog": {
+		"title": "What's New",
+		"description": "Latest changes and improvements",
+		"noChanges": "No changes recorded yet."
 	},
 	"announcements": {
 		"classicViewDeprecation": "Classic View is being deprecated soon and the Compact View will become the only available view. You can try it now in Options > Compact View.",

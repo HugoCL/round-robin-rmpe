@@ -24,6 +24,7 @@
 		"yes": "Sí",
 		"no": "No",
 		"ok": "OK",
+		"theme": "Tema",
 		"back": "Atrás",
 		"next": "Siguiente",
 		"previous": "Anterior",
@@ -507,6 +508,23 @@
 		"completed": "Evento Finalizado",
 		"completedDescription": "El evento ha sido marcado como completado",
 		"completeFailed": "Error al finalizar el evento. Por favor intenta de nuevo."
+	},
+	"notifications": {
+		"title": "Notificaciones Push",
+		"enable": "Activar notificaciones",
+		"disable": "Desactivar notificaciones",
+		"enabled": "Notificaciones activadas",
+		"blocked": "Notificaciones bloqueadas",
+		"blockedByBrowser": "Bloqueadas por el navegador",
+		"receiveAlerts": "Recibirás notificaciones de PRs y eventos",
+		"enableToReceive": "Activa para recibir alertas",
+		"blockedButton": "Bloqueado",
+		"label": "Notificaciones"
+	},
+	"changelog": {
+		"title": "Novedades",
+		"description": "Últimos cambios y mejoras de la aplicación",
+		"noChanges": "No hay cambios registrados aún."
 	},
 	"announcements": {
 		"classicViewDeprecation": "La Vista Clásica será deprecada pronto y la Vista Compacta será la única vista disponible. Puedes probarla ahora en Opciones > Vista Compacta.",

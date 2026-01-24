@@ -145,88 +145,92 @@ export function PageHeader({
 				<h1 className="text-3xl font-bold">{t("pr.title")}</h1>
 				<TeamSwitcher teamSlug={teamSlug} />
 			</div>
-			<div className="flex items-center gap-2">
+			<div className="flex items-center gap-1">
 				{userInfo?.email && (
-					<PushNotificationManager userEmail={userInfo.email} compact />
+					<PushNotificationManager userEmail={userInfo.email} iconOnly />
 				)}
 				<ThemeToggle />
-				<ChangelogDialog />
+				<ChangelogDialog iconOnly />
 				<HeaderOptionsDrawer />
 
-				{compactLayout &&
-					(isMobile ? (
-						<Drawer
-							open={reviewersDrawerOpen}
-							onOpenChange={setReviewersDrawerOpen}
-						>
-							<DrawerTrigger asChild>
-								<Button
-									variant="outline"
-									size="sm"
-									className="flex items-center gap-1"
-								>
-									<Menu className="h-4 w-4" />
-									<span className="hidden sm:inline">
-										{t("pr.manageReviewers")}
-									</span>
-								</Button>
-							</DrawerTrigger>
-							<DrawerContent>
-								<DrawerHeader>
-									<DrawerTitle>{t("pr.reviewers")}</DrawerTitle>
-									<DrawerDescription>
-										{t("manage-reviewers-and-their-assignments")}
-									</DrawerDescription>
-								</DrawerHeader>
-								<div className="px-4 pb-4 max-h-[60vh] overflow-y-auto">
-									<ReviewersTable teamSlug={teamSlug} />
-								</div>
-								<DrawerFooter className="flex flex-col gap-4">
-									{reviewerActions}
-									<DrawerClose asChild>
-										<Button variant="outline">{t("common.close")}</Button>
-									</DrawerClose>
-								</DrawerFooter>
-							</DrawerContent>
-						</Drawer>
-					) : (
-						<Dialog
-							open={reviewersDrawerOpen}
-							onOpenChange={setReviewersDrawerOpen}
-						>
-							<DialogTrigger asChild>
-								<Button
-									variant="outline"
-									size="sm"
-									className="flex items-center gap-1"
-								>
-									<Menu className="h-4 w-4" />
-									<span className="hidden sm:inline">
-										{t("pr.manageReviewers")}
-									</span>
-								</Button>
-							</DialogTrigger>
-							<DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-4xl">
-								<div className="px-6 pt-4">
-									<DialogHeader>
-										<DialogTitle>{t("pr.reviewers")}</DialogTitle>
-										<DialogDescription>
+				{compactLayout && (
+					<>
+						<div className="h-6 w-px bg-border mx-1" />
+						{isMobile ? (
+							<Drawer
+								open={reviewersDrawerOpen}
+								onOpenChange={setReviewersDrawerOpen}
+							>
+								<DrawerTrigger asChild>
+									<Button
+										variant="outline"
+										size="sm"
+										className="flex items-center gap-1"
+									>
+										<Menu className="h-4 w-4" />
+										<span className="hidden sm:inline">
+											{t("pr.manageReviewers")}
+										</span>
+									</Button>
+								</DrawerTrigger>
+								<DrawerContent>
+									<DrawerHeader>
+										<DrawerTitle>{t("pr.reviewers")}</DrawerTitle>
+										<DrawerDescription>
 											{t("manage-reviewers-and-their-assignments")}
-										</DialogDescription>
-									</DialogHeader>
-								</div>
-								<div className="px-6 pb-4 max-h-[60vh] overflow-y-auto">
-									<ReviewersTable teamSlug={teamSlug} />
-								</div>
-								<DialogFooter className="px-6 pb-6 flex flex-col gap-4">
-									{reviewerActions}
-									<DialogClose asChild>
-										<Button variant="outline">{t("common.close")}</Button>
-									</DialogClose>
-								</DialogFooter>
-							</DialogContent>
-						</Dialog>
-					))}
+										</DrawerDescription>
+									</DrawerHeader>
+									<div className="px-4 pb-4 max-h-[60vh] overflow-y-auto">
+										<ReviewersTable teamSlug={teamSlug} />
+									</div>
+									<DrawerFooter className="flex flex-col gap-4">
+										{reviewerActions}
+										<DrawerClose asChild>
+											<Button variant="outline">{t("common.close")}</Button>
+										</DrawerClose>
+									</DrawerFooter>
+								</DrawerContent>
+							</Drawer>
+						) : (
+							<Dialog
+								open={reviewersDrawerOpen}
+								onOpenChange={setReviewersDrawerOpen}
+							>
+								<DialogTrigger asChild>
+									<Button
+										variant="outline"
+										size="sm"
+										className="flex items-center gap-1"
+									>
+										<Menu className="h-4 w-4" />
+										<span className="hidden sm:inline">
+											{t("pr.manageReviewers")}
+										</span>
+									</Button>
+								</DialogTrigger>
+								<DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-4xl">
+									<div className="px-6 pt-4">
+										<DialogHeader>
+											<DialogTitle>{t("pr.reviewers")}</DialogTitle>
+											<DialogDescription>
+												{t("manage-reviewers-and-their-assignments")}
+											</DialogDescription>
+										</DialogHeader>
+									</div>
+									<div className="px-6 pb-4 max-h-[60vh] overflow-y-auto">
+										<ReviewersTable teamSlug={teamSlug} />
+									</div>
+									<DialogFooter className="px-6 pb-6 flex flex-col gap-4">
+										{reviewerActions}
+										<DialogClose asChild>
+											<Button variant="outline">{t("common.close")}</Button>
+										</DialogClose>
+									</DialogFooter>
+								</DialogContent>
+							</Dialog>
+						)}
+					</>
+				)}
 			</div>
 		</div>
 	);

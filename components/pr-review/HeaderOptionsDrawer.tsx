@@ -282,57 +282,67 @@ export function HeaderOptionsDrawer() {
 		</Button>
 	);
 
-	if (isMobile) {
-		return (
-			<Drawer open={open} onOpenChange={setOpen}>
-				<DrawerTrigger asChild>
+	const triggerButton = (
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>
 					<Button
-						variant="outline"
-						size="sm"
-						className="flex items-center gap-1"
+						variant="ghost"
+						size="icon"
+						aria-label={t("common.options")}
+						onClick={() => setOpen(true)}
 					>
 						<Settings className="h-4 w-4" />
-						<span className="hidden sm:inline">{t("common.options")}</span>
 					</Button>
-				</DrawerTrigger>
-				<DrawerContent>
-					<DrawerHeader>
-						<DrawerTitle>{t("common.options")}</DrawerTitle>
-						<DrawerDescription>
-							{t("common.optionsDescription")}
-						</DrawerDescription>
-					</DrawerHeader>
-					{bodyContent}
-					<DrawerFooter>
-						<DrawerClose asChild>{footerAction}</DrawerClose>
-					</DrawerFooter>
-				</DrawerContent>
-			</Drawer>
+				</TooltipTrigger>
+				<TooltipContent>
+					<p>{t("common.options")}</p>
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
+	);
+
+	if (isMobile) {
+		return (
+			<>
+				{triggerButton}
+				<Drawer open={open} onOpenChange={setOpen}>
+					<DrawerContent>
+						<DrawerHeader>
+							<DrawerTitle>{t("common.options")}</DrawerTitle>
+							<DrawerDescription>
+								{t("common.optionsDescription")}
+							</DrawerDescription>
+						</DrawerHeader>
+						{bodyContent}
+						<DrawerFooter>
+							<DrawerClose asChild>{footerAction}</DrawerClose>
+						</DrawerFooter>
+					</DrawerContent>
+				</Drawer>
+			</>
 		);
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				<Button variant="outline" size="sm" className="flex items-center gap-1">
-					<Settings className="h-4 w-4" />
-					<span className="hidden sm:inline">{t("common.options")}</span>
-				</Button>
-			</DialogTrigger>
-			<DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-3xl">
-				<div className="px-4 pt-4">
-					<DialogHeader>
-						<DialogTitle>{t("common.options")}</DialogTitle>
-						<DialogDescription>
-							{t("common.optionsDescription")}
-						</DialogDescription>
-					</DialogHeader>
-				</div>
-				{bodyContent}
-				<DialogFooter className="px-4 pb-4">
-					<DialogClose asChild>{footerAction}</DialogClose>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+		<>
+			{triggerButton}
+			<Dialog open={open} onOpenChange={setOpen}>
+				<DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-3xl">
+					<div className="px-4 pt-4">
+						<DialogHeader>
+							<DialogTitle>{t("common.options")}</DialogTitle>
+							<DialogDescription>
+								{t("common.optionsDescription")}
+							</DialogDescription>
+						</DialogHeader>
+					</div>
+					{bodyContent}
+					<DialogFooter className="px-4 pb-4">
+						<DialogClose asChild>{footerAction}</DialogClose>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</>
 	);
 }
