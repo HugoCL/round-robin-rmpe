@@ -1462,3 +1462,82 @@ export const logSentMessage = mutation({
 		return { success: true };
 	},
 });
+
+// ============================================
+// PUSH NOTIFICATION SUBSCRIPTIONS
+// ============================================
+
+// Save a push notification subscription for a user
+export const savePushSubscription = mutation({
+	args: {
+		email: v.string(),
+		subscription: v.object({
+			endpoint: v.string(),
+			keys: v.object({
+				p256dh: v.string(),
+				auth: v.string(),
+			}),
+		}),
+	},
+	handler: async (ctx, { email, subscription }) => {
+		const normalizedEmail = email.toLowerCase().trim();
+
+		// Check if this endpoint already exists
+		const existing = await ctx.db
+			.query("pushSubscriptions")
+			.withIndex("by_endpoint", (q) => q.eq("endpoint", subscription.endpoint))
+			.first();
+
+		if (existing) {
+			// Update existing subscription if email changed
+			if (existing.email !== normalizedEmail) {
+				await ctx.db.patch(existing._id, {
+					email: normalizedEmail,
+					keys: subscription.keys,
+				});
+			}
+			return { success: true, id: existing._id };
+		}
+
+		// Create new subscription
+		const id = await ctx.db.insert("pushSubscriptions", {
+			email: normalizedEmail,
+			endpoint: subscription.endpoint,
+			keys: subscription.keys,
+			createdAt: Date.now(),
+		});
+
+		return { success: true, id };
+	},
+});
+
+// Remove a push subscription by endpoint
+export const removePushSubscription = mutation({
+	args: {
+		endpoint: v.string(),
+	},
+	handler: async (ctx, { endpoint }) => {
+		const subscription = await ctx.db
+			.query("pushSubscriptions")
+			.withIndex("by_endpoint", (q) => q.eq("endpoint", endpoint))
+			.first();
+
+		if (subscription) {
+			await ctx.db.delete(subscription._id);
+		}
+
+		return { success: true };
+	},
+});
+
+// Get all push subscriptions for an email (internal query helper)
+export const getPushSubscriptionsByEmail = mutation({
+	args: { email: v.string() },
+	handler: async (ctx, { email }) => {
+		const normalizedEmail = email.toLowerCase().trim();
+		return await ctx.db
+			.query("pushSubscriptions")
+			.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+			.collect();
+	},
+});

@@ -160,4 +160,17 @@ export default defineSchema({
 		.index("by_team", ["teamId"])
 		.index("by_team_status", ["teamId", "status"])
 		.index("by_scheduled_at", ["scheduledAt"]),
+
+	// Push notification subscriptions for PWA
+	pushSubscriptions: defineTable({
+		email: v.string(), // User's email to link to reviewers/participants
+		endpoint: v.string(), // Push subscription endpoint
+		keys: v.object({
+			p256dh: v.string(),
+			auth: v.string(),
+		}),
+		createdAt: v.number(),
+	})
+		.index("by_email", ["email"])
+		.index("by_endpoint", ["endpoint"]),
 });
