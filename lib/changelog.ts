@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-01-24",
+		type: "feature",
+		title: "Notificaciones push y PWA",
+		description:
+			"La Lista ahora es una PWA instalable. Puedes activar notificaciones push para recibir alertas cuando te asignen un PR o cuando comience un evento en el que participas, para esos casos que no tienes Google Chat abierto o tienes el modo no molestar activado.",
+	},
+	{
 		date: "2026-01-21",
 		type: "feature",
 		title: "Cambio de tema claro/oscuro",
