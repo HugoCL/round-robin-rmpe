@@ -8,6 +8,7 @@ import {
 	UserPlus,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { TeamSwitcher } from "@/components/TeamSwitcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -70,6 +71,7 @@ export function PageHeader({
 		reviewers,
 		handleResetCounts,
 		exportData,
+		userInfo,
 	} = usePRReview();
 	const isMobile = useIsMobile();
 
@@ -144,6 +146,9 @@ export function PageHeader({
 				<TeamSwitcher teamSlug={teamSlug} />
 			</div>
 			<div className="flex items-center gap-2">
+				{userInfo?.email && (
+					<PushNotificationManager userEmail={userInfo.email} compact />
+				)}
 				<ThemeToggle />
 				<ChangelogDialog />
 				<HeaderOptionsDrawer />

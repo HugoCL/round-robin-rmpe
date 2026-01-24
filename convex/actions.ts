@@ -245,6 +245,21 @@ export const sendGoogleChatMessage = action({
 				console.warn("Failed to log debug message", e);
 			}
 
+			// Also send PWA push notification to the assignee (fire and forget)
+			try {
+				await ctx.runAction(api.pushActions.sendPushNotification, {
+					email: reviewerEmail,
+					title: "📋 Nueva asignación de PR",
+					body: assignerName
+						? `${assignerName} te ha asignado un PR para revisar`
+						: "Te han asignado un PR para revisar",
+					url: prUrl,
+					tag: "pr-assignment",
+				});
+			} catch (e) {
+				console.warn("Failed to send PWA push notification", e);
+			}
+
 			return { success: true };
 		} catch (error) {
 			console.error("Error sending Google Chat message:", error);
@@ -577,6 +592,22 @@ export const sendEventStartNotification = action({
 				eventId,
 			});
 			await ctx.runMutation(api.mutations.startEvent, { eventId });
+
+			// Send PWA push notifications to all participants (fire and forget)
+			if (event.participants.length > 0) {
+				try {
+					const participantEmails = event.participants.map((p) => p.email);
+					await ctx.runAction(api.pushActions.sendPushToParticipants, {
+						emails: participantEmails,
+						title: `🚀 ${event.title}`,
+						body: "¡El evento ha comenzado!",
+						url: `/`, // Could be enhanced to link to event page
+						tag: `event-${eventId}`,
+					});
+				} catch (e) {
+					console.warn("Failed to send PWA push to participants", e);
+				}
+			}
 
 			return { success: true };
 		} catch (error) {
