@@ -1099,7 +1099,13 @@ export const createEvent = mutation({
 			scheduledAt,
 			createdAt: Date.now(),
 			createdBy,
-			participants: [],
+			// Add the creator as the initial participant so they appear joined by default
+			participants: [
+				{
+					...createdBy,
+					joinedAt: Date.now(),
+				},
+			],
 			status: "scheduled",
 		});
 

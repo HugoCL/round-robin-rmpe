@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-01-26",
+		type: "fix",
+		title: "El creador del evento ahora aparece como participante",
+		description:
+			"Al crear un evento, el usuario que lo crea se añade automáticamente a la lista de participantes. Esto corrige un comportamiento en el que el creador no figuraba como asistente por defecto y asegura que contadores y notificaciones reflejen correctamente al organizador.",
+	},
+	{
 		date: "2026-01-24",
 		type: "feature",
 		title: "Notificaciones push y PWA",
