@@ -410,17 +410,17 @@ export const getEventsNeedingStartNotification = query({
 	args: {},
 	handler: async (ctx) => {
 		const now = Date.now();
+
+		// Optimized: Use composite index to filter directly in DB instead of in memory
+		// This dramatically reduces bandwidth by only fetching events that actually need notification
 		const events = await ctx.db
 			.query("events")
-			.withIndex("by_scheduled_at")
+			.withIndex("by_status_notification_scheduled", (q) =>
+				q.eq("status", "scheduled").eq("startNotificationSentAt", undefined),
+			)
+			.filter((q) => q.lte(q.field("scheduledAt"), now))
 			.collect();
 
-		// Filter: scheduled status, time has passed, notification not sent yet
-		return events.filter(
-			(e) =>
-				e.status === "scheduled" &&
-				e.scheduledAt <= now &&
-				!e.startNotificationSentAt,
-		);
+		return events;
 	},
 });

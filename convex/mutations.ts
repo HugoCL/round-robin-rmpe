@@ -329,13 +329,15 @@ export const processAbsentReturns = mutation({
 	handler: async (ctx) => {
 		const now = Date.now();
 
-		// Get all reviewers who are absent and have an absentUntil time that has passed
-		const allReviewers = await ctx.db.query("reviewers").collect();
-		const reviewersToReturn = allReviewers.filter(
-			(r) => r.isAbsent && r.absentUntil && r.absentUntil <= now,
-		);
+		// Optimized: Use index to filter only absent reviewers directly in DB
+		// This avoids fetching all reviewers (which was causing high bandwidth usage)
+		const absentReviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_absent_until", (q) => q.eq("isAbsent", true))
+			.filter((q) => q.lte(q.field("absentUntil"), now))
+			.collect();
 
-		for (const reviewer of reviewersToReturn) {
+		for (const reviewer of absentReviewers) {
 			// Get all reviewers in the same team to calculate most common assignment count
 			const teamReviewers = await ctx.db
 				.query("reviewers")
@@ -360,7 +362,7 @@ export const processAbsentReturns = mutation({
 			);
 		}
 
-		return { processed: reviewersToReturn.length };
+		return { processed: absentReviewers.length };
 	},
 });
 
@@ -1286,8 +1288,15 @@ export const startEvent = mutation({
 			return { success: false, error: "Event cannot be started" };
 		}
 
+		// Calculate expected end time for optimization
+		const now = Date.now();
+		const durationMinutes =
+			event.durationMinutes ?? DEFAULT_EVENT_DURATION_MINUTES;
+		const expectedEndTime = now + durationMinutes * 60 * 1000;
+
 		await ctx.db.patch(eventId, {
 			status: "started",
+			expectedEndTime, // Precalculate end time for efficient queries
 		});
 
 		return { success: true };
@@ -1322,30 +1331,22 @@ export const autoCompleteExpiredEvents = mutation({
 	handler: async (ctx) => {
 		const now = Date.now();
 
-		// Get all started events
-		const startedEvents = await ctx.db
+		// Optimized: Use composite index to filter directly in DB instead of fetching all started events
+		// Only fetch events that are started AND have reached their expected end time
+		const expiredEvents = await ctx.db
 			.query("events")
-			.filter((q) => q.eq(q.field("status"), "started"))
+			.withIndex("by_status_end_time", (q) => q.eq("status", "started"))
+			.filter((q) => q.lte(q.field("expectedEndTime"), now))
 			.collect();
 
-		let completedCount = 0;
-
-		for (const event of startedEvents) {
-			// Calculate when the event should end
-			const durationMinutes =
-				event.durationMinutes ?? DEFAULT_EVENT_DURATION_MINUTES;
-			const startTime = event.startNotificationSentAt ?? event.scheduledAt;
-			const endTime = startTime + durationMinutes * 60 * 1000;
-
-			if (now >= endTime) {
-				await ctx.db.patch(event._id, {
-					status: "completed",
-				});
-				completedCount++;
-			}
+		for (const event of expiredEvents) {
+			await ctx.db.patch(event._id, {
+				status: "completed",
+				expectedEndTime: undefined, // Clean up the field
+			});
 		}
 
-		return { completedCount };
+		return { completedCount: expiredEvents.length };
 	},
 });
 

@@ -23,7 +23,8 @@ export default defineSchema({
 	})
 		.index("by_email", ["email"]) // legacy/simple lookups
 		.index("by_team", ["teamId"]) // team-scoped listing
-		.index("by_team_email", ["teamId", "email"]),
+		.index("by_team_email", ["teamId", "email"])
+		.index("by_absent_until", ["isAbsent", "absentUntil"]), // Optimization: filter absent reviewers efficiently
 
 	tags: defineTable({
 		teamId: v.optional(v.id("teams")),
@@ -135,6 +136,7 @@ export default defineSchema({
 		description: v.optional(v.string()),
 		scheduledAt: v.number(), // Unix timestamp when the event starts
 		durationMinutes: v.optional(v.number()), // Duration in minutes (default: 20)
+		expectedEndTime: v.optional(v.number()), // Precalculated end time for optimization
 		createdAt: v.number(),
 		createdBy: v.object({
 			odId: v.optional(v.string()), // reviewer ID if available
@@ -159,7 +161,13 @@ export default defineSchema({
 	})
 		.index("by_team", ["teamId"])
 		.index("by_team_status", ["teamId", "status"])
-		.index("by_scheduled_at", ["scheduledAt"]),
+		.index("by_scheduled_at", ["scheduledAt"])
+		.index("by_status_notification_scheduled", [
+			"status",
+			"startNotificationSentAt",
+			"scheduledAt",
+		]) // Optimization: efficiently find events needing start notification
+		.index("by_status_end_time", ["status", "expectedEndTime"]), // Optimization: efficiently find expired events
 
 	// Push notification subscriptions for PWA
 	pushSubscriptions: defineTable({
