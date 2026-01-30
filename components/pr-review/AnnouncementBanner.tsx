@@ -10,6 +10,7 @@ import {
 	AlertTitle,
 } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface Announcement {
 	id: string;
@@ -25,50 +26,32 @@ const ANNOUNCEMENTS: Announcement[] = [
 	},
 ];
 
-function getStorageKey(id: string): string {
-	return `dismissed_announcement_${id}`;
-}
-
-function isDismissed(id: string): boolean {
-	if (typeof window === "undefined") return false;
-	return localStorage.getItem(getStorageKey(id)) === "true";
-}
-
-function dismissAnnouncement(id: string): void {
-	localStorage.setItem(getStorageKey(id), "true");
-}
-
 /**
  * AnnouncementBanner displays important announcements to users.
  * Announcements can be permanently dismissed and the dismissal is stored in localStorage.
  */
 export function AnnouncementBanner() {
 	const t = useTranslations();
-	const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+	const [dismissedIds, setDismissedIds] = useLocalStorage<string[]>(
+		"dismissed_announcements",
+		[],
+	);
 	const [mounted, setMounted] = useState(false);
 
 	// Load dismissed state from localStorage on mount
 	useEffect(() => {
-		const dismissed = new Set<string>();
-		for (const announcement of ANNOUNCEMENTS) {
-			if (isDismissed(announcement.id)) {
-				dismissed.add(announcement.id);
-			}
-		}
-		setDismissedIds(dismissed);
 		setMounted(true);
 	}, []);
 
 	const handleDismiss = (id: string) => {
-		dismissAnnouncement(id);
-		setDismissedIds((prev) => new Set([...prev, id]));
+		setDismissedIds((prev) => [...prev, id]);
 	};
 
 	// Don't render anything until mounted (to avoid SSR hydration issues)
 	if (!mounted) return null;
 
 	const visibleAnnouncements = ANNOUNCEMENTS.filter(
-		(a) => !dismissedIds.has(a.id),
+		(a) => !dismissedIds.includes(a.id),
 	);
 
 	if (visibleAnnouncements.length === 0) return null;

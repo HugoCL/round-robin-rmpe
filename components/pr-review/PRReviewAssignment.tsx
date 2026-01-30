@@ -18,6 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { Assignment, UserInfo } from "@/lib/types";
 import { AnnouncementBanner } from "./AnnouncementBanner";
 import {
@@ -61,10 +62,16 @@ export default function PRReviewAssignment({
 	const [snapshots, setSnapshots] = useState<BackupEntry[]>([]);
 	const [snapshotsLoading, setSnapshotsLoading] = useState(false);
 	const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
-	const [showAssignments, setShowAssignments] = useState(false);
-	const [showTags, setShowTags] = useState(true);
-	const [showEmails, setShowEmails] = useState(false);
-	const [compactLayout, setCompactLayout] = useState(true);
+	const [showAssignments, setShowAssignments] = useLocalStorage(
+		"showAssignments",
+		false,
+	);
+	const [showTags, setShowTags] = useLocalStorage("showTags", true);
+	const [showEmails, setShowEmails] = useLocalStorage("showEmails", false);
+	const [compactLayout, setCompactLayout] = useLocalStorage(
+		"compactLayout",
+		true,
+	);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 	const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
 	const [pendingShortcut, setPendingShortcut] = useState<ShortcutAction | null>(
@@ -198,48 +205,6 @@ export default function PRReviewAssignment({
 		return () =>
 			window.removeEventListener("shortcutDialogMessageState", handler);
 	}, []);
-
-	// Load user preferences from localStorage on component mount
-	useEffect(() => {
-		const savedShowAssignments = localStorage.getItem("showAssignments");
-		if (savedShowAssignments !== null) {
-			setShowAssignments(savedShowAssignments === "true");
-		}
-
-		const savedShowTags = localStorage.getItem("showTags");
-		if (savedShowTags !== null) {
-			setShowTags(savedShowTags === "true");
-		}
-
-		const savedCompactLayout = localStorage.getItem("compactLayout");
-		if (savedCompactLayout !== null) {
-			setCompactLayout(savedCompactLayout === "true");
-		} else {
-			setCompactLayout(true);
-		}
-
-		const savedShowEmails = localStorage.getItem("showEmails");
-		if (savedShowEmails !== null) {
-			setShowEmails(savedShowEmails === "true");
-		}
-	}, []);
-
-	// Save user preferences to localStorage whenever they change
-	useEffect(() => {
-		localStorage.setItem("showAssignments", showAssignments.toString());
-	}, [showAssignments]);
-
-	useEffect(() => {
-		localStorage.setItem("showTags", showTags.toString());
-	}, [showTags]);
-
-	useEffect(() => {
-		localStorage.setItem("compactLayout", compactLayout.toString());
-	}, [compactLayout]);
-
-	useEffect(() => {
-		localStorage.setItem("showEmails", showEmails.toString());
-	}, [showEmails]);
 
 	// Transform assignment feed data for child components
 	const assignmentFeed: Assignment = {
