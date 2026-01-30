@@ -1,5 +1,6 @@
 import { SignIn } from "@clerk/nextjs";
 import { List, Quote } from "lucide-react";
+import Image from "next/image";
 import { generateMotivationalQuote } from "@/app/actions/generateMotivationalQuote";
 import { getRandomPhoto } from "@/lib/unsplash";
 
@@ -29,9 +30,11 @@ export default async function LoginPage() {
 			<div className="bg-muted relative hidden lg:block">
 				{photo ? (
 					<>
-						<img
+						<Image
 							src={photo.url}
 							alt={photo.alt}
+							fill
+							priority
 							className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
 						/>
 						{/* Motivational Quote Overlay */}

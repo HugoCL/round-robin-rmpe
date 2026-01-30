@@ -10,19 +10,16 @@ type Props = {
 
 export async function generateMetadata({ params }: Props) {
 	const { locale, team: teamSlug } = await params;
-	const t = await getTranslations({ locale });
+	const [t, team] = await Promise.all([
+		getTranslations({ locale }),
+		fetchQuery(api.queries.getTeam, { teamSlug }).catch(() => null),
+	]);
 
-	try {
-		const team = await fetchQuery(api.queries.getTeam, { teamSlug });
-
-		if (team?.name) {
-			return {
-				title: `${team.name} ${t("pr.title")}`,
-				description: t("description"),
-			};
-		}
-	} catch {
-		// If we can't fetch the team, fall back to default
+	if (team?.name) {
+		return {
+			title: `${team.name} ${t("pr.title")}`,
+			description: t("description"),
+		};
 	}
 
 	// Fallback: just "PR Review" / "Revisión PR" without team prefix
