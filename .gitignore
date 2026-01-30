@@ -28,3 +28,5 @@ next-env.d.ts
 
 # Jetbrains Stuff
 .idea
+# next-agents-md
+.next-docs/
