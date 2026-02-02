@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useMutation } from "convex/react";
-import { Info, Sparkles, Undo2 } from "lucide-react";
+import { AlertCircle, Info, Sparkles, Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -43,7 +43,17 @@ export function AssignmentCard() {
 	const [customMessage, setCustomMessage] = useState("");
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 
+	// PR duplicate validation
+	const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
+	const [duplicateAssignment, setDuplicateAssignment] = useState<{
+		reviewerName: string;
+		timestamp: number;
+	} | null>(null);
+
 	const sendGoogleChatAction = useAction(api.actions.sendGoogleChatMessage);
+	const checkPRAlreadyAssignedAction = useAction(
+		api.actions.checkPRAlreadyAssigned,
+	);
 	const createActivePRAssignment = useMutation(
 		api.mutations.createActivePRAssignment,
 	);
@@ -53,6 +63,34 @@ export function AssignmentCard() {
 		!!user?.email &&
 		!!nextReviewer?.email &&
 		user.email.toLowerCase() === nextReviewer.email.toLowerCase();
+
+	// Handle PR URL blur to check for duplicates
+	const handlePrUrlBlur = async () => {
+		const trimmedUrl = prUrl.trim();
+		if (!trimmedUrl || !teamSlug) {
+			setShowDuplicateAlert(false);
+			return;
+		}
+
+		try {
+			const existing = await checkPRAlreadyAssignedAction({
+				teamSlug,
+				prUrl: trimmedUrl,
+			});
+
+			if (existing) {
+				setDuplicateAssignment({
+					reviewerName: existing.reviewerName,
+					timestamp: existing.timestamp,
+				});
+				setShowDuplicateAlert(true);
+			} else {
+				setShowDuplicateAlert(false);
+			}
+		} catch (error) {
+			console.error("Error checking for duplicate PR:", error);
+		}
+	};
 
 	const handleAssignPR = async () => {
 		// If current user is next, auto-skip and assign to the next person directly
@@ -287,9 +325,25 @@ export function AssignmentCard() {
 			</CardContent>
 			<CardFooter className="flex-shrink-0 space-y-6">
 				<div className="w-full space-y-4">
+					{/* Duplicate PR Alert */}
+					{showDuplicateAlert && duplicateAssignment && (
+						<Alert variant="destructive">
+							<AlertCircle className="h-4 w-4" />
+							<AlertDescription>
+								Este PR ya fue asignado a{" "}
+								<strong>{duplicateAssignment.reviewerName}</strong> el{" "}
+								{new Date(duplicateAssignment.timestamp).toLocaleDateString()}
+							</AlertDescription>
+						</Alert>
+					)}
+
 					<ChatMessageCustomizer
 						prUrl={prUrl}
-						onPrUrlChange={setPrUrl}
+						onPrUrlChange={(value) => {
+							setPrUrl(value);
+							if (showDuplicateAlert) setShowDuplicateAlert(false);
+						}}
+						onPrUrlBlur={handlePrUrlBlur}
 						contextUrl={contextUrl}
 						onContextUrlChange={setContextUrl}
 						sendMessage={sendMessage}

@@ -119,7 +119,12 @@ export const checkPRAlreadyAssigned = query({
 			(item) => item.prUrl?.trim().toLowerCase() === normalizedPrUrl,
 		);
 
-		return existingAssignment || null;
+		if (!existingAssignment) return null;
+
+		return {
+			reviewerName: existingAssignment.reviewerName,
+			timestamp: existingAssignment.timestamp,
+		};
 	},
 });
 
