@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 export interface ChatMessageCustomizerProps {
 	prUrl: string;
 	onPrUrlChange: (v: string) => void;
+	onPrUrlBlur?: () => void;
 	contextUrl?: string;
 	onContextUrlChange?: (v: string) => void;
 	sendMessage: boolean;
@@ -28,6 +29,7 @@ export interface ChatMessageCustomizerProps {
 export function ChatMessageCustomizer({
 	prUrl,
 	onPrUrlChange,
+	onPrUrlBlur,
 	contextUrl = "",
 	onContextUrlChange,
 	sendMessage,
@@ -168,6 +170,7 @@ export function ChatMessageCustomizer({
 							placeholder={t("placeholders.githubPrUrl")}
 							value={prUrl}
 							onChange={(e) => onPrUrlChange(e.target.value)}
+							onBlur={onPrUrlBlur}
 							autoComplete="off"
 							inputMode="url"
 							spellCheck={false}

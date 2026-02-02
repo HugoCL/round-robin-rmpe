@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-02-02",
+		type: "feature",
+		title: "Detección de PRs duplicados",
+		description:
+			"Ahora cuando ingresas una URL de PR en la asignación, el sistema verifica automáticamente si ese PR ya fue asignado anteriormente. Si detecta un duplicado, muestra una alerta indicando a quién fue asignado y cuándo, evitando asignaciones duplicadas accidentales.",
+	},
+	{
 		date: "2026-01-26",
 		type: "fix",
 		title: "El creador del evento ahora aparece como participante",

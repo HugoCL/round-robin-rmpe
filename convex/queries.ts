@@ -99,6 +99,30 @@ export const getAssignmentHistory = query({
 	},
 });
 
+// Check if a PR has been previously assigned
+export const checkPRAlreadyAssigned = query({
+	args: { teamSlug: v.string(), prUrl: v.string() },
+	handler: async (ctx, { teamSlug, prUrl }) => {
+		if (!prUrl.trim()) return null;
+
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const feed = await ctx.db
+			.query("assignmentFeed")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.first();
+
+		if (!feed) return null;
+
+		// Search for matching prUrl in the feed items
+		const normalizedPrUrl = prUrl.trim().toLowerCase();
+		const existingAssignment = feed.items.find(
+			(item) => item.prUrl?.trim().toLowerCase() === normalizedPrUrl,
+		);
+
+		return existingAssignment || null;
+	},
+});
+
 // Get next reviewer for regular assignment
 export const getNextReviewer = query({
 	args: { teamSlug: v.string() },

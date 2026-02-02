@@ -1,9 +1,10 @@
 "use client";
 
 import { useAction, useMutation, useQuery } from "convex/react";
-import { Tag, Users } from "lucide-react";
+import { AlertCircle, Tag, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +53,12 @@ export function TrackBasedAssignment() {
 	const [contextUrl, setContextUrl] = useState("");
 	const [customMessage, setCustomMessage] = useState("");
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
+	// PR duplicate validation
+	const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
+	const [duplicateAssignment, setDuplicateAssignment] = useState<{
+		reviewerName: string;
+		timestamp: number;
+	} | null>(null);
 
 	// Use Convex hooks for real-time data
 	const tags =
@@ -61,6 +68,9 @@ export function TrackBasedAssignment() {
 		api.mutations.createActivePRAssignment,
 	);
 	const sendGoogleChatAction = useAction(api.actions.sendGoogleChatMessage);
+	const checkPRAlreadyAssignedAction = useAction(
+		api.actions.checkPRAlreadyAssigned,
+	);
 	const getNextReviewerByTag = useQuery(
 		api.queries.getNextReviewerByTag,
 		selectedTagId && teamSlug ? { teamSlug, tagId: selectedTagId } : "skip",
@@ -68,6 +78,34 @@ export function TrackBasedAssignment() {
 
 	// Get next reviewer for selected tag
 	const nextReviewer = getNextReviewerByTag || null;
+
+	// Handle PR URL blur to check for duplicates
+	const handlePrUrlBlur = async () => {
+		const trimmedUrl = prUrl.trim();
+		if (!trimmedUrl || !teamSlug) {
+			setShowDuplicateAlert(false);
+			return;
+		}
+
+		try {
+			const existing = await checkPRAlreadyAssignedAction({
+				teamSlug,
+				prUrl: trimmedUrl,
+			});
+
+			if (existing) {
+				setDuplicateAssignment({
+					reviewerName: existing.reviewerName,
+					timestamp: existing.timestamp,
+				});
+				setShowDuplicateAlert(true);
+			} else {
+				setShowDuplicateAlert(false);
+			}
+		} catch (error) {
+			console.error("Error checking for duplicate PR:", error);
+		}
+	};
 
 	const handleAssignPR = async () => {
 		if (!selectedTagId || !nextReviewer) return;
@@ -196,6 +234,8 @@ export function TrackBasedAssignment() {
 		setContextUrl("");
 		setCustomMessage("");
 		setEnableCustomMessage(false);
+		setShowDuplicateAlert(false);
+		setDuplicateAssignment(null);
 		setIsOpen(false);
 	};
 
@@ -352,11 +392,27 @@ export function TrackBasedAssignment() {
 						</Card>
 					)}
 
+					{/* Duplicate PR Alert */}
+					{showDuplicateAlert && duplicateAssignment && (
+						<Alert variant="destructive">
+							<AlertCircle className="h-4 w-4" />
+							<AlertDescription>
+								Este PR ya fue asignado a{" "}
+								<strong>{duplicateAssignment.reviewerName}</strong> el{" "}
+								{new Date(duplicateAssignment.timestamp).toLocaleDateString()}
+							</AlertDescription>
+						</Alert>
+					)}
+
 					{/* Chat Message Customizer */}
 					{selectedTagId && nextReviewer && (
 						<ChatMessageCustomizer
 							prUrl={prUrl}
-							onPrUrlChange={setPrUrl}
+							onPrUrlChange={(value) => {
+								setPrUrl(value);
+								if (showDuplicateAlert) setShowDuplicateAlert(false);
+							}}
+							onPrUrlBlur={handlePrUrlBlur}
 							contextUrl={contextUrl}
 							onContextUrlChange={setContextUrl}
 							sendMessage={sendMessage}

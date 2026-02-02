@@ -3,7 +3,7 @@
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useAction } from "convex/react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 
 // Extend Window typing to allow vendor-prefixed AudioContext in older browsers
@@ -14,6 +14,7 @@ declare global {
 }
 
 import { Button } from "@/components/ui/button";
+
 import { toast } from "@/hooks/use-toast";
 import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
@@ -207,35 +208,38 @@ export default function PRReviewAssignment({
 	}, []);
 
 	// Transform assignment feed data for child components
-	const assignmentFeed: Assignment = {
-		items:
-			convexAssignmentFeed?.items?.map((item) => ({
-				id: `${item.reviewerId}-${item.timestamp}`,
-				reviewerId: item.reviewerId,
-				reviewerName: item.reviewerName,
-				timestamp: item.timestamp,
-				isForced: item.forced,
-				wasSkipped: item.skipped,
-				isAbsentSkip: item.isAbsentSkip,
-				actionBy: item.actionBy?.email, // flatten to string per AssignmentItem type
-				prUrl: item.prUrl,
-				tagId: item.tagId,
-			})) || [],
-		lastAssigned: convexAssignmentFeed?.lastAssigned
-			? // convexAssignmentFeed.lastAssigned appears to be a string reviewerId; timestamp not provided in original code so set null semantics
-				{
-					reviewerId:
-						typeof convexAssignmentFeed.lastAssigned === "string"
-							? convexAssignmentFeed.lastAssigned
-							: "",
-					timestamp: Date.now(),
-				}
-			: null,
-	};
+	const assignmentFeed: Assignment = useMemo(
+		() => ({
+			items:
+				convexAssignmentFeed?.items?.map((item) => ({
+					id: `${item.reviewerId}-${item.timestamp}`,
+					reviewerId: item.reviewerId,
+					reviewerName: item.reviewerName,
+					timestamp: item.timestamp,
+					isForced: item.forced,
+					wasSkipped: item.skipped,
+					isAbsentSkip: item.isAbsentSkip,
+					actionBy: item.actionBy?.email, // flatten to string per AssignmentItem type
+					prUrl: item.prUrl,
+					tagId: item.tagId,
+				})) || [],
+			lastAssigned: convexAssignmentFeed?.lastAssigned
+				? // convexAssignmentFeed.lastAssigned appears to be a string reviewerId; timestamp not provided in original code so set null semantics
+					{
+						reviewerId:
+							typeof convexAssignmentFeed.lastAssigned === "string"
+								? convexAssignmentFeed.lastAssigned
+								: "",
+						timestamp: Date.now(),
+					}
+				: null,
+		}),
+		[convexAssignmentFeed],
+	);
 
-	const handleDataUpdate = async () => {
+	const handleDataUpdate = useCallback(async () => {
 		await refreshTags();
-	};
+	}, [refreshTags]);
 
 	// Handles file import for data recovery
 	const importFileHandler = async (
@@ -247,8 +251,8 @@ export default function PRReviewAssignment({
 		event.target.value = ""; // Reset input
 	};
 
-	// Loads snapshots from backups
-	const loadSnapshots = async () => {
+	// Opens the snapshot dialog
+	const handleOpenSnapshotDialog = useCallback(async () => {
 		setSnapshotsLoading(true);
 		try {
 			const formattedSnapshots: BackupEntry[] = backups.map((backup) => ({
@@ -266,13 +270,8 @@ export default function PRReviewAssignment({
 		} finally {
 			setSnapshotsLoading(false);
 		}
-	};
-
-	// Opens the snapshot dialog
-	const handleOpenSnapshotDialog = () => {
-		loadSnapshots();
 		setSnapshotDialogOpen(true);
-	};
+	}, [backups, t]);
 
 	// Restores data from a selected snapshot
 	const handleRestoreSnapshot = async (key: string) => {
@@ -292,10 +291,22 @@ export default function PRReviewAssignment({
 	};
 
 	// Toggles for various UI preferences
-	const toggleShowAssignments = () => setShowAssignments((p) => !p);
-	const toggleShowTags = () => setShowTags((p) => !p);
-	const toggleCompactLayout = () => setCompactLayout((p) => !p);
-	const toggleShowEmails = () => setShowEmails((p) => !p);
+	const toggleShowAssignments = useCallback(
+		() => setShowAssignments((p) => !p),
+		[setShowAssignments],
+	);
+	const toggleShowTags = useCallback(
+		() => setShowTags((p) => !p),
+		[setShowTags],
+	);
+	const toggleCompactLayout = useCallback(
+		() => setCompactLayout((p) => !p),
+		[setCompactLayout],
+	);
+	const toggleShowEmails = useCallback(
+		() => setShowEmails((p) => !p),
+		[setShowEmails],
+	);
 
 	// Ensure AudioContext can start after a user gesture (required by some browsers)
 	useEffect(() => {
@@ -440,6 +451,73 @@ export default function PRReviewAssignment({
 		// Only depend on the list to detect new items; reviewers and email are needed for match
 	}, [convexAssignmentFeed?.items, reviewers, userInfo?.email, playMelody]);
 
+	const providerValue = useMemo(
+		() => ({
+			teamSlug,
+			compactLayout,
+			toggleCompactLayout,
+			showAssignments,
+			toggleShowAssignments,
+			showTags,
+			toggleShowTags,
+			showEmails,
+			toggleShowEmails,
+			openSnapshotDialog: handleOpenSnapshotDialog,
+			reviewers: reviewers || [],
+			nextReviewer: nextReviewer || null,
+			assignmentFeed,
+			hasTags: !!hasTags,
+			userInfo,
+			isRefreshing: !!isRefreshing,
+			formatLastUpdated,
+			handleManualRefresh,
+			onDataUpdate: handleDataUpdate,
+			assignPR,
+			undoAssignment,
+			autoSkipAndAssign,
+			onToggleAbsence: handleToggleAbsence,
+			onMarkAbsent: handleMarkAbsent,
+			onMarkAvailable: handleMarkAvailable,
+			updateReviewer,
+			addReviewer,
+			removeReviewer,
+			handleResetCounts,
+			exportData,
+		}),
+		[
+			teamSlug,
+			compactLayout,
+			toggleCompactLayout,
+			showAssignments,
+			toggleShowAssignments,
+			showTags,
+			toggleShowTags,
+			showEmails,
+			toggleShowEmails,
+			handleOpenSnapshotDialog,
+			reviewers,
+			nextReviewer,
+			assignmentFeed,
+			hasTags,
+			userInfo,
+			isRefreshing,
+			formatLastUpdated,
+			handleManualRefresh,
+			handleDataUpdate,
+			assignPR,
+			undoAssignment,
+			autoSkipAndAssign,
+			handleToggleAbsence,
+			handleMarkAbsent,
+			handleMarkAvailable,
+			updateReviewer,
+			addReviewer,
+			removeReviewer,
+			handleResetCounts,
+			exportData,
+		],
+	);
+
 	// Render loading state
 	if (isLoading || !isLoaded) {
 		return (
@@ -491,60 +569,7 @@ export default function PRReviewAssignment({
 	}
 
 	return (
-		<PRReviewProvider
-			value={{
-				teamSlug,
-				compactLayout,
-				toggleCompactLayout,
-				showAssignments,
-				toggleShowAssignments,
-				showTags,
-				toggleShowTags,
-				showEmails,
-				toggleShowEmails,
-				openSnapshotDialog: handleOpenSnapshotDialog,
-				reviewers: reviewers || [],
-				nextReviewer: nextReviewer || null,
-				assignmentFeed,
-				hasTags: !!hasTags,
-				userInfo,
-				isRefreshing: !!isRefreshing,
-				formatLastUpdated,
-				handleManualRefresh: async () => {
-					await handleManualRefresh();
-				},
-				onDataUpdate: async () => {
-					await handleDataUpdate();
-				},
-				assignPR: async (opts) => {
-					await assignPR(opts);
-				},
-				undoAssignment: async () => {
-					await undoAssignment();
-				},
-				autoSkipAndAssign: async (opts) => {
-					await autoSkipAndAssign(opts);
-				},
-				onToggleAbsence: async (id) => {
-					await handleToggleAbsence(id);
-				},
-				onMarkAbsent: async (id, absentUntil) => {
-					await handleMarkAbsent(id, absentUntil);
-				},
-				onMarkAvailable: async (id) => {
-					await handleMarkAvailable(id);
-				},
-				updateReviewer: async (id, name, email, googleChatUserId) =>
-					await updateReviewer(id, name, email, googleChatUserId),
-				addReviewer: async (name, email, googleChatUserId) =>
-					await addReviewer(name, email, googleChatUserId),
-				removeReviewer: async (id) => {
-					await removeReviewer(id);
-				},
-				handleResetCounts,
-				exportData,
-			}}
-		>
+		<PRReviewProvider value={providerValue}>
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 				<PageHeader
 					teamSlug={teamSlug}

@@ -661,3 +661,21 @@ export const processEventStartNotifications = action({
 		return { processed, errors };
 	},
 });
+
+// Check if a PR has been previously assigned
+export const checkPRAlreadyAssigned = action({
+	args: { teamSlug: v.string(), prUrl: v.string() },
+	handler: async (
+		ctx,
+		{ teamSlug, prUrl },
+	): Promise<{
+		reviewerName: string;
+		timestamp: number;
+	} | null> => {
+		const result = await ctx.runQuery(api.queries.checkPRAlreadyAssigned, {
+			teamSlug,
+			prUrl,
+		});
+		return result;
+	},
+});

@@ -625,7 +625,7 @@ export function useConvexPRReviewData(
 		importData,
 		updateAssignmentCount,
 		restoreFromBackup,
-		handleManualRefresh: () => {}, // No-op since Convex is realtime
+		handleManualRefresh: async () => {}, // No-op since Convex is realtime
 		formatLastUpdated: () => "Real-time", // Always real-time with Convex
 	};
 }
