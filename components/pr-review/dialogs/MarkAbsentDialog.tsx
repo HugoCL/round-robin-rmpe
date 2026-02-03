@@ -65,8 +65,9 @@ export function MarkAbsentDialog({
 			const [hours, minutes] = selectedTime.split(":").map(Number);
 			date = setMinutes(setHours(date, hours), minutes);
 		} else if (selectedDate) {
-			// If only date is selected, set to end of day
-			date = setMinutes(setHours(date, 23), 59);
+			// If only date is selected, set to start of day (00:00)
+			// This ensures the person is marked as available at midnight of their return date
+			date = setMinutes(setHours(date, 0), 0);
 		}
 
 		return date.getTime();
