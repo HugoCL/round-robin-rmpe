@@ -3,7 +3,7 @@
 import { useAction, useMutation } from "convex/react";
 import { Calendar, Clock, Globe, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
@@ -97,6 +97,20 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 		() => getChileTimePreview(date, time),
 		[date, time],
 	);
+
+	// Update date and time to current values when dialog opens
+	useEffect(() => {
+		if (open) {
+			setDate(new Date());
+			setTime(
+				new Date().toLocaleTimeString("en-US", {
+					hour12: false,
+					hour: "2-digit",
+					minute: "2-digit",
+				}),
+			);
+		}
+	}, [open]);
 
 	const createEventMutation = useMutation(api.mutations.createEvent);
 	const sendEventInviteAction = useAction(api.actions.sendEventInvite);
