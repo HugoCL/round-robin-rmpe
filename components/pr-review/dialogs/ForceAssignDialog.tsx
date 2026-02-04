@@ -67,17 +67,16 @@ export function ForceAssignDialog() {
 		}
 
 		try {
+			const actionByReviewerId = user
+				? reviewers.find(
+						(r) => r.email.toLowerCase() === user.email.toLowerCase(),
+					)?._id
+				: undefined;
 			const result = await assignPRMutation({
 				reviewerId: selectedReviewerId as Id<"reviewers">,
 				forced: true, // Mark as forced assignment
 				prUrl: prUrl.trim() || undefined,
-				actionBy: user
-					? {
-							email: user.email,
-							firstName: user.firstName,
-							lastName: user.lastName,
-						}
-					: undefined,
+				actionByReviewerId,
 			});
 
 			if (result.success && result.reviewer) {
@@ -180,7 +179,7 @@ export function ForceAssignDialog() {
 					{t("pr.forceAssign")} PR
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[540px]">
+			<DialogContent className="sm:max-w-135">
 				<DialogHeader>
 					<div className="flex items-center gap-2">
 						<span className="inline-flex h-10 w-10 items-center justify-center  bg-primary/10 text-primary">

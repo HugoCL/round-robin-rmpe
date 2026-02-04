@@ -276,24 +276,18 @@ export const forceAssignPR = action({
 	args: {
 		reviewerId: v.id("reviewers"),
 		prUrl: v.optional(v.string()),
-		actionBy: v.optional(
-			v.object({
-				email: v.string(),
-				firstName: v.optional(v.string()),
-				lastName: v.optional(v.string()),
-			}),
-		),
+		actionByReviewerId: v.optional(v.id("reviewers")),
 	},
 	handler: async (
 		ctx,
-		{ reviewerId, prUrl, actionBy },
+		{ reviewerId, prUrl, actionByReviewerId },
 	): Promise<{ success: boolean; reviewerId?: string; error?: string }> => {
 		// Use the mutation to assign the PR
 		const result = await ctx.runMutation(api.mutations.assignPR, {
 			reviewerId,
 			forced: true,
 			prUrl,
-			actionBy,
+			actionByReviewerId,
 		});
 
 		return result;
@@ -305,17 +299,11 @@ export const assignPRByTag = action({
 	args: {
 		teamSlug: v.string(),
 		tagId: v.id("tags"),
-		actionBy: v.optional(
-			v.object({
-				email: v.string(),
-				firstName: v.optional(v.string()),
-				lastName: v.optional(v.string()),
-			}),
-		),
+		actionByReviewerId: v.optional(v.id("reviewers")),
 	},
 	handler: async (
 		ctx,
-		{ teamSlug, tagId, actionBy },
+		{ teamSlug, tagId, actionByReviewerId },
 	): Promise<{
 		success: boolean;
 		reviewer?: Doc<"reviewers">;
@@ -335,7 +323,7 @@ export const assignPRByTag = action({
 		const result = await ctx.runMutation(api.mutations.assignPR, {
 			reviewerId: nextReviewer._id,
 			tagId,
-			actionBy,
+			actionByReviewerId,
 		});
 
 		return {

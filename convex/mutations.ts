@@ -490,7 +490,6 @@ async function updateAssignmentFeed(
 	ctx: MutationCtx,
 	newAssignment: {
 		reviewerId: string;
-		reviewerName: string;
 		timestamp: number;
 		forced: boolean;
 		skipped: boolean;
@@ -498,11 +497,7 @@ async function updateAssignmentFeed(
 		prUrl?: string;
 		contextUrl?: string;
 		tagId?: string;
-		actionBy?: {
-			email: string;
-			firstName?: string;
-			lastName?: string;
-		};
+		actionByReviewerId?: Id<"reviewers">;
 	},
 	teamId: Id<"teams"> | undefined,
 ) {
@@ -561,14 +556,13 @@ async function updateAssignmentFeedAfterUndo(
 
 	const newItems = remainingHistory.map((item) => ({
 		reviewerId: item.reviewerId,
-		reviewerName: item.reviewerName,
 		timestamp: item.timestamp,
 		forced: item.forced,
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
 		prUrl: item.prUrl,
 		tagId: item.tagId,
-		actionBy: item.actionBy,
+		actionByReviewerId: item.actionByReviewerId,
 	}));
 
 	await ctx.db.patch(existingFeed._id, {
@@ -587,13 +581,7 @@ export const assignPR = mutation({
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
 		tagId: v.optional(v.id("tags")),
-		actionBy: v.optional(
-			v.object({
-				email: v.string(),
-				firstName: v.optional(v.string()),
-				lastName: v.optional(v.string()),
-			}),
-		),
+		actionByReviewerId: v.optional(v.id("reviewers")),
 	},
 	handler: async (
 		ctx,
@@ -605,7 +593,7 @@ export const assignPR = mutation({
 			prUrl,
 			contextUrl,
 			tagId,
-			actionBy,
+			actionByReviewerId,
 		},
 	) => {
 		const reviewer = await ctx.db.get(reviewerId);
@@ -624,7 +612,6 @@ export const assignPR = mutation({
 		await ctx.db.insert("assignmentHistory", {
 			teamId: reviewer.teamId,
 			reviewerId,
-			reviewerName: reviewer.name,
 			timestamp,
 			forced,
 			skipped,
@@ -632,7 +619,7 @@ export const assignPR = mutation({
 			prUrl,
 			contextUrl,
 			tagId,
-			actionBy,
+			actionByReviewerId,
 		});
 
 		// Update assignment feed - only if it's not an absent reviewer being auto-skipped
@@ -641,7 +628,6 @@ export const assignPR = mutation({
 				ctx,
 				{
 					reviewerId,
-					reviewerName: reviewer.name,
 					timestamp,
 					forced,
 					skipped,
@@ -649,7 +635,7 @@ export const assignPR = mutation({
 					prUrl,
 					contextUrl,
 					tagId,
-					actionBy,
+					actionByReviewerId,
 				},
 				reviewer.teamId,
 			);

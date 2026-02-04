@@ -37,7 +37,6 @@ export default defineSchema({
 	assignmentHistory: defineTable({
 		teamId: v.optional(v.id("teams")),
 		reviewerId: v.id("reviewers"),
-		reviewerName: v.string(),
 		timestamp: v.number(),
 		forced: v.boolean(),
 		skipped: v.boolean(),
@@ -45,13 +44,7 @@ export default defineSchema({
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
 		tagId: v.optional(v.string()),
-		actionBy: v.optional(
-			v.object({
-				email: v.string(),
-				firstName: v.optional(v.string()),
-				lastName: v.optional(v.string()),
-			}),
-		),
+		actionByReviewerId: v.optional(v.id("reviewers")),
 	})
 		.index("by_timestamp", ["timestamp"]) // legacy
 		.index("by_team_timestamp", ["teamId", "timestamp"]),
@@ -62,7 +55,6 @@ export default defineSchema({
 		items: v.array(
 			v.object({
 				reviewerId: v.string(),
-				reviewerName: v.string(),
 				timestamp: v.number(),
 				forced: v.boolean(),
 				skipped: v.boolean(),
@@ -70,13 +62,7 @@ export default defineSchema({
 				prUrl: v.optional(v.string()),
 				contextUrl: v.optional(v.string()),
 				tagId: v.optional(v.string()),
-				actionBy: v.optional(
-					v.object({
-						email: v.string(),
-						firstName: v.optional(v.string()),
-						lastName: v.optional(v.string()),
-					}),
-				),
+				actionByReviewerId: v.optional(v.id("reviewers")),
 			}),
 		),
 	}).index("by_team", ["teamId"]),

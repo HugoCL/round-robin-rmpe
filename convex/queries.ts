@@ -53,6 +53,29 @@ function buildReviewerMaps(reviewers: ReviewerDoc[]) {
 	return { byId };
 }
 
+function resolveReviewerName(
+	reviewerId: string | undefined,
+	byId: Map<Id<"reviewers">, ReviewerDoc>,
+	fallback?: string,
+) {
+	if (!reviewerId) return fallback ?? "Unknown";
+	const reviewer = byId.get(reviewerId as Id<"reviewers">);
+	return reviewer?.name ?? fallback ?? "Unknown";
+}
+
+function resolveReviewerMeta(
+	reviewerId: string | undefined,
+	byId: Map<Id<"reviewers">, ReviewerDoc>,
+) {
+	if (!reviewerId) return {};
+	const reviewer = byId.get(reviewerId as Id<"reviewers">);
+	if (!reviewer) return {};
+	return {
+		actionByName: reviewer.name,
+		actionByEmail: reviewer.email,
+	};
+}
+
 function resolvePerson(
 	person: EventPerson,
 	byId: Map<Id<"reviewers">, ReviewerDoc>,
@@ -135,7 +158,20 @@ export const getAssignmentFeed = query({
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.first();
 		if (!feed) return { items: [], lastAssigned: null };
-		return feed;
+		const reviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.collect();
+		const { byId } = buildReviewerMaps(reviewers);
+
+		return {
+			...feed,
+			items: feed.items.map((item) => ({
+				...item,
+				reviewerName: resolveReviewerName(item.reviewerId, byId),
+				...resolveReviewerMeta(item.actionByReviewerId, byId),
+			})),
+		};
 	},
 });
 
@@ -149,8 +185,17 @@ export const getAssignmentHistory = query({
 			.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
 			.order("desc")
 			.take(10);
+		const reviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.collect();
+		const { byId } = buildReviewerMaps(reviewers);
 
-		return history;
+		return history.map((item) => ({
+			...item,
+			reviewerName: resolveReviewerName(item.reviewerId, byId),
+			...resolveReviewerMeta(item.actionByReviewerId, byId),
+		}));
 	},
 });
 
@@ -176,8 +221,14 @@ export const checkPRAlreadyAssigned = query({
 
 		if (!existingAssignment) return null;
 
+		const reviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.collect();
+		const { byId } = buildReviewerMaps(reviewers);
+
 		return {
-			reviewerName: existingAssignment.reviewerName,
+			reviewerName: resolveReviewerName(existingAssignment.reviewerId, byId),
 			timestamp: existingAssignment.timestamp,
 		};
 	},

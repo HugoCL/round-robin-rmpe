@@ -219,7 +219,8 @@ export default function PRReviewAssignment({
 					isForced: item.forced,
 					wasSkipped: item.skipped,
 					isAbsentSkip: item.isAbsentSkip,
-					actionBy: item.actionBy?.email, // flatten to string per AssignmentItem type
+					actionByName: item.actionByName,
+					actionByEmail: item.actionByEmail,
 					prUrl: item.prUrl,
 					tagId: item.tagId,
 				})) || [],
@@ -604,7 +605,11 @@ export default function PRReviewAssignment({
 					nextReviewerName={nextReviewer?.name}
 					currentReviewerName={nextReviewer?.name}
 					nextAfterSkipName={undefined}
-					lastAssignmentFrom={assignmentFeed.items[0]?.actionBy || null}
+					lastAssignmentFrom={
+						assignmentFeed.items[0]?.actionByName ||
+						assignmentFeed.items[0]?.actionByEmail ||
+						null
+					}
 					lastAssignmentTo={assignmentFeed.items[0]?.reviewerName || null}
 					onConfirm={() => handleConfirmShortcut()}
 					onCancel={handleCancelShortcut}

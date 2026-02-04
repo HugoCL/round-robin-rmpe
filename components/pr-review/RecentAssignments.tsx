@@ -9,6 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 
+type AssignmentHistoryItem = Doc<"assignmentHistory"> & {
+	reviewerName: string;
+	actionByName?: string;
+	actionByEmail?: string;
+};
+
 export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 	const t = useTranslations();
 	// Use Convex for real-time assignment history
@@ -31,7 +37,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 				) : (
 					<div className="space-y-3">
 						{assignmentHistory.map(
-							(item: Doc<"assignmentHistory">, index: number) => (
+							(item: AssignmentHistoryItem, index: number) => (
 								<div
 									key={`${item.reviewerName}-${item.timestamp}-${index}`}
 									className="flex items-center p-3 border  bg-card/50"
@@ -41,15 +47,10 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 										<p className="text-xs text-muted-foreground">
 											{new Date(item.timestamp).toLocaleString()}
 										</p>
-										{item.actionBy && (
+										{(item.actionByName || item.actionByEmail) && (
 											<p className="text-xs text-muted-foreground mt-1">
 												{t("history.assignedBy")}:{" "}
-												{[
-													item.actionBy.firstName,
-													item.actionBy.lastName?.split(" ")[0],
-												]
-													.filter(Boolean)
-													.join(" ") || item.actionBy.email}
+												{item.actionByName || item.actionByEmail}
 											</p>
 										)}
 										{item.prUrl && (

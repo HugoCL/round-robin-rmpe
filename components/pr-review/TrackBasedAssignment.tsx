@@ -112,17 +112,16 @@ export function TrackBasedAssignment() {
 
 		setIsAssigning(true);
 		try {
+			const actionByReviewerId = user
+				? reviewers.find(
+						(r) => r.email.toLowerCase() === user.email.toLowerCase(),
+					)?._id
+				: undefined;
 			const result = await assignPRMutation({
 				reviewerId: nextReviewer._id as Id<"reviewers">,
 				tagId: selectedTagId as Id<"tags">, // Pass the tag ID for tracking
 				prUrl: prUrl.trim() || undefined,
-				actionBy: user
-					? {
-							email: user.email,
-							firstName: user.firstName,
-							lastName: user.lastName,
-						}
-					: undefined,
+				actionByReviewerId,
 			});
 
 			if (result.success && result.reviewer) {
@@ -256,7 +255,7 @@ export function TrackBasedAssignment() {
 					{t("tags.assignBasedOnTags")}
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[500px]">
+			<DialogContent className="sm:max-w-125">
 				<DialogHeader>
 					<DialogTitle>{t("tags.tagBasedAssignment")}</DialogTitle>
 					<DialogDescription>{t("tags.tagBasedDescription")}</DialogDescription>

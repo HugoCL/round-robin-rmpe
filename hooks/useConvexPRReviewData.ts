@@ -78,6 +78,14 @@ export function useConvexPRReviewData(
 		nextReviewer === undefined ||
 		assignmentFeed === undefined;
 
+	const getActionByReviewerId = () => {
+		if (!user?.email) return undefined;
+		const match = reviewers.find(
+			(r) => r.email.toLowerCase() === user.email.toLowerCase(),
+		);
+		return match?._id;
+	};
+
 	const assignPR = async (opts?: { prUrl?: string; contextUrl?: string }) => {
 		if (!nextReviewer) return;
 
@@ -86,7 +94,7 @@ export function useConvexPRReviewData(
 				reviewerId: nextReviewer._id,
 				prUrl: opts?.prUrl,
 				contextUrl: opts?.contextUrl,
-				actionBy: user || undefined,
+				actionByReviewerId: getActionByReviewerId(),
 			});
 
 			toast({
@@ -111,7 +119,7 @@ export function useConvexPRReviewData(
 			await assignPRMutation({
 				reviewerId: nextReviewer._id,
 				skipped: true,
-				actionBy: user || undefined,
+				actionByReviewerId: getActionByReviewerId(),
 			});
 
 			toast({
@@ -171,7 +179,7 @@ export function useConvexPRReviewData(
 		try {
 			await assignPRMutation({
 				reviewerId: nextAfterSkip._id,
-				actionBy: user || undefined,
+				actionByReviewerId: getActionByReviewerId(),
 				prUrl: opts?.prUrl,
 				contextUrl: opts?.contextUrl,
 			});

@@ -17,7 +17,8 @@ export interface AssignmentItem {
 	isForced: boolean;
 	wasSkipped: boolean;
 	isAbsentSkip: boolean;
-	actionBy?: string;
+	actionByName?: string;
+	actionByEmail?: string;
 	prUrl?: string;
 	tagId?: string;
 }
