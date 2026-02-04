@@ -331,10 +331,17 @@ export const processAbsentReturns = mutation({
 
 		// Optimized: Use index to filter only absent reviewers directly in DB
 		// This avoids fetching all reviewers (which was causing high bandwidth usage)
+		// Filter requires absentUntil to be defined (not undefined/null) AND <= now
+		// This ensures reviewers with indefinite absence (absentUntil = undefined) are not auto-returned
 		const absentReviewers = await ctx.db
 			.query("reviewers")
 			.withIndex("by_absent_until", (q) => q.eq("isAbsent", true))
-			.filter((q) => q.lte(q.field("absentUntil"), now))
+			.filter((q) =>
+				q.and(
+					q.neq(q.field("absentUntil"), undefined),
+					q.lte(q.field("absentUntil"), now),
+				),
+			)
 			.collect();
 
 		for (const reviewer of absentReviewers) {
