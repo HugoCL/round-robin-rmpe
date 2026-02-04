@@ -139,18 +139,12 @@ export default defineSchema({
 		expectedEndTime: v.optional(v.number()), // Precalculated end time for optimization
 		createdAt: v.number(),
 		createdBy: v.object({
-			odId: v.optional(v.string()), // reviewer ID if available
-			email: v.string(),
-			name: v.string(),
-			googleChatUserId: v.optional(v.string()),
+			reviewerId: v.id("reviewers"),
 		}),
 		// Participants who confirmed attendance
 		participants: v.array(
 			v.object({
-				odId: v.optional(v.string()), // reviewer ID if available
-				email: v.string(),
-				name: v.string(),
-				googleChatUserId: v.optional(v.string()),
+				reviewerId: v.id("reviewers"),
 				joinedAt: v.number(),
 			}),
 		),

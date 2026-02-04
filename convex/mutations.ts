@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx } from "./_generated/server";
 
 // Helpers
@@ -13,6 +13,32 @@ async function getTeamBySlugOrThrow(
 		.first();
 	if (!team) throw new Error("Team not found");
 	return team;
+}
+
+async function findReviewerByEmail(
+	ctx: QueryCtx | MutationCtx,
+	teamId: Id<"teams">,
+	email: string,
+): Promise<Doc<"reviewers"> | null> {
+	const normalizedEmail = email.toLowerCase().trim();
+	if (!normalizedEmail) return null;
+	let reviewer = await ctx.db
+		.query("reviewers")
+		.withIndex("by_team_email", (q) =>
+			q.eq("teamId", teamId).eq("email", normalizedEmail),
+		)
+		.first();
+	if (reviewer) return reviewer;
+
+	const teamReviewers = await ctx.db
+		.query("reviewers")
+		.withIndex("by_team", (q) => q.eq("teamId", teamId))
+		.collect();
+	reviewer =
+		teamReviewers.find((r) => r.email.toLowerCase() === normalizedEmail) ||
+		null;
+
+	return reviewer;
 }
 
 // Create team
@@ -1089,7 +1115,6 @@ export const createEvent = mutation({
 		description: v.optional(v.string()),
 		scheduledAt: v.number(),
 		createdBy: v.object({
-			odId: v.optional(v.string()),
 			email: v.string(),
 			name: v.string(),
 			googleChatUserId: v.optional(v.string()),
@@ -1100,6 +1125,22 @@ export const createEvent = mutation({
 		{ teamSlug, title, description, scheduledAt, createdBy },
 	) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const createdByEmail = createdBy.email.toLowerCase().trim();
+		const createdByReviewer = await findReviewerByEmail(
+			ctx,
+			team._id,
+			createdByEmail,
+		);
+
+		if (!createdByReviewer) {
+			return { success: false, error: "Creator must be a reviewer" };
+		}
+
+		const createdByRecord = { reviewerId: createdByReviewer._id };
+		const participantRecord = {
+			reviewerId: createdByReviewer._id,
+			joinedAt: Date.now(),
+		};
 
 		const eventId = await ctx.db.insert("events", {
 			teamId: team._id,
@@ -1107,14 +1148,9 @@ export const createEvent = mutation({
 			description: description?.trim(),
 			scheduledAt,
 			createdAt: Date.now(),
-			createdBy,
+			createdBy: createdByRecord,
 			// Add the creator as the initial participant so they appear joined by default
-			participants: [
-				{
-					...createdBy,
-					joinedAt: Date.now(),
-				},
-			],
+			participants: [participantRecord],
 			status: "scheduled",
 		});
 
@@ -1127,7 +1163,6 @@ export const joinEvent = mutation({
 	args: {
 		eventId: v.id("events"),
 		participant: v.object({
-			odId: v.optional(v.string()),
 			email: v.string(),
 			name: v.string(),
 			googleChatUserId: v.optional(v.string()),
@@ -1143,10 +1178,23 @@ export const joinEvent = mutation({
 			return { success: false, error: "Event is no longer active" };
 		}
 
-		// Check if already participating
-		const alreadyJoined = event.participants.some(
-			(p) => p.email.toLowerCase() === participant.email.toLowerCase(),
+		const normalizedEmail = participant.email.toLowerCase().trim();
+		const reviewer = await findReviewerByEmail(
+			ctx,
+			event.teamId,
+			normalizedEmail,
 		);
+		const reviewerId = reviewer?._id;
+
+		if (!reviewerId) {
+			return { success: false, error: "Reviewer not found" };
+		}
+
+		// Check if already participating
+		const alreadyJoined = event.participants.some((p) => {
+			if (p.reviewerId === reviewerId) return true;
+			return false;
+		});
 
 		if (alreadyJoined) {
 			return {
@@ -1156,45 +1204,10 @@ export const joinEvent = mutation({
 			};
 		}
 
-		// Try to find the googleChatUserId from reviewers table if not provided
-		let googleChatUserId = participant.googleChatUserId;
-		if (!googleChatUserId) {
-			// Look up reviewer by email in the same team
-			// First try exact match with index
-			let reviewer = await ctx.db
-				.query("reviewers")
-				.withIndex("by_team_email", (q) =>
-					q
-						.eq("teamId", event.teamId)
-						.eq("email", participant.email.toLowerCase()),
-				)
-				.first();
-
-			// If not found, try case-insensitive search
-			if (!reviewer) {
-				const teamReviewers = await ctx.db
-					.query("reviewers")
-					.withIndex("by_team", (q) => q.eq("teamId", event.teamId))
-					.collect();
-				reviewer =
-					teamReviewers.find(
-						(r) => r.email.toLowerCase() === participant.email.toLowerCase(),
-					) || null;
-			}
-
-			googleChatUserId = reviewer?.googleChatUserId?.trim() || undefined;
-		}
-
 		// Add participant
+		const newParticipant = { reviewerId, joinedAt: Date.now() };
 		await ctx.db.patch(eventId, {
-			participants: [
-				...event.participants,
-				{
-					...participant,
-					googleChatUserId,
-					joinedAt: Date.now(),
-				},
-			],
+			participants: [...event.participants, newParticipant],
 		});
 
 		return { success: true };
@@ -1217,11 +1230,24 @@ export const leaveEvent = mutation({
 			return { success: false, error: "Event is no longer active" };
 		}
 
+		const normalizedEmail = email.toLowerCase().trim();
+		const reviewer = await findReviewerByEmail(
+			ctx,
+			event.teamId,
+			normalizedEmail,
+		);
+		const reviewerId = reviewer?._id;
+
+		if (!reviewerId) {
+			return { success: false, error: "Reviewer not found" };
+		}
+
 		// Remove participant
 		await ctx.db.patch(eventId, {
-			participants: event.participants.filter(
-				(p) => p.email.toLowerCase() !== email.toLowerCase(),
-			),
+			participants: event.participants.filter((p) => {
+				if (p.reviewerId === reviewerId) return false;
+				return true;
+			}),
 		});
 
 		return { success: true };
@@ -1412,7 +1438,7 @@ export const addEventParticipant = mutation({
 
 		// Check if already participating
 		const alreadyJoined = event.participants.some(
-			(p) => p.email.toLowerCase() === reviewer.email.toLowerCase(),
+			(p) => p.reviewerId === reviewerId,
 		);
 
 		if (alreadyJoined) {
@@ -1423,14 +1449,12 @@ export const addEventParticipant = mutation({
 			};
 		}
 
-		// Add participant with full reviewer data
+		// Add participant with reviewer reference
 		await ctx.db.patch(eventId, {
 			participants: [
 				...event.participants,
 				{
-					email: reviewer.email,
-					name: reviewer.name,
-					googleChatUserId: reviewer.googleChatUserId?.trim() || undefined,
+					reviewerId,
 					joinedAt: Date.now(),
 				},
 			],

@@ -15,7 +15,7 @@ type EnrichedAssignment = {
 	assignerEmail?: string;
 };
 
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
 
 // Helper: resolve team by slug and optionally create a default one for single-tenant upgrade
@@ -26,6 +26,61 @@ async function getTeamBySlugOrThrow(ctx: QueryCtx, teamSlug: string) {
 		.first();
 	if (!team) throw new Error("Team not found");
 	return team;
+}
+
+type ReviewerDoc = Doc<"reviewers">;
+type EventDoc = Doc<"events">;
+type EventPerson = {
+	reviewerId: Id<"reviewers">;
+};
+type ResolvedPerson = {
+	reviewerId: Id<"reviewers">;
+	email: string;
+	name: string;
+	googleChatUserId?: string;
+};
+type ResolvedParticipant = ResolvedPerson & { joinedAt: number };
+type ResolvedEvent = Omit<EventDoc, "createdBy" | "participants"> & {
+	createdBy: ResolvedPerson;
+	participants: ResolvedParticipant[];
+};
+
+function buildReviewerMaps(reviewers: ReviewerDoc[]) {
+	const byId = new Map<Id<"reviewers">, ReviewerDoc>();
+	for (const reviewer of reviewers) {
+		byId.set(reviewer._id, reviewer);
+	}
+	return { byId };
+}
+
+function resolvePerson(
+	person: EventPerson,
+	byId: Map<Id<"reviewers">, ReviewerDoc>,
+): ResolvedPerson {
+	const reviewer = byId.get(person.reviewerId);
+	return {
+		reviewerId: person.reviewerId,
+		email: reviewer?.email ?? "unknown@invalid.local",
+		name: reviewer?.name ?? "Unknown",
+		googleChatUserId: reviewer?.googleChatUserId?.trim() || undefined,
+	};
+}
+
+function resolveEvent(
+	event: EventDoc,
+	byId: Map<Id<"reviewers">, ReviewerDoc>,
+): ResolvedEvent {
+	const createdBy = resolvePerson(event.createdBy as EventPerson, byId);
+	const participants = event.participants.map((participant) => ({
+		...resolvePerson(participant as EventPerson, byId),
+		joinedAt: participant.joinedAt,
+	}));
+
+	return {
+		...event,
+		createdBy,
+		participants,
+	};
 }
 
 // Teams
@@ -387,11 +442,17 @@ export const getActiveEvents = query({
 			.query("events")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
+		const reviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.collect();
+		const { byId } = buildReviewerMaps(reviewers);
 
 		// Filter for active events and sort by scheduled time
 		return events
 			.filter((e) => e.status === "scheduled" || e.status === "started")
-			.sort((a, b) => a.scheduledAt - b.scheduledAt);
+			.sort((a, b) => a.scheduledAt - b.scheduledAt)
+			.map((event) => resolveEvent(event, byId));
 	},
 });
 
@@ -406,8 +467,15 @@ export const getUpcomingEvents = query({
 				q.eq("teamId", team._id).eq("status", "scheduled"),
 			)
 			.collect();
+		const reviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.collect();
+		const { byId } = buildReviewerMaps(reviewers);
 
-		return events.sort((a, b) => a.scheduledAt - b.scheduledAt);
+		return events
+			.sort((a, b) => a.scheduledAt - b.scheduledAt)
+			.map((event) => resolveEvent(event, byId));
 	},
 });
 
@@ -415,7 +483,14 @@ export const getUpcomingEvents = query({
 export const getEventById = query({
 	args: { eventId: v.id("events") },
 	handler: async (ctx, { eventId }) => {
-		return await ctx.db.get(eventId);
+		const event = await ctx.db.get(eventId);
+		if (!event) return null;
+		const reviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", event.teamId))
+			.collect();
+		const { byId } = buildReviewerMaps(reviewers);
+		return resolveEvent(event, byId);
 	},
 });
 
@@ -427,8 +502,14 @@ export const getEventWithTeam = query({
 		if (!event) return null;
 
 		const team = await ctx.db.get(event.teamId);
+		const reviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", event.teamId))
+			.collect();
+		const { byId } = buildReviewerMaps(reviewers);
+		const resolvedEvent = resolveEvent(event, byId);
 		return {
-			event,
+			event: resolvedEvent,
 			team: team ? { name: team.name, slug: team.slug } : null,
 		};
 	},
