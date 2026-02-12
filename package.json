@@ -97,9 +97,10 @@
 		},
 		"onlyBuiltDependencies": [
 			"@clerk/shared",
+			"@parcel/watcher",
+			"@swc/core",
 			"esbuild",
 			"lefthook",
-			"msw",
 			"sharp"
 		]
 	}
