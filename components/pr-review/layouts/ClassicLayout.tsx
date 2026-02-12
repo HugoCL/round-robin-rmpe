@@ -31,13 +31,11 @@ import { usePRReview } from "../PRReviewContext";
 import { RecentAssignments } from "../RecentAssignments";
 import { ReviewersTable } from "../ReviewersTable";
 import { TagManager } from "../TagManager";
-import { TrackBasedAssignment } from "../TrackBasedAssignment";
 
 export function ClassicLayout() {
 	const t = useTranslations();
 	const {
 		reviewers,
-		hasTags,
 		teamSlug,
 		// onDataUpdate (not needed here),
 		addReviewer,
@@ -125,7 +123,6 @@ export function ClassicLayout() {
 
 					<div className="space-y-4">
 						<ForceAssignDialog />
-						{hasTags && <TrackBasedAssignment />}
 						<CreateEventDialog
 							trigger={
 								<Button variant="outline" className="w-full">

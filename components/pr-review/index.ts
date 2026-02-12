@@ -20,4 +20,3 @@ export { default as PRReviewAssignment } from "./PRReviewAssignment";
 export { RecentAssignments } from "./RecentAssignments";
 export { ReviewersTable } from "./ReviewersTable";
 export { TagManager } from "./TagManager";
-export { TrackBasedAssignment } from "./TrackBasedAssignment";

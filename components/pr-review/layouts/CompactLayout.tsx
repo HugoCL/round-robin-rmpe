@@ -10,10 +10,9 @@ import { FeedHistory } from "../FeedHistory";
  * CompactLayout component displays a compact layout for the PR review assignment page.
  */
 import { usePRReview } from "../PRReviewContext";
-import { TrackBasedAssignment } from "../TrackBasedAssignment";
 
 export function CompactLayout() {
-	const { hasTags, teamSlug } = usePRReview();
+	const { teamSlug } = usePRReview();
 	const t = useTranslations();
 	return (
 		<div className="flex flex-col lg:flex-row gap-6">
@@ -26,7 +25,6 @@ export function CompactLayout() {
 				{/* Force Assign Dialog */}
 				<div className="border  p-4 bg-muted/50 space-y-4">
 					<ForceAssignDialog />
-					{hasTags && <TrackBasedAssignment />}
 					<CreateEventDialog
 						trigger={
 							<Button variant="outline" className="w-full">

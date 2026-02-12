@@ -249,6 +249,7 @@
 		"forceAssignFailed": "Falló al forzar la asignación del PR. Por favor intenta de nuevo.",
 		"trackAssignSuccess": "PR asignado a {reviewer} (etiqueta {tag})",
 		"trackAssignFailed": "Falló al asignar el PR. Por favor intenta de nuevo.",
+		"duplicatePRAssigned": "Este PR ya fue asignado a {reviewer} el {date}.",
 		"assignFailedTitle": "Error",
 		"assignFailedDescription": "Falló al asignar el PR. Por favor intenta de nuevo.",
 		"reviewerSkippedTitle": "Revisor Omitido",

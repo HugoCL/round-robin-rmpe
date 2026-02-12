@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-02-12",
+		type: "improvement",
+		title: "Asignación por tags integrada en la tarjeta principal",
+		description:
+			"Unificamos la experiencia de asignación para evitar el flujo separado en popup. Ahora puedes elegir el modo regular o por tags directamente en la sección de asignación de PRs.",
+	},
+	{
 		date: "2026-02-02",
 		type: "feature",
 		title: "Detección de PRs duplicados",

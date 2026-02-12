@@ -202,6 +202,7 @@
 		"forceAssignFailed": "Failed to force assign PR. Please try again.",
 		"trackAssignSuccess": "PR assigned to {reviewer} ({tag} tag)",
 		"trackAssignFailed": "Failed to assign PR. Please try again.",
+		"duplicatePRAssigned": "This PR was already assigned to {reviewer} on {date}.",
 		"assignFailedTitle": "Error",
 		"assignFailedDescription": "Failed to assign PR. Please try again.",
 		"reviewerSkippedTitle": "Reviewer Skipped",

@@ -30,3 +30,6 @@ next-env.d.ts
 .idea
 # next-agents-md
 .next-docs/
+
+# clerk configuration (can include secrets)
+/.clerk/
