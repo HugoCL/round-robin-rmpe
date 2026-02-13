@@ -68,8 +68,6 @@
 		"resume": "Reanudar",
 		"play": "Reproducir",
 		"record": "Grabar",
-		"classicView": "Vista Clásica",
-		"compactView": "Vista Compacta",
 		"refresh": "Actualizar",
 		"name": "Nombre",
 		"email": "Email",
@@ -85,7 +83,6 @@
 		"manage": "Gestionar",
 		"options": "Opciones",
 		"optionsDescription": "Personaliza tu vista y preferencias",
-		"compactViewDescription": "Ideal para colas densas",
 		"language": "Idioma",
 		"viewOptions": "Opciones de Vista",
 		"historyAndData": "Historial y Datos",
@@ -526,9 +523,5 @@
 		"title": "Novedades",
 		"description": "Últimos cambios y mejoras de la aplicación",
 		"noChanges": "No hay cambios registrados aún."
-	},
-	"announcements": {
-		"classicViewDeprecation": "La Vista Clásica será deprecada pronto y la Vista Compacta será la única vista disponible. Puedes probarla ahora en Opciones > Vista Compacta.",
-		"dismiss": "Descartar"
 	}
 }

@@ -21,14 +21,12 @@ import { useConvexTags } from "@/hooks/useConvexTags";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { Assignment, UserInfo } from "@/lib/types";
-import { AnnouncementBanner } from "./AnnouncementBanner";
 import {
 	type ShortcutAction,
 	ShortcutConfirmationDialog,
 } from "./dialogs/ShortcutConfirmationDialog";
 import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
-import { ClassicLayout } from "./layouts/ClassicLayout";
 import { CompactLayout } from "./layouts/CompactLayout";
 import { PRReviewProvider } from "./PRReviewContext";
 
@@ -56,7 +54,7 @@ export default function PRReviewAssignment({
 	const t = useTranslations();
 	const { user, isLoaded } = useUser();
 	const { signOut } = useClerk();
-	// Hidden file input id used by ClassicLayout dropdown import action
+	// Hidden file input id used by header dropdown import action
 	const IMPORT_INPUT_ID = "import-file";
 
 	// State for managing UI preferences and dialogs
@@ -69,10 +67,6 @@ export default function PRReviewAssignment({
 	);
 	const [showTags, setShowTags] = useLocalStorage("showTags", true);
 	const [showEmails, setShowEmails] = useLocalStorage("showEmails", false);
-	const [compactLayout, setCompactLayout] = useLocalStorage(
-		"compactLayout",
-		true,
-	);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 	const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
 	const [pendingShortcut, setPendingShortcut] = useState<ShortcutAction | null>(
@@ -300,10 +294,6 @@ export default function PRReviewAssignment({
 		() => setShowTags((p) => !p),
 		[setShowTags],
 	);
-	const toggleCompactLayout = useCallback(
-		() => setCompactLayout((p) => !p),
-		[setCompactLayout],
-	);
 	const toggleShowEmails = useCallback(
 		() => setShowEmails((p) => !p),
 		[setShowEmails],
@@ -455,8 +445,6 @@ export default function PRReviewAssignment({
 	const providerValue = useMemo(
 		() => ({
 			teamSlug,
-			compactLayout,
-			toggleCompactLayout,
 			showAssignments,
 			toggleShowAssignments,
 			showTags,
@@ -487,8 +475,6 @@ export default function PRReviewAssignment({
 		}),
 		[
 			teamSlug,
-			compactLayout,
-			toggleCompactLayout,
 			showAssignments,
 			toggleShowAssignments,
 			showTags,
@@ -578,11 +564,9 @@ export default function PRReviewAssignment({
 					setReviewersDrawerOpen={setReviewersDrawerOpen}
 				/>
 
-				<AnnouncementBanner />
+				<CompactLayout />
 
-				{compactLayout ? <CompactLayout /> : <ClassicLayout />}
-
-				{/* Hidden file input for importing reviewer data. Triggered by ClassicLayout via document.getElementById('import-file')?.click() */}
+				{/* Hidden file input for importing reviewer data. Triggered by header actions via document.getElementById('import-file')?.click() */}
 				<input
 					id={IMPORT_INPUT_ID}
 					type="file"

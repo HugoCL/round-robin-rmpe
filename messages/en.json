@@ -19,8 +19,6 @@
 		"confirm": "Confirm",
 		"close": "Close",
 		"theme": "Theme",
-		"classicView": "Classic View",
-		"compactView": "Compact View",
 		"refresh": "Refresh",
 		"name": "Name",
 		"email": "Email",
@@ -36,7 +34,6 @@
 		"manage": "Manage",
 		"options": "Options",
 		"optionsDescription": "Customize your view and preferences",
-		"compactViewDescription": "Great for dense queues",
 		"language": "Language",
 		"viewOptions": "View Options",
 		"historyAndData": "History & Data",
@@ -479,9 +476,5 @@
 		"title": "What's New",
 		"description": "Latest changes and improvements",
 		"noChanges": "No changes recorded yet."
-	},
-	"announcements": {
-		"classicViewDeprecation": "Classic View is being deprecated soon and the Compact View will become the only available view. You can try it now in Options > Compact View.",
-		"dismiss": "Dismiss"
 	}
 }

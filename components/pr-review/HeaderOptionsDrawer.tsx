@@ -114,12 +114,10 @@ export function HeaderOptionsDrawer() {
 	const [open, setOpen] = React.useState(false);
 	const {
 		teamSlug,
-		compactLayout,
 		showAssignments,
 		showTags,
 		showEmails,
 		isRefreshing,
-		toggleCompactLayout,
 		toggleShowAssignments,
 		toggleShowTags,
 		toggleShowEmails,
@@ -128,7 +126,6 @@ export function HeaderOptionsDrawer() {
 		formatLastUpdated,
 	} = usePRReview();
 
-	const compactToggleId = React.useId();
 	const assignmentsToggleId = React.useId();
 	const tagsToggleId = React.useId();
 	const emailsToggleId = React.useId();
@@ -143,15 +140,6 @@ export function HeaderOptionsDrawer() {
 							{t("common.viewOptions")}
 						</h3>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-							<OptionToggle
-								id={compactToggleId}
-								icon={LayoutGrid}
-								label={t("common.compactView")}
-								description={t("common.compactViewDescription")}
-								checked={compactLayout}
-								onCheckedChange={toggleCompactLayout}
-								tone="layout"
-							/>
 							<OptionToggle
 								id={assignmentsToggleId}
 								icon={Eye}

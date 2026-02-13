@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-02-13",
+		type: "improvement",
+		title: "Vista compacta como experiencia única",
+		description:
+			"La Vista Compacta ahora es la única disponible en La Lista. Eliminamos la Vista Clásica y el aviso de deprecación para simplificar la experiencia y reducir complejidad en la interfaz.",
+	},
+	{
 		date: "2026-02-12",
 		type: "improvement",
 		title: "Asignación por tags integrada en la tarjeta principal",

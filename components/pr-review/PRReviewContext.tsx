@@ -7,8 +7,6 @@ import type { Assignment, Reviewer, UserInfo } from "@/lib/types";
 export interface PRReviewContextValue {
 	teamSlug?: string;
 	// Visibility / layout
-	compactLayout: boolean;
-	toggleCompactLayout: () => void;
 	showAssignments: boolean;
 	toggleShowAssignments: () => void;
 	showTags: boolean;
