@@ -64,6 +64,8 @@
 		"forceAssign": "Force Assign",
 		"skip": "Skip",
 		"regular": "Regular",
+		"assignmentModeRegular": "Regular assignment",
+		"assignmentModeWithTags": "Assignment with tags",
 		"addReviewer": "Add Reviewer",
 		"deleteReviewer": "Delete Reviewer",
 		"tags": "Tags",

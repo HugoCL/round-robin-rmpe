@@ -448,14 +448,14 @@ export function AssignmentCard() {
 										setSelectedTagId(undefined);
 									}}
 								>
-									{t("pr.regular")}
+									{t("pr.assignmentModeRegular")}
 								</Button>
 								<Button
 									variant={mode === "tag" ? "default" : "outline"}
 									size="sm"
 									onClick={() => setMode("tag")}
 								>
-									{t("tags.title")}
+									{t("pr.assignmentModeWithTags")}
 								</Button>
 							</div>
 
