@@ -43,6 +43,13 @@ export const changelogEntries: ChangelogEntry[] = [
 	{
 		date: "2026-02-13",
 		type: "improvement",
+		title: "Nueva landing de equipos",
+		description:
+			"Rediseñamos la pantalla inicial para reemplazar la redirección automática por un selector de equipos.",
+	},
+	{
+		date: "2026-02-13",
+		type: "improvement",
 		title: "Vista compacta como experiencia única",
 		description:
 			"La Vista Compacta ahora es la única disponible en La Lista. Eliminamos la Vista Clásica y el aviso de deprecación para simplificar la experiencia y reducir complejidad en la interfaz.",

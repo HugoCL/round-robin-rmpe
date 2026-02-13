@@ -115,6 +115,18 @@ export const getTeams = query({
 	},
 });
 
+export const getGlobalReviewedPRCount = query({
+	args: {},
+	handler: async (ctx) => {
+		const metrics = await ctx.db
+			.query("appMetrics")
+			.withIndex("by_key", (q) => q.eq("key", "reviewed_pr_total"))
+			.collect();
+
+		return metrics.reduce((total, metric) => total + metric.value, 0);
+	},
+});
+
 export const getTeam = query({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {

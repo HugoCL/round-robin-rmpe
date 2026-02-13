@@ -244,7 +244,15 @@
 		"createButton": "Create team",
 		"creatingEllipsis": "Creating…",
 		"errorProvideName": "Please provide a team name.",
-		"createError": "Failed to create team"
+		"createError": "Failed to create team",
+		"switcher": {
+			"title": "Select a team",
+			"description": "Choose the team you want to work with.",
+			"reviewedSummaryRich": "La Lista has reviewed <highlight>{count}</highlight> PRs.",
+			"teamListTitle": "Available teams",
+			"emptyTitle": "No teams yet",
+			"emptyDescription": "Create your first team to start assigning PR reviews."
+		}
 	},
 	"teamSettings": {
 		"title": "Team Settings",

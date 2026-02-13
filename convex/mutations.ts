@@ -2,6 +2,8 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx } from "./_generated/server";
 
+const GLOBAL_REVIEWED_PR_COUNTER_KEY = "reviewed_pr_total";
+
 // Helpers
 async function getTeamBySlugOrThrow(
 	ctx: QueryCtx | MutationCtx,
@@ -39,6 +41,28 @@ async function findReviewerByEmail(
 		null;
 
 	return reviewer;
+}
+
+async function incrementGlobalReviewedPRCounter(ctx: MutationCtx) {
+	const metrics = await ctx.db
+		.query("appMetrics")
+		.withIndex("by_key", (q) => q.eq("key", GLOBAL_REVIEWED_PR_COUNTER_KEY))
+		.collect();
+
+	if (metrics.length > 0) {
+		const primaryMetric = metrics[0];
+		await ctx.db.patch(primaryMetric._id, {
+			value: primaryMetric.value + 1,
+			updatedAt: Date.now(),
+		});
+		return;
+	}
+
+	await ctx.db.insert("appMetrics", {
+		key: GLOBAL_REVIEWED_PR_COUNTER_KEY,
+		value: 1,
+		updatedAt: Date.now(),
+	});
 }
 
 // Create team
@@ -621,6 +645,11 @@ export const assignPR = mutation({
 			tagId,
 			actionByReviewerId,
 		});
+
+		// Increment global PR counter only for real assignments (exclude skips)
+		if (!skipped && !isAbsentSkip) {
+			await incrementGlobalReviewedPRCounter(ctx);
+		}
 
 		// Update assignment feed - only if it's not an absent reviewer being auto-skipped
 		if (!isAbsentSkip) {

@@ -10,6 +10,11 @@ export default defineSchema({
 	})
 		.index("by_slug", ["slug"]) // enforce uniqueness at write-time
 		.index("by_created_at", ["createdAt"]),
+	appMetrics: defineTable({
+		key: v.string(),
+		value: v.number(),
+		updatedAt: v.number(),
+	}).index("by_key", ["key"]),
 	reviewers: defineTable({
 		teamId: v.optional(v.id("teams")),
 		name: v.string(),

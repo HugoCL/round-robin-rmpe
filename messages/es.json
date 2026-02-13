@@ -291,7 +291,15 @@
 		"createButton": "Crear equipo",
 		"creatingEllipsis": "Creando…",
 		"errorProvideName": "Por favor ingresa un nombre de equipo.",
-		"createError": "Falló la creación del equipo"
+		"createError": "Falló la creación del equipo",
+		"switcher": {
+			"title": "Selecciona un equipo",
+			"description": "Elige el equipo con el que quieres trabajar.",
+			"reviewedSummaryRich": "Se han revisado <highlight>{count}</highlight> PRs con La Lista.",
+			"teamListTitle": "Equipos disponibles",
+			"emptyTitle": "Aún no hay equipos",
+			"emptyDescription": "Crea tu primer equipo para comenzar a asignar revisiones de PR."
+		}
 	},
 	"teamSettings": {
 		"title": "Configuración del Equipo",
