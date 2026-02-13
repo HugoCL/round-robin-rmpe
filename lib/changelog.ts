@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-02-12",
+		type: "improvement",
+		title: "Mejora en la visualización de eventos próximos",
+		description:
+			"Ahora es más fácil saber cuando hay un evento próximo, ya que movimos la sección de próximos eventos al header y mejoramos un poco el diseño.",
+	},
+	{
 		date: "2026-02-13",
 		type: "improvement",
 		title: "Nueva landing de equipos",

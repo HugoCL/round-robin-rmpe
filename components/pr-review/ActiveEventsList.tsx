@@ -6,21 +6,16 @@ import {
 	Check,
 	Clock,
 	Trash2,
+	User,
 	UserCheck,
 	UserMinus,
 	UserPlus,
 	Users,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import {
 	Popover,
 	PopoverContent,
@@ -37,15 +32,38 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { usePRReview } from "./PRReviewContext";
 
+const SECOND_IN_MS = 1000;
+const MINUTE_IN_SECONDS = 60;
+const HOUR_IN_SECONDS = 60 * MINUTE_IN_SECONDS;
+const DAY_IN_SECONDS = 24 * HOUR_IN_SECONDS;
+
+function padCountdownValue(value: number) {
+	return String(value).padStart(2, "0");
+}
+
+function formatCountdown(milliseconds: number) {
+	const totalSeconds = Math.max(0, Math.floor(milliseconds / SECOND_IN_MS));
+	const days = Math.floor(totalSeconds / DAY_IN_SECONDS);
+	const hours = Math.floor((totalSeconds % DAY_IN_SECONDS) / HOUR_IN_SECONDS);
+	const minutes = Math.floor(
+		(totalSeconds % HOUR_IN_SECONDS) / MINUTE_IN_SECONDS,
+	);
+	const seconds = totalSeconds % MINUTE_IN_SECONDS;
+	const time = `${padCountdownValue(hours)}:${padCountdownValue(minutes)}:${padCountdownValue(seconds)}`;
+	return days > 0 ? `${days}d ${time}` : time;
+}
+
 export function ActiveEventsList() {
 	const t = useTranslations();
 	const locale = useLocale();
 	const { teamSlug, userInfo, reviewers } = usePRReview();
+	const [now, setNow] = useState(() => Date.now());
 
 	const events = useQuery(
 		api.queries.getActiveEvents,
 		teamSlug ? { teamSlug } : "skip",
 	);
+	type EventItem = NonNullable<typeof events>[number];
 
 	const joinEventMutation = useMutation(api.mutations.joinEvent);
 	const leaveEventMutation = useMutation(api.mutations.leaveEvent);
@@ -53,9 +71,20 @@ export function ActiveEventsList() {
 	const completeEventMutation = useMutation(api.mutations.completeEvent);
 	const addParticipantMutation = useMutation(api.mutations.addEventParticipant);
 
-	if (!events || events.length === 0) {
-		return null;
-	}
+	useEffect(() => {
+		if (!events?.length) return;
+		const intervalId = window.setInterval(() => {
+			setNow(Date.now());
+		}, SECOND_IN_MS);
+
+		return () => window.clearInterval(intervalId);
+	}, [events?.length]);
+
+	const sortedEvents = useMemo(
+		() =>
+			events ? [...events].sort((a, b) => a.scheduledAt - b.scheduledAt) : [],
+		[events],
+	);
 
 	const formatDateTime = (timestamp: number) => {
 		const date = new Date(timestamp);
@@ -71,13 +100,13 @@ export function ActiveEventsList() {
 		return { dateStr, timeStr };
 	};
 
-	const isParticipating = (event: (typeof events)[0]) => {
+	const isParticipating = (event: EventItem) => {
 		return event.participants.some(
 			(p) => p.email.toLowerCase() === userInfo?.email?.toLowerCase(),
 		);
 	};
 
-	const isCreator = (event: (typeof events)[0]) => {
+	const isCreator = (event: EventItem) => {
 		return (
 			event.createdBy.email.toLowerCase() === userInfo?.email?.toLowerCase()
 		);
@@ -234,7 +263,7 @@ export function ActiveEventsList() {
 	};
 
 	// Get reviewers that are not yet participants in an event
-	const getAvailableReviewers = (event: (typeof events)[0]) => {
+	const getAvailableReviewers = (event: EventItem) => {
 		return reviewers.filter(
 			(r) =>
 				!event.participants.some(
@@ -243,117 +272,82 @@ export function ActiveEventsList() {
 		);
 	};
 
+	if (!sortedEvents.length) {
+		return null;
+	}
+
 	return (
-		<Card>
-			<CardHeader className="pb-3">
-				<CardTitle className="text-lg flex items-center gap-2">
-					<Calendar className="h-5 w-5" />
-					{t("events.upcomingEvents")}
-				</CardTitle>
-				<CardDescription>{t("events.upcomingDescription")}</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-3">
-				{events.map((event) => {
-					const { dateStr, timeStr } = formatDateTime(event.scheduledAt);
-					const participating = isParticipating(event);
-					const creator = isCreator(event);
-					const isPast = event.scheduledAt < Date.now();
+		<div className="w-full space-y-2">
+			{sortedEvents.map((event) => {
+				const { dateStr, timeStr } = formatDateTime(event.scheduledAt);
+				const participating = isParticipating(event);
+				const creator = isCreator(event);
+				const remaining = event.scheduledAt - now;
+				const isPast = remaining <= 0;
 
-					return (
-						<div key={event._id} className="border  p-3 space-y-2 bg-card">
-							<div className="flex items-start justify-between">
-								<div className="flex-1">
-									<h4 className="font-medium flex items-center gap-2">
+				return (
+					<div
+						key={event._id}
+						className="rounded-md border border-border/70 bg-muted/10 p-4"
+					>
+						<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+							<div className="min-w-0 flex-1 space-y-2.5">
+								<div className="flex flex-wrap items-center gap-2">
+									<p className="truncate text-sm font-semibold leading-tight">
 										{event.title}
-										{event.status === "started" && (
-											<Badge variant="default" className="text-xs">
-												{t("events.inProgress")}
-											</Badge>
-										)}
-										{isPast && event.status === "scheduled" && (
-											<Badge variant="secondary" className="text-xs">
-												{t("events.starting")}
-											</Badge>
-										)}
-									</h4>
-									{event.description && (
-										<p className="text-sm text-muted-foreground mt-1">
-											{event.description}
-										</p>
-									)}
-								</div>
-								<div className="flex gap-1">
-									{/* Complete button - visible to creator when event is started */}
-									{creator && event.status === "started" && (
-										<TooltipProvider>
-											<Tooltip>
-												<TooltipTrigger asChild>
-													<Button
-														variant="ghost"
-														size="icon"
-														className="h-8 w-8 text-green-600 hover:text-green-600"
-														onClick={() => handleComplete(event._id)}
-													>
-														<Check className="h-4 w-4" />
-													</Button>
-												</TooltipTrigger>
-												<TooltipContent>
-													{t("events.completeEvent")}
-												</TooltipContent>
-											</Tooltip>
-										</TooltipProvider>
-									)}
-									{/* Cancel button - visible to creator when scheduled */}
-									{creator && event.status === "scheduled" && (
-										<TooltipProvider>
-											<Tooltip>
-												<TooltipTrigger asChild>
-													<Button
-														variant="ghost"
-														size="icon"
-														className="h-8 w-8 text-destructive hover:text-destructive"
-														onClick={() => handleCancel(event._id)}
-													>
-														<Trash2 className="h-4 w-4" />
-													</Button>
-												</TooltipTrigger>
-												<TooltipContent>
-													{t("events.cancelEvent")}
-												</TooltipContent>
-											</Tooltip>
-										</TooltipProvider>
-									)}
-								</div>
-							</div>
-
-							<div className="flex items-center gap-4 text-sm text-muted-foreground">
-								<span className="flex items-center gap-1">
-									<Calendar className="h-3.5 w-3.5" />
-									{dateStr}
-								</span>
-								<span className="flex items-center gap-1">
-									<Clock className="h-3.5 w-3.5" />
-									{timeStr}
-								</span>
-								<span className="flex items-center gap-1">
-									<Users className="h-3.5 w-3.5" />
-									{event.participants.length}
-								</span>
-							</div>
-
-							{event.participants.length > 0 && (
-								<div className="flex flex-wrap gap-1">
-									{event.participants.map((p) => (
-										<Badge key={p.email} variant="outline" className="text-xs">
-											{p.name}
+									</p>
+									{event.status === "started" && (
+										<Badge variant="default" className="h-6 text-xs">
+											{t("events.inProgress")}
 										</Badge>
-									))}
+									)}
+									{event.status === "scheduled" && isPast && (
+										<Badge variant="secondary" className="h-6 text-xs">
+											{t("events.starting")}
+										</Badge>
+									)}
+									{event.status === "scheduled" && !isPast && (
+										<Badge
+											variant="outline"
+											className="h-6 gap-1 font-mono text-xs tabular-nums"
+										>
+											<Clock className="h-3 w-3" />
+											{formatCountdown(remaining)}
+										</Badge>
+									)}
 								</div>
-							)}
 
-							{event.status === "scheduled" && (
-								<div className="flex gap-2 pt-1">
-									{participating ? (
+								<div className="flex flex-wrap items-center gap-2.5 mt-4">
+									<span className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border/60 bg-background/25 px-2.5 text-xs text-muted-foreground">
+										<User className="h-3 w-3 shrink-0" />
+										{t("events.createdBy", {
+											name: event.createdBy.name,
+										})}
+									</span>
+									<span className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border/60 bg-background/25 px-2.5 text-xs text-muted-foreground">
+										<Calendar className="h-3 w-3 shrink-0" />
+										{dateStr}
+									</span>
+									<span className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border/60 bg-background/25 px-2.5 text-xs text-muted-foreground">
+										<Clock className="h-3 w-3 shrink-0" />
+										{timeStr}
+									</span>
+									<span className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border/60 bg-background/25 px-2.5 text-xs text-muted-foreground">
+										<Users className="h-3 w-3 shrink-0" />
+										{event.participants.length}
+									</span>
+								</div>
+
+								{event.description && (
+									<p className="truncate text-xs text-muted-foreground">
+										{event.description}
+									</p>
+								)}
+							</div>
+
+							<div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end lg:pl-4">
+								{event.status === "scheduled" &&
+									(participating ? (
 										<Button
 											variant="outline"
 											size="sm"
@@ -372,10 +366,12 @@ export function ActiveEventsList() {
 											<UserCheck className="h-4 w-4 mr-1" />
 											{t("events.join")}
 										</Button>
-									)}
+									))}
 
-									{/* Add participants popover - visible to creator */}
-									{creator && getAvailableReviewers(event).length > 0 && (
+								{/* Add participants popover - visible to creator */}
+								{creator &&
+									event.status === "scheduled" &&
+									getAvailableReviewers(event).length > 0 && (
 										<Popover>
 											<PopoverTrigger asChild>
 												<Button variant="outline" size="sm">
@@ -383,7 +379,7 @@ export function ActiveEventsList() {
 													{t("events.addParticipant")}
 												</Button>
 											</PopoverTrigger>
-											<PopoverContent className="w-56 p-2" align="start">
+											<PopoverContent className="w-56 p-2" align="end">
 												<div className="space-y-1">
 													<p className="text-sm font-medium mb-2">
 														{t("events.selectTeamMember")}
@@ -407,12 +403,51 @@ export function ActiveEventsList() {
 											</PopoverContent>
 										</Popover>
 									)}
-								</div>
-							)}
+
+								{/* Complete button - visible to creator when event is started */}
+								{creator && event.status === "started" && (
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													variant="outline"
+													size="icon"
+													className="h-8 w-8 text-green-600 hover:text-green-600"
+													onClick={() => handleComplete(event._id)}
+												>
+													<Check className="h-4 w-4" />
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>
+												{t("events.completeEvent")}
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								)}
+
+								{/* Cancel button - visible to creator when scheduled */}
+								{creator && event.status === "scheduled" && (
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													variant="outline"
+													size="icon"
+													className="h-8 w-8 text-destructive hover:text-destructive"
+													onClick={() => handleCancel(event._id)}
+												>
+													<Trash2 className="h-4 w-4" />
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>{t("events.cancelEvent")}</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								)}
+							</div>
 						</div>
-					);
-				})}
-			</CardContent>
-		</Card>
+					</div>
+				);
+			})}
+		</div>
 	);
 }

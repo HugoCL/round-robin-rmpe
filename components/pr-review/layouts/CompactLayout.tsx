@@ -15,33 +15,35 @@ export function CompactLayout() {
 	const { teamSlug } = usePRReview();
 	const t = useTranslations();
 	return (
-		<div className="flex flex-col lg:flex-row gap-6">
-			<div className="flex-1 lg:w-[60%] flex flex-col space-y-6">
-				{/* Assignment Card */}
-				<div className="flex-1">
-					<AssignmentCard />
+		<div className="space-y-6">
+			{/* Active Events */}
+			<ActiveEventsList />
+
+			<div className="flex flex-col lg:flex-row gap-6">
+				<div className="flex-1 lg:w-[60%] flex flex-col space-y-6">
+					{/* Assignment Card */}
+					<div className="flex-1">
+						<AssignmentCard />
+					</div>
+
+					{/* Force Assign Dialog */}
+					<div className="border  p-4 bg-muted/50 space-y-4">
+						<ForceAssignDialog />
+						<CreateEventDialog
+							trigger={
+								<Button variant="outline" className="w-full">
+									<Calendar className="h-4 w-4 mr-2" />
+									{t("events.createEvent")}
+								</Button>
+							}
+						/>
+					</div>
 				</div>
 
-				{/* Force Assign Dialog */}
-				<div className="border  p-4 bg-muted/50 space-y-4">
-					<ForceAssignDialog />
-					<CreateEventDialog
-						trigger={
-							<Button variant="outline" className="w-full">
-								<Calendar className="h-4 w-4 mr-2" />
-								{t("events.createEvent")}
-							</Button>
-						}
-					/>
+				{/* History Section - 40% */}
+				<div className="flex-1 lg:w-[40%]">
+					<FeedHistory teamSlug={teamSlug} />
 				</div>
-
-				{/* Active Events */}
-				<ActiveEventsList />
-			</div>
-
-			{/* History Section - 40% */}
-			<div className="flex-1 lg:w-[40%]">
-				<FeedHistory teamSlug={teamSlug} />
 			</div>
 		</div>
 	);
