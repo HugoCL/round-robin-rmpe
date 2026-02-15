@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-02-15",
+		type: "improvement",
+		title: "Cambios menores a la vista de revisores",
+		description:
+			"Movimos las opciones de columnas a la vista de revisores, y eliminamos el botón de Actualizar que ya no es necesario (La Lista se actualiza en tiempo real).",
+	},
+	{
 		date: "2026-02-12",
 		type: "improvement",
 		title: "Mejora en la visualización de eventos próximos",
