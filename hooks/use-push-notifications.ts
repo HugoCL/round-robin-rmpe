@@ -46,6 +46,21 @@ export function usePushNotifications({
 		api.mutations.removePushSubscription,
 	);
 
+	const clearPendingNotifications = useCallback(async () => {
+		if (typeof window === "undefined" || !("serviceWorker" in navigator))
+			return;
+		if (!/firefox/i.test(navigator.userAgent)) return;
+
+		try {
+			const registration = await navigator.serviceWorker.ready;
+			const worker =
+				registration.active || registration.waiting || registration.installing;
+			worker?.postMessage({ type: "CLEAR_NOTIFICATIONS" });
+		} catch (error) {
+			console.error("Failed to clear pending notifications:", error);
+		}
+	}, []);
+
 	// Check support and current subscription status
 	useEffect(() => {
 		if (typeof window === "undefined") return;
@@ -89,6 +104,7 @@ export function usePushNotifications({
 					updateViaCache: "none",
 				});
 				await checkSupport();
+				await clearPendingNotifications();
 			} catch (error) {
 				console.error("Service worker registration failed:", error);
 				setStatus("unsupported");
@@ -96,7 +112,25 @@ export function usePushNotifications({
 		};
 
 		registerServiceWorker();
-	}, []);
+	}, [clearPendingNotifications]);
+
+	useEffect(() => {
+		if (typeof window === "undefined" || !isSupported) return;
+
+		const handleForeground = () => {
+			if (document.visibilityState !== "visible") return;
+			void clearPendingNotifications();
+		};
+
+		window.addEventListener("focus", handleForeground);
+		document.addEventListener("visibilitychange", handleForeground);
+		handleForeground();
+
+		return () => {
+			window.removeEventListener("focus", handleForeground);
+			document.removeEventListener("visibilitychange", handleForeground);
+		};
+	}, [isSupported, clearPendingNotifications]);
 
 	const subscribe = useCallback(async (): Promise<boolean> => {
 		if (!isSupported || !userEmail) return false;
