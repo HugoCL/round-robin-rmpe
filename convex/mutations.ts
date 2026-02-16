@@ -109,32 +109,6 @@ async function incrementGlobalReviewedPRCounter(ctx: MutationCtx) {
 	});
 }
 
-async function incrementGlobalReviewedPRCounterBy(
-	ctx: MutationCtx,
-	amount: number,
-) {
-	if (amount <= 0) return;
-	const metrics = await ctx.db
-		.query("appMetrics")
-		.withIndex("by_key", (q) => q.eq("key", GLOBAL_REVIEWED_PR_COUNTER_KEY))
-		.collect();
-
-	if (metrics.length > 0) {
-		const primaryMetric = metrics[0];
-		await ctx.db.patch(primaryMetric._id, {
-			value: primaryMetric.value + amount,
-			updatedAt: Date.now(),
-		});
-		return;
-	}
-
-	await ctx.db.insert("appMetrics", {
-		key: GLOBAL_REVIEWED_PR_COUNTER_KEY,
-		value: amount,
-		updatedAt: Date.now(),
-	});
-}
-
 // Create team
 export const createTeam = mutation({
 	args: { name: v.string(), slug: v.string() },
@@ -1016,7 +990,6 @@ export const assignPRBatch = mutation({
 					batchId,
 					assigneeId: item.reviewer._id,
 					assignerId: assigner._id,
-					status: "pending",
 					createdAt: timestamp,
 					updatedAt: timestamp,
 				});
@@ -1050,7 +1023,7 @@ export const assignPRBatch = mutation({
 			});
 		}
 
-		await incrementGlobalReviewedPRCounterBy(ctx, assigned.length);
+		await incrementGlobalReviewedPRCounter(ctx);
 		await updateAssignmentFeedBatch(ctx, feedEntries, team._id);
 		await cleanupOldAssignments(ctx, team._id);
 
@@ -1206,7 +1179,6 @@ export const createActivePRAssignment = mutation({
 			batchId,
 			assigneeId,
 			assignerId,
-			status: "pending",
 			createdAt: now,
 			updatedAt: now,
 		});
@@ -1224,9 +1196,43 @@ export const completePRAssignment = mutation({
 		if (row.assigneeId !== reviewerId && row.assignerId !== reviewerId) {
 			throw new Error("Not participant");
 		}
-		// Regardless of current status just delete (treat any existing rows as pending)
+		// Delete active assignment row on completion.
 		await ctx.db.delete(id);
 		return { success: true };
+	},
+});
+
+// Remove legacy `status` field from historical prAssignments rows.
+export const cleanupLegacyPRAssignmentStatus = mutation({
+	args: {},
+	handler: async (ctx) => {
+		const rows = await ctx.db.query("prAssignments").collect();
+		let updated = 0;
+
+		for (const row of rows) {
+			const legacyStatus =
+				"status" in row
+					? (row as Doc<"prAssignments"> & { status?: string }).status
+					: undefined;
+			if (typeof legacyStatus === "undefined") continue;
+
+			await ctx.db.replace(row._id, {
+				teamId: row.teamId,
+				prUrl: row.prUrl,
+				batchId: row.batchId,
+				assigneeId: row.assigneeId,
+				assignerId: row.assignerId,
+				createdAt: row.createdAt,
+				updatedAt: Date.now(),
+			});
+			updated += 1;
+		}
+
+		return {
+			success: true,
+			total: rows.length,
+			updated,
+		};
 	},
 });
 

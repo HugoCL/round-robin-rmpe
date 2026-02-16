@@ -6,7 +6,6 @@ type EnrichedAssignment = {
 	prUrl?: string | undefined;
 	assigneeId: Id<"reviewers">;
 	assignerId: Id<"reviewers">;
-	status: string;
 	createdAt: number;
 	updatedAt: number;
 	assigneeName?: string;
@@ -515,7 +514,6 @@ export const getActiveAssignmentsForReviewer = query({
 				prUrl: row.prUrl,
 				assigneeId: row.assigneeId as Id<"reviewers">,
 				assignerId: row.assignerId as Id<"reviewers">,
-				status: "pending", // flattened model: treat existing row as pending until completion
 				createdAt: row.createdAt,
 				updatedAt: row.updatedAt,
 				assigneeName:
@@ -560,7 +558,6 @@ export const getActiveAssignmentsByReviewer = query({
 				prUrl: row.prUrl,
 				assigneeId: row.assigneeId as Id<"reviewers">,
 				assignerId: row.assignerId as Id<"reviewers">,
-				status: "pending",
 				createdAt: row.createdAt,
 				updatedAt: row.updatedAt,
 				assigneeName:

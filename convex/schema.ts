@@ -94,7 +94,6 @@ export default defineSchema({
 		batchId: v.optional(v.string()),
 		assigneeId: v.id("reviewers"), // reviewer who must review
 		assignerId: v.id("reviewers"), // reviewer who requested review
-		status: v.string(), // pending | reviewed | approved (will be deleted after approved)
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
