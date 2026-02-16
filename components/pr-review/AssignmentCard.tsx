@@ -94,11 +94,21 @@ export function AssignmentCard() {
 		!!selectedTagId &&
 		typeof nextReviewerByTag === "undefined";
 
+	const availableReviewersForMode = useMemo(() => {
+		if (mode === "tag") {
+			if (!selectedTagId) return [];
+			return reviewers.filter(
+				(reviewer) =>
+					!reviewer.isAbsent && reviewer.tags?.includes(selectedTagId),
+			);
+		}
+		return reviewers.filter((reviewer) => !reviewer.isAbsent);
+	}, [reviewers, mode, selectedTagId]);
+
 	const isCurrentUserNext =
-		mode === "regular" &&
 		!!user?.email &&
-		!!nextReviewer?.email &&
-		user.email.toLowerCase() === nextReviewer.email.toLowerCase();
+		!!activeNextReviewer?.email &&
+		user.email.toLowerCase() === activeNextReviewer.email.toLowerCase();
 
 	const handlePrUrlBlur = async () => {
 		const trimmedUrl = prUrl.trim();
@@ -195,8 +205,21 @@ export function AssignmentCard() {
 					return;
 				}
 
+				const targetReviewer = isCurrentUserNext
+					? nextAfterCurrent
+					: activeNextReviewer;
+
+				if (!targetReviewer) {
+					toast({
+						title: t("messages.noOtherReviewersTitle"),
+						description: t("messages.noOtherReviewersDescription"),
+						variant: "destructive",
+					});
+					return;
+				}
+
 				const result = await assignPRMutation({
-					reviewerId: activeNextReviewer._id as Id<"reviewers">,
+					reviewerId: targetReviewer._id as Id<"reviewers">,
 					tagId: selectedTagId,
 					prUrl: prUrl.trim() || undefined,
 					contextUrl: contextUrl.trim() || undefined,
@@ -212,10 +235,8 @@ export function AssignmentCard() {
 					return;
 				}
 
-				await createActiveAssignmentRow(
-					activeNextReviewer._id as Id<"reviewers">,
-				);
-				await sendAssignmentMessage(activeNextReviewer);
+				await createActiveAssignmentRow(targetReviewer._id as Id<"reviewers">);
+				await sendAssignmentMessage(targetReviewer);
 
 				toast({
 					title: t("common.success"),
@@ -228,7 +249,7 @@ export function AssignmentCard() {
 			}
 
 			if (isCurrentUserNext) {
-				const nextAfter = findNextAfterCurrent();
+				const nextAfter = nextAfterCurrent;
 				await autoSkipAndAssign({
 					prUrl: prUrl.trim() || undefined,
 					contextUrl: contextUrl.trim() || undefined,
@@ -252,19 +273,18 @@ export function AssignmentCard() {
 		}
 	};
 
-	const findNextAfterCurrent = (): Doc<"reviewers"> | null => {
-		if (!nextReviewer || reviewers.length === 0) return null;
-		const availableReviewers = reviewers.filter(
-			(reviewer) => !reviewer.isAbsent,
-		);
-		if (availableReviewers.length === 0) return null;
+	const findNextAfterCurrent = (
+		candidates: Doc<"reviewers">[],
+		currentReviewerId: Id<"reviewers">,
+	): Doc<"reviewers"> | null => {
+		if (candidates.length === 0) return null;
 		const minCount = Math.min(
-			...availableReviewers.map((reviewer) => reviewer.assignmentCount),
+			...candidates.map((reviewer) => reviewer.assignmentCount),
 		);
-		const candidatesWithMin = availableReviewers.filter(
+		const candidatesWithMin = candidates.filter(
 			(reviewer) =>
 				reviewer.assignmentCount === minCount &&
-				reviewer._id !== nextReviewer._id,
+				reviewer._id !== currentReviewerId,
 		);
 		if (candidatesWithMin.length > 0) {
 			return (
@@ -272,14 +292,14 @@ export function AssignmentCard() {
 				null
 			);
 		}
-		const higher = availableReviewers.filter(
+		const higher = candidates.filter(
 			(reviewer) => reviewer.assignmentCount > minCount,
 		);
 		if (!higher.length) return null;
 		const nextMin = Math.min(
 			...higher.map((reviewer) => reviewer.assignmentCount),
 		);
-		const nextCandidates = availableReviewers.filter(
+		const nextCandidates = higher.filter(
 			(reviewer) => reviewer.assignmentCount === nextMin,
 		);
 		return (
@@ -305,7 +325,12 @@ export function AssignmentCard() {
 				(reviewer) => reviewer._id === assignmentFeed.lastAssigned?.reviewerId,
 			)
 		: null;
-	const nextAfterCurrent = findNextAfterCurrent();
+	const nextAfterCurrent = activeNextReviewer
+		? findNextAfterCurrent(
+				availableReviewersForMode,
+				activeNextReviewer._id as Id<"reviewers">,
+			)
+		: null;
 
 	const isAssignDisabled =
 		!activeNextReviewer ||
@@ -391,7 +416,7 @@ export function AssignmentCard() {
 							</div>
 						)}
 
-						{mode === "regular" && nextAfterCurrent && (
+						{nextAfterCurrent && (
 							<div className="space-y-1">
 								<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 									{t("pr.upNext")}
