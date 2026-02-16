@@ -147,6 +147,8 @@ export function AssignmentCard() {
 		assignmentFeed,
 		undoAssignment: onUndoAssignment,
 		userInfo: user,
+		hideMultiAssignmentSection,
+		alwaysSendGoogleChatMessage,
 	} = usePRReview();
 
 	const [isAssigning, setIsAssigning] = useState(false);
@@ -166,6 +168,9 @@ export function AssignmentCard() {
 		defaultSlotForMode("regular"),
 	]);
 	const [liveSummary, setLiveSummary] = useState("");
+	const isMultiAssignmentActive =
+		!hideMultiAssignmentSection && isMultiAssignmentEnabled;
+	const effectiveSendMessage = alwaysSendGoogleChatMessage || sendMessage;
 
 	const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
 	const [duplicateAssignment, setDuplicateAssignment] = useState<{
@@ -192,6 +197,18 @@ export function AssignmentCard() {
 	const assignPRBatchMutation = useMutation(api.mutations.assignPRBatch);
 
 	useEffect(() => {
+		if (hideMultiAssignmentSection && isMultiAssignmentEnabled) {
+			setIsMultiAssignmentEnabled(false);
+		}
+	}, [hideMultiAssignmentSection, isMultiAssignmentEnabled]);
+
+	useEffect(() => {
+		if (alwaysSendGoogleChatMessage && !sendMessage) {
+			setSendMessage(true);
+		}
+	}, [alwaysSendGoogleChatMessage, sendMessage]);
+
+	useEffect(() => {
 		setSlotConfigs((prev) => {
 			const normalized = prev.map((slot) => normalizeSlotForMode(slot, mode));
 			if (normalized.length === reviewerCount) return normalized;
@@ -205,22 +222,22 @@ export function AssignmentCard() {
 		});
 	}, [reviewerCount, mode]);
 
-	const effectiveReviewerCount = isMultiAssignmentEnabled ? reviewerCount : 1;
+	const effectiveReviewerCount = isMultiAssignmentActive ? reviewerCount : 1;
 	const effectiveSlotConfigs = useMemo(() => {
 		const normalized = slotConfigs.map((slot) =>
 			normalizeSlotForMode(slot, mode),
 		);
-		if (isMultiAssignmentEnabled) {
+		if (isMultiAssignmentActive) {
 			return normalized.slice(0, reviewerCount);
 		}
 		return [normalized[0] ?? defaultSlotForMode(mode)];
-	}, [isMultiAssignmentEnabled, mode, reviewerCount, slotConfigs]);
+	}, [isMultiAssignmentActive, mode, reviewerCount, slotConfigs]);
 
 	const configurationHash = useMemo(
 		() =>
 			JSON.stringify({
 				mode,
-				isMultiAssignmentEnabled,
+				isMultiAssignmentEnabled: isMultiAssignmentActive,
 				reviewerCount: effectiveReviewerCount,
 				selectedTagId: selectedTagId ? String(selectedTagId) : null,
 				slots: effectiveSlotConfigs.map((slot) => ({
@@ -229,15 +246,15 @@ export function AssignmentCard() {
 					reviewerId: slot.reviewerId ? String(slot.reviewerId) : null,
 					tagId: slot.tagId ? String(slot.tagId) : null,
 				})),
-				sendMessage,
+				sendMessage: effectiveSendMessage,
 			}),
 		[
 			effectiveReviewerCount,
 			effectiveSlotConfigs,
-			isMultiAssignmentEnabled,
+			isMultiAssignmentActive,
 			mode,
 			selectedTagId,
-			sendMessage,
+			effectiveSendMessage,
 		],
 	);
 
@@ -474,7 +491,7 @@ export function AssignmentCard() {
 			: user?.firstName || user?.lastName || "Unknown";
 
 	const sendAssignmentMessage = async (targetReviewer: Doc<"reviewers">) => {
-		if (!(sendMessage && prUrl.trim() && teamSlug)) return;
+		if (!(effectiveSendMessage && prUrl.trim() && teamSlug)) return;
 		try {
 			const result = await sendGoogleChatAction({
 				reviewerName: targetReviewer.name,
@@ -528,7 +545,7 @@ export function AssignmentCard() {
 				return;
 			}
 
-			if (sendMessage && prUrl.trim() && teamSlug) {
+			if (effectiveSendMessage && prUrl.trim() && teamSlug) {
 				if (result.assignedCount > 1) {
 					const groupResult = await sendGoogleChatGroupAction({
 						reviewers: result.assigned.map((item) => {
@@ -624,7 +641,7 @@ export function AssignmentCard() {
 
 	const isAssignDisabled =
 		isAssigning ||
-		(sendMessage && !prUrl.trim()) ||
+		(effectiveSendMessage && !prUrl.trim()) ||
 		resolvePreview.resolved.length === 0;
 
 	return (
@@ -793,88 +810,90 @@ export function AssignmentCard() {
 						</div>
 					)}
 
-					<section className="space-y-3 rounded-lg border border-muted bg-muted/20 p-3">
-						<div className="flex items-start justify-between gap-4">
-							<div className="min-w-0">
-								<div className="flex items-center gap-2">
-									<Label
-										htmlFor="assignment-multi-toggle"
-										className="flex items-center gap-2 text-sm"
-									>
-										<Users
-											className="h-4 w-4 text-primary"
-											aria-hidden="true"
-										/>
-										{t("pr.multipleAssignmentToggleLabel")}
-									</Label>
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon"
-													className="h-6 w-6 shrink-0 text-muted-foreground"
-													aria-label={t(
-														"pr.multipleAssignmentToggleDescription",
-													)}
-												>
-													<Info className="h-4 w-4" aria-hidden="true" />
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent className="max-w-64 text-xs">
-												<p>{t("pr.multipleAssignmentToggleDescription")}</p>
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
+					{!hideMultiAssignmentSection && (
+						<section className="space-y-3 rounded-lg border border-muted bg-muted/20 p-3">
+							<div className="flex items-start justify-between gap-4">
+								<div className="min-w-0">
+									<div className="flex items-center gap-2">
+										<Label
+											htmlFor="assignment-multi-toggle"
+											className="flex items-center gap-2 text-sm"
+										>
+											<Users
+												className="h-4 w-4 text-primary"
+												aria-hidden="true"
+											/>
+											{t("pr.multipleAssignmentToggleLabel")}
+										</Label>
+										<TooltipProvider>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="h-6 w-6 shrink-0 text-muted-foreground"
+														aria-label={t(
+															"pr.multipleAssignmentToggleDescription",
+														)}
+													>
+														<Info className="h-4 w-4" aria-hidden="true" />
+													</Button>
+												</TooltipTrigger>
+												<TooltipContent className="max-w-64 text-xs">
+													<p>{t("pr.multipleAssignmentToggleDescription")}</p>
+												</TooltipContent>
+											</Tooltip>
+										</TooltipProvider>
+									</div>
 								</div>
+								<Switch
+									id="assignment-multi-toggle"
+									checked={isMultiAssignmentEnabled}
+									onCheckedChange={(value) => {
+										setIsMultiAssignmentEnabled(value);
+										if (value && reviewerCount < 2) {
+											setReviewerCount(2);
+										}
+									}}
+									className="focus-visible:ring-2 focus-visible:ring-primary"
+								/>
 							</div>
-							<Switch
-								id="assignment-multi-toggle"
-								checked={isMultiAssignmentEnabled}
-								onCheckedChange={(value) => {
-									setIsMultiAssignmentEnabled(value);
-									if (value && reviewerCount < 2) {
-										setReviewerCount(2);
-									}
-								}}
-								className="focus-visible:ring-2 focus-visible:ring-primary"
-							/>
-						</div>
-						{isMultiAssignmentEnabled && (
-							<div className="flex flex-wrap gap-2" aria-live="polite">
-								<Badge variant="secondary" className="max-w-full">
-									{t("pr.multipleAssignmentSummaryEnabled", {
-										count: reviewerCount,
-									})}
-								</Badge>
-							</div>
-						)}
-						{isMultiAssignmentEnabled && (
-							<ReviewerSlotsConfigurator
-								mode={mode}
-								reviewerCount={reviewerCount}
-								minReviewerCount={2}
-								embedded
-								selectedTagId={selectedTagId}
-								slots={slotConfigs.slice(0, reviewerCount)}
-								reviewers={reviewers}
-								tags={tags}
-								previews={resolvePreview.slots}
-								allowReviewerCountChange
-								onReviewerCountChange={setReviewerCount}
-								onSlotChange={(index, patch) => {
-									setSlotConfigs((prev) =>
-										prev.map((slot, slotIndex) =>
-											slotIndex === index
-												? normalizeSlotForMode({ ...slot, ...patch }, mode)
-												: slot,
-										),
-									);
-								}}
-							/>
-						)}
-					</section>
+							{isMultiAssignmentEnabled && (
+								<div className="flex flex-wrap gap-2" aria-live="polite">
+									<Badge variant="secondary" className="max-w-full">
+										{t("pr.multipleAssignmentSummaryEnabled", {
+											count: reviewerCount,
+										})}
+									</Badge>
+								</div>
+							)}
+							{isMultiAssignmentEnabled && (
+								<ReviewerSlotsConfigurator
+									mode={mode}
+									reviewerCount={reviewerCount}
+									minReviewerCount={2}
+									embedded
+									selectedTagId={selectedTagId}
+									slots={slotConfigs.slice(0, reviewerCount)}
+									reviewers={reviewers}
+									tags={tags}
+									previews={resolvePreview.slots}
+									allowReviewerCountChange
+									onReviewerCountChange={setReviewerCount}
+									onSlotChange={(index, patch) => {
+										setSlotConfigs((prev) =>
+											prev.map((slot, slotIndex) =>
+												slotIndex === index
+													? normalizeSlotForMode({ ...slot, ...patch }, mode)
+													: slot,
+											),
+										);
+									}}
+								/>
+							)}
+						</section>
+					)}
 					{showDuplicateAlert && duplicateAssignment && (
 						<Alert variant="destructive">
 							<AlertCircle className="h-4 w-4" aria-hidden="true" />
@@ -925,8 +944,9 @@ export function AssignmentCard() {
 							</div>
 							<Switch
 								id="assignment-send-message-toggle"
-								checked={sendMessage}
+								checked={effectiveSendMessage}
 								onCheckedChange={(value) => {
+									if (alwaysSendGoogleChatMessage) return;
 									setSendMessage(value);
 									if (!value) {
 										setEnableCustomMessage(false);
@@ -934,9 +954,15 @@ export function AssignmentCard() {
 										setShowDuplicateAlert(false);
 									}
 								}}
+								disabled={alwaysSendGoogleChatMessage}
 								className="focus-visible:ring-2 focus-visible:ring-primary"
 							/>
 						</div>
+						{alwaysSendGoogleChatMessage && (
+							<p className="text-xs text-muted-foreground">
+								{t("mySettings.messageAlwaysOnHint")}
+							</p>
+						)}
 
 						<ChatMessageCustomizer
 							prUrl={prUrl}
@@ -947,8 +973,11 @@ export function AssignmentCard() {
 							onPrUrlBlur={handlePrUrlBlur}
 							contextUrl={contextUrl}
 							onContextUrlChange={setContextUrl}
-							sendMessage={sendMessage}
-							onSendMessageChange={setSendMessage}
+							sendMessage={effectiveSendMessage}
+							onSendMessageChange={(value) => {
+								if (alwaysSendGoogleChatMessage) return;
+								setSendMessage(value);
+							}}
 							enabled={enableCustomMessage}
 							onEnabledChange={(value) => {
 								setEnableCustomMessage(value);

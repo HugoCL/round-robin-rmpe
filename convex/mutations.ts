@@ -3,6 +3,50 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx } from "./_generated/server";
 
 const GLOBAL_REVIEWED_PR_COUNTER_KEY = "reviewed_pr_total";
+type UserPreferenceFlags = {
+	showAssignments: boolean;
+	showTags: boolean;
+	showEmails: boolean;
+	hideMultiAssignmentSection: boolean;
+	alwaysSendGoogleChatMessage: boolean;
+};
+
+const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
+	showAssignments: false,
+	showTags: true,
+	showEmails: false,
+	hideMultiAssignmentSection: false,
+	alwaysSendGoogleChatMessage: false,
+};
+
+function resolvePreferencePatch(
+	patch: Partial<UserPreferenceFlags>,
+): Partial<UserPreferenceFlags> {
+	const resolved: Partial<UserPreferenceFlags> = {};
+	if (typeof patch.showAssignments === "boolean") {
+		resolved.showAssignments = patch.showAssignments;
+	}
+	if (typeof patch.showTags === "boolean") {
+		resolved.showTags = patch.showTags;
+	}
+	if (typeof patch.showEmails === "boolean") {
+		resolved.showEmails = patch.showEmails;
+	}
+	if (typeof patch.hideMultiAssignmentSection === "boolean") {
+		resolved.hideMultiAssignmentSection = patch.hideMultiAssignmentSection;
+	}
+	if (typeof patch.alwaysSendGoogleChatMessage === "boolean") {
+		resolved.alwaysSendGoogleChatMessage = patch.alwaysSendGoogleChatMessage;
+	}
+	return resolved;
+}
+
+function selectLatestUserPreference(
+	rows: Doc<"userPreferences">[],
+): Doc<"userPreferences"> | null {
+	if (rows.length === 0) return null;
+	return [...rows].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+}
 
 // Helpers
 async function getTeamBySlugOrThrow(
@@ -127,6 +171,103 @@ export const updateTeamSettings = mutation({
 			googleChatWebhookUrl: googleChatWebhookUrl?.trim() || undefined,
 		});
 		return { success: true };
+	},
+});
+
+export const bootstrapMyUserPreferences = mutation({
+	args: {
+		showAssignments: v.optional(v.boolean()),
+		showTags: v.optional(v.boolean()),
+		showEmails: v.optional(v.boolean()),
+		hideMultiAssignmentSection: v.optional(v.boolean()),
+		alwaysSendGoogleChatMessage: v.optional(v.boolean()),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new Error("Unauthorized");
+		}
+
+		const existingRows = await ctx.db
+			.query("userPreferences")
+			.withIndex("by_user_token_identifier", (q) =>
+				q.eq("userTokenIdentifier", identity.tokenIdentifier),
+			)
+			.collect();
+		const existing = selectLatestUserPreference(existingRows);
+		if (existing) {
+			for (const row of existingRows) {
+				if (row._id !== existing._id) {
+					await ctx.db.delete(row._id);
+				}
+			}
+			return { success: true, created: false, id: existing._id };
+		}
+
+		const now = Date.now();
+		const patch = resolvePreferencePatch(args);
+		const id = await ctx.db.insert("userPreferences", {
+			userTokenIdentifier: identity.tokenIdentifier,
+			email: identity.email?.toLowerCase().trim() || undefined,
+			...USER_PREFERENCE_DEFAULTS,
+			...patch,
+			createdAt: now,
+			updatedAt: now,
+		});
+
+		return { success: true, created: true, id };
+	},
+});
+
+export const updateMyUserPreferences = mutation({
+	args: {
+		showAssignments: v.optional(v.boolean()),
+		showTags: v.optional(v.boolean()),
+		showEmails: v.optional(v.boolean()),
+		hideMultiAssignmentSection: v.optional(v.boolean()),
+		alwaysSendGoogleChatMessage: v.optional(v.boolean()),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new Error("Unauthorized");
+		}
+
+		const existingRows = await ctx.db
+			.query("userPreferences")
+			.withIndex("by_user_token_identifier", (q) =>
+				q.eq("userTokenIdentifier", identity.tokenIdentifier),
+			)
+			.collect();
+		const primary = selectLatestUserPreference(existingRows);
+		const now = Date.now();
+		const patch = resolvePreferencePatch(args);
+
+		if (!primary) {
+			const createdId = await ctx.db.insert("userPreferences", {
+				userTokenIdentifier: identity.tokenIdentifier,
+				email: identity.email?.toLowerCase().trim() || undefined,
+				...USER_PREFERENCE_DEFAULTS,
+				...patch,
+				createdAt: now,
+				updatedAt: now,
+			});
+			return { success: true, created: true, id: createdId };
+		}
+
+		await ctx.db.patch(primary._id, {
+			...patch,
+			email: identity.email?.toLowerCase().trim() || undefined,
+			updatedAt: now,
+		});
+
+		for (const row of existingRows) {
+			if (row._id !== primary._id) {
+				await ctx.db.delete(row._id);
+			}
+		}
+
+		return { success: true, created: false, id: primary._id };
 	},
 });
 

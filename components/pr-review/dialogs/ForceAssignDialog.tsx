@@ -3,7 +3,7 @@
 import { useAction, useMutation } from "convex/react";
 import { AlertTriangle, UserCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -31,7 +31,13 @@ import { usePRReview } from "../PRReviewContext";
 export function ForceAssignDialog() {
 	const t = useTranslations();
 	const locale = useLocale();
-	const { reviewers, onDataUpdate, userInfo: user, teamSlug } = usePRReview();
+	const {
+		reviewers,
+		onDataUpdate,
+		userInfo: user,
+		teamSlug,
+		alwaysSendGoogleChatMessage,
+	} = usePRReview();
 	const [forceDialogOpen, setForceDialogOpen] = useState(false);
 	const [selectedReviewerId, setSelectedReviewerId] = useState<string>("");
 	// Chat message customization state (unified component)
@@ -40,6 +46,14 @@ export function ForceAssignDialog() {
 	const [contextUrl, setContextUrl] = useState("");
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [customMessage, setCustomMessage] = useState("");
+	const effectiveSendMessage = alwaysSendGoogleChatMessage || sendMessage;
+	const isConfirmDisabled =
+		!selectedReviewerId || (effectiveSendMessage && prUrl.trim().length === 0);
+
+	useEffect(() => {
+		if (!alwaysSendGoogleChatMessage || sendMessage) return;
+		setSendMessage(true);
+	}, [alwaysSendGoogleChatMessage, sendMessage]);
 
 	const sendChatMessage = useAction(api.actions.sendGoogleChatMessage);
 
@@ -61,6 +75,14 @@ export function ForceAssignDialog() {
 			toast({
 				title: t("common.error"),
 				description: t("messages.selectReviewerError"),
+				variant: "destructive",
+			});
+			return;
+		}
+		if (effectiveSendMessage && !prUrl.trim()) {
+			toast({
+				title: t("common.error"),
+				description: t("mySettings.prUrlRequiredWhenMessageIsForced"),
 				variant: "destructive",
 			});
 			return;
@@ -107,7 +129,12 @@ export function ForceAssignDialog() {
 				await onDataUpdate();
 
 				// Optionally send chat message (match normal assignment behavior)
-				if (sendMessage && prUrl.trim() && teamSlug && forcedReviewer) {
+				if (
+					effectiveSendMessage &&
+					prUrl.trim() &&
+					teamSlug &&
+					forcedReviewer
+				) {
 					try {
 						await sendChatMessage({
 							reviewerName: forcedReviewer.name,
@@ -229,8 +256,11 @@ export function ForceAssignDialog() {
 						onPrUrlChange={setPrUrl}
 						contextUrl={contextUrl}
 						onContextUrlChange={setContextUrl}
-						sendMessage={sendMessage}
-						onSendMessageChange={setSendMessage}
+						sendMessage={effectiveSendMessage}
+						onSendMessageChange={(value) => {
+							if (alwaysSendGoogleChatMessage) return;
+							setSendMessage(value);
+						}}
 						enabled={enableCustomMessage}
 						onEnabledChange={setEnableCustomMessage}
 						message={customMessage}
@@ -238,15 +268,23 @@ export function ForceAssignDialog() {
 						nextReviewerName={
 							reviewers.find((r) => r._id === selectedReviewerId)?.name
 						}
+						showSendToggle={!alwaysSendGoogleChatMessage}
 						compact
 						autoTemplate={buildDefaultTemplate()}
 					/>
+					{effectiveSendMessage && (
+						<p className="text-xs text-muted-foreground">
+							{t("mySettings.prUrlRequiredWhenMessageIsForced")}
+						</p>
+					)}
 				</div>
 				<DialogFooter>
 					<Button variant="outline" onClick={() => setForceDialogOpen(false)}>
 						{t("common.cancel")}
 					</Button>
-					<Button onClick={handleForceAssign}>{t("pr.forceAssign")}</Button>
+					<Button onClick={handleForceAssign} disabled={isConfirmDisabled}>
+						{t("pr.forceAssign")}
+					</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

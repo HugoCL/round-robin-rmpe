@@ -10,6 +10,19 @@ export default defineSchema({
 	})
 		.index("by_slug", ["slug"]) // enforce uniqueness at write-time
 		.index("by_created_at", ["createdAt"]),
+	userPreferences: defineTable({
+		userTokenIdentifier: v.string(),
+		email: v.optional(v.string()),
+		showAssignments: v.boolean(),
+		showTags: v.boolean(),
+		showEmails: v.boolean(),
+		hideMultiAssignmentSection: v.boolean(),
+		alwaysSendGoogleChatMessage: v.boolean(),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_token_identifier", ["userTokenIdentifier"])
+		.index("by_email", ["email"]),
 	appMetrics: defineTable({
 		key: v.string(),
 		value: v.number(),

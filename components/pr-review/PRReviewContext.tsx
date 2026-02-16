@@ -13,6 +13,10 @@ export interface PRReviewContextValue {
 	toggleShowTags: () => void;
 	showEmails: boolean;
 	toggleShowEmails: () => void;
+	hideMultiAssignmentSection: boolean;
+	toggleHideMultiAssignmentSection: () => void;
+	alwaysSendGoogleChatMessage: boolean;
+	toggleAlwaysSendGoogleChatMessage: () => void;
 	openSnapshotDialog: () => void;
 
 	// Data

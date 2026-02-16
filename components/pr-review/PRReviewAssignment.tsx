@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import type { Assignment, UserInfo } from "@/lib/types";
 import {
 	type ShortcutAction,
@@ -61,12 +61,6 @@ export default function PRReviewAssignment({
 	const [snapshots, setSnapshots] = useState<BackupEntry[]>([]);
 	const [snapshotsLoading, setSnapshotsLoading] = useState(false);
 	const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
-	const [showAssignments, setShowAssignments] = useLocalStorage(
-		"showAssignments",
-		false,
-	);
-	const [showTags, setShowTags] = useLocalStorage("showTags", true);
-	const [showEmails, setShowEmails] = useLocalStorage("showEmails", false);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 	const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
 	const [pendingShortcut, setPendingShortcut] = useState<ShortcutAction | null>(
@@ -95,6 +89,18 @@ export default function PRReviewAssignment({
 				lastName: user.lastName || undefined,
 			}
 		: null;
+	const {
+		preferences,
+		isReady: isUserPreferencesReady,
+		updatePreferences,
+	} = useUserPreferences();
+	const {
+		showAssignments,
+		showTags,
+		showEmails,
+		hideMultiAssignmentSection,
+		alwaysSendGoogleChatMessage,
+	} = preferences;
 
 	const {
 		reviewers,
@@ -288,16 +294,30 @@ export default function PRReviewAssignment({
 
 	// Toggles for various UI preferences
 	const toggleShowAssignments = useCallback(
-		() => setShowAssignments((p) => !p),
-		[setShowAssignments],
+		() => void updatePreferences({ showAssignments: !showAssignments }),
+		[showAssignments, updatePreferences],
 	);
 	const toggleShowTags = useCallback(
-		() => setShowTags((p) => !p),
-		[setShowTags],
+		() => void updatePreferences({ showTags: !showTags }),
+		[showTags, updatePreferences],
 	);
 	const toggleShowEmails = useCallback(
-		() => setShowEmails((p) => !p),
-		[setShowEmails],
+		() => void updatePreferences({ showEmails: !showEmails }),
+		[showEmails, updatePreferences],
+	);
+	const toggleHideMultiAssignmentSection = useCallback(
+		() =>
+			void updatePreferences({
+				hideMultiAssignmentSection: !hideMultiAssignmentSection,
+			}),
+		[hideMultiAssignmentSection, updatePreferences],
+	);
+	const toggleAlwaysSendGoogleChatMessage = useCallback(
+		() =>
+			void updatePreferences({
+				alwaysSendGoogleChatMessage: !alwaysSendGoogleChatMessage,
+			}),
+		[alwaysSendGoogleChatMessage, updatePreferences],
 	);
 
 	// Ensure AudioContext can start after a user gesture (required by some browsers)
@@ -452,6 +472,10 @@ export default function PRReviewAssignment({
 			toggleShowTags,
 			showEmails,
 			toggleShowEmails,
+			hideMultiAssignmentSection,
+			toggleHideMultiAssignmentSection,
+			alwaysSendGoogleChatMessage,
+			toggleAlwaysSendGoogleChatMessage,
 			openSnapshotDialog: handleOpenSnapshotDialog,
 			reviewers: reviewers || [],
 			nextReviewer: nextReviewer || null,
@@ -482,6 +506,10 @@ export default function PRReviewAssignment({
 			toggleShowTags,
 			showEmails,
 			toggleShowEmails,
+			hideMultiAssignmentSection,
+			toggleHideMultiAssignmentSection,
+			alwaysSendGoogleChatMessage,
+			toggleAlwaysSendGoogleChatMessage,
 			handleOpenSnapshotDialog,
 			reviewers,
 			nextReviewer,
@@ -507,7 +535,7 @@ export default function PRReviewAssignment({
 	);
 
 	// Render loading state
-	if (isLoading || !isLoaded) {
+	if (isLoading || !isLoaded || !isUserPreferencesReady) {
 		return (
 			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
 				<div className="text-center">
@@ -602,6 +630,7 @@ export default function PRReviewAssignment({
 						if (!open) handleCancelShortcut();
 						else setShortcutDialogOpen(true);
 					}}
+					forceSendMessage={alwaysSendGoogleChatMessage}
 				/>
 			</div>
 		</PRReviewProvider>

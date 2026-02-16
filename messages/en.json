@@ -302,6 +302,25 @@
 			"emptyDescription": "Create your first team to start assigning PR reviews."
 		}
 	},
+	"mySettings": {
+		"title": "My settings",
+		"description": "Configure your personal PR Review preferences.",
+		"showAssignmentsLabel": "Show assignments",
+		"showAssignmentsDescription": "Shows the assignments column and active assignments panel.",
+		"showTagsLabel": "Show tags",
+		"showTagsDescription": "Shows the tags column in the reviewers table.",
+		"showEmailsLabel": "Show emails",
+		"showEmailsDescription": "Shows the email column in the reviewers table.",
+		"hideMultiAssignmentSectionLabel": "Hide multi-assignment section",
+		"hideMultiAssignmentSectionDescription": "Hides multi-assignment configuration and always uses a single slot.",
+		"alwaysSendGoogleChatMessageLabel": "Always send Google Chat message",
+		"alwaysSendGoogleChatMessageDescription": "Forces message sending when assigning PRs from all flows.",
+		"autoSaveHint": "These settings are saved automatically.",
+		"saveFailed": "Failed to save your personal settings. Please try again.",
+		"bootstrapFailed": "Failed to initialize your personal settings. Default values will be used.",
+		"messageAlwaysOnHint": "Message sending is forced by your personal setting.",
+		"prUrlRequiredWhenMessageIsForced": "PR URL is required when message sending is forced."
+	},
 	"teamSettings": {
 		"title": "Team Settings",
 		"description": "Configure settings for this team.",

@@ -349,6 +349,25 @@
 			"emptyDescription": "Crea tu primer equipo para comenzar a asignar revisiones de PR."
 		}
 	},
+	"mySettings": {
+		"title": "Mis ajustes",
+		"description": "Configura tus preferencias personales para PR Review.",
+		"showAssignmentsLabel": "Mostrar asignaciones",
+		"showAssignmentsDescription": "Muestra la columna de asignaciones y el panel de asignaciones activas.",
+		"showTagsLabel": "Mostrar tags",
+		"showTagsDescription": "Muestra la columna de tags en la tabla de revisores.",
+		"showEmailsLabel": "Mostrar emails",
+		"showEmailsDescription": "Muestra la columna de correos en la tabla de revisores.",
+		"hideMultiAssignmentSectionLabel": "Ocultar sección de asignación múltiple",
+		"hideMultiAssignmentSectionDescription": "Oculta la configuración de asignación múltiple y usa siempre un solo slot.",
+		"alwaysSendGoogleChatMessageLabel": "Siempre enviar mensaje en Google Chat",
+		"alwaysSendGoogleChatMessageDescription": "Fuerza envío de mensaje al asignar PR desde todos los flujos.",
+		"autoSaveHint": "Estos ajustes se guardan automáticamente.",
+		"saveFailed": "No se pudieron guardar tus ajustes personales. Intenta nuevamente.",
+		"bootstrapFailed": "No se pudieron inicializar tus ajustes personales. Se usarán valores por defecto.",
+		"messageAlwaysOnHint": "El envío de mensaje está forzado por tu ajuste personal.",
+		"prUrlRequiredWhenMessageIsForced": "Debes ingresar la URL del PR cuando el envío de mensaje está forzado."
+	},
 	"teamSettings": {
 		"title": "Configuración del Equipo",
 		"description": "Configura los ajustes para este equipo.",

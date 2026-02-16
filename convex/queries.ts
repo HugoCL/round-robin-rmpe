@@ -44,6 +44,28 @@ type ResolvedEvent = Omit<EventDoc, "createdBy" | "participants"> & {
 	createdBy: ResolvedPerson;
 	participants: ResolvedParticipant[];
 };
+type UserPreferenceFlags = {
+	showAssignments: boolean;
+	showTags: boolean;
+	showEmails: boolean;
+	hideMultiAssignmentSection: boolean;
+	alwaysSendGoogleChatMessage: boolean;
+};
+
+const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
+	showAssignments: false,
+	showTags: true,
+	showEmails: false,
+	hideMultiAssignmentSection: false,
+	alwaysSendGoogleChatMessage: false,
+};
+
+function selectLatestUserPreference(
+	rows: Doc<"userPreferences">[],
+): Doc<"userPreferences"> | null {
+	if (rows.length === 0) return null;
+	return [...rows].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+}
 
 function buildReviewerMaps(reviewers: ReviewerDoc[]) {
 	const byId = new Map<Id<"reviewers">, ReviewerDoc>();
@@ -135,6 +157,46 @@ export const getTeam = query({
 			.withIndex("by_slug", (q) => q.eq("slug", teamSlug))
 			.first();
 		return team ?? null;
+	},
+});
+
+export const getMyUserPreferences = query({
+	args: {},
+	handler: async (ctx) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			return {
+				...USER_PREFERENCE_DEFAULTS,
+				isAuthenticated: false,
+				exists: false,
+			};
+		}
+
+		const existingRows = await ctx.db
+			.query("userPreferences")
+			.withIndex("by_user_token_identifier", (q) =>
+				q.eq("userTokenIdentifier", identity.tokenIdentifier),
+			)
+			.collect();
+		const existing = selectLatestUserPreference(existingRows);
+
+		if (!existing) {
+			return {
+				...USER_PREFERENCE_DEFAULTS,
+				isAuthenticated: true,
+				exists: false,
+			};
+		}
+
+		return {
+			showAssignments: existing.showAssignments,
+			showTags: existing.showTags,
+			showEmails: existing.showEmails,
+			hideMultiAssignmentSection: existing.hideMultiAssignmentSection,
+			alwaysSendGoogleChatMessage: existing.alwaysSendGoogleChatMessage,
+			isAuthenticated: true,
+			exists: true,
+		};
 	},
 });
 

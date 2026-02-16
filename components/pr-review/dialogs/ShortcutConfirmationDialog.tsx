@@ -27,6 +27,7 @@ interface ShortcutConfirmationDialogProps {
 	nextAfterSkipName?: string | null; // optional pre-calculated if available
 	lastAssignmentFrom?: string | null;
 	lastAssignmentTo?: string | null;
+	forceSendMessage?: boolean;
 }
 
 export function ShortcutConfirmationDialog({
@@ -40,6 +41,7 @@ export function ShortcutConfirmationDialog({
 	nextAfterSkipName,
 	lastAssignmentFrom,
 	lastAssignmentTo,
+	forceSendMessage = false,
 }: ShortcutConfirmationDialogProps) {
 	const t = useTranslations();
 
@@ -49,12 +51,16 @@ export function ShortcutConfirmationDialog({
 	const [prUrl, setPrUrl] = useState("");
 	const [contextUrl, setContextUrl] = useState("");
 	const [customMessage, setCustomMessage] = useState("");
+	const effectiveSendMessage = forceSendMessage || sendMessage;
+	const requiresPrUrl =
+		(action === "assign" || action === "skip") && effectiveSendMessage;
+	const canConfirm = !requiresPrUrl || prUrl.trim().length > 0;
 
 	// Expose chosen message via CustomEvent so parent can pick it up without prop drilling changes
 	useEffect(() => {
 		if (!isOpen) return;
 		const detail = {
-			shouldSend: sendMessage,
+			shouldSend: effectiveSendMessage,
 			customEnabled: enableCustomMessage,
 			prUrl: prUrl.trim() || undefined,
 			message:
@@ -65,7 +71,7 @@ export function ShortcutConfirmationDialog({
 		window.dispatchEvent(
 			new CustomEvent("shortcutDialogMessageState", { detail }),
 		);
-	}, [sendMessage, enableCustomMessage, prUrl, customMessage, isOpen]);
+	}, [effectiveSendMessage, enableCustomMessage, prUrl, customMessage, isOpen]);
 
 	const base: Record<ShortcutAction, string> = {
 		assign: t("shortcutConfirm.assignDescription"),
@@ -122,13 +128,14 @@ export function ShortcutConfirmationDialog({
 			const key = e.key.toLowerCase();
 			if (key === "y" || key === "enter") {
 				e.preventDefault();
+				if (!canConfirm) return;
 				onConfirm(action);
 			} else if (key === "n" || key === "escape") {
 				e.preventDefault();
 				onCancel();
 			}
 		},
-		[isOpen, action, onConfirm, onCancel],
+		[isOpen, action, onConfirm, onCancel, canConfirm],
 	);
 
 	useEffect(() => {
@@ -164,13 +171,17 @@ export function ShortcutConfirmationDialog({
 						onPrUrlChange={setPrUrl}
 						contextUrl={contextUrl}
 						onContextUrlChange={setContextUrl}
-						sendMessage={sendMessage}
-						onSendMessageChange={setSendMessage}
+						sendMessage={effectiveSendMessage}
+						onSendMessageChange={(value) => {
+							if (forceSendMessage) return;
+							setSendMessage(value);
+						}}
 						enabled={enableCustomMessage}
 						onEnabledChange={setEnableCustomMessage}
 						message={customMessage}
 						onMessageChange={setCustomMessage}
 						nextReviewerName={nextReviewerName || undefined}
+						showSendToggle={!forceSendMessage}
 						compact
 						autoTemplate={
 							nextReviewerName
@@ -179,12 +190,17 @@ export function ShortcutConfirmationDialog({
 						}
 					/>
 				)}
+				{requiresPrUrl && (
+					<p className="text-xs text-muted-foreground">
+						{t("mySettings.prUrlRequiredWhenMessageIsForced")}
+					</p>
+				)}
 				<DialogFooter>
 					<Button variant="outline" onClick={onCancel}>
 						{t("common.cancel")}
 					</Button>
 					{action && (
-						<Button onClick={() => onConfirm(action)}>
+						<Button onClick={() => onConfirm(action)} disabled={!canConfirm}>
 							{actionLabels[action]}
 						</Button>
 					)}
