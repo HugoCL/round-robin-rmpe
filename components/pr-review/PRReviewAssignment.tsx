@@ -210,6 +210,7 @@ export default function PRReviewAssignment({
 					reviewerId: item.reviewerId,
 					reviewerName: item.reviewerName,
 					timestamp: item.timestamp,
+					batchId: item.batchId,
 					isForced: item.forced,
 					wasSkipped: item.skipped,
 					isAbsentSkip: item.isAbsentSkip,

@@ -24,6 +24,8 @@ export interface ChatMessageCustomizerProps {
 	nextReviewerName?: string | null;
 	compact?: boolean; // hide modifiers & AI generation
 	autoTemplate?: string;
+	showSendToggle?: boolean;
+	embedded?: boolean;
 }
 
 export function ChatMessageCustomizer({
@@ -41,6 +43,8 @@ export function ChatMessageCustomizer({
 	nextReviewerName,
 	compact = false,
 	autoTemplate,
+	showSendToggle = true,
+	embedded = false,
 }: ChatMessageCustomizerProps) {
 	const t = useTranslations();
 	const locale = useLocale();
@@ -111,6 +115,14 @@ export function ChatMessageCustomizer({
 		onMessageChange,
 	]);
 
+	if (!showSendToggle && !sendMessage) {
+		return null;
+	}
+
+	const containerClass = embedded
+		? "space-y-3"
+		: "space-y-3 border border-muted/50 bg-muted/30 p-4";
+
 	const generateMessage = async () => {
 		setIsGenerating(true);
 		startTransition(async () => {
@@ -132,32 +144,34 @@ export function ChatMessageCustomizer({
 	};
 
 	return (
-		<div className="bg-muted/30  p-4 space-y-3 border border-muted/50">
-			<div className="flex items-center justify-between">
-				<Label
-					htmlFor={sendToggleId}
-					className="text-xs text-muted-foreground flex items-center gap-1"
-				>
-					<MessageSquare className="h-3 w-3" />{" "}
-					{t("googleChat.sendMessageToggle", {
-						defaultValue: locale.startsWith("es")
-							? "Enviar mensaje"
-							: "Send message",
-					})}
-				</Label>
-				<Switch
-					id={sendToggleId}
-					checked={sendMessage}
-					onCheckedChange={(v) => {
-						onSendMessageChange(v);
-						if (!v) {
-							onEnabledChange(false);
-							onMessageChange("");
-							setUserEdited(false);
-						}
-					}}
-				/>
-			</div>
+		<div className={containerClass}>
+			{showSendToggle && (
+				<div className="flex items-center justify-between">
+					<Label
+						htmlFor={sendToggleId}
+						className="text-xs text-muted-foreground flex items-center gap-1"
+					>
+						<MessageSquare className="h-3 w-3" />{" "}
+						{t("googleChat.sendMessageToggle", {
+							defaultValue: locale.startsWith("es")
+								? "Enviar mensaje"
+								: "Send message",
+						})}
+					</Label>
+					<Switch
+						id={sendToggleId}
+						checked={sendMessage}
+						onCheckedChange={(v) => {
+							onSendMessageChange(v);
+							if (!v) {
+								onEnabledChange(false);
+								onMessageChange("");
+								setUserEdited(false);
+							}
+						}}
+					/>
+				</div>
+			)}
 
 			{sendMessage && (
 				<>

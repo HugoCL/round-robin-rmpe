@@ -42,6 +42,13 @@ export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
 		date: "2026-02-16",
+		type: "feature",
+		title: "Asignación múltiple configurable por PR",
+		description:
+			"Ahora puedes activar la asignación múltiple desde la tarjeta principal y definir más de un revisor por PR (incluyendo selección manual o por tags). También unificamos la UI de opciones con tooltips y mejoramos la claridad de estados y previsualización por slot.",
+	},
+	{
+		date: "2026-02-16",
 		type: "fix",
 		title: "Auto-skip consistente en asignaciones por tags",
 		description:

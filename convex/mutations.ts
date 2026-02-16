@@ -65,6 +65,32 @@ async function incrementGlobalReviewedPRCounter(ctx: MutationCtx) {
 	});
 }
 
+async function incrementGlobalReviewedPRCounterBy(
+	ctx: MutationCtx,
+	amount: number,
+) {
+	if (amount <= 0) return;
+	const metrics = await ctx.db
+		.query("appMetrics")
+		.withIndex("by_key", (q) => q.eq("key", GLOBAL_REVIEWED_PR_COUNTER_KEY))
+		.collect();
+
+	if (metrics.length > 0) {
+		const primaryMetric = metrics[0];
+		await ctx.db.patch(primaryMetric._id, {
+			value: primaryMetric.value + amount,
+			updatedAt: Date.now(),
+		});
+		return;
+	}
+
+	await ctx.db.insert("appMetrics", {
+		key: GLOBAL_REVIEWED_PR_COUNTER_KEY,
+		value: amount,
+		updatedAt: Date.now(),
+	});
+}
+
 // Create team
 export const createTeam = mutation({
 	args: { name: v.string(), slug: v.string() },
@@ -515,6 +541,7 @@ async function updateAssignmentFeed(
 	newAssignment: {
 		reviewerId: string;
 		timestamp: number;
+		batchId?: string;
 		forced: boolean;
 		skipped: boolean;
 		isAbsentSkip: boolean;
@@ -581,10 +608,12 @@ async function updateAssignmentFeedAfterUndo(
 	const newItems = remainingHistory.map((item) => ({
 		reviewerId: item.reviewerId,
 		timestamp: item.timestamp,
+		batchId: item.batchId,
 		forced: item.forced,
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
 		prUrl: item.prUrl,
+		contextUrl: item.contextUrl,
 		tagId: item.tagId,
 		actionByReviewerId: item.actionByReviewerId,
 	}));
@@ -594,6 +623,315 @@ async function updateAssignmentFeedAfterUndo(
 		lastAssigned: newLastAssigned, // Store just the reviewer ID
 	});
 }
+
+type BatchSlotInput = {
+	strategy: string;
+	reviewerId?: Id<"reviewers">;
+	tagId?: Id<"tags">;
+};
+
+type BatchFailure = {
+	slotIndex: number;
+	reason:
+		| "invalid_strategy"
+		| "missing_reviewer"
+		| "reviewer_not_found"
+		| "reviewer_absent"
+		| "duplicate_reviewer"
+		| "missing_tag"
+		| "no_candidates";
+};
+
+type BatchResolved = {
+	slotIndex: number;
+	reviewer: Doc<"reviewers">;
+	tagId?: Id<"tags">;
+};
+
+function selectRandomCandidate(
+	reviewers: Doc<"reviewers">[],
+	virtualCounts: Map<Id<"reviewers">, number>,
+) {
+	const sorted = [...reviewers].sort((a, b) => {
+		const aCount = virtualCounts.get(a._id) ?? a.assignmentCount;
+		const bCount = virtualCounts.get(b._id) ?? b.assignmentCount;
+		if (aCount !== bCount) return aCount - bCount;
+		return a.createdAt - b.createdAt;
+	});
+	return sorted[0];
+}
+
+// Assignment mutations
+export const assignPRBatch = mutation({
+	args: {
+		teamSlug: v.string(),
+		mode: v.string(), // "regular" | "tag"
+		selectedTagId: v.optional(v.id("tags")),
+		slots: v.array(
+			v.object({
+				strategy: v.string(), // "random" | "specific" | "tag_random_selected" | "tag_random_other"
+				reviewerId: v.optional(v.id("reviewers")),
+				tagId: v.optional(v.id("tags")),
+			}),
+		),
+		prUrl: v.optional(v.string()),
+		contextUrl: v.optional(v.string()),
+		actionByReviewerId: v.optional(v.id("reviewers")),
+	},
+	handler: async (
+		ctx,
+		{
+			teamSlug,
+			mode,
+			selectedTagId,
+			slots,
+			prUrl,
+			contextUrl,
+			actionByReviewerId,
+		},
+	) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		if (slots.length === 0) {
+			return {
+				success: false,
+				assigned: [],
+				failed: [{ slotIndex: 0, reason: "no_candidates" as const }],
+				assignedCount: 0,
+				failedCount: 1,
+				totalRequested: 0,
+			};
+		}
+
+		const reviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.collect();
+		if (reviewers.length === 0) {
+			return {
+				success: false,
+				assigned: [],
+				failed: slots.map((_, slotIndex) => ({
+					slotIndex,
+					reason: "no_candidates" as const,
+				})),
+				assignedCount: 0,
+				failedCount: slots.length,
+				totalRequested: slots.length,
+			};
+		}
+
+		const byId = new Map<Id<"reviewers">, Doc<"reviewers">>();
+		for (const reviewer of reviewers) byId.set(reviewer._id, reviewer);
+
+		const selectedReviewerIds = new Set<string>();
+		const virtualCounts = new Map<Id<"reviewers">, number>();
+		for (const reviewer of reviewers) {
+			virtualCounts.set(reviewer._id, reviewer.assignmentCount);
+		}
+
+		const resolved: BatchResolved[] = [];
+		const failed: BatchFailure[] = [];
+
+		for (const [slotIndex, slot] of slots.entries()) {
+			const strategy = slot.strategy as BatchSlotInput["strategy"];
+			let chosenTagId: Id<"tags"> | undefined;
+
+			if (strategy === "specific") {
+				if (!slot.reviewerId) {
+					failed.push({ slotIndex, reason: "missing_reviewer" });
+					continue;
+				}
+				const reviewer = byId.get(slot.reviewerId);
+				if (!reviewer) {
+					failed.push({ slotIndex, reason: "reviewer_not_found" });
+					continue;
+				}
+				if (reviewer.isAbsent) {
+					failed.push({ slotIndex, reason: "reviewer_absent" });
+					continue;
+				}
+				if (selectedReviewerIds.has(String(reviewer._id))) {
+					failed.push({ slotIndex, reason: "duplicate_reviewer" });
+					continue;
+				}
+				resolved.push({ slotIndex, reviewer, tagId: slot.tagId });
+				selectedReviewerIds.add(String(reviewer._id));
+				virtualCounts.set(reviewer._id, reviewer.assignmentCount + 1);
+				continue;
+			}
+
+			let requiredTagId: Id<"tags"> | undefined;
+			if (mode === "regular") {
+				if (strategy !== "random") {
+					failed.push({ slotIndex, reason: "invalid_strategy" });
+					continue;
+				}
+			} else if (mode === "tag") {
+				if (strategy === "tag_random_selected") {
+					requiredTagId = selectedTagId;
+				} else if (strategy === "tag_random_other") {
+					requiredTagId = slot.tagId;
+				} else if (strategy === "random") {
+					// Backward-compatible fallback
+					requiredTagId = selectedTagId;
+				} else {
+					failed.push({ slotIndex, reason: "invalid_strategy" });
+					continue;
+				}
+				if (!requiredTagId) {
+					failed.push({ slotIndex, reason: "missing_tag" });
+					continue;
+				}
+				chosenTagId = requiredTagId;
+			} else {
+				failed.push({ slotIndex, reason: "invalid_strategy" });
+				continue;
+			}
+
+			const candidates = reviewers.filter((reviewer) => {
+				if (reviewer.isAbsent) return false;
+				if (actionByReviewerId && reviewer._id === actionByReviewerId)
+					return false;
+				if (selectedReviewerIds.has(String(reviewer._id))) return false;
+				if (chosenTagId && !reviewer.tags.includes(chosenTagId)) return false;
+				return true;
+			});
+
+			const selected = selectRandomCandidate(candidates, virtualCounts);
+			if (!selected) {
+				failed.push({ slotIndex, reason: "no_candidates" });
+				continue;
+			}
+
+			resolved.push({
+				slotIndex,
+				reviewer: selected,
+				tagId: chosenTagId,
+			});
+			selectedReviewerIds.add(String(selected._id));
+			virtualCounts.set(
+				selected._id,
+				(virtualCounts.get(selected._id) ?? selected.assignmentCount) + 1,
+			);
+		}
+
+		if (resolved.length === 0) {
+			return {
+				success: false,
+				assigned: [],
+				failed,
+				assignedCount: 0,
+				failedCount: failed.length,
+				totalRequested: slots.length,
+			};
+		}
+
+		const now = Date.now();
+		const batchId = `batch_${now}_${Math.random().toString(36).slice(2, 10)}`;
+		const assigner = actionByReviewerId
+			? byId.get(actionByReviewerId)
+			: undefined;
+		const feedEntries: Array<{
+			reviewerId: string;
+			timestamp: number;
+			batchId: string;
+			forced: boolean;
+			skipped: boolean;
+			isAbsentSkip: boolean;
+			prUrl?: string;
+			contextUrl?: string;
+			tagId?: string;
+			actionByReviewerId?: Id<"reviewers">;
+		}> = [];
+
+		const assigned = [];
+		for (const [index, item] of resolved.entries()) {
+			const timestamp = now + index;
+			const nextCount = (virtualCounts.get(item.reviewer._id) ??
+				item.reviewer.assignmentCount) as number;
+
+			await ctx.db.patch(item.reviewer._id, {
+				assignmentCount: nextCount,
+			});
+
+			await ctx.db.insert("assignmentHistory", {
+				teamId: team._id,
+				reviewerId: item.reviewer._id,
+				timestamp,
+				batchId,
+				forced: false,
+				skipped: false,
+				isAbsentSkip: false,
+				prUrl,
+				contextUrl,
+				tagId: item.tagId ? String(item.tagId) : undefined,
+				actionByReviewerId,
+			});
+
+			if (assigner) {
+				await ctx.db.insert("prAssignments", {
+					teamId: team._id,
+					prUrl: prUrl?.trim(),
+					batchId,
+					assigneeId: item.reviewer._id,
+					assignerId: assigner._id,
+					status: "pending",
+					createdAt: timestamp,
+					updatedAt: timestamp,
+				});
+			}
+
+			feedEntries.push({
+				reviewerId: item.reviewer._id,
+				timestamp,
+				batchId,
+				forced: false,
+				skipped: false,
+				isAbsentSkip: false,
+				prUrl,
+				contextUrl,
+				tagId: item.tagId ? String(item.tagId) : undefined,
+				actionByReviewerId,
+			});
+
+			assigned.push({
+				slotIndex: item.slotIndex,
+				reviewer: {
+					id: item.reviewer._id,
+					name: item.reviewer.name,
+					email: item.reviewer.email,
+					assignmentCount: nextCount,
+					isAbsent: item.reviewer.isAbsent,
+					createdAt: item.reviewer.createdAt,
+					tags: item.reviewer.tags,
+				},
+				tagId: item.tagId ? String(item.tagId) : undefined,
+			});
+		}
+
+		await incrementGlobalReviewedPRCounterBy(ctx, assigned.length);
+		await updateAssignmentFeedBatch(ctx, feedEntries, team._id);
+		await cleanupOldAssignments(ctx, team._id);
+
+		await createSnapshot(
+			ctx,
+			team._id,
+			`Assigned batch (${assigned.length}/${slots.length}): ${assigned
+				.map((a) => a.reviewer.name)
+				.join(", ")}`,
+		);
+
+		return {
+			success: true,
+			batchId,
+			assigned,
+			failed,
+			assignedCount: assigned.length,
+			failedCount: failed.length,
+			totalRequested: slots.length,
+		};
+	},
+});
 
 // Assignment mutations
 export const assignPR = mutation({
@@ -709,8 +1047,12 @@ export const createActivePRAssignment = mutation({
 		assigneeId: v.id("reviewers"),
 		assignerId: v.id("reviewers"),
 		prUrl: v.optional(v.string()),
+		batchId: v.optional(v.string()),
 	},
-	handler: async (ctx, { teamSlug, assigneeId, assignerId, prUrl }) => {
+	handler: async (
+		ctx,
+		{ teamSlug, assigneeId, assignerId, prUrl, batchId },
+	) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 		// Basic validation: ensure reviewers exist
 		const assignee = await ctx.db.get(assigneeId);
@@ -720,6 +1062,7 @@ export const createActivePRAssignment = mutation({
 		const id = await ctx.db.insert("prAssignments", {
 			teamId: team._id,
 			prUrl: prUrl?.trim(),
+			batchId,
 			assigneeId,
 			assignerId,
 			status: "pending",
@@ -750,7 +1093,6 @@ export const undoLastAssignment = mutation({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
-		// Get the most recent assignment
 		const lastAssignment = await ctx.db
 			.query("assignmentHistory")
 			.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
@@ -761,30 +1103,68 @@ export const undoLastAssignment = mutation({
 			return { success: false };
 		}
 
+		if (lastAssignment.batchId) {
+			const batchId = lastAssignment.batchId;
+			const batchAssignments = await ctx.db
+				.query("assignmentHistory")
+				.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
+				.collect();
+			const rowsForBatch = batchAssignments.filter(
+				(row) => row.batchId === batchId,
+			);
+			if (rowsForBatch.length === 0) {
+				return { success: false };
+			}
+
+			const prAssignments = await ctx.db
+				.query("prAssignments")
+				.withIndex("by_team", (q) => q.eq("teamId", team._id))
+				.collect();
+			const prAssignmentsForBatch = prAssignments.filter(
+				(row) => row.batchId === batchId,
+			);
+
+			const undoneReviewerNames: string[] = [];
+			for (const row of rowsForBatch) {
+				const reviewer = await ctx.db.get(row.reviewerId as Id<"reviewers">);
+				if (!reviewer || !("assignmentCount" in reviewer)) continue;
+				undoneReviewerNames.push(reviewer.name);
+				await ctx.db.patch(row.reviewerId as Id<"reviewers">, {
+					assignmentCount: Math.max(0, reviewer.assignmentCount - 1),
+				});
+				await ctx.db.delete(row._id);
+			}
+
+			for (const row of prAssignmentsForBatch) {
+				await ctx.db.delete(row._id);
+			}
+
+			await updateAssignmentFeedAfterUndo(ctx, team._id);
+			await createSnapshot(
+				ctx,
+				team._id,
+				`Undid batch assignment (${rowsForBatch.length}): ${undoneReviewerNames.join(", ")}`,
+			);
+
+			return {
+				success: true,
+				batchId,
+				undoneCount: rowsForBatch.length,
+				reviewerId: lastAssignment.reviewerId,
+			};
+		}
+
 		const reviewer = await ctx.db.get(
 			lastAssignment.reviewerId as Id<"reviewers">,
 		);
-		if (!reviewer) {
+		if (!reviewer || !("assignmentCount" in reviewer)) {
 			return { success: false };
 		}
-
-		// Ensure we have a reviewer (not a tag or other document type)
-		if (!("assignmentCount" in reviewer)) {
-			return { success: false };
-		}
-
-		// Decrement the assignment count
 		await ctx.db.patch(lastAssignment.reviewerId as Id<"reviewers">, {
 			assignmentCount: Math.max(0, reviewer.assignmentCount - 1),
 		});
-
-		// Remove the assignment from history
 		await ctx.db.delete(lastAssignment._id);
-
-		// Update the assignment feed
 		await updateAssignmentFeedAfterUndo(ctx, reviewer.teamId);
-
-		// Create backup snapshot
 		await createSnapshot(
 			ctx,
 			reviewer.teamId,
@@ -1049,6 +1429,49 @@ async function createSnapshot(
 			await ctx.db.delete(backup._id);
 		}
 	}
+}
+
+// Helper function to update assignment feed with many assignments (newest first)
+async function updateAssignmentFeedBatch(
+	ctx: MutationCtx,
+	newAssignments: Array<{
+		reviewerId: string;
+		timestamp: number;
+		batchId?: string;
+		forced: boolean;
+		skipped: boolean;
+		isAbsentSkip: boolean;
+		prUrl?: string;
+		contextUrl?: string;
+		tagId?: string;
+		actionByReviewerId?: Id<"reviewers">;
+	}>,
+	teamId: Id<"teams"> | undefined,
+) {
+	if (newAssignments.length === 0) return;
+
+	const existingFeed = await ctx.db
+		.query("assignmentFeed")
+		.withIndex("by_team", (q) => q.eq("teamId", teamId))
+		.first();
+
+	if (existingFeed) {
+		const updatedItems = [
+			...newAssignments,
+			...(existingFeed.items || []),
+		].slice(0, 5);
+		await ctx.db.patch(existingFeed._id, {
+			items: updatedItems,
+			lastAssigned: newAssignments[0].reviewerId,
+		});
+		return;
+	}
+
+	await ctx.db.insert("assignmentFeed", {
+		teamId,
+		items: newAssignments.slice(0, 5),
+		lastAssigned: newAssignments[0].reviewerId,
+	});
 }
 
 // Restore from backup snapshot

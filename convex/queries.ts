@@ -225,23 +225,42 @@ export const checkPRAlreadyAssigned = query({
 
 		if (!feed) return null;
 
-		// Search for matching prUrl in the feed items
 		const normalizedPrUrl = prUrl.trim().toLowerCase();
-		const existingAssignment = feed.items.find(
+		const matchingAssignments = feed.items.filter(
 			(item) => item.prUrl?.trim().toLowerCase() === normalizedPrUrl,
 		);
-
-		if (!existingAssignment) return null;
+		if (matchingAssignments.length === 0) return null;
 
 		const reviewers = await ctx.db
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
 		const { byId } = buildReviewerMaps(reviewers);
+		const newestTimestamp = Math.max(
+			...matchingAssignments.map((item) => item.timestamp),
+		);
+		const newest = matchingAssignments.find(
+			(item) => item.timestamp === newestTimestamp,
+		);
+		if (!newest) return null;
+
+		const sameBatchOrMoment = newest.batchId
+			? matchingAssignments.filter((item) => item.batchId === newest.batchId)
+			: matchingAssignments.filter(
+					(item) => item.timestamp === newestTimestamp,
+				);
+		const reviewerNames = [
+			...new Set(
+				sameBatchOrMoment.map((item) =>
+					resolveReviewerName(item.reviewerId, byId),
+				),
+			),
+		];
 
 		return {
-			reviewerName: resolveReviewerName(existingAssignment.reviewerId, byId),
-			timestamp: existingAssignment.timestamp,
+			reviewerName: reviewerNames.join(", "),
+			reviewerNames,
+			timestamp: newestTimestamp,
 		};
 	},
 });

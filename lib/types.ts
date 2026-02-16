@@ -14,6 +14,7 @@ export interface AssignmentItem {
 	reviewerId: string;
 	reviewerName: string;
 	timestamp: number;
+	batchId?: string;
 	isForced: boolean;
 	wasSkipped: boolean;
 	isAbsentSkip: boolean;

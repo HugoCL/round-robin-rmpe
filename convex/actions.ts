@@ -271,6 +271,229 @@ export const sendGoogleChatMessage = action({
 	},
 });
 
+// Google Chat integration for group assignments
+export const sendGoogleChatGroupMessage = action({
+	args: {
+		reviewers: v.array(
+			v.object({
+				name: v.string(),
+				email: v.string(),
+				reviewerChatId: v.optional(v.string()),
+			}),
+		),
+		prUrl: v.string(),
+		contextUrl: v.optional(v.string()),
+		locale: v.optional(v.string()),
+		assignerEmail: v.optional(v.string()),
+		assignerName: v.optional(v.string()),
+		assignerChatId: v.optional(v.string()),
+		teamSlug: v.string(),
+		customMessage: v.optional(v.string()),
+	},
+	handler: async (
+		ctx,
+		{
+			reviewers,
+			prUrl,
+			contextUrl,
+			locale = "es",
+			assignerEmail,
+			assignerName,
+			assignerChatId,
+			teamSlug,
+			customMessage,
+		},
+	): Promise<{ success: boolean; error?: string }> => {
+		if (reviewers.length === 0) {
+			return { success: false, error: "No reviewers provided" };
+		}
+
+		assignerChatId = assignerChatId?.trim() || undefined;
+		const normalizedReviewers = reviewers.map((reviewer) => ({
+			...reviewer,
+			reviewerChatId: reviewer.reviewerChatId?.trim() || undefined,
+		}));
+
+		const team = (await ctx.runQuery(api.queries.getTeam, { teamSlug })) as {
+			googleChatWebhookUrl?: string;
+		} | null;
+		const webhookUrl = team?.googleChatWebhookUrl?.trim();
+
+		if (!webhookUrl) {
+			return {
+				success: false,
+				error: "Google Chat webhook URL not configured for this team",
+			};
+		}
+
+		try {
+			if (!assignerChatId && assignerEmail && teamSlug) {
+				try {
+					const teamReviewers = await ctx.runQuery(api.queries.getReviewers, {
+						teamSlug,
+					});
+					const assigner = teamReviewers.find(
+						(r) => r.email.toLowerCase() === assignerEmail.toLowerCase(),
+					);
+					assignerChatId = assigner?.googleChatUserId?.trim() || undefined;
+				} catch (e) {
+					console.warn("Failed to lookup assignerChatId server-side", e);
+				}
+			}
+
+			const buildComposite = (
+				name: string | undefined,
+				chatId: string | undefined,
+				fallback: string,
+			) => {
+				const resolvedName = name || fallback;
+				if (!chatId || !/\S/.test(chatId)) {
+					return resolvedName;
+				}
+				return `${resolvedName} (<users/${chatId}>)`;
+			};
+
+			const reviewerList = normalizedReviewers
+				.map((reviewer) =>
+					buildComposite(
+						reviewer.name,
+						reviewer.reviewerChatId,
+						reviewer.email,
+					),
+				)
+				.join(", ");
+			const assignerComposite = buildComposite(
+				assignerName?.trim() || assignerEmail?.trim(),
+				assignerChatId,
+				"Someone",
+			);
+
+			const prLinked = `<${prUrl}|PR>`;
+			const isSpanish = locale.startsWith("es");
+			let builtMessage = "";
+			if (customMessage && customMessage.trim().length > 0) {
+				const base = customMessage.trim().replace(/(<users\/[^>]+>)!/g, "$1");
+				const replaced = base
+					.replace(/<URL_PLACEHOLDER\|PR>/g, prLinked)
+					.replace(/{{\s*reviewer_name\s*}}/gi, reviewerList)
+					.replace(/{{\s*requester_name\s*}}/gi, assignerComposite)
+					.replace(/{{\s*pr\s*}}/gi, prLinked)
+					.replace(/{{\s*PR\s*}}/g, prLinked);
+				builtMessage = replaced.replace(/\bPR:?\s*(<[^>]+\|PR>)/g, "$1");
+			} else {
+				builtMessage = isSpanish
+					? `Hola ${reviewerList} 👋\n${assignerComposite} les ha asignado la revisión de este ${prLinked}`
+					: `Hello ${reviewerList} 👋\n${assignerComposite} has assigned all of you to review this ${prLinked}`;
+			}
+
+			const buttons = [
+				{
+					text: "Ver PR",
+					onClick: {
+						openLink: {
+							url: prUrl,
+						},
+					},
+				},
+			];
+			if (contextUrl?.trim()) {
+				buttons.push({
+					text: "Ver Contexto",
+					onClick: {
+						openLink: {
+							url: contextUrl,
+						},
+					},
+				});
+			}
+
+			const message = {
+				text: builtMessage,
+				cardsV2: [
+					{
+						cardId: "pr-assignment-batch-card",
+						card: {
+							sections: [
+								{
+									widgets: [
+										{
+											buttonList: {
+												buttons,
+											},
+										},
+									],
+								},
+							],
+						},
+					},
+				],
+				thread: { threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD " },
+			};
+
+			const response = await fetch(webhookUrl, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(message),
+			});
+			if (!response.ok) {
+				const text = await response.text().catch(() => "");
+				throw new Error(
+					`Google Chat webhook failed: ${response.status} ${response.statusText} ${text}`,
+				);
+			}
+
+			try {
+				await ctx.runMutation(api.mutations.logSentMessage, {
+					text: builtMessage,
+					reviewerName: normalizedReviewers.map((r) => r.name).join(", "),
+					reviewerEmail: normalizedReviewers.map((r) => r.email).join(", "),
+					assignerName,
+					assignerEmail,
+					prUrl,
+					teamSlug,
+					locale,
+					isCustom: Boolean(customMessage && customMessage.trim().length > 0),
+				});
+			} catch (e) {
+				console.warn("Failed to log debug message", e);
+			}
+
+			try {
+				const uniqueEmails = [
+					...new Set(normalizedReviewers.map((r) => r.email)),
+				];
+				await ctx.runAction(api.pushActions.sendPushToParticipants, {
+					emails: uniqueEmails,
+					title: isSpanish
+						? "📋 Nuevas asignaciones de PR"
+						: "📋 New PR assignments",
+					body: assignerName
+						? isSpanish
+							? `${assignerName} les asignó PRs para revisar`
+							: `${assignerName} assigned PRs for review`
+						: isSpanish
+							? "Tienen PRs asignados para revisar"
+							: "You have PRs assigned for review",
+					url: prUrl,
+					tag: "pr-assignment-batch",
+				});
+			} catch (e) {
+				console.warn("Failed to send PWA batch push notification", e);
+			}
+
+			return { success: true };
+		} catch (error) {
+			console.error("Error sending Google Chat group message:", error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	},
+});
+
 // Action to force assign a PR to a specific reviewer
 export const forceAssignPR = action({
 	args: {
@@ -658,6 +881,7 @@ export const checkPRAlreadyAssigned = action({
 		{ teamSlug, prUrl },
 	): Promise<{
 		reviewerName: string;
+		reviewerNames?: string[];
 		timestamp: number;
 	} | null> => {
 		const result = await ctx.runQuery(api.queries.checkPRAlreadyAssigned, {

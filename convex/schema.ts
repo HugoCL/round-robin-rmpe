@@ -43,6 +43,7 @@ export default defineSchema({
 		teamId: v.optional(v.id("teams")),
 		reviewerId: v.id("reviewers"),
 		timestamp: v.number(),
+		batchId: v.optional(v.string()),
 		forced: v.boolean(),
 		skipped: v.boolean(),
 		isAbsentSkip: v.boolean(),
@@ -61,6 +62,7 @@ export default defineSchema({
 			v.object({
 				reviewerId: v.string(),
 				timestamp: v.number(),
+				batchId: v.optional(v.string()),
 				forced: v.boolean(),
 				skipped: v.boolean(),
 				isAbsentSkip: v.boolean(),
@@ -76,6 +78,7 @@ export default defineSchema({
 	prAssignments: defineTable({
 		teamId: v.optional(v.id("teams")),
 		prUrl: v.optional(v.string()),
+		batchId: v.optional(v.string()),
 		assigneeId: v.id("reviewers"), // reviewer who must review
 		assignerId: v.id("reviewers"), // reviewer who requested review
 		status: v.string(), // pending | reviewed | approved (will be deleted after approved)
