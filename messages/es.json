@@ -572,6 +572,7 @@
 		"cancelFailed": "Error al cancelar el evento. Por favor intenta de nuevo.",
 		"mustBeLoggedIn": "Debes iniciar sesión para unirte a eventos",
 		"participants": "participantes",
+		"participantsLabel": "Participantes",
 		"signInRequired": "Inicio de Sesión Requerido",
 		"signInToJoin": "Por favor inicia sesión para unirte a este evento",
 		"notFound": "Evento No Encontrado",

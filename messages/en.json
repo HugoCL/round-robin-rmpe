@@ -525,6 +525,7 @@
 		"cancelFailed": "Failed to cancel event. Please try again.",
 		"mustBeLoggedIn": "You must be logged in to join events",
 		"participants": "participants",
+		"participantsLabel": "Participants",
 		"signInRequired": "Sign In Required",
 		"signInToJoin": "Please sign in to join this event",
 		"notFound": "Event Not Found",

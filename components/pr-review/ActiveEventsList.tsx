@@ -332,11 +332,26 @@ export function ActiveEventsList() {
 										<Clock className="h-3 w-3 shrink-0" />
 										{timeStr}
 									</span>
-									<span className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border/60 bg-background/25 px-2.5 text-xs text-muted-foreground">
-										<Users className="h-3 w-3 shrink-0" />
-										{event.participants.length}
-									</span>
 								</div>
+
+								{event.participants.length > 0 && (
+									<div className="flex flex-wrap items-center gap-1.5">
+										<span className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border/60 bg-background/25 px-2.5 text-xs text-muted-foreground">
+											<Users className="h-3 w-3 shrink-0" />
+											{t("events.participantsLabel")}
+										</span>
+										{event.participants.map((participant) => (
+											<Badge
+												key={participant.email}
+												variant="secondary"
+												className="max-w-full truncate text-xs font-normal"
+												title={participant.name}
+											>
+												{participant.name}
+											</Badge>
+										))}
+									</div>
+								)}
 
 								{event.description && (
 									<p className="truncate text-xs text-muted-foreground">
