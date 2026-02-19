@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-02-19",
+		type: "feature",
+		title: "Tablero de sugerencias",
+		description:
+			"Agregamos un tablero de sugerencias tipo feedback board: ahora puedes crear ideas, dar upvotes y comentar. También incorporamos un acceso rápido por ícono en el header (junto a novedades, el ícono de la ampolleta) para entrar al tablero.",
+	},
+	{
 		date: "2026-02-16",
 		type: "feature",
 		title: "Mis ajustes persistentes por usuario",

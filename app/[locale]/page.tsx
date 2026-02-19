@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { ArrowRight, GitPullRequest, Plus } from "lucide-react";
+import { ArrowRight, GitPullRequest, Lightbulb, Plus } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -161,15 +161,23 @@ export default function Page() {
 					<h2 className="text-xl font-semibold">
 						{t("team.switcher.teamListTitle")}
 					</h2>
-					<Button
-						asChild
-						className="shrink-0 shadow-[0_8px_24px_-12px_hsl(var(--primary))]"
-					>
-						<Link href={`/${locale}/create-team`}>
-							<Plus className="h-4 w-4" />
-							{t("team.createButton")}
-						</Link>
-					</Button>
+					<div className="flex items-center gap-2">
+						<Button asChild variant="outline" className="shrink-0">
+							<Link href={`/${locale}/suggestions`}>
+								<Lightbulb className="h-4 w-4" />
+								{t("suggestions.openBoard")}
+							</Link>
+						</Button>
+						<Button
+							asChild
+							className="shrink-0 shadow-[0_8px_24px_-12px_hsl(var(--primary))]"
+						>
+							<Link href={`/${locale}/create-team`}>
+								<Plus className="h-4 w-4" />
+								{t("team.createButton")}
+							</Link>
+						</Button>
+					</div>
 				</div>
 
 				{isLoading ? (

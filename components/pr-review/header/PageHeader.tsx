@@ -1,5 +1,6 @@
 import {
 	Download,
+	Lightbulb,
 	Menu,
 	MoreHorizontal,
 	RotateCw,
@@ -7,7 +8,8 @@ import {
 	UserMinus,
 	UserPlus,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { TeamSwitcher } from "@/components/TeamSwitcher";
 import { Button } from "@/components/ui/button";
@@ -40,6 +42,12 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChangelogDialog } from "../ChangelogDialog";
 import { AddReviewerDialog } from "../dialogs/AddReviewerDialog";
@@ -73,6 +81,7 @@ export function PageHeader({
 		userInfo,
 	} = usePRReview();
 	const isMobile = useIsMobile();
+	const locale = useLocale();
 
 	const reviewerActions = (
 		<div className="flex flex-wrap gap-2 justify-center">
@@ -150,6 +159,25 @@ export function PageHeader({
 				)}
 				<ThemeToggle />
 				<ChangelogDialog iconOnly />
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								asChild
+								variant="ghost"
+								size="icon"
+								aria-label={t("suggestions.shortcut")}
+							>
+								<Link href={`/${locale}/suggestions`}>
+									<Lightbulb className="h-4 w-4" />
+								</Link>
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>
+							<p>{t("suggestions.shortcut")}</p>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 				<HeaderOptionsDrawer />
 
 				<div className="h-6 w-px bg-border mx-1" />

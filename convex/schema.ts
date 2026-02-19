@@ -181,4 +181,45 @@ export default defineSchema({
 	})
 		.index("by_email", ["email"])
 		.index("by_endpoint", ["endpoint"]),
+
+	suggestions: defineTable({
+		title: v.string(),
+		description: v.string(),
+		status: v.union(
+			v.literal("open"),
+			v.literal("planned"),
+			v.literal("completed"),
+		),
+		authorTokenIdentifier: v.string(),
+		authorName: v.string(),
+		authorEmail: v.optional(v.string()),
+		upvoteCount: v.number(),
+		commentCount: v.number(),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_status_created_at", ["status", "createdAt"])
+		.index("by_status_upvotes", ["status", "upvoteCount", "createdAt"])
+		.index("by_created_at", ["createdAt"])
+		.index("by_author", ["authorTokenIdentifier", "createdAt"]),
+
+	suggestionVotes: defineTable({
+		suggestionId: v.id("suggestions"),
+		userTokenIdentifier: v.string(),
+		createdAt: v.number(),
+	})
+		.index("by_suggestion", ["suggestionId"])
+		.index("by_user", ["userTokenIdentifier"])
+		.index("by_suggestion_user", ["suggestionId", "userTokenIdentifier"]),
+
+	suggestionComments: defineTable({
+		suggestionId: v.id("suggestions"),
+		authorTokenIdentifier: v.string(),
+		authorName: v.string(),
+		authorEmail: v.optional(v.string()),
+		body: v.string(),
+		createdAt: v.number(),
+	})
+		.index("by_suggestion_created_at", ["suggestionId", "createdAt"])
+		.index("by_author", ["authorTokenIdentifier", "createdAt"]),
 });
