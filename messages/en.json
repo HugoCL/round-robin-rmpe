@@ -633,6 +633,10 @@
 			"commentDeleteFailedDescription": "Could not delete this comment."
 		}
 	},
+	"announcements": {
+		"suggestionsBoardInvite": "Do you have ideas to help La Lista let you work faster? We invite you to share them in the suggestions board (💡 icon in the header).",
+		"dismiss": "Dismiss"
+	},
 	"changelog": {
 		"title": "What's New",
 		"description": "Latest changes and improvements",

@@ -680,6 +680,10 @@
 			"commentDeleteFailedDescription": "No fue posible eliminar este comentario."
 		}
 	},
+	"announcements": {
+		"suggestionsBoardInvite": "¿Tienes ideas para que La Lista te permita hacer las cosas más rápido? Te invitamos a compartirlas en el tablero de sugerencias (ícono 💡 en el header).",
+		"dismiss": "Descartar"
+	},
 	"changelog": {
 		"title": "Novedades",
 		"description": "Últimos cambios y mejoras de la aplicación",
