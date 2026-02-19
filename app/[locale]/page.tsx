@@ -24,54 +24,92 @@ export default function Page() {
 	const reviewedPRsCount = useQuery(api.queries.getGlobalReviewedPRCount);
 	const [animatedReviewedPRs, setAnimatedReviewedPRs] = useState(0);
 	const [isCounterAnimating, setIsCounterAnimating] = useState(false);
-	const previousCountRef = useRef<number | null>(null);
+	const hasAnimatedOnOpenRef = useRef(false);
+	const currentValueRef = useRef(0);
+	const rafIdRef = useRef<number | null>(null);
+	const settleTimeoutRef = useRef<number | null>(null);
 
 	const isLoading = teams === undefined || reviewedPRsCount === undefined;
 	const teamsList = teams ?? [];
 
 	useEffect(() => {
-		if (reviewedPRsCount === undefined) return;
-
-		// First load: sync value without animation.
-		if (previousCountRef.current === null) {
-			previousCountRef.current = reviewedPRsCount;
-			setAnimatedReviewedPRs(reviewedPRsCount);
+		if (reviewedPRsCount === undefined) {
 			return;
 		}
 
-		const startValue = previousCountRef.current;
-		const endValue = reviewedPRsCount;
-		if (startValue === endValue) return;
+		const animateCount = (startValue: number, endValue: number) => {
+			if (rafIdRef.current !== null) {
+				cancelAnimationFrame(rafIdRef.current);
+				rafIdRef.current = null;
+			}
+			if (settleTimeoutRef.current !== null) {
+				clearTimeout(settleTimeoutRef.current);
+				settleTimeoutRef.current = null;
+			}
 
-		previousCountRef.current = endValue;
-		setIsCounterAnimating(true);
-
-		const durationMs = 700;
-		const startTime = performance.now();
-		let animationFrameId = 0;
-
-		const animate = (now: number) => {
-			const elapsed = now - startTime;
-			const progress = Math.min(elapsed / durationMs, 1);
-			const easedProgress = 1 - (1 - progress) ** 3;
-			const nextValue = Math.round(
-				startValue + (endValue - startValue) * easedProgress,
-			);
-			setAnimatedReviewedPRs(nextValue);
-
-			if (progress < 1) {
-				animationFrameId = requestAnimationFrame(animate);
+			if (startValue === endValue) {
+				currentValueRef.current = endValue;
+				setAnimatedReviewedPRs(endValue);
+				setIsCounterAnimating(false);
 				return;
 			}
 
-			setAnimatedReviewedPRs(endValue);
-			window.setTimeout(() => setIsCounterAnimating(false), 180);
+			setIsCounterAnimating(true);
+			const durationMs = 1400;
+			const startTime = performance.now();
+
+			const step = (now: number) => {
+				const elapsed = now - startTime;
+				const progress = Math.min(elapsed / durationMs, 1);
+				const easedProgress =
+					progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
+				const nextValue = Math.round(
+					startValue + (endValue - startValue) * easedProgress,
+				);
+				currentValueRef.current = nextValue;
+				setAnimatedReviewedPRs(nextValue);
+
+				if (progress < 1) {
+					rafIdRef.current = requestAnimationFrame(step);
+					return;
+				}
+
+				currentValueRef.current = endValue;
+				setAnimatedReviewedPRs(endValue);
+				settleTimeoutRef.current = window.setTimeout(() => {
+					setIsCounterAnimating(false);
+					settleTimeoutRef.current = null;
+				}, 180);
+				rafIdRef.current = null;
+			};
+
+			rafIdRef.current = requestAnimationFrame(step);
 		};
 
-		animationFrameId = requestAnimationFrame(animate);
+		if (!hasAnimatedOnOpenRef.current) {
+			hasAnimatedOnOpenRef.current = true;
+			currentValueRef.current = 0;
+			setAnimatedReviewedPRs(0);
+			animateCount(0, reviewedPRsCount);
+			return;
+		}
 
-		return () => cancelAnimationFrame(animationFrameId);
+		const fromValue = currentValueRef.current;
+		if (fromValue !== reviewedPRsCount) {
+			animateCount(fromValue, reviewedPRsCount);
+		}
 	}, [reviewedPRsCount]);
+
+	useEffect(() => {
+		return () => {
+			if (rafIdRef.current !== null) {
+				cancelAnimationFrame(rafIdRef.current);
+			}
+			if (settleTimeoutRef.current !== null) {
+				clearTimeout(settleTimeoutRef.current);
+			}
+		};
+	}, []);
 
 	return (
 		<div className="relative overflow-hidden">
