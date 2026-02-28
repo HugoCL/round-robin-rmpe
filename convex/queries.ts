@@ -6,6 +6,7 @@ type EnrichedAssignment = {
 	prUrl?: string | undefined;
 	assigneeId: Id<"reviewers">;
 	assignerId: Id<"reviewers">;
+	status: string;
 	createdAt: number;
 	updatedAt: number;
 	assigneeName?: string;
@@ -43,6 +44,7 @@ type ResolvedEvent = Omit<EventDoc, "createdBy" | "participants"> & {
 	createdBy: ResolvedPerson;
 	participants: ResolvedParticipant[];
 };
+
 type UserPreferenceFlags = {
 	showAssignments: boolean;
 	showTags: boolean;
@@ -133,6 +135,25 @@ export const getTeams = query({
 	handler: async (ctx) => {
 		const teams = await ctx.db.query("teams").order("desc").collect();
 		return teams;
+	},
+});
+
+export const getTeamsForUserEmail = query({
+	args: { email: v.string() },
+	handler: async (ctx, { email }) => {
+		const normalizedEmail = email.toLowerCase();
+		// Query all reviewers and find those matching the email (case-insensitive)
+		const allReviewers = await ctx.db.query("reviewers").collect();
+		const matchingReviewers = allReviewers.filter(
+			(r) => r.email.toLowerCase() === normalizedEmail && r.teamId,
+		);
+		const teamIds = [
+			...new Set(matchingReviewers.map((r) => r.teamId).filter(Boolean)),
+		];
+		const teams = await Promise.all(
+			teamIds.map((id) => (id ? ctx.db.get(id) : null)),
+		);
+		return teams.filter(Boolean);
 	},
 });
 
@@ -286,42 +307,23 @@ export const checkPRAlreadyAssigned = query({
 
 		if (!feed) return null;
 
+		// Search for matching prUrl in the feed items
 		const normalizedPrUrl = prUrl.trim().toLowerCase();
-		const matchingAssignments = feed.items.filter(
+		const existingAssignment = feed.items.find(
 			(item) => item.prUrl?.trim().toLowerCase() === normalizedPrUrl,
 		);
-		if (matchingAssignments.length === 0) return null;
+
+		if (!existingAssignment) return null;
 
 		const reviewers = await ctx.db
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
 		const { byId } = buildReviewerMaps(reviewers);
-		const newestTimestamp = Math.max(
-			...matchingAssignments.map((item) => item.timestamp),
-		);
-		const newest = matchingAssignments.find(
-			(item) => item.timestamp === newestTimestamp,
-		);
-		if (!newest) return null;
-
-		const sameBatchOrMoment = newest.batchId
-			? matchingAssignments.filter((item) => item.batchId === newest.batchId)
-			: matchingAssignments.filter(
-					(item) => item.timestamp === newestTimestamp,
-				);
-		const reviewerNames = [
-			...new Set(
-				sameBatchOrMoment.map((item) =>
-					resolveReviewerName(item.reviewerId, byId),
-				),
-			),
-		];
 
 		return {
-			reviewerName: reviewerNames.join(", "),
-			reviewerNames,
-			timestamp: newestTimestamp,
+			reviewerName: resolveReviewerName(existingAssignment.reviewerId, byId),
+			timestamp: existingAssignment.timestamp,
 		};
 	},
 });
@@ -514,6 +516,7 @@ export const getActiveAssignmentsForReviewer = query({
 				prUrl: row.prUrl,
 				assigneeId: row.assigneeId as Id<"reviewers">,
 				assignerId: row.assignerId as Id<"reviewers">,
+				status: "pending", // flattened model: treat existing row as pending until completion
 				createdAt: row.createdAt,
 				updatedAt: row.updatedAt,
 				assigneeName:
@@ -558,6 +561,7 @@ export const getActiveAssignmentsByReviewer = query({
 				prUrl: row.prUrl,
 				assigneeId: row.assigneeId as Id<"reviewers">,
 				assignerId: row.assignerId as Id<"reviewers">,
+				status: "pending",
 				createdAt: row.createdAt,
 				updatedAt: row.updatedAt,
 				assigneeName:

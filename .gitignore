@@ -33,3 +33,7 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+chrome-extension/node_modules/
+chrome-extension/dist/
+chrome-extension/releases/

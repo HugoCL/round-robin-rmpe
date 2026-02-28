@@ -1,0 +1,43 @@
+{
+	"manifest_version": 3,
+	"name": "La Lista - PR Reviewer Assignment",
+	"description": "Assign PR reviewers using round-robin directly from GitHub pull request pages",
+	"version": "1.0.0",
+	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxA9Pz0VNzxyFpMKIGagxmnJhBrIt6GQdvBip271Ql6WMl02UzlVzzwGUTPhBi5jF3d+9pnCFOAY3mHnwd4VgFAjXH5TD/8tFxaInaI9aQ5UG2hcI4X8yH0MVyW7qRa09z6CH279KPnTgOqFJIa7Xqhk2x69nImAnaWG3SzoXaukMe52eD7+sTm2f7Y3/V0FU7GrTq3aRc+3VW9awDj+IxkfbHQIOPEmM7cOcVagbX+ShzOHjw6/xX7JeRk5WZKH61Ugu0ZFZwSM7H4e2Ba5rq5X+Ouauxv+v5Ddvt2Vgbl4pdv2rnhURtEyLr13xw6aZ/7QJNZbaic3vJEhdgL5NLQIDAQAB",
+	"permissions": ["activeTab", "tabs", "storage", "cookies"],
+	"host_permissions": [
+		"https://github.com/*",
+		"https://tidy-stingray-81.clerk.accounts.dev/*",
+		"https://la-lista.vercel.app/*",
+		"https://admired-weasel-950.convex.site/*",
+		"http://localhost/*"
+	],
+	"action": {
+		"default_popup": "popup.html",
+		"default_icon": {
+			"16": "icons/icon-16.png",
+			"48": "icons/icon-48.png",
+			"128": "icons/icon-128.png"
+		},
+		"default_title": "La Lista - Assign PR Reviewer"
+	},
+	"icons": {
+		"16": "icons/icon-16.png",
+		"48": "icons/icon-48.png",
+		"128": "icons/icon-128.png"
+	},
+	"background": {
+		"service_worker": "background.js",
+		"type": "module"
+	},
+	"content_scripts": [
+		{
+			"matches": ["https://github.com/*/pull/*"],
+			"js": ["content.js"],
+			"run_at": "document_idle"
+		}
+	],
+	"content_security_policy": {
+		"extension_pages": "script-src 'self'; object-src 'self'"
+	}
+}

@@ -9,7 +9,10 @@
 		"lint": "biome lint",
 		"biome:fix": "biome check --write",
 		"biome:fix-unsafe": "biome check --unsafe --write",
-		"prepare": "lefthook install"
+		"prepare": "lefthook install",
+		"ext:dev": "cd chrome-extension && npx vite build --watch --mode development",
+		"ext:build": "cd chrome-extension && npx vite build",
+		"ext:pack": "cd chrome-extension && node scripts/pack.mjs"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.1.0",

@@ -873,6 +873,215 @@ export const processEventStartNotifications = action({
 	},
 });
 
+// Flash assign: one-click round-robin assignment + Google Chat notification.
+// Used by the Chrome extension's content script button injected into GitHub PR pages.
+export const flashAssign = action({
+	args: {
+		teamSlug: v.string(),
+		prUrl: v.string(),
+		force: v.optional(v.boolean()),
+	},
+	handler: async (
+		ctx,
+		{ teamSlug, prUrl, force = false },
+	): Promise<{
+		success: boolean;
+		reviewerName?: string;
+		alreadyAssigned?: boolean;
+		existingReviewerName?: string;
+		existingTimestamp?: number;
+		error?: string;
+	}> => {
+		// 1. Authenticate the caller
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			return { success: false, error: "Not authenticated" };
+		}
+		const assignerEmail = identity.email;
+		if (!assignerEmail) {
+			return { success: false, error: "No email found in auth identity" };
+		}
+
+		// 2. Check if the PR is already assigned (unless force=true)
+		if (!force) {
+			const existing = await ctx.runQuery(api.queries.checkPRAlreadyAssigned, {
+				teamSlug,
+				prUrl,
+			});
+			if (existing) {
+				return {
+					success: false,
+					alreadyAssigned: true,
+					existingReviewerName: existing.reviewerName,
+					existingTimestamp: existing.timestamp,
+				};
+			}
+		}
+
+		// 3. Get the next reviewer via round-robin
+		const nextReviewer = (await ctx.runQuery(api.queries.getNextReviewer, {
+			teamSlug,
+		})) as Doc<"reviewers"> | null;
+		if (!nextReviewer) {
+			return { success: false, error: "No hay revisores disponibles" };
+		}
+
+		// 4. Find the assigner's reviewer record
+		const reviewers = (await ctx.runQuery(api.queries.getReviewers, {
+			teamSlug,
+		})) as Doc<"reviewers">[];
+		const assigner = reviewers.find(
+			(r) => r.email.toLowerCase() === assignerEmail.toLowerCase(),
+		);
+
+		// 5. Assign the PR
+		await ctx.runMutation(api.mutations.assignPR, {
+			reviewerId: nextReviewer._id,
+			prUrl,
+			forced: false,
+			actionByReviewerId: assigner?._id,
+		});
+
+		// 6. Create active PR assignment if assigner is identified
+		if (assigner) {
+			try {
+				await ctx.runMutation(api.mutations.createActivePRAssignment, {
+					teamSlug,
+					assigneeId: nextReviewer._id,
+					assignerId: assigner._id,
+					prUrl,
+				});
+			} catch (e) {
+				console.warn("Failed to create active PR assignment", e);
+			}
+		}
+
+		// 7. Send Google Chat notification
+		const team = (await ctx.runQuery(api.queries.getTeam, { teamSlug })) as {
+			googleChatWebhookUrl?: string;
+		} | null;
+		const webhookUrl = team?.googleChatWebhookUrl?.trim();
+
+		if (webhookUrl) {
+			try {
+				const reviewerChatId =
+					nextReviewer.googleChatUserId?.trim() || undefined;
+				const assignerChatId = assigner?.googleChatUserId?.trim() || undefined;
+
+				const buildComposite = (
+					name: string,
+					chatId: string | undefined,
+				): string => {
+					if (!chatId) return name;
+					return `${name} (<users/${chatId}>)`;
+				};
+
+				const reviewerComposite = buildComposite(
+					nextReviewer.name,
+					reviewerChatId,
+				);
+				const assignerComposite = assigner
+					? buildComposite(assigner.name, assignerChatId)
+					: assignerEmail;
+
+				// Use Spanish default template (extension UI is in Spanish)
+				const messages = await import("../messages/es.json");
+				const t = messages.default || messages;
+
+				const greetingText = t.googleChat.greeting.replace(
+					"{reviewer}",
+					reviewerComposite,
+				);
+				const assignmentText = t.googleChat.assignmentMessage
+					.replace("{assigner}", assignerComposite)
+					.replace("{prUrl}", prUrl);
+
+				const builtMessage = `${greetingText}\n${assignmentText}`;
+
+				const message = {
+					text: builtMessage,
+					cardsV2: [
+						{
+							cardId: "pr-assignment-card",
+							card: {
+								sections: [
+									{
+										widgets: [
+											{
+												buttonList: {
+													buttons: [
+														{
+															text: "Ver PR",
+															onClick: {
+																openLink: { url: prUrl },
+															},
+														},
+													],
+												},
+											},
+										],
+									},
+								],
+							},
+						},
+					],
+					thread: {
+						threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD ",
+					},
+				};
+
+				const response = await fetch(webhookUrl, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(message),
+				});
+
+				if (!response.ok) {
+					console.warn(
+						`Google Chat webhook failed: ${response.status} ${response.statusText}`,
+					);
+				}
+
+				// Log the sent message (fire and forget)
+				try {
+					await ctx.runMutation(api.mutations.logSentMessage, {
+						text: builtMessage,
+						reviewerName: nextReviewer.name,
+						reviewerEmail: nextReviewer.email,
+						assignerName: assigner?.name,
+						assignerEmail,
+						prUrl,
+						teamSlug,
+						locale: "es",
+						isCustom: false,
+					});
+				} catch (e) {
+					console.warn("Failed to log debug message", e);
+				}
+
+				// Send PWA push notification (fire and forget)
+				try {
+					await ctx.runAction(api.pushActions.sendPushNotification, {
+						email: nextReviewer.email,
+						title: "📋 Nueva asignación de PR",
+						body: assigner
+							? `${assigner.name} te ha asignado un PR para revisar`
+							: "Te han asignado un PR para revisar",
+						url: prUrl,
+						tag: "pr-assignment",
+					});
+				} catch (e) {
+					console.warn("Failed to send PWA push notification", e);
+				}
+			} catch (e) {
+				console.warn("Failed to send Google Chat notification", e);
+			}
+		}
+
+		return { success: true, reviewerName: nextReviewer.name };
+	},
+});
+
 // Check if a PR has been previously assigned
 export const checkPRAlreadyAssigned = action({
 	args: { teamSlug: v.string(), prUrl: v.string() },

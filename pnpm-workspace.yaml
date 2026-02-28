@@ -1,3 +1,6 @@
+packages:
+  - "chrome-extension"
+
 onlyBuiltDependencies:
   - '@clerk/shared'
   - esbuild
