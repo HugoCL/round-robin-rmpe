@@ -655,6 +655,7 @@ async function updateAssignmentFeed(
 	ctx: MutationCtx,
 	newAssignment: {
 		reviewerId: string;
+		reviewerName?: string;
 		timestamp: number;
 		batchId?: string;
 		forced: boolean;
@@ -664,6 +665,7 @@ async function updateAssignmentFeed(
 		contextUrl?: string;
 		tagId?: string;
 		actionByReviewerId?: Id<"reviewers">;
+		actionByName?: string;
 	},
 	teamId: Id<"teams"> | undefined,
 ) {
@@ -722,6 +724,7 @@ async function updateAssignmentFeedAfterUndo(
 
 	const newItems = remainingHistory.map((item) => ({
 		reviewerId: item.reviewerId,
+		reviewerName: item.reviewerName,
 		timestamp: item.timestamp,
 		batchId: item.batchId,
 		forced: item.forced,
@@ -731,6 +734,7 @@ async function updateAssignmentFeedAfterUndo(
 		contextUrl: item.contextUrl,
 		tagId: item.tagId,
 		actionByReviewerId: item.actionByReviewerId,
+		actionByName: item.actionByName,
 	}));
 
 	await ctx.db.patch(existingFeed._id, {
@@ -948,6 +952,7 @@ export const assignPRBatch = mutation({
 			: undefined;
 		const feedEntries: Array<{
 			reviewerId: string;
+			reviewerName?: string;
 			timestamp: number;
 			batchId: string;
 			forced: boolean;
@@ -957,6 +962,7 @@ export const assignPRBatch = mutation({
 			contextUrl?: string;
 			tagId?: string;
 			actionByReviewerId?: Id<"reviewers">;
+			actionByName?: string;
 		}> = [];
 
 		const assigned = [];
@@ -972,6 +978,7 @@ export const assignPRBatch = mutation({
 			await ctx.db.insert("assignmentHistory", {
 				teamId: team._id,
 				reviewerId: item.reviewer._id,
+				reviewerName: item.reviewer.name,
 				timestamp,
 				batchId,
 				forced: false,
@@ -981,6 +988,7 @@ export const assignPRBatch = mutation({
 				contextUrl,
 				tagId: item.tagId ? String(item.tagId) : undefined,
 				actionByReviewerId,
+				actionByName: assigner?.name,
 			});
 
 			if (assigner) {
@@ -997,6 +1005,7 @@ export const assignPRBatch = mutation({
 
 			feedEntries.push({
 				reviewerId: item.reviewer._id,
+				reviewerName: item.reviewer.name,
 				timestamp,
 				batchId,
 				forced: false,
@@ -1006,6 +1015,7 @@ export const assignPRBatch = mutation({
 				contextUrl,
 				tagId: item.tagId ? String(item.tagId) : undefined,
 				actionByReviewerId,
+				actionByName: assigner?.name,
 			});
 
 			assigned.push({
@@ -1088,6 +1098,7 @@ export const assignPR = mutation({
 		await ctx.db.insert("assignmentHistory", {
 			teamId: reviewer.teamId,
 			reviewerId,
+			reviewerName: reviewer.name,
 			timestamp,
 			forced,
 			skipped,
@@ -1096,6 +1107,9 @@ export const assignPR = mutation({
 			contextUrl,
 			tagId,
 			actionByReviewerId,
+			actionByName: actionByReviewerId
+				? (await ctx.db.get(actionByReviewerId))?.name
+				: undefined,
 		});
 
 		// Increment global PR counter only for real assignments (exclude skips)
@@ -1109,6 +1123,7 @@ export const assignPR = mutation({
 				ctx,
 				{
 					reviewerId,
+					reviewerName: reviewer.name,
 					timestamp,
 					forced,
 					skipped,
@@ -1117,6 +1132,9 @@ export const assignPR = mutation({
 					contextUrl,
 					tagId,
 					actionByReviewerId,
+					actionByName: actionByReviewerId
+						? (await ctx.db.get(actionByReviewerId))?.name
+						: undefined,
 				},
 				reviewer.teamId,
 			);
@@ -1583,6 +1601,7 @@ async function updateAssignmentFeedBatch(
 	ctx: MutationCtx,
 	newAssignments: Array<{
 		reviewerId: string;
+		reviewerName?: string;
 		timestamp: number;
 		batchId?: string;
 		forced: boolean;
@@ -1592,6 +1611,7 @@ async function updateAssignmentFeedBatch(
 		contextUrl?: string;
 		tagId?: string;
 		actionByReviewerId?: Id<"reviewers">;
+		actionByName?: string;
 	}>,
 	teamId: Id<"teams"> | undefined,
 ) {
@@ -2162,5 +2182,67 @@ export const getPushSubscriptionsByEmail = mutation({
 			.query("pushSubscriptions")
 			.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
 			.collect();
+	},
+});
+
+// One-time backfill: populate reviewerName for existing assignmentHistory records
+export const backfillAssignmentHistoryNames = mutation({
+	args: { teamSlug: v.string() },
+	handler: async (ctx, { teamSlug }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const reviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.collect();
+		const byId = new Map<Id<"reviewers">, Doc<"reviewers">>();
+		for (const r of reviewers) byId.set(r._id, r);
+
+		const history = await ctx.db
+			.query("assignmentHistory")
+			.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
+			.collect();
+
+		let patched = 0;
+		for (const item of history) {
+			const updates: { reviewerName?: string; actionByName?: string } = {};
+			if (!item.reviewerName) {
+				const reviewer = byId.get(item.reviewerId);
+				if (reviewer) {
+					updates.reviewerName = reviewer.name;
+				}
+			}
+			if (!item.actionByName && item.actionByReviewerId) {
+				const actor = byId.get(item.actionByReviewerId);
+				if (actor) {
+					updates.actionByName = actor.name;
+				}
+			}
+			if (Object.keys(updates).length > 0) {
+				await ctx.db.patch(item._id, updates);
+				patched++;
+			}
+		}
+
+		// Also backfill the assignment feed
+		const feed = await ctx.db
+			.query("assignmentFeed")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.first();
+		if (feed) {
+			const updatedItems = feed.items.map((item) => {
+				const reviewer = byId.get(item.reviewerId as Id<"reviewers">);
+				const actor = item.actionByReviewerId
+					? byId.get(item.actionByReviewerId)
+					: undefined;
+				return {
+					...item,
+					reviewerName: item.reviewerName ?? reviewer?.name,
+					actionByName: item.actionByName ?? actor?.name,
+				};
+			});
+			await ctx.db.patch(feed._id, { items: updatedItems });
+		}
+
+		return { success: true, patched };
 	},
 });

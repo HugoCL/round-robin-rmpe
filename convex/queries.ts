@@ -83,20 +83,27 @@ function resolveReviewerName(
 ) {
 	if (!reviewerId) return fallback ?? "Unknown";
 	const reviewer = byId.get(reviewerId as Id<"reviewers">);
-	return reviewer?.name ?? fallback ?? "Unknown";
+	if (reviewer) return reviewer.name;
+	return fallback ?? "Unknown";
 }
 
 function resolveReviewerMeta(
 	reviewerId: string | undefined,
 	byId: Map<Id<"reviewers">, ReviewerDoc>,
+	fallbackName?: string,
 ) {
 	if (!reviewerId) return {};
 	const reviewer = byId.get(reviewerId as Id<"reviewers">);
-	if (!reviewer) return {};
-	return {
-		actionByName: reviewer.name,
-		actionByEmail: reviewer.email,
-	};
+	if (reviewer) {
+		return {
+			actionByName: reviewer.name,
+			actionByEmail: reviewer.email,
+		};
+	}
+	if (fallbackName) {
+		return { actionByName: fallbackName };
+	}
+	return {};
 }
 
 function resolvePerson(
@@ -262,8 +269,16 @@ export const getAssignmentFeed = query({
 			...feed,
 			items: feed.items.map((item) => ({
 				...item,
-				reviewerName: resolveReviewerName(item.reviewerId, byId),
-				...resolveReviewerMeta(item.actionByReviewerId, byId),
+				reviewerName: resolveReviewerName(
+					item.reviewerId,
+					byId,
+					item.reviewerName,
+				),
+				...resolveReviewerMeta(
+					item.actionByReviewerId,
+					byId,
+					item.actionByName,
+				),
 			})),
 		};
 	},
@@ -287,8 +302,12 @@ export const getAssignmentHistory = query({
 
 		return history.map((item) => ({
 			...item,
-			reviewerName: resolveReviewerName(item.reviewerId, byId),
-			...resolveReviewerMeta(item.actionByReviewerId, byId),
+			reviewerName: resolveReviewerName(
+				item.reviewerId,
+				byId,
+				item.reviewerName,
+			),
+			...resolveReviewerMeta(item.actionByReviewerId, byId, item.actionByName),
 		}));
 	},
 });

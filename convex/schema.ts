@@ -55,6 +55,7 @@ export default defineSchema({
 	assignmentHistory: defineTable({
 		teamId: v.optional(v.id("teams")),
 		reviewerId: v.id("reviewers"),
+		reviewerName: v.optional(v.string()),
 		timestamp: v.number(),
 		batchId: v.optional(v.string()),
 		forced: v.boolean(),
@@ -64,6 +65,7 @@ export default defineSchema({
 		contextUrl: v.optional(v.string()),
 		tagId: v.optional(v.string()),
 		actionByReviewerId: v.optional(v.id("reviewers")),
+		actionByName: v.optional(v.string()),
 	})
 		.index("by_timestamp", ["timestamp"]) // legacy
 		.index("by_team_timestamp", ["teamId", "timestamp"]),
@@ -74,6 +76,7 @@ export default defineSchema({
 		items: v.array(
 			v.object({
 				reviewerId: v.string(),
+				reviewerName: v.optional(v.string()),
 				timestamp: v.number(),
 				batchId: v.optional(v.string()),
 				forced: v.boolean(),
@@ -83,6 +86,7 @@ export default defineSchema({
 				contextUrl: v.optional(v.string()),
 				tagId: v.optional(v.string()),
 				actionByReviewerId: v.optional(v.id("reviewers")),
+				actionByName: v.optional(v.string()),
 			}),
 		),
 	}).index("by_team", ["teamId"]),
