@@ -44,13 +44,19 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 												})}
 									</p>
 									{item.reviewerCount > 1 && (
-										<p className="mt-1 text-sm font-medium text-foreground">
-											{item.reviewers
-												.map((reviewer) => reviewer.reviewerName)
-												.join(", ")}
-										</p>
+										<div className="mt-2 flex flex-wrap gap-2">
+											{item.reviewers.map((reviewer) => (
+												<Badge
+													key={`${reviewer.reviewerId}-${reviewer.timestamp}`}
+													variant="secondary"
+													className="text-xs"
+												>
+													{reviewer.reviewerName}
+												</Badge>
+											))}
+										</div>
 									)}
-									<p className="text-xs text-muted-foreground">
+									<p className="mt-2 text-xs text-muted-foreground">
 										{new Date(item.timestamp).toLocaleString()}
 									</p>
 									{(item.actionByName || item.actionByEmail) && (
@@ -77,19 +83,6 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 												</Badge>
 											</Link>
 										</p>
-									)}
-									{item.reviewerCount > 1 && (
-										<div className="mt-2 flex flex-wrap gap-2">
-											{item.reviewers.map((reviewer) => (
-												<Badge
-													key={`${reviewer.reviewerId}-${reviewer.timestamp}`}
-													variant="secondary"
-													className="text-xs"
-												>
-													{reviewer.reviewerName}
-												</Badge>
-											))}
-										</div>
 									)}
 								</div>
 								<div>

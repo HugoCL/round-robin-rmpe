@@ -67,13 +67,21 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 												})}
 									</p>
 									{item.reviewerCount > 1 && (
-										<p className="mt-1 text-sm font-medium text-foreground">
-											{item.reviewers
-												.map((reviewer) => reviewer.reviewerName)
-												.join(", ")}
-										</p>
+										<div className="mt-2 flex flex-wrap gap-2">
+											{item.reviewers.map((reviewer) => (
+												<div
+													key={`${reviewer.reviewerId}-${reviewer.timestamp}`}
+													className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs"
+												>
+													<span className="font-medium">
+														{reviewer.reviewerName}
+													</span>
+													{reviewer.tagId && getTagBadge(reviewer.tagId)}
+												</div>
+											))}
+										</div>
 									)}
-									<p className="text-xs text-muted-foreground">
+									<p className="mt-2 text-xs text-muted-foreground">
 										{new Date(item.timestamp).toLocaleString()}
 									</p>
 									{(item.actionByName || item.actionByEmail) && (
@@ -118,26 +126,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 											)}
 										</p>
 									)}
-									{item.reviewerCount > 1 ? (
-										<div className="mt-2 space-y-2">
-											<p className="text-xs font-medium text-muted-foreground">
-												{t("history.assignees")}
-											</p>
-											<div className="flex flex-wrap gap-2">
-												{item.reviewers.map((reviewer) => (
-													<div
-														key={`${reviewer.reviewerId}-${reviewer.timestamp}`}
-														className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs"
-													>
-														<span className="font-medium">
-															{reviewer.reviewerName}
-														</span>
-														{reviewer.tagId && getTagBadge(reviewer.tagId)}
-													</div>
-												))}
-											</div>
-										</div>
-									) : item.reviewers[0]?.tagId ? (
+									{item.reviewerCount === 1 && item.reviewers[0]?.tagId ? (
 										<div className="mt-1">
 											{getTagBadge(item.reviewers[0].tagId)}
 										</div>
