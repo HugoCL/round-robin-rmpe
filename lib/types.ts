@@ -31,3 +31,25 @@ export interface Assignment {
 		timestamp: number;
 	} | null;
 }
+
+export interface GroupedAssignmentHistoryReviewer {
+	reviewerId: string;
+	reviewerName: string;
+	tagId?: string;
+	timestamp: number;
+}
+
+export interface GroupedAssignmentHistoryItem {
+	id: string;
+	batchId?: string;
+	timestamp: number;
+	forced: boolean;
+	skipped: boolean;
+	isAbsentSkip: boolean;
+	prUrl?: string;
+	contextUrl?: string;
+	actionByName?: string;
+	actionByEmail?: string;
+	reviewers: GroupedAssignmentHistoryReviewer[];
+	reviewerCount: number;
+}

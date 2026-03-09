@@ -41,6 +41,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-03-09",
+		type: "improvement",
+		title: "Historial agrupado para asignaciones múltiples",
+		description:
+			"Cuando asignas un mismo PR a varias personas en una sola acción, el historial ahora muestra una sola tarjeta agrupada por PR con todos los asignados, en lugar de duplicar una tarjeta por cada revisor. También mantenemos los tags por persona dentro de esa tarjeta para que el detalle siga siendo claro.",
+	},
+	{
 		date: "2026-02-19",
 		type: "feature",
 		title: "Tablero de sugerencias",

@@ -44,7 +44,25 @@ type ResolvedEvent = Omit<EventDoc, "createdBy" | "participants"> & {
 	createdBy: ResolvedPerson;
 	participants: ResolvedParticipant[];
 };
-
+type GroupedAssignmentHistoryItem = {
+	id: string;
+	batchId?: string;
+	timestamp: number;
+	forced: boolean;
+	skipped: boolean;
+	isAbsentSkip: boolean;
+	prUrl?: string;
+	contextUrl?: string;
+	actionByName?: string;
+	actionByEmail?: string;
+	reviewers: Array<{
+		reviewerId: string;
+		reviewerName: string;
+		tagId?: string;
+		timestamp: number;
+	}>;
+	reviewerCount: number;
+};
 type UserPreferenceFlags = {
 	showAssignments: boolean;
 	showTags: boolean;
@@ -134,6 +152,61 @@ function resolveEvent(
 		createdBy,
 		participants,
 	};
+}
+
+function groupAssignmentHistory(
+	history: Doc<"assignmentHistory">[],
+	byId: Map<Id<"reviewers">, ReviewerDoc>,
+): GroupedAssignmentHistoryItem[] {
+	const grouped = new Map<string, GroupedAssignmentHistoryItem>();
+
+	for (const item of history) {
+		const key = item.batchId ?? `single:${item._id}`;
+		const reviewerName = resolveReviewerName(item.reviewerId, byId);
+		const actionBy = resolveReviewerMeta(item.actionByReviewerId, byId);
+
+		if (!grouped.has(key)) {
+			grouped.set(key, {
+				id: item.batchId ?? String(item._id),
+				batchId: item.batchId,
+				timestamp: item.timestamp,
+				forced: item.forced,
+				skipped: item.skipped,
+				isAbsentSkip: item.isAbsentSkip,
+				prUrl: item.prUrl,
+				contextUrl: item.contextUrl,
+				...actionBy,
+				reviewers: [],
+				reviewerCount: 0,
+			});
+		}
+
+		const group = grouped.get(key);
+		if (!group) continue;
+
+		group.timestamp = Math.max(group.timestamp, item.timestamp);
+		group.forced = group.forced || item.forced;
+		group.skipped = group.skipped || item.skipped;
+		group.isAbsentSkip = group.isAbsentSkip || item.isAbsentSkip;
+		group.prUrl ??= item.prUrl;
+		group.contextUrl ??= item.contextUrl;
+		group.actionByName ??= actionBy.actionByName;
+		group.actionByEmail ??= actionBy.actionByEmail;
+		group.reviewers.push({
+			reviewerId: String(item.reviewerId),
+			reviewerName,
+			tagId: item.tagId,
+			timestamp: item.timestamp,
+		});
+		group.reviewerCount = group.reviewers.length;
+	}
+
+	return Array.from(grouped.values())
+		.map((group) => ({
+			...group,
+			reviewers: [...group.reviewers].sort((a, b) => a.timestamp - b.timestamp),
+		}))
+		.sort((a, b) => b.timestamp - a.timestamp);
 }
 
 // Teams
@@ -284,7 +357,7 @@ export const getAssignmentFeed = query({
 	},
 });
 
-// Get assignment history (last 10 assignments for display)
+// Get assignment history for display, grouped by multi-assignment batch when present.
 export const getAssignmentHistory = query({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
@@ -293,22 +366,14 @@ export const getAssignmentHistory = query({
 			.query("assignmentHistory")
 			.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
 			.order("desc")
-			.take(10);
+			.take(30);
 		const reviewers = await ctx.db
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
 		const { byId } = buildReviewerMaps(reviewers);
 
-		return history.map((item) => ({
-			...item,
-			reviewerName: resolveReviewerName(
-				item.reviewerId,
-				byId,
-				item.reviewerName,
-			),
-			...resolveReviewerMeta(item.actionByReviewerId, byId, item.actionByName),
-		}));
+		return groupAssignmentHistory(history, byId);
 	},
 });
 

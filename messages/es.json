@@ -380,6 +380,8 @@
 	"history": {
 		"title": "Historial de Asignaciones",
 		"assignedBy": "Asignado por",
+		"assignees": "Asignados",
+		"assigneesCount": "{count, plural, one {# asignado} other {# asignados}}",
 		"restoreSnapshot": "Restaurar desde esta instantánea",
 		"restoreSnapshots": "Restaurar desde Instantáneas",
 		"restoreDescription": "Selecciona una instantánea para restaurar las asignaciones de revisores desde un estado anterior.",
