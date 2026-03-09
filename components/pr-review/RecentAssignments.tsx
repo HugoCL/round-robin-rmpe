@@ -43,6 +43,13 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 													count: item.reviewerCount,
 												})}
 									</p>
+									{item.reviewerCount > 1 && (
+										<p className="mt-1 text-sm font-medium text-foreground">
+											{item.reviewers
+												.map((reviewer) => reviewer.reviewerName)
+												.join(", ")}
+										</p>
+									)}
 									<p className="text-xs text-muted-foreground">
 										{new Date(item.timestamp).toLocaleString()}
 									</p>

@@ -650,23 +650,78 @@ async function cleanupOldAssignments(
 	}
 }
 
+type AssignmentFeedItemRecord = {
+	reviewerId: string;
+	timestamp: number;
+	batchId?: string;
+	forced: boolean;
+	skipped: boolean;
+	isAbsentSkip: boolean;
+	prUrl?: string;
+	contextUrl?: string;
+	tagId?: string;
+	actionByReviewerId?: Id<"reviewers">;
+};
+
+function sanitizeAssignmentFeedItem(
+	item: AssignmentFeedItemRecord & Record<string, unknown>,
+): AssignmentFeedItemRecord {
+	return {
+		reviewerId: item.reviewerId,
+		timestamp: item.timestamp,
+		batchId: item.batchId,
+		forced: item.forced,
+		skipped: item.skipped,
+		isAbsentSkip: item.isAbsentSkip,
+		prUrl: item.prUrl,
+		contextUrl: item.contextUrl,
+		tagId: item.tagId,
+		actionByReviewerId: item.actionByReviewerId,
+	};
+}
+
+function sanitizeAssignmentFeedItems(
+	items: Array<AssignmentFeedItemRecord & Record<string, unknown>>,
+) {
+	return items.map(sanitizeAssignmentFeedItem);
+}
+
+type AssignmentHistoryRecord = {
+	teamId?: Id<"teams">;
+	reviewerId: Id<"reviewers">;
+	timestamp: number;
+	batchId?: string;
+	forced: boolean;
+	skipped: boolean;
+	isAbsentSkip: boolean;
+	prUrl?: string;
+	contextUrl?: string;
+	tagId?: string;
+	actionByReviewerId?: Id<"reviewers">;
+};
+
+function sanitizeAssignmentHistoryRecord(
+	item: AssignmentHistoryRecord & Record<string, unknown>,
+): AssignmentHistoryRecord {
+	return {
+		teamId: item.teamId,
+		reviewerId: item.reviewerId,
+		timestamp: item.timestamp,
+		batchId: item.batchId,
+		forced: item.forced,
+		skipped: item.skipped,
+		isAbsentSkip: item.isAbsentSkip,
+		prUrl: item.prUrl,
+		contextUrl: item.contextUrl,
+		tagId: item.tagId,
+		actionByReviewerId: item.actionByReviewerId,
+	};
+}
+
 // Helper function to update the assignment feed
 async function updateAssignmentFeed(
 	ctx: MutationCtx,
-	newAssignment: {
-		reviewerId: string;
-		reviewerName?: string;
-		timestamp: number;
-		batchId?: string;
-		forced: boolean;
-		skipped: boolean;
-		isAbsentSkip: boolean;
-		prUrl?: string;
-		contextUrl?: string;
-		tagId?: string;
-		actionByReviewerId?: Id<"reviewers">;
-		actionByName?: string;
-	},
+	newAssignment: AssignmentFeedItemRecord,
 	teamId: Id<"teams"> | undefined,
 ) {
 	// Get existing feed
@@ -677,10 +732,10 @@ async function updateAssignmentFeed(
 
 	if (existingFeed) {
 		// Update existing feed
-		const updatedItems = [newAssignment, ...(existingFeed.items || [])].slice(
-			0,
-			5,
-		); // Keep only last 5 assignments
+		const updatedItems = sanitizeAssignmentFeedItems([
+			newAssignment,
+			...(existingFeed.items || []),
+		]).slice(0, 5); // Keep only last 5 assignments
 
 		await ctx.db.patch(existingFeed._id, {
 			items: updatedItems,
@@ -690,7 +745,7 @@ async function updateAssignmentFeed(
 		// Create new feed
 		await ctx.db.insert("assignmentFeed", {
 			teamId,
-			items: [newAssignment],
+			items: [sanitizeAssignmentFeedItem(newAssignment)],
 			lastAssigned: newAssignment.reviewerId, // Store just the reviewer ID
 		});
 	}
@@ -1599,20 +1654,7 @@ async function createSnapshot(
 // Helper function to update assignment feed with many assignments (newest first)
 async function updateAssignmentFeedBatch(
 	ctx: MutationCtx,
-	newAssignments: Array<{
-		reviewerId: string;
-		reviewerName?: string;
-		timestamp: number;
-		batchId?: string;
-		forced: boolean;
-		skipped: boolean;
-		isAbsentSkip: boolean;
-		prUrl?: string;
-		contextUrl?: string;
-		tagId?: string;
-		actionByReviewerId?: Id<"reviewers">;
-		actionByName?: string;
-	}>,
+	newAssignments: AssignmentFeedItemRecord[],
 	teamId: Id<"teams"> | undefined,
 ) {
 	if (newAssignments.length === 0) return;
@@ -1623,10 +1665,10 @@ async function updateAssignmentFeedBatch(
 		.first();
 
 	if (existingFeed) {
-		const updatedItems = [
+		const updatedItems = sanitizeAssignmentFeedItems([
 			...newAssignments,
 			...(existingFeed.items || []),
-		].slice(0, 5);
+		]).slice(0, 5);
 		await ctx.db.patch(existingFeed._id, {
 			items: updatedItems,
 			lastAssigned: newAssignments[0].reviewerId,
@@ -1636,10 +1678,78 @@ async function updateAssignmentFeedBatch(
 
 	await ctx.db.insert("assignmentFeed", {
 		teamId,
-		items: newAssignments.slice(0, 5),
+		items: sanitizeAssignmentFeedItems(newAssignments).slice(0, 5),
 		lastAssigned: newAssignments[0].reviewerId,
 	});
 }
+
+export const cleanupAssignmentFeedSchemaDrift = mutation({
+	args: {},
+	handler: async (ctx) => {
+		const feeds = await ctx.db.query("assignmentFeed").collect();
+		const historyRows = await ctx.db.query("assignmentHistory").collect();
+		let feedUpdated = 0;
+		let historyUpdated = 0;
+
+		for (const feed of feeds) {
+			const sanitizedItems = sanitizeAssignmentFeedItems(
+				(feed.items || []) as Array<
+					AssignmentFeedItemRecord & Record<string, unknown>
+				>,
+			);
+			const hasSchemaDrift = feed.items.some((item) =>
+				Object.keys(item).some(
+					(key) =>
+						![
+							"reviewerId",
+							"timestamp",
+							"batchId",
+							"forced",
+							"skipped",
+							"isAbsentSkip",
+							"prUrl",
+							"contextUrl",
+							"tagId",
+							"actionByReviewerId",
+						].includes(key),
+				),
+			);
+
+			if (!hasSchemaDrift) continue;
+
+			await ctx.db.replace(feed._id, {
+				teamId: feed.teamId,
+				lastAssigned: feed.lastAssigned,
+				items: sanitizedItems,
+			});
+			feedUpdated += 1;
+		}
+
+		for (const row of historyRows) {
+			const hasSchemaDrift = Object.keys(row).some((key) =>
+				["reviewerName", "actionByName", "actionByEmail"].includes(key),
+			);
+
+			if (!hasSchemaDrift) continue;
+
+			await ctx.db.replace(
+				row._id,
+				sanitizeAssignmentHistoryRecord(
+					row as AssignmentHistoryRecord & Record<string, unknown>,
+				),
+			);
+			historyUpdated += 1;
+		}
+
+		return {
+			success: true,
+			feedTotal: feeds.length,
+			feedUpdated,
+			historyTotal: historyRows.length,
+			historyUpdated,
+		};
+	},
+});
 
 // Restore from backup snapshot
 export const restoreFromBackup = mutation({
