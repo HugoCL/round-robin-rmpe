@@ -8,6 +8,7 @@ import { useState } from "react";
 import { SuggestionCard } from "@/components/suggestions/SuggestionCard";
 import { SuggestionComposer } from "@/components/suggestions/SuggestionComposer";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
@@ -21,16 +22,14 @@ export function SuggestionsBoard() {
 	const t = useTranslations();
 	const locale = useLocale();
 	const toggleVote = useMutation(api.suggestions.toggleSuggestionVote);
-	const [status, setStatus] = useState<SuggestionStatus>("open");
 	const [sort, setSort] = useState<SuggestionSort>("top");
 	const [votingSuggestionId, setVotingSuggestionId] = useState<string | null>(
 		null,
 	);
 
-	const suggestions = useQuery(api.suggestions.listSuggestions, {
-		status,
+	const suggestionsBoard = useQuery(api.suggestions.listSuggestionsBoard, {
 		sort,
-		limit: 50,
+		limitPerStatus: 50,
 	});
 
 	const handleToggleVote = async (suggestionId: Id<"suggestions">) => {
@@ -63,19 +62,7 @@ export function SuggestionsBoard() {
 
 			<SuggestionComposer />
 
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex flex-wrap gap-2">
-					{statuses.map((statusOption) => (
-						<Button
-							key={statusOption}
-							type="button"
-							variant={status === statusOption ? "default" : "outline"}
-							onClick={() => setStatus(statusOption)}
-						>
-							{t(`suggestions.status.${statusOption}`)}
-						</Button>
-					))}
-				</div>
+			<div className="flex justify-end">
 				<div className="flex gap-2">
 					<Button
 						type="button"
@@ -94,30 +81,99 @@ export function SuggestionsBoard() {
 				</div>
 			</div>
 
-			{suggestions === undefined ? (
-				<div className="rounded-lg border p-6 text-sm text-muted-foreground">
-					{t("common.loading")}
-				</div>
-			) : suggestions.length === 0 ? (
-				<div className="rounded-lg border p-6 space-y-1">
-					<p className="font-medium">{t("suggestions.emptyTitle")}</p>
-					<p className="text-sm text-muted-foreground">
-						{t("suggestions.emptyDescription")}
-					</p>
-				</div>
+			{suggestionsBoard === undefined ? (
+				<SuggestionsBoardSkeleton />
 			) : (
-				<div className="grid gap-4">
-					{suggestions.map((suggestion) => (
-						<SuggestionCard
-							key={suggestion._id}
-							suggestion={suggestion}
-							locale={locale}
-							voting={votingSuggestionId === suggestion._id}
-							onToggleVote={handleToggleVote}
-						/>
+				<div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+					{statuses.map((status) => (
+						<section
+							key={status}
+							className="rounded-lg border bg-muted/20 p-4 space-y-4"
+						>
+							<div className="flex items-center justify-between gap-3 border-b pb-3">
+								<h2 className="font-semibold">
+									{t(`suggestions.status.${status}`)}
+								</h2>
+								<div className="rounded-full border bg-background px-2.5 py-1 text-sm font-medium">
+									{suggestionsBoard[status].length}
+								</div>
+							</div>
+
+							{suggestionsBoard[status].length === 0 ? (
+								<div className="rounded-lg border border-dashed bg-background p-4 space-y-1">
+									<p className="font-medium">{t("suggestions.emptyTitle")}</p>
+									<p className="text-sm text-muted-foreground">
+										{t("suggestions.emptyDescription")}
+									</p>
+								</div>
+							) : (
+								<div className="grid gap-4">
+									{suggestionsBoard[status].map((suggestion) => (
+										<SuggestionCard
+											key={suggestion._id}
+											suggestion={suggestion}
+											locale={locale}
+											voting={votingSuggestionId === suggestion._id}
+											onToggleVote={handleToggleVote}
+										/>
+									))}
+								</div>
+							)}
+						</section>
 					))}
 				</div>
 			)}
+		</div>
+	);
+}
+
+function SuggestionsBoardSkeleton() {
+	return (
+		<div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+			{statuses.map((status) => (
+				<div
+					key={status}
+					className="rounded-lg border bg-muted/20 p-4 space-y-4"
+				>
+					<div className="flex items-center justify-between gap-3 border-b pb-3">
+						<Skeleton className="h-5 w-24" />
+						<Skeleton className="h-8 w-10 rounded-full" />
+					</div>
+					<div className="grid gap-4">
+						<SuggestionCardSkeleton />
+						<SuggestionCardSkeleton />
+					</div>
+				</div>
+			))}
+		</div>
+	);
+}
+
+function SuggestionCardSkeleton() {
+	return (
+		<div className="rounded-lg border bg-background p-6 space-y-4">
+			<div className="flex items-start justify-between gap-3">
+				<div className="space-y-2 flex-1">
+					<Skeleton className="h-5 w-3/4" />
+					<Skeleton className="h-4 w-1/2" />
+				</div>
+				<Skeleton className="h-6 w-20" />
+			</div>
+			<div className="space-y-2">
+				<Skeleton className="h-4 w-full" />
+				<Skeleton className="h-4 w-full" />
+				<Skeleton className="h-4 w-2/3" />
+			</div>
+			<div className="flex items-center justify-between gap-3">
+				<div className="flex gap-2">
+					<Skeleton className="h-9 w-14" />
+					<Skeleton className="h-9 w-12" />
+				</div>
+				<div className="flex gap-2">
+					<Skeleton className="h-9 w-16" />
+					<Skeleton className="h-9 w-16" />
+				</div>
+			</div>
 		</div>
 	);
 }

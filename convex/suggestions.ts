@@ -16,6 +16,7 @@ const suggestionStatusValidator = v.union(
 	v.literal("planned"),
 	v.literal("completed"),
 );
+type SuggestionStatus = "open" | "planned" | "completed";
 
 async function requireIdentity(ctx: QueryCtx | MutationCtx) {
 	const identity = await ctx.auth.getUserIdentity();
@@ -60,6 +61,48 @@ function clampLimit(limit: number | undefined): number {
 	return Math.max(1, Math.min(limit, MAX_LIST_LIMIT));
 }
 
+async function listSuggestionsByStatus(
+	ctx: QueryCtx,
+	{
+		status,
+		sort,
+		limit,
+	}: {
+		status: SuggestionStatus;
+		sort: "top" | "new";
+		limit: number;
+	},
+) {
+	return sort === "top"
+		? ctx.db
+				.query("suggestions")
+				.withIndex("by_status_upvotes", (q) => q.eq("status", status))
+				.order("desc")
+				.take(limit)
+		: ctx.db
+				.query("suggestions")
+				.withIndex("by_status_created_at", (q) => q.eq("status", status))
+				.order("desc")
+				.take(limit);
+}
+
+function withViewerSuggestionState(
+	suggestions: Awaited<ReturnType<typeof listSuggestionsByStatus>>,
+	{
+		votedSuggestionIds,
+		canModerate,
+	}: {
+		votedSuggestionIds: Set<Id<"suggestions">>;
+		canModerate: boolean;
+	},
+) {
+	return suggestions.map((suggestion) => ({
+		...suggestion,
+		viewerHasUpvoted: votedSuggestionIds.has(suggestion._id),
+		canModerate,
+	}));
+}
+
 function resolveIdentityName(identity: {
 	name?: string | null;
 	email?: string | null;
@@ -79,17 +122,7 @@ export const listSuggestions = query({
 		const resolvedLimit = clampLimit(limit);
 
 		const [suggestions, myVotes] = await Promise.all([
-			sort === "top"
-				? ctx.db
-						.query("suggestions")
-						.withIndex("by_status_upvotes", (q) => q.eq("status", status))
-						.order("desc")
-						.take(resolvedLimit)
-				: ctx.db
-						.query("suggestions")
-						.withIndex("by_status_created_at", (q) => q.eq("status", status))
-						.order("desc")
-						.take(resolvedLimit),
+			listSuggestionsByStatus(ctx, { status, sort, limit: resolvedLimit }),
 			ctx.db
 				.query("suggestionVotes")
 				.withIndex("by_user", (q) =>
@@ -103,11 +136,66 @@ export const listSuggestions = query({
 		);
 		const canModerate = isAdmin(identity.email);
 
-		return suggestions.map((suggestion) => ({
-			...suggestion,
-			viewerHasUpvoted: votedSuggestionIds.has(suggestion._id),
+		return withViewerSuggestionState(suggestions, {
+			votedSuggestionIds,
 			canModerate,
-		}));
+		});
+	},
+});
+
+export const listSuggestionsBoard = query({
+	args: {
+		sort: v.union(v.literal("top"), v.literal("new")),
+		limitPerStatus: v.optional(v.number()),
+	},
+	handler: async (ctx, { sort, limitPerStatus }) => {
+		const identity = await requireIdentity(ctx);
+		const resolvedLimit = clampLimit(limitPerStatus);
+
+		const [openSuggestions, plannedSuggestions, completedSuggestions, myVotes] =
+			await Promise.all([
+				listSuggestionsByStatus(ctx, {
+					status: "open",
+					sort,
+					limit: resolvedLimit,
+				}),
+				listSuggestionsByStatus(ctx, {
+					status: "planned",
+					sort,
+					limit: resolvedLimit,
+				}),
+				listSuggestionsByStatus(ctx, {
+					status: "completed",
+					sort,
+					limit: resolvedLimit,
+				}),
+				ctx.db
+					.query("suggestionVotes")
+					.withIndex("by_user", (q) =>
+						q.eq("userTokenIdentifier", identity.tokenIdentifier),
+					)
+					.collect(),
+			]);
+
+		const votedSuggestionIds = new Set<Id<"suggestions">>(
+			myVotes.map((vote) => vote.suggestionId),
+		);
+		const canModerate = isAdmin(identity.email);
+
+		return {
+			open: withViewerSuggestionState(openSuggestions, {
+				votedSuggestionIds,
+				canModerate,
+			}),
+			planned: withViewerSuggestionState(plannedSuggestions, {
+				votedSuggestionIds,
+				canModerate,
+			}),
+			completed: withViewerSuggestionState(completedSuggestions, {
+				votedSuggestionIds,
+				canModerate,
+			}),
+		};
 	},
 });
 
