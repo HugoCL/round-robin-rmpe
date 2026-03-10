@@ -3,7 +3,7 @@
  *
  * To add a new entry:
  * 1. Add a new object at the BEGINNING of the array (newest first)
- * 2. Use the format: { date: "YYYY-MM-DD", type: "feature" | "fix" | "improvement", title: "Título", description: "Descripción detallada" }
+ * 2. Use the format: { date: "YYYY-MM-DD", type: "feature" | "fix" | "improvement", title: "Título", description: "Descripción detallada", suggestedBy?: "Nombre" }
  * 3. Write in Spanish
  *
  * Example:
@@ -22,6 +22,7 @@ export interface ChangelogEntry {
 	type: ChangelogType;
 	title: string;
 	description: string;
+	suggestedBy?: string;
 }
 
 export const changelogTypeLabels: Record<ChangelogType, string> = {
@@ -40,6 +41,14 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
+	{
+		date: "2026-03-10",
+		type: "feature",
+		title: "Horarios part-time semanales",
+		description:
+			"Ahora puedes configurar días de trabajo semanales para personas part-time. La Lista los considera automáticamente como no disponibles fuera de esos días, manteniendo aparte las ausencias excepcionales con fecha de regreso y mostrando estados más claros en la tabla de revisores.",
+		suggestedBy: "Agustín Pini",
+	},
 	{
 		date: "2026-03-09",
 		type: "improvement",

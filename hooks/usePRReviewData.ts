@@ -167,7 +167,9 @@ export function usePRReviewData(user?: UserInfo | null) {
 		}
 
 		// Find available reviewers (not absent) first
-		const availableReviewers = reviewers.filter((r) => !r.isAbsent);
+		const availableReviewers = reviewers.filter(
+			(reviewer) => !reviewer.effectiveIsAbsent,
+		);
 
 		if (availableReviewers.length > 0) {
 			// Find the minimum assignment count among available reviewers

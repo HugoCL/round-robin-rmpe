@@ -1,9 +1,9 @@
 "use client";
 
 import { format, isSameDay, setHours, setMinutes } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es } from "date-fns/locale";
 import { CalendarIcon, Clock } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -42,12 +42,14 @@ export function MarkAbsentDialog({
 	onMarkAbsent,
 }: MarkAbsentDialogProps) {
 	const t = useTranslations();
+	const locale = useLocale();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 	const [selectedTime, setSelectedTime] = useState<string>("");
 	const [calendarOpen, setCalendarOpen] = useState(false);
 
 	const timeId = useId();
+	const dateLocale = locale.startsWith("es") ? es : enUS;
 
 	// Check if current user is marking themselves as absent
 	const isSelf =
@@ -113,7 +115,7 @@ export function MarkAbsentDialog({
 				return t("absent.returningTodayAt", { time: selectedTime });
 			}
 			return t("absent.returningOn", {
-				date: format(dateWithTime, "PPP"),
+				date: format(dateWithTime, "PPP", { locale: dateLocale }),
 				time: selectedTime,
 			});
 		}
@@ -122,7 +124,7 @@ export function MarkAbsentDialog({
 			return t("absent.returningLaterToday");
 		}
 		return t("absent.returningOn", {
-			date: format(date, "PPP"),
+			date: format(date, "PPP", { locale: dateLocale }),
 			time: "",
 		});
 	};
@@ -159,7 +161,9 @@ export function MarkAbsentDialog({
 								>
 									<CalendarIcon className="mr-2 h-4 w-4" />
 									{selectedDate
-										? format(selectedDate, "PPP", { locale: es })
+										? format(selectedDate, "PPP", {
+												locale: dateLocale,
+											})
 										: t("absent.selectDate")}
 								</Button>
 							</PopoverTrigger>
@@ -174,7 +178,7 @@ export function MarkAbsentDialog({
 									disabled={(date) =>
 										date < new Date(new Date().setHours(0, 0, 0, 0))
 									}
-									locale={es}
+									locale={dateLocale}
 									initialFocus
 								/>
 							</PopoverContent>

@@ -1,4 +1,11 @@
 import { v } from "convex/values";
+import {
+	DEFAULT_TEAM_TIMEZONE,
+	getReviewerAvailability,
+	isValidTimezone,
+	normalizePartTimeSchedule,
+	resolveTeamTimezone,
+} from "../lib/reviewerAvailability";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx } from "./_generated/server";
 
@@ -18,6 +25,22 @@ const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	hideMultiAssignmentSection: false,
 	alwaysSendGoogleChatMessage: false,
 };
+
+const weekdayValidator = v.union(
+	v.literal("monday"),
+	v.literal("tuesday"),
+	v.literal("wednesday"),
+	v.literal("thursday"),
+	v.literal("friday"),
+	v.literal("saturday"),
+	v.literal("sunday"),
+);
+
+const partTimeScheduleValidator = v.optional(
+	v.object({
+		workingDays: v.array(weekdayValidator),
+	}),
+);
 
 function resolvePreferencePatch(
 	patch: Partial<UserPreferenceFlags>,
@@ -109,6 +132,33 @@ async function incrementGlobalReviewedPRCounter(ctx: MutationCtx) {
 	});
 }
 
+function getReviewerAvailabilityForTeam(
+	reviewer: Pick<Doc<"reviewers">, "isAbsent" | "partTimeSchedule">,
+	team: Pick<Doc<"teams">, "timezone"> | null,
+	now: number,
+) {
+	const partTimeSchedule = normalizePartTimeSchedule(reviewer.partTimeSchedule);
+	return {
+		partTimeSchedule,
+		...getReviewerAvailability(
+			{
+				isAbsent: reviewer.isAbsent,
+				partTimeSchedule,
+			},
+			resolveTeamTimezone(team?.timezone),
+			now,
+		),
+	};
+}
+
+function isReviewerEffectivelyAbsentForTeam(
+	reviewer: Pick<Doc<"reviewers">, "isAbsent" | "partTimeSchedule">,
+	team: Pick<Doc<"teams">, "timezone"> | null,
+	now: number,
+) {
+	return getReviewerAvailabilityForTeam(reviewer, team, now).effectiveIsAbsent;
+}
+
 // Create team
 export const createTeam = mutation({
 	args: { name: v.string(), slug: v.string() },
@@ -122,6 +172,7 @@ export const createTeam = mutation({
 			name: name.trim(),
 			slug: slug.trim(),
 			createdAt: Date.now(),
+			timezone: DEFAULT_TEAM_TIMEZONE,
 		});
 		// Create empty feed row for team
 		await ctx.db.insert("assignmentFeed", {
@@ -138,11 +189,17 @@ export const updateTeamSettings = mutation({
 	args: {
 		teamSlug: v.string(),
 		googleChatWebhookUrl: v.optional(v.string()),
+		timezone: v.optional(v.string()),
 	},
-	handler: async (ctx, { teamSlug, googleChatWebhookUrl }) => {
+	handler: async (ctx, { teamSlug, googleChatWebhookUrl, timezone }) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const normalizedTimezone = timezone?.trim() || DEFAULT_TEAM_TIMEZONE;
+		if (!isValidTimezone(normalizedTimezone)) {
+			throw new Error("Invalid timezone");
+		}
 		await ctx.db.patch(team._id, {
 			googleChatWebhookUrl: googleChatWebhookUrl?.trim() || undefined,
+			timezone: normalizedTimezone,
 		});
 		return { success: true };
 	},
@@ -294,8 +351,12 @@ export const addReviewer = mutation({
 		name: v.string(),
 		email: v.string(),
 		googleChatUserId: v.optional(v.string()),
+		partTimeSchedule: partTimeScheduleValidator,
 	},
-	handler: async (ctx, { teamSlug, name, email, googleChatUserId }) => {
+	handler: async (
+		ctx,
+		{ teamSlug, name, email, googleChatUserId, partTimeSchedule },
+	) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 		// Check if email already exists
 		const existingReviewer = await ctx.db
@@ -319,6 +380,9 @@ export const addReviewer = mutation({
 				? Math.min(...allReviewers.map((r) => r.assignmentCount))
 				: 0;
 
+		const normalizedPartTimeSchedule =
+			normalizePartTimeSchedule(partTimeSchedule);
+
 		const reviewerId = await ctx.db.insert("reviewers", {
 			teamId: team._id,
 			name: name.trim(),
@@ -326,12 +390,20 @@ export const addReviewer = mutation({
 			googleChatUserId: googleChatUserId?.trim() || undefined,
 			assignmentCount: minCount,
 			isAbsent: false,
+			partTimeSchedule: normalizedPartTimeSchedule,
 			createdAt: Date.now(),
 			tags: [],
 		});
 
 		// Create backup snapshot
-		await createSnapshot(ctx, team._id, `Added reviewer: ${name} (${email})`);
+		const scheduleMessage = normalizedPartTimeSchedule
+			? ` [part-time: ${normalizedPartTimeSchedule.workingDays.join(", ")}]`
+			: "";
+		await createSnapshot(
+			ctx,
+			team._id,
+			`Added reviewer: ${name} (${email})${scheduleMessage}`,
+		);
 
 		return reviewerId;
 	},
@@ -343,8 +415,12 @@ export const updateReviewer = mutation({
 		name: v.string(),
 		email: v.string(),
 		googleChatUserId: v.optional(v.string()),
+		partTimeSchedule: partTimeScheduleValidator,
 	},
-	handler: async (ctx, { id, name, email, googleChatUserId }) => {
+	handler: async (
+		ctx,
+		{ id, name, email, googleChatUserId, partTimeSchedule },
+	) => {
 		const reviewer = await ctx.db.get(id);
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
@@ -363,14 +439,25 @@ export const updateReviewer = mutation({
 			throw new Error("Email already exists");
 		}
 
+		const normalizedPartTimeSchedule =
+			normalizePartTimeSchedule(partTimeSchedule);
+
 		await ctx.db.patch(id, {
 			name: name.trim(),
 			email: email.trim().toLowerCase(),
 			googleChatUserId: googleChatUserId?.trim() || undefined,
+			partTimeSchedule: normalizedPartTimeSchedule,
 		});
 
 		// Create backup snapshot
-		await createSnapshot(ctx, reviewer.teamId, `Updated reviewer: ${name}`);
+		const scheduleMessage = normalizedPartTimeSchedule
+			? ` [part-time: ${normalizedPartTimeSchedule.workingDays.join(", ")}]`
+			: " [full-time]";
+		await createSnapshot(
+			ctx,
+			reviewer.teamId,
+			`Updated reviewer: ${name}${scheduleMessage}`,
+		);
 
 		return id;
 	},
@@ -408,6 +495,9 @@ export const toggleReviewerAbsence = mutation({
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
 		}
+		const team =
+			reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
+		const now = Date.now();
 
 		const isCurrentlyAbsent = reviewer.isAbsent;
 
@@ -422,7 +512,9 @@ export const toggleReviewerAbsence = mutation({
 				.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
 				.collect();
 			const availableReviewers = allReviewers.filter(
-				(r) => !r.isAbsent || r._id === id,
+				(candidate) =>
+					!isReviewerEffectivelyAbsentForTeam(candidate, team, now) ||
+					candidate._id === id,
 			);
 			const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
 			updateData.assignmentCount = mostCommonCount;
@@ -486,6 +578,9 @@ export const markReviewerAvailable = mutation({
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
 		}
+		const team =
+			reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
+		const now = Date.now();
 
 		// Get all reviewers to calculate most common assignment count
 		const allReviewers = await ctx.db
@@ -493,7 +588,9 @@ export const markReviewerAvailable = mutation({
 			.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
 			.collect();
 		const availableReviewers = allReviewers.filter(
-			(r) => !r.isAbsent || r._id === id,
+			(candidate) =>
+				!isReviewerEffectivelyAbsentForTeam(candidate, team, now) ||
+				candidate._id === id,
 		);
 		const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
 
@@ -536,13 +633,19 @@ export const processAbsentReturns = mutation({
 			.collect();
 
 		for (const reviewer of absentReviewers) {
+			const team =
+				reviewer.teamId === undefined
+					? null
+					: await ctx.db.get(reviewer.teamId);
 			// Get all reviewers in the same team to calculate most common assignment count
 			const teamReviewers = await ctx.db
 				.query("reviewers")
 				.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
 				.collect();
 			const availableReviewers = teamReviewers.filter(
-				(r) => !r.isAbsent || r._id === reviewer._id,
+				(candidate) =>
+					!isReviewerEffectivelyAbsentForTeam(candidate, team, now) ||
+					candidate._id === reviewer._id,
 			);
 			const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
 
@@ -652,6 +755,7 @@ async function cleanupOldAssignments(
 
 type AssignmentFeedItemRecord = {
 	reviewerId: string;
+	reviewerName?: string;
 	timestamp: number;
 	batchId?: string;
 	forced: boolean;
@@ -661,6 +765,7 @@ type AssignmentFeedItemRecord = {
 	contextUrl?: string;
 	tagId?: string;
 	actionByReviewerId?: Id<"reviewers">;
+	actionByName?: string;
 };
 
 function sanitizeAssignmentFeedItem(
@@ -668,6 +773,8 @@ function sanitizeAssignmentFeedItem(
 ): AssignmentFeedItemRecord {
 	return {
 		reviewerId: item.reviewerId,
+		reviewerName:
+			typeof item.reviewerName === "string" ? item.reviewerName : undefined,
 		timestamp: item.timestamp,
 		batchId: item.batchId,
 		forced: item.forced,
@@ -677,6 +784,8 @@ function sanitizeAssignmentFeedItem(
 		contextUrl: item.contextUrl,
 		tagId: item.tagId,
 		actionByReviewerId: item.actionByReviewerId,
+		actionByName:
+			typeof item.actionByName === "string" ? item.actionByName : undefined,
 	};
 }
 
@@ -865,6 +974,7 @@ export const assignPRBatch = mutation({
 		},
 	) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const availabilityNow = Date.now();
 		if (slots.length === 0) {
 			return {
 				success: false,
@@ -920,7 +1030,9 @@ export const assignPRBatch = mutation({
 					failed.push({ slotIndex, reason: "reviewer_not_found" });
 					continue;
 				}
-				if (reviewer.isAbsent) {
+				if (
+					isReviewerEffectivelyAbsentForTeam(reviewer, team, availabilityNow)
+				) {
 					failed.push({ slotIndex, reason: "reviewer_absent" });
 					continue;
 				}
@@ -963,7 +1075,11 @@ export const assignPRBatch = mutation({
 			}
 
 			const candidates = reviewers.filter((reviewer) => {
-				if (reviewer.isAbsent) return false;
+				if (
+					isReviewerEffectivelyAbsentForTeam(reviewer, team, availabilityNow)
+				) {
+					return false;
+				}
 				if (actionByReviewerId && reviewer._id === actionByReviewerId)
 					return false;
 				if (selectedReviewerIds.has(String(reviewer._id))) return false;
@@ -1000,7 +1116,7 @@ export const assignPRBatch = mutation({
 			};
 		}
 
-		const now = Date.now();
+		const now = availabilityNow;
 		const batchId = `batch_${now}_${Math.random().toString(36).slice(2, 10)}`;
 		const assigner = actionByReviewerId
 			? byId.get(actionByReviewerId)
@@ -1081,6 +1197,11 @@ export const assignPRBatch = mutation({
 					email: item.reviewer.email,
 					assignmentCount: nextCount,
 					isAbsent: item.reviewer.isAbsent,
+					effectiveIsAbsent: isReviewerEffectivelyAbsentForTeam(
+						item.reviewer,
+						team,
+						availabilityNow,
+					),
 					createdAt: item.reviewer.createdAt,
 					tags: item.reviewer.tags,
 				},
@@ -1211,6 +1332,8 @@ export const assignPR = mutation({
 			reviewer.teamId,
 			`${action}: ${reviewer.name}${tagMessage}`,
 		);
+		const team =
+			reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
 
 		return {
 			success: true,
@@ -1220,6 +1343,11 @@ export const assignPR = mutation({
 				email: reviewer.email,
 				assignmentCount: reviewer.assignmentCount + 1,
 				isAbsent: reviewer.isAbsent,
+				effectiveIsAbsent: isReviewerEffectivelyAbsentForTeam(
+					reviewer,
+					team,
+					timestamp,
+				),
 				createdAt: reviewer.createdAt,
 				tags: reviewer.tags,
 			},
@@ -1532,6 +1660,7 @@ export const importReviewersData = mutation({
 				createdAt: v.optional(v.number()),
 				tags: v.optional(v.array(v.string())),
 				googleChatUserId: v.optional(v.string()),
+				partTimeSchedule: partTimeScheduleValidator,
 			}),
 		),
 	},
@@ -1555,6 +1684,9 @@ export const importReviewersData = mutation({
 				googleChatUserId: reviewerData.googleChatUserId,
 				assignmentCount: reviewerData.assignmentCount,
 				isAbsent: reviewerData.isAbsent,
+				partTimeSchedule: normalizePartTimeSchedule(
+					reviewerData.partTimeSchedule,
+				),
 				createdAt: reviewerData.createdAt || Date.now(),
 				tags: [], // We'll handle tag migration separately
 			});
@@ -1576,6 +1708,17 @@ function getMostCommonAssignmentCount(
 		email: string;
 		assignmentCount: number;
 		isAbsent: boolean;
+		partTimeSchedule?: {
+			workingDays: (
+				| "monday"
+				| "tuesday"
+				| "wednesday"
+				| "thursday"
+				| "friday"
+				| "saturday"
+				| "sunday"
+			)[];
+		};
 		createdAt: number;
 		tags: string[];
 	}>,
@@ -1625,6 +1768,7 @@ async function createSnapshot(
 		googleChatUserId: reviewer.googleChatUserId,
 		assignmentCount: reviewer.assignmentCount,
 		isAbsent: reviewer.isAbsent,
+		partTimeSchedule: normalizePartTimeSchedule(reviewer.partTimeSchedule),
 		createdAt: reviewer.createdAt,
 		tags: reviewer.tags,
 	}));
@@ -1791,6 +1935,9 @@ export const restoreFromBackup = mutation({
 					googleChatUserId: reviewerData.googleChatUserId,
 					assignmentCount: reviewerData.assignmentCount,
 					isAbsent: reviewerData.isAbsent,
+					partTimeSchedule: normalizePartTimeSchedule(
+						reviewerData.partTimeSchedule,
+					),
 					createdAt: reviewerData.createdAt,
 					tags: reviewerData.tags,
 				});

@@ -21,10 +21,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@/convex/_generated/dataModel";
+import type { Reviewer } from "@/lib/types";
 
 interface DeleteReviewerDialogProps {
-	reviewers: Doc<"reviewers">[];
+	reviewers: Reviewer[];
 	onDeleteReviewer: (id: Id<"reviewers">) => Promise<void>;
 	trigger?: React.ReactNode;
 }
@@ -93,7 +94,7 @@ export function DeleteReviewerDialog({
 										<div className="flex items-center justify-between w-full">
 											<div className="flex items-center gap-2">
 												<span>{reviewer.name}</span>
-												{reviewer.isAbsent && (
+												{reviewer.effectiveIsAbsent && (
 													<Badge variant="secondary" className="text-xs">
 														{t("tags.absent")}
 													</Badge>

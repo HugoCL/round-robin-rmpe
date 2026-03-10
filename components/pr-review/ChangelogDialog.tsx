@@ -1,7 +1,7 @@
 "use client";
 
 import { History } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,9 +35,9 @@ import {
 	changelogTypeLabels,
 } from "@/lib/changelog";
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, locale: string): string {
 	const date = new Date(dateStr);
-	return date.toLocaleDateString("es-ES", {
+	return date.toLocaleDateString(locale.startsWith("es") ? "es-ES" : "en-US", {
 		day: "numeric",
 		month: "long",
 		year: "numeric",
@@ -46,6 +46,7 @@ function formatDate(dateStr: string): string {
 
 function ChangelogContent({ entries }: { entries: ChangelogEntry[] }) {
 	const t = useTranslations("changelog");
+	const locale = useLocale();
 
 	return (
 		<ScrollArea className="h-[400px] pr-4">
@@ -62,7 +63,7 @@ function ChangelogContent({ entries }: { entries: ChangelogEntry[] }) {
 							{/* Date and type badges */}
 							<div className="mb-2 flex flex-wrap items-center gap-2">
 								<span className="inline-flex items-center  bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-									{formatDate(entry.date)}
+									{formatDate(entry.date, locale)}
 								</span>
 								<span
 									className={`inline-flex items-center  px-2.5 py-0.5 text-xs font-medium ${changelogTypeColors[entry.type]}`}
@@ -78,6 +79,11 @@ function ChangelogContent({ entries }: { entries: ChangelogEntry[] }) {
 							<p className="text-sm text-muted-foreground leading-relaxed">
 								{entry.description}
 							</p>
+							{entry.suggestedBy && (
+								<p className="mt-2 text-xs text-muted-foreground">
+									{t("suggestedBy", { name: entry.suggestedBy })}
+								</p>
+							)}
 						</div>
 					))}
 				</div>

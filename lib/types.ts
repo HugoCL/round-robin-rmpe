@@ -1,6 +1,27 @@
-import type { Doc } from "@/convex/_generated/dataModel";
+import type { Id } from "@/convex/_generated/dataModel";
+import type {
+	AbsenceReason,
+	PartTimeSchedule,
+} from "@/lib/reviewerAvailability";
 
-export type Reviewer = Doc<"reviewers">;
+export interface Reviewer {
+	_id: Id<"reviewers">;
+	_creationTime: number;
+	teamId?: Id<"teams">;
+	name: string;
+	email: string;
+	googleChatUserId?: string;
+	assignmentCount: number;
+	isAbsent: boolean;
+	absentUntil?: number;
+	partTimeSchedule?: PartTimeSchedule;
+	createdAt: number;
+	tags: Id<"tags">[];
+	manualIsAbsent: boolean;
+	isOffTodayBySchedule: boolean;
+	effectiveIsAbsent: boolean;
+	absenceReason: AbsenceReason;
+}
 
 export interface UserInfo {
 	email: string;

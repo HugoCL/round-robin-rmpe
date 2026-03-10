@@ -14,7 +14,7 @@ interface SlotConfiguratorProps {
 		_id: string;
 		name: string;
 		email: string;
-		isAbsent: boolean;
+		effectiveIsAbsent: boolean;
 		tags: string[];
 	}>;
 	tags: Array<{ _id: string; name: string; color: string }>;
@@ -39,7 +39,7 @@ export function SlotConfigurator({
 	onSlotChange,
 	maxCount,
 }: SlotConfiguratorProps) {
-	const availableReviewers = reviewers.filter((r) => !r.isAbsent);
+	const availableReviewers = reviewers.filter((r) => !r.effectiveIsAbsent);
 
 	const strategyOptions: Array<{ value: SlotStrategy; label: string }> =
 		mode === "regular"

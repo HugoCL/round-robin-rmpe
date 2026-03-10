@@ -2,6 +2,7 @@
 
 import { createContext, useContext } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
+import type { PartTimeSchedule } from "@/lib/reviewerAvailability";
 import type { Assignment, Reviewer, UserInfo } from "@/lib/types";
 
 export interface PRReviewContextValue {
@@ -47,11 +48,13 @@ export interface PRReviewContextValue {
 		name: string,
 		email: string,
 		googleChatUserId?: string,
+		partTimeSchedule?: PartTimeSchedule,
 	) => Promise<boolean>;
 	addReviewer: (
 		name: string,
 		email: string,
 		googleChatUserId?: string,
+		partTimeSchedule?: PartTimeSchedule,
 	) => Promise<boolean>;
 	removeReviewer: (id: Id<"reviewers">) => Promise<void>;
 	handleResetCounts: () => void;

@@ -15,12 +15,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { PartTimeSchedule, Weekday } from "@/lib/reviewerAvailability";
+import {
+	PartTimeScheduleFields,
+	scheduleFromSelection,
+} from "./PartTimeScheduleFields";
 
 interface AddReviewerDialogProps {
 	onAddReviewer: (
 		name: string,
 		email: string,
 		googleChatUserId?: string,
+		partTimeSchedule?: PartTimeSchedule,
 	) => Promise<boolean>;
 	trigger?: React.ReactNode;
 }
@@ -35,6 +41,8 @@ export function AddReviewerDialog({
 	const [isOpen, setIsOpen] = useState(false);
 	const [isAdding, setIsAdding] = useState(false);
 	const [googleChatUserId, setGoogleChatUserId] = useState("");
+	const [partTimeEnabled, setPartTimeEnabled] = useState(false);
+	const [workingDays, setWorkingDays] = useState<Weekday[]>([]);
 
 	// unique ids for inputs
 	const reviewerNameId = useId();
@@ -42,7 +50,13 @@ export function AddReviewerDialog({
 	const reviewerChatId = useId();
 
 	const handleAddReviewer = async () => {
-		if (!newReviewerName.trim() || !newReviewerEmail.trim()) return;
+		if (
+			!newReviewerName.trim() ||
+			!newReviewerEmail.trim() ||
+			(partTimeEnabled && workingDays.length === 0)
+		) {
+			return;
+		}
 
 		setIsAdding(true);
 		try {
@@ -50,11 +64,14 @@ export function AddReviewerDialog({
 				newReviewerName.trim(),
 				newReviewerEmail.trim(),
 				googleChatUserId.trim() || undefined,
+				scheduleFromSelection(partTimeEnabled, workingDays),
 			);
 			if (success) {
 				setNewReviewerName("");
 				setNewReviewerEmail("");
 				setGoogleChatUserId("");
+				setPartTimeEnabled(false);
+				setWorkingDays([]);
 				setIsOpen(false);
 			}
 		} finally {
@@ -68,8 +85,22 @@ export function AddReviewerDialog({
 		}
 	};
 
+	const isInvalidPartTimeSelection =
+		partTimeEnabled && workingDays.length === 0;
+
+	const handleOpenChange = (open: boolean) => {
+		setIsOpen(open);
+		if (!open) {
+			setNewReviewerName("");
+			setNewReviewerEmail("");
+			setGoogleChatUserId("");
+			setPartTimeEnabled(false);
+			setWorkingDays([]);
+		}
+	};
+
 	return (
-		<Dialog open={isOpen} onOpenChange={setIsOpen}>
+		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
 			<DialogTrigger asChild>
 				{trigger || (
 					<Button variant="outline" size="sm">
@@ -127,6 +158,14 @@ export function AddReviewerDialog({
 							className="col-span-3"
 						/>
 					</div>
+					<div className="col-span-full">
+						<PartTimeScheduleFields
+							enabled={partTimeEnabled}
+							workingDays={workingDays}
+							onEnabledChange={setPartTimeEnabled}
+							onWorkingDaysChange={setWorkingDays}
+						/>
+					</div>
 				</div>
 				<DialogFooter>
 					<Button
@@ -139,7 +178,10 @@ export function AddReviewerDialog({
 					<Button
 						onClick={handleAddReviewer}
 						disabled={
-							!newReviewerName.trim() || !newReviewerEmail.trim() || isAdding
+							!newReviewerName.trim() ||
+							!newReviewerEmail.trim() ||
+							isAdding ||
+							isInvalidPartTimeSelection
 						}
 					>
 						{isAdding ? t("common.adding") : t("pr.addReviewer")}

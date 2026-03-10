@@ -38,6 +38,7 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
+import type { Reviewer } from "@/lib/types";
 import {
 	type ReviewerSlotConfig,
 	type ReviewerSlotPreview,
@@ -51,7 +52,7 @@ type AssignmentMode = "regular" | "tag";
 
 type ResolvedSlot = {
 	slotIndex: number;
-	reviewer: Doc<"reviewers">;
+	reviewer: Reviewer;
 	tagId?: Id<"tags">;
 };
 
@@ -100,9 +101,9 @@ function normalizeSlotForMode(
 }
 
 function findUpcomingAfterCurrent(
-	candidates: Doc<"reviewers">[],
+	candidates: Reviewer[],
 	currentReviewerId: Id<"reviewers">,
-): Doc<"reviewers"> | null {
+): Reviewer | null {
 	if (candidates.length <= 1) return null;
 
 	const minCount = Math.min(
@@ -283,7 +284,9 @@ export function AssignmentCard() {
 		!!selectedTagId &&
 		typeof nextReviewerByTag === "undefined";
 	const availableReviewersForMode = useMemo(() => {
-		const available = reviewers.filter((reviewer) => !reviewer.isAbsent);
+		const available = reviewers.filter(
+			(reviewer) => !reviewer.effectiveIsAbsent,
+		);
 		if (mode !== "tag") return available;
 		if (!selectedTagId) return [];
 		return available.filter((reviewer) =>
@@ -343,7 +346,7 @@ export function AssignmentCard() {
 					unresolved(t("pr.slotReasonReviewerNotFound"));
 					continue;
 				}
-				if (target.isAbsent) {
+				if (target.effectiveIsAbsent) {
 					unresolved(t("pr.slotReasonReviewerAbsent"));
 					continue;
 				}
@@ -393,7 +396,7 @@ export function AssignmentCard() {
 			}
 
 			const candidates = reviewers.filter((reviewer) => {
-				if (reviewer.isAbsent) return false;
+				if (reviewer.effectiveIsAbsent) return false;
 				if (currentUserReviewerId && reviewer._id === currentUserReviewerId) {
 					return false;
 				}
@@ -490,7 +493,7 @@ export function AssignmentCard() {
 			? `${user.firstName} ${user.lastName}`
 			: user?.firstName || user?.lastName || "Unknown";
 
-	const sendAssignmentMessage = async (targetReviewer: Doc<"reviewers">) => {
+	const sendAssignmentMessage = async (targetReviewer: Reviewer) => {
 		if (!(effectiveSendMessage && prUrl.trim() && teamSlug)) return;
 		try {
 			const result = await sendGoogleChatAction({
@@ -625,7 +628,7 @@ export function AssignmentCard() {
 			reviewer.tags?.includes(tagId),
 		);
 		const availableReviewers = tagReviewers.filter(
-			(reviewer) => !reviewer.isAbsent,
+			(reviewer) => !reviewer.effectiveIsAbsent,
 		);
 		return {
 			totalReviewers: tagReviewers.length,

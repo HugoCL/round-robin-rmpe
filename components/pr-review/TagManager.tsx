@@ -494,10 +494,10 @@ export function TagManager() {
 															/>
 															<Label
 																htmlFor={`${tag._id}-${reviewer._id}`}
-																className={`text-sm ${reviewer.isAbsent ? "opacity-60" : ""}`}
+																className={`text-sm ${reviewer.effectiveIsAbsent ? "opacity-60" : ""}`}
 															>
 																{reviewer.name}
-																{reviewer.isAbsent && (
+																{reviewer.effectiveIsAbsent && (
 																	<span className="text-xs text-muted-foreground ml-1">
 																		{t("tags.absent")}
 																	</span>

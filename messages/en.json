@@ -324,11 +324,34 @@
 	"teamSettings": {
 		"title": "Team Settings",
 		"description": "Configure settings for this team.",
+		"timezoneLabel": "Team Timezone",
+		"timezoneHint": "Use a valid IANA timezone like America/Santiago. Weekly part-time schedules follow this timezone.",
+		"invalidTimezone": "Enter a valid timezone like America/Santiago.",
 		"webhookUrlLabel": "Google Chat Webhook URL",
 		"webhookUrlPlaceholder": "https://chat.googleapis.com/v1/spaces/…",
 		"webhookUrlHint": "The webhook URL for sending PR assignment notifications to Google Chat. Get this from your Google Chat space settings.",
 		"webhookSaved": "Webhook URL saved successfully",
 		"saveFailed": "Failed to save team settings. Please try again."
+	},
+	"weekdays": {
+		"monday": "Mon",
+		"tuesday": "Tue",
+		"wednesday": "Wed",
+		"thursday": "Thu",
+		"friday": "Fri",
+		"saturday": "Sat",
+		"sunday": "Sun"
+	},
+	"partTime": {
+		"title": "Part-time schedule",
+		"description": "Pick the days this reviewer works every week.",
+		"helper": "Selected days are working days. Any other day is treated as absent automatically.",
+		"fullTimeHint": "Leave this off for full-time reviewers.",
+		"manualControl": "Manual absence",
+		"manualReason": "Away",
+		"scheduleReason": "Unavailable due to part-time schedule",
+		"returningOn": "Returns on {date}",
+		"noReturnDate": "No return date set"
 	},
 	"history": {
 		"title": "Assignment History",
@@ -642,6 +665,7 @@
 	"changelog": {
 		"title": "What's New",
 		"description": "Latest changes and improvements",
-		"noChanges": "No changes recorded yet."
+		"noChanges": "No changes recorded yet.",
+		"suggestedBy": "Suggested by {name}"
 	}
 }

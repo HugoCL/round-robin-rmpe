@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
 import { toast } from "@/hooks/use-toast";
+import type { PartTimeSchedule } from "@/lib/reviewerAvailability";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -146,7 +147,8 @@ export function useConvexPRReviewData(
 
 		// Filter out absent reviewers and the current next reviewer
 		const availableReviewers = reviewers.filter(
-			(r) => !r.isAbsent && r._id !== nextReviewer._id,
+			(reviewer) =>
+				!reviewer.effectiveIsAbsent && reviewer._id !== nextReviewer._id,
 		);
 
 		if (availableReviewers.length === 0) {
@@ -230,6 +232,7 @@ export function useConvexPRReviewData(
 		name: string,
 		email: string,
 		googleChatUserId?: string,
+		partTimeSchedule?: PartTimeSchedule,
 	) => {
 		if (!teamSlug) {
 			toast({
@@ -263,6 +266,7 @@ export function useConvexPRReviewData(
 				name: name.trim(),
 				email: email.trim(),
 				googleChatUserId: googleChatUserId?.trim() || undefined,
+				partTimeSchedule,
 			});
 
 			toast({
@@ -288,6 +292,7 @@ export function useConvexPRReviewData(
 		name: string,
 		email: string,
 		googleChatUserId?: string,
+		partTimeSchedule?: PartTimeSchedule,
 	) => {
 		if (!name.trim()) {
 			toast({
@@ -313,6 +318,7 @@ export function useConvexPRReviewData(
 				name: name.trim(),
 				email: email.trim(),
 				googleChatUserId: googleChatUserId?.trim() || undefined,
+				partTimeSchedule,
 			});
 
 			toast({
@@ -423,6 +429,7 @@ export function useConvexPRReviewData(
 			createdAt: number;
 			tags: string[];
 			googleChatUserId?: string;
+			partTimeSchedule?: PartTimeSchedule;
 		}
 		const exportable: ExportReviewerShape[] = reviewers.map((r) => ({
 			name: r.name,
@@ -433,6 +440,7 @@ export function useConvexPRReviewData(
 			tags: r.tags || [],
 			googleChatUserId: (r as unknown as { googleChatUserId?: string })
 				.googleChatUserId,
+			partTimeSchedule: r.partTimeSchedule,
 		}));
 		const dataStr = JSON.stringify(exportable, null, 2);
 		const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
@@ -471,6 +479,7 @@ export function useConvexPRReviewData(
 					"createdAt",
 					"tags",
 					"googleChatUserId",
+					"partTimeSchedule",
 				]);
 
 				interface ImportReviewerDraft {
@@ -481,6 +490,7 @@ export function useConvexPRReviewData(
 					createdAt: number;
 					tags?: string[];
 					googleChatUserId?: string;
+					partTimeSchedule?: PartTimeSchedule;
 				}
 				const sanitized: ImportReviewerDraft[] = [];
 				let skipped = 0;
@@ -516,6 +526,13 @@ export function useConvexPRReviewData(
 					}
 					if (!obj.createdAt || typeof obj.createdAt !== "number") {
 						obj.createdAt = Date.now();
+					}
+					if (
+						obj.partTimeSchedule &&
+						(typeof obj.partTimeSchedule !== "object" ||
+							!Array.isArray(obj.partTimeSchedule.workingDays))
+					) {
+						delete obj.partTimeSchedule;
 					}
 					// Final cast for mutation
 					sanitized.push(obj as ImportReviewerDraft);

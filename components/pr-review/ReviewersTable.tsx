@@ -2,7 +2,7 @@
 
 import { useMutation } from "convex/react";
 import { Check, Edit, SlidersHorizontal, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +27,10 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { useConvexTags } from "@/hooks/useConvexTags";
+import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
 import { MarkAbsentDialog } from "./dialogs/MarkAbsentDialog";
@@ -42,6 +43,7 @@ import { usePRReview } from "./PRReviewContext";
 
 export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 	const t = useTranslations();
+	const locale = useLocale();
 	const {
 		reviewers,
 		nextReviewer,
@@ -61,8 +63,9 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<number>(0);
 	const [absentDialogOpen, setAbsentDialogOpen] = useState(false);
-	const [selectedReviewer, setSelectedReviewer] =
-		useState<Doc<"reviewers"> | null>(null);
+	const [selectedReviewer, setSelectedReviewer] = useState<Reviewer | null>(
+		null,
+	);
 	const visibleColumnsCount = [showAssignments, showTags, showEmails].filter(
 		Boolean,
 	).length;
@@ -141,6 +144,23 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 				{tag.name}
 			</Badge>
 		);
+	};
+
+	const getStatusDetail = (reviewer: Reviewer) => {
+		if (reviewer.absenceReason === "part_time_schedule") {
+			return t("partTime.scheduleReason");
+		}
+
+		if (reviewer.absenceReason === "manual") {
+			if (reviewer.absentUntil) {
+				return t("partTime.returningOn", {
+					date: new Date(reviewer.absentUntil).toLocaleDateString(locale),
+				});
+			}
+			return t("partTime.noReturnDate");
+		}
+
+		return null;
 	};
 
 	return (
@@ -232,7 +252,7 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 							key={reviewer._id}
 							className={cn(
 								"group transition-colors",
-								reviewer.isAbsent ? "opacity-60" : "hover:bg-muted/40",
+								reviewer.effectiveIsAbsent ? "opacity-60" : "hover:bg-muted/40",
 							)}
 						>
 							<TableCell className="font-medium">
@@ -315,36 +335,64 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 								</TableCell>
 							)}
 							<TableCell>
-								<div className="flex items-center space-x-2">
-									<Switch
-										id={`absence-${reviewer._id}`}
-										checked={!reviewer.isAbsent}
-										onCheckedChange={(checked) => {
-											if (!checked) {
-												// User is marking as absent - show dialog
-												setSelectedReviewer(reviewer);
-												setAbsentDialogOpen(true);
-											} else {
-												// User is marking as available - call directly
-												onMarkAvailable(reviewer._id);
+								<div className="flex flex-wrap items-center gap-3">
+									<div className="flex items-center border-r border-border/60 pr-3">
+										<Switch
+											id={`absence-${reviewer._id}`}
+											aria-label={t("partTime.manualControl")}
+											checked={!reviewer.manualIsAbsent}
+											onCheckedChange={(checked) => {
+												if (!checked) {
+													setSelectedReviewer(reviewer);
+													setAbsentDialogOpen(true);
+												} else {
+													onMarkAvailable(reviewer._id);
+												}
+											}}
+										/>
+										<Label
+											htmlFor={`absence-${reviewer._id}`}
+											className="sr-only"
+										>
+											{t("partTime.manualControl")}
+										</Label>
+									</div>
+									<div className="flex flex-wrap items-center gap-2">
+										<Badge
+											variant={
+												reviewer.effectiveIsAbsent ? "secondary" : "primarySoft"
 											}
-										}}
-									/>
-									<Label htmlFor={`absence-${reviewer._id}`}>
-										{reviewer.isAbsent ? t("pr.absent") : t("pr.available")}
-									</Label>
-									{reviewer.isAbsent && reviewer.absentUntil && (
-										<span className="whitespace-nowrap text-[11px] text-muted-foreground">
-											({new Date(reviewer.absentUntil).toLocaleDateString()})
-										</span>
-									)}
+											size="xs"
+										>
+											{reviewer.effectiveIsAbsent
+												? t("pr.absent")
+												: t("pr.available")}
+										</Badge>
+										{getStatusDetail(reviewer) && (
+											<span className="whitespace-nowrap text-xs text-muted-foreground">
+												{getStatusDetail(reviewer)}
+											</span>
+										)}
+									</div>
 								</div>
 							</TableCell>
 							<TableCell>
 								<EditReviewerDialog
 									reviewer={reviewer}
-									onUpdateReviewer={async (id, name, email, googleChatUserId) =>
-										updateReviewer(id, name, email, googleChatUserId)
+									onUpdateReviewer={async (
+										id,
+										name,
+										email,
+										googleChatUserId,
+										partTimeSchedule,
+									) =>
+										updateReviewer(
+											id,
+											name,
+											email,
+											googleChatUserId,
+											partTimeSchedule,
+										)
 									}
 									trigger={
 										<Button

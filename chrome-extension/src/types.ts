@@ -12,10 +12,16 @@ export interface ReviewerInfo {
 	email: string;
 	assignmentCount: number;
 	isAbsent: boolean;
+	manualIsAbsent: boolean;
+	effectiveIsAbsent: boolean;
+	absenceReason: "manual" | "part_time_schedule" | null;
 	createdAt: number;
 	tags: string[];
 	googleChatUserId?: string;
 	teamId: string;
+	partTimeSchedule?: {
+		workingDays: string[];
+	};
 }
 
 export interface TagInfo {
@@ -40,6 +46,7 @@ export interface AssignmentResult {
 		email: string;
 		assignmentCount: number;
 		isAbsent: boolean;
+		effectiveIsAbsent: boolean;
 		createdAt: number;
 		tags: string[];
 	};
@@ -56,6 +63,7 @@ export interface BatchAssignmentResult {
 			email: string;
 			assignmentCount: number;
 			isAbsent: boolean;
+			effectiveIsAbsent: boolean;
 			createdAt: number;
 			tags: string[];
 		};

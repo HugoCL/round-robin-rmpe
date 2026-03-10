@@ -75,7 +75,7 @@ export function useAssignment(teamSlug: string | null) {
 
 	// Available (non-absent) reviewers
 	const availableReviewers = useMemo(
-		() => reviewers.filter((r: any) => !r.isAbsent),
+		() => reviewers.filter((r: any) => !r.effectiveIsAbsent),
 		[reviewers],
 	);
 
@@ -159,7 +159,7 @@ export function useAssignment(teamSlug: string | null) {
 						unresolved("Revisor no encontrado");
 						continue;
 					}
-					if (target.isAbsent) {
+					if (target.effectiveIsAbsent) {
 						unresolved("Revisor ausente");
 						continue;
 					}
@@ -207,7 +207,7 @@ export function useAssignment(teamSlug: string | null) {
 				}
 
 				const candidates = reviewers.filter((r: any) => {
-					if (r.isAbsent) return false;
+					if (r.effectiveIsAbsent) return false;
 					if (currentUserReviewerId && String(r._id) === currentUserReviewerId)
 						return false;
 					if (selectedIds.has(String(r._id))) return false;

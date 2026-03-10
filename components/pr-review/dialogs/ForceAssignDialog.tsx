@@ -158,7 +158,7 @@ export function ForceAssignDialog() {
 				}
 
 				// Show appropriate toast based on reviewer status
-				if (result.reviewer.isAbsent) {
+				if (result.reviewer.effectiveIsAbsent) {
 					toast({
 						title: t("pr.forceAssign"),
 						description: t("messages.forceAssignAbsentWarning", {
@@ -234,7 +234,7 @@ export function ForceAssignDialog() {
 								<SelectItem key={reviewer._id} value={reviewer._id}>
 									<div className="flex items-center">
 										<span>{reviewer.name}</span>
-										{reviewer.isAbsent && (
+										{reviewer.effectiveIsAbsent && (
 											<AlertTriangle className="h-4 w-4 ml-2 text-amber-500" />
 										)}
 									</div>
@@ -244,7 +244,8 @@ export function ForceAssignDialog() {
 					</Select>
 
 					{selectedReviewerId &&
-						reviewers.find((r) => r._id === selectedReviewerId)?.isAbsent && (
+						reviewers.find((r) => r._id === selectedReviewerId)
+							?.effectiveIsAbsent && (
 							<div className="mt-2 text-sm text-amber-500 flex items-center">
 								<AlertTriangle className="h-4 w-4 mr-1" />
 								<span>{t("tags.absent")}</span>

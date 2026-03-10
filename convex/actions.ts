@@ -1,6 +1,6 @@
 import { v } from "convex/values";
+import type { Reviewer } from "../lib/types";
 import { api } from "./_generated/api";
-import type { Doc } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 
 // Google Chat integration action
@@ -529,7 +529,7 @@ export const assignPRByTag = action({
 		{ teamSlug, tagId, actionByReviewerId },
 	): Promise<{
 		success: boolean;
-		reviewer?: Doc<"reviewers">;
+		reviewer?: Reviewer;
 		error?: string;
 	}> => {
 		// Get next reviewer by tag
@@ -565,7 +565,7 @@ export const skipToNextReviewer = action({
 	handler: async (
 		ctx,
 		{ teamSlug, currentNextId },
-	): Promise<{ success: boolean; nextReviewer?: Doc<"reviewers"> }> => {
+	): Promise<{ success: boolean; nextReviewer?: Reviewer }> => {
 		// Get all reviewers
 		const reviewers = await ctx.runQuery(api.queries.getReviewers, {
 			teamSlug,
@@ -573,7 +573,8 @@ export const skipToNextReviewer = action({
 
 		// Filter out absent reviewers and the current next reviewer
 		const availableReviewers = reviewers.filter(
-			(r) => !r.isAbsent && r._id !== currentNextId,
+			(reviewer) =>
+				!reviewer.effectiveIsAbsent && reviewer._id !== currentNextId,
 		);
 
 		if (availableReviewers.length === 0) {
@@ -921,7 +922,7 @@ export const flashAssign = action({
 		// 3. Get the next reviewer via round-robin
 		const nextReviewer = (await ctx.runQuery(api.queries.getNextReviewer, {
 			teamSlug,
-		})) as Doc<"reviewers"> | null;
+		})) as Reviewer | null;
 		if (!nextReviewer) {
 			return { success: false, error: "No hay revisores disponibles" };
 		}
@@ -929,7 +930,7 @@ export const flashAssign = action({
 		// 4. Find the assigner's reviewer record
 		const reviewers = (await ctx.runQuery(api.queries.getReviewers, {
 			teamSlug,
-		})) as Doc<"reviewers">[];
+		})) as Reviewer[];
 		const assigner = reviewers.find(
 			(r) => r.email.toLowerCase() === assignerEmail.toLowerCase(),
 		);

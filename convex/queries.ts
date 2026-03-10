@@ -1,4 +1,9 @@
 import { v } from "convex/values";
+import {
+	getReviewerAvailability,
+	normalizePartTimeSchedule,
+	resolveTeamTimezone,
+} from "../lib/reviewerAvailability";
 
 type EnrichedAssignment = {
 	_id: Id<"prAssignments">;
@@ -29,6 +34,7 @@ async function getTeamBySlugOrThrow(ctx: QueryCtx, teamSlug: string) {
 }
 
 type ReviewerDoc = Doc<"reviewers">;
+type TeamDoc = Doc<"teams">;
 type EventDoc = Doc<"events">;
 type EventPerson = {
 	reviewerId: Id<"reviewers">;
@@ -92,6 +98,34 @@ function buildReviewerMaps(reviewers: ReviewerDoc[]) {
 		byId.set(reviewer._id, reviewer);
 	}
 	return { byId };
+}
+
+function enrichReviewer(
+	reviewer: ReviewerDoc,
+	team: Pick<TeamDoc, "timezone"> | null,
+	now: number,
+) {
+	const partTimeSchedule = normalizePartTimeSchedule(reviewer.partTimeSchedule);
+	return {
+		...reviewer,
+		partTimeSchedule,
+		...getReviewerAvailability(
+			{
+				isAbsent: reviewer.isAbsent,
+				partTimeSchedule,
+			},
+			resolveTeamTimezone(team?.timezone),
+			now,
+		),
+	};
+}
+
+function enrichReviewers(
+	reviewers: ReviewerDoc[],
+	team: Pick<TeamDoc, "timezone"> | null,
+	now: number,
+) {
+	return reviewers.map((reviewer) => enrichReviewer(reviewer, team, now));
 }
 
 function resolveReviewerName(
@@ -256,7 +290,11 @@ export const getTeam = query({
 			.query("teams")
 			.withIndex("by_slug", (q) => q.eq("slug", teamSlug))
 			.first();
-		return team ?? null;
+		if (!team) return null;
+		return {
+			...team,
+			timezone: resolveTeamTimezone(team.timezone),
+		};
 	},
 });
 
@@ -305,10 +343,11 @@ export const getReviewers = query({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
-		return await ctx.db
+		const reviewers = await ctx.db
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
+		return enrichReviewers(reviewers, team, Date.now());
 	},
 });
 
@@ -421,13 +460,16 @@ export const getNextReviewer = query({
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
+		const enrichedReviewers = enrichReviewers(reviewers, team, Date.now());
 
-		if (reviewers.length === 0) {
+		if (enrichedReviewers.length === 0) {
 			return null;
 		}
 
 		// Find available reviewers (not absent)
-		const availableReviewers = reviewers.filter((r) => !r.isAbsent);
+		const availableReviewers = enrichedReviewers.filter(
+			(reviewer) => !reviewer.effectiveIsAbsent,
+		);
 
 		if (availableReviewers.length > 0) {
 			// Find the minimum assignment count among available reviewers
@@ -461,10 +503,12 @@ export const getNextReviewerByTag = query({
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
+		const enrichedReviewers = enrichReviewers(allReviewers, team, Date.now());
 
 		// Filter for available reviewers with the specific tag
-		const availableReviewers = allReviewers.filter(
-			(r) => !r.isAbsent && r.tags.includes(tagId),
+		const availableReviewers = enrichedReviewers.filter(
+			(reviewer) =>
+				!reviewer.effectiveIsAbsent && reviewer.tags.includes(tagId),
 		);
 
 		if (availableReviewers.length === 0) {
@@ -501,15 +545,11 @@ export const getReviewerById = query({
 				return null;
 			}
 
-			return {
-				id: reviewer._id,
-				name: reviewer.name,
-				email: reviewer.email,
-				assignmentCount: reviewer.assignmentCount,
-				isAbsent: reviewer.isAbsent,
-				createdAt: reviewer.createdAt,
-				tags: reviewer.tags,
-			};
+			const team =
+				reviewer.teamId === undefined
+					? null
+					: await ctx.db.get(reviewer.teamId);
+			return enrichReviewer(reviewer, team, Date.now());
 		} catch {
 			return null;
 		}

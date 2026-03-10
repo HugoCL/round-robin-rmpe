@@ -15,15 +15,21 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { PartTimeSchedule, Weekday } from "@/lib/reviewerAvailability";
+import type { Reviewer } from "@/lib/types";
+import {
+	PartTimeScheduleFields,
+	scheduleFromSelection,
+} from "./PartTimeScheduleFields";
 
 interface EditReviewerDialogProps {
-	reviewer: Doc<"reviewers">;
+	reviewer: Reviewer;
 	onUpdateReviewer: (
-		id: Id<"reviewers">,
+		id: Reviewer["_id"],
 		name: string,
 		email: string,
 		googleChatUserId?: string,
+		partTimeSchedule?: PartTimeSchedule,
 	) => Promise<boolean>;
 	trigger?: React.ReactNode;
 }
@@ -42,13 +48,22 @@ export function EditReviewerDialog({
 		name?: string;
 		email?: string;
 		googleChatUserId?: string;
+		partTimeSchedule?: PartTimeSchedule;
 	}>({});
+	const [partTimeEnabled, setPartTimeEnabled] = useState(
+		Boolean(reviewer.partTimeSchedule),
+	);
+	const [workingDays, setWorkingDays] = useState<Weekday[]>(
+		reviewer.partTimeSchedule?.workingDays ?? [],
+	);
 
 	// Derive current values from props + local edits
 	const reviewerName = edits.name ?? reviewer.name;
 	const reviewerEmail = edits.email ?? reviewer.email;
 	const googleChatUserId =
 		edits.googleChatUserId ?? reviewer.googleChatUserId ?? "";
+	const reviewerPartTimeSchedule =
+		edits.partTimeSchedule ?? reviewer.partTimeSchedule;
 
 	// unique ids
 	const nameId = useId();
@@ -56,7 +71,13 @@ export function EditReviewerDialog({
 	const chatId = useId();
 
 	const handleUpdateReviewer = async () => {
-		if (!reviewerName.trim() || !reviewerEmail.trim()) return;
+		if (
+			!reviewerName.trim() ||
+			!reviewerEmail.trim() ||
+			(partTimeEnabled && workingDays.length === 0)
+		) {
+			return;
+		}
 
 		setIsUpdating(true);
 		try {
@@ -65,6 +86,7 @@ export function EditReviewerDialog({
 				reviewerName.trim(),
 				reviewerEmail.trim(),
 				googleChatUserId.trim() || undefined,
+				scheduleFromSelection(partTimeEnabled, workingDays),
 			);
 			if (success) {
 				setIsOpen(false);
@@ -85,8 +107,13 @@ export function EditReviewerDialog({
 		setIsOpen(open);
 		if (!open) {
 			setEdits({}); // Clear edits when closing
+			setPartTimeEnabled(Boolean(reviewer.partTimeSchedule));
+			setWorkingDays(reviewer.partTimeSchedule?.workingDays ?? []);
 		}
 	};
+
+	const isInvalidPartTimeSelection =
+		partTimeEnabled && workingDays.length === 0;
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -155,6 +182,31 @@ export function EditReviewerDialog({
 							className="col-span-3"
 						/>
 					</div>
+					<div className="col-span-full">
+						<PartTimeScheduleFields
+							enabled={partTimeEnabled}
+							workingDays={workingDays}
+							onEnabledChange={(enabled) => {
+								setPartTimeEnabled(enabled);
+								setEdits((prev) => ({
+									...prev,
+									partTimeSchedule: enabled
+										? reviewerPartTimeSchedule
+										: undefined,
+								}));
+							}}
+							onWorkingDaysChange={(nextWorkingDays) => {
+								setWorkingDays(nextWorkingDays);
+								setEdits((prev) => ({
+									...prev,
+									partTimeSchedule: scheduleFromSelection(
+										partTimeEnabled,
+										nextWorkingDays,
+									),
+								}));
+							}}
+						/>
+					</div>
 				</div>
 				<DialogFooter>
 					<Button
@@ -167,7 +219,10 @@ export function EditReviewerDialog({
 					<Button
 						onClick={handleUpdateReviewer}
 						disabled={
-							!reviewerName.trim() || !reviewerEmail.trim() || isUpdating
+							!reviewerName.trim() ||
+							!reviewerEmail.trim() ||
+							isUpdating ||
+							isInvalidPartTimeSelection
 						}
 					>
 						{isUpdating ? t("common.updating") : t("common.update")}

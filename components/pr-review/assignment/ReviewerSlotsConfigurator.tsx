@@ -13,6 +13,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Reviewer } from "@/lib/types";
 
 export const MIN_BATCH_SLOTS = 1;
 export const MAX_BATCH_SLOTS = 5;
@@ -46,7 +47,7 @@ type Props = {
 	embedded?: boolean;
 	selectedTagId?: Id<"tags">;
 	slots: ReviewerSlotConfig[];
-	reviewers: Doc<"reviewers">[];
+	reviewers: Reviewer[];
 	tags: Doc<"tags">[];
 	previews: ReviewerSlotPreview[];
 	onReviewerCountChange: (next: number) => void;
@@ -68,7 +69,9 @@ export function ReviewerSlotsConfigurator({
 	onSlotChange,
 }: Props) {
 	const t = useTranslations();
-	const availableReviewers = reviewers.filter((reviewer) => !reviewer.isAbsent);
+	const availableReviewers = reviewers.filter(
+		(reviewer) => !reviewer.effectiveIsAbsent,
+	);
 	const containerClass = embedded
 		? "space-y-3"
 		: "space-y-3 rounded-lg border border-muted bg-muted/20 p-3 md:p-4";

@@ -7,6 +7,7 @@ export default defineSchema({
 		slug: v.string(),
 		createdAt: v.optional(v.number()),
 		googleChatWebhookUrl: v.optional(v.string()),
+		timezone: v.optional(v.string()),
 	})
 		.index("by_slug", ["slug"]) // enforce uniqueness at write-time
 		.index("by_created_at", ["createdAt"]),
@@ -36,6 +37,21 @@ export default defineSchema({
 		assignmentCount: v.number(),
 		isAbsent: v.boolean(),
 		absentUntil: v.optional(v.number()), // Timestamp when the reviewer is expected to return
+		partTimeSchedule: v.optional(
+			v.object({
+				workingDays: v.array(
+					v.union(
+						v.literal("monday"),
+						v.literal("tuesday"),
+						v.literal("wednesday"),
+						v.literal("thursday"),
+						v.literal("friday"),
+						v.literal("saturday"),
+						v.literal("sunday"),
+					),
+				),
+			}),
+		),
 		createdAt: v.number(),
 		tags: v.array(v.id("tags")),
 	})
@@ -129,6 +145,21 @@ export default defineSchema({
 				googleChatUserId: v.optional(v.string()),
 				assignmentCount: v.number(),
 				isAbsent: v.boolean(),
+				partTimeSchedule: v.optional(
+					v.object({
+						workingDays: v.array(
+							v.union(
+								v.literal("monday"),
+								v.literal("tuesday"),
+								v.literal("wednesday"),
+								v.literal("thursday"),
+								v.literal("friday"),
+								v.literal("saturday"),
+								v.literal("sunday"),
+							),
+						),
+					}),
+				),
 				createdAt: v.number(),
 				tags: v.array(v.id("tags")),
 			}),

@@ -10,7 +10,7 @@ interface ForceAssignPanelProps {
 		name: string;
 		email: string;
 		assignmentCount: number;
-		isAbsent: boolean;
+		effectiveIsAbsent: boolean;
 		tags: string[];
 	}>;
 	tags: Array<{ _id: string; name: string; color: string }>;
@@ -29,7 +29,7 @@ export function ForceAssignPanel({
 	const [isOpen, setIsOpen] = useState(false);
 	const [search, setSearch] = useState("");
 
-	const available = reviewers.filter((r) => !r.isAbsent);
+	const available = reviewers.filter((r) => !r.effectiveIsAbsent);
 	const filtered = search
 		? available.filter((r) =>
 				r.name.toLowerCase().includes(search.toLowerCase()),
