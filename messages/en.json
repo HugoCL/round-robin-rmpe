@@ -297,6 +297,11 @@
 			"title": "Select a team",
 			"description": "Choose the team you want to work with.",
 			"reviewedSummaryRich": "La Lista has reviewed <highlight>{count}</highlight> PRs.",
+			"tickerTitle": "Live assignments",
+			"tickerEmpty": "New PR assignments will appear here as teams use La Lista.",
+			"tickerAriaLabel": "Live ticker with the latest PR assignments across teams.",
+			"tickerAnnouncement": "New assignment: {teamName} - {assignerName} to {assigneeName}.",
+			"tickerNewAssignment": "New assignment",
 			"teamListTitle": "Available teams",
 			"emptyTitle": "No teams yet",
 			"emptyDescription": "Create your first team to start assigning PR reviews."

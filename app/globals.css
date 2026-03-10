@@ -124,3 +124,98 @@
 		@apply bg-background text-foreground;
 	}
 }
+
+@keyframes landing-ticker-scroll {
+	from {
+		transform: translate3d(0, 0, 0);
+	}
+	to {
+		transform: translate3d(-50%, 0, 0);
+	}
+}
+
+@keyframes landing-ticker-surface-wave {
+	0% {
+		opacity: 0.7;
+		transform: translate(-50%, -50%) scale(0.25);
+	}
+	100% {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(1.55);
+	}
+}
+
+@keyframes landing-ticker-surface-flash {
+	0% {
+		opacity: 0;
+	}
+	15% {
+		opacity: 0.88;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+.landing-ticker-track {
+	animation: landing-ticker-scroll var(--ticker-duration, 30s) linear infinite;
+	will-change: transform;
+}
+
+.landing-ticker[data-paused="true"] .landing-ticker-track,
+.landing-ticker:hover .landing-ticker-track {
+	animation-play-state: paused;
+}
+
+.landing-ticker[data-updating="true"] .landing-ticker-track {
+	opacity: 0;
+	filter: none;
+}
+
+.landing-ticker-overlay {
+	background: linear-gradient(
+		90deg,
+		color-mix(in oklab, var(--background) 96%, transparent) 0%,
+		color-mix(in oklab, var(--background) 90%, transparent) 20%,
+		color-mix(in oklab, var(--background) 88%, transparent) 80%,
+		color-mix(in oklab, var(--background) 96%, transparent) 100%
+	);
+	backdrop-filter: blur(4px);
+}
+
+.landing-ticker-surface-wave {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	height: 32rem;
+	width: 32rem;
+	border-radius: 9999px;
+	background: radial-gradient(
+		circle,
+		color-mix(in oklab, var(--primary) 20%, transparent) 0%,
+		transparent 58%
+	);
+	animation: landing-ticker-surface-wave 1.35s cubic-bezier(0.2, 1, 0.22, 1)
+		forwards;
+}
+
+.landing-ticker-surface-wave-delay {
+	animation-delay: 0.16s;
+}
+
+.landing-ticker-surface-flash {
+	background:
+		radial-gradient(
+			circle at center,
+			color-mix(in oklab, var(--primary) 18%, transparent) 0%,
+			transparent 42%
+		),
+		linear-gradient(
+			90deg,
+			transparent 0%,
+			color-mix(in oklab, var(--primary) 10%, transparent) 48%,
+			color-mix(in oklab, var(--primary) 14%, transparent) 52%,
+			transparent 100%
+		);
+	animation: landing-ticker-surface-flash 1.4s ease-out forwards;
+}

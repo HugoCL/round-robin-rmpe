@@ -69,6 +69,14 @@ type GroupedAssignmentHistoryItem = {
 	}>;
 	reviewerCount: number;
 };
+type LandingAssignmentTickerItem = {
+	id: string;
+	teamName: string;
+	prNumber?: string;
+	assignerName: string;
+	assigneeName: string;
+	timestamp: number;
+};
 type UserPreferenceFlags = {
 	showAssignments: boolean;
 	showTags: boolean;
@@ -243,6 +251,15 @@ function groupAssignmentHistory(
 		.sort((a, b) => b.timestamp - a.timestamp);
 }
 
+function extractPrNumber(prUrl?: string) {
+	if (!prUrl) return undefined;
+	const match = prUrl.match(/(?:pull|pulls|merge_requests)\/(\d+)(?:[/?#]|$)/i);
+	if (match?.[1]) return match[1];
+
+	const fallbackMatch = prUrl.match(/\/(\d+)(?:[/?#]|$)/);
+	return fallbackMatch?.[1];
+}
+
 // Teams
 export const getTeams = query({
 	args: {},
@@ -280,6 +297,147 @@ export const getGlobalReviewedPRCount = query({
 			.collect();
 
 		return metrics.reduce((total, metric) => total + metric.value, 0);
+	},
+});
+
+export const getLandingAssignmentTicker = query({
+	args: {},
+	handler: async (ctx) => {
+		const recentHistory = await ctx.db
+			.query("assignmentHistory")
+			.withIndex("by_timestamp")
+			.order("desc")
+			.take(10);
+
+		const groupedAssignments = new Map<
+			string,
+			{
+				id: string;
+				teamId?: Id<"teams">;
+				prUrl?: string;
+				actionByName?: string;
+				actionByReviewerId?: Id<"reviewers">;
+				reviewers: Array<{
+					reviewerId: Id<"reviewers">;
+					reviewerName?: string;
+				}>;
+				timestamp: number;
+			}
+		>();
+
+		for (const assignment of recentHistory) {
+			if (assignment.skipped || assignment.isAbsentSkip || !assignment.teamId) {
+				continue;
+			}
+
+			const key = assignment.batchId ?? `single:${assignment._id}`;
+			const existing = groupedAssignments.get(key);
+			if (existing) {
+				existing.timestamp = Math.max(existing.timestamp, assignment.timestamp);
+				existing.prUrl ??= assignment.prUrl;
+				existing.reviewers.push({
+					reviewerId: assignment.reviewerId,
+					reviewerName: assignment.reviewerName,
+				});
+				continue;
+			}
+
+			groupedAssignments.set(key, {
+				id: assignment.batchId ?? String(assignment._id),
+				teamId: assignment.teamId,
+				prUrl: assignment.prUrl,
+				actionByName: assignment.actionByName,
+				actionByReviewerId: assignment.actionByReviewerId,
+				reviewers: [
+					{
+						reviewerId: assignment.reviewerId,
+						reviewerName: assignment.reviewerName,
+					},
+				],
+				timestamp: assignment.timestamp,
+			});
+		}
+
+		const standardAssignments = Array.from(groupedAssignments.values())
+			.filter((assignment) => assignment.reviewers.length === 1)
+			.sort((a, b) => b.timestamp - a.timestamp)
+			.slice(0, 18);
+
+		const uniqueTeamIds = [
+			...new Set(
+				standardAssignments
+					.map((item) => item.teamId)
+					.filter((teamId): teamId is Id<"teams"> => teamId !== undefined),
+			),
+		];
+		const uniqueReviewerIds = [
+			...new Set(
+				standardAssignments.flatMap((item) =>
+					[
+						...item.reviewers.map((reviewer) => reviewer.reviewerId),
+						item.actionByReviewerId,
+					].filter(
+						(reviewerId): reviewerId is Id<"reviewers"> =>
+							reviewerId !== undefined,
+					),
+				),
+			),
+		];
+
+		const [teams, reviewers] = await Promise.all([
+			Promise.all(uniqueTeamIds.map((teamId) => ctx.db.get(teamId))),
+			Promise.all(
+				uniqueReviewerIds.map((reviewerId) => ctx.db.get(reviewerId)),
+			),
+		]);
+
+		const teamById = new Map<Id<"teams">, TeamDoc>();
+		for (const team of teams) {
+			if (team) {
+				teamById.set(team._id, team);
+			}
+		}
+
+		const reviewerById = new Map<Id<"reviewers">, ReviewerDoc>();
+		for (const reviewer of reviewers) {
+			if (reviewer) {
+				reviewerById.set(reviewer._id, reviewer);
+			}
+		}
+
+		return standardAssignments.reduce<LandingAssignmentTickerItem[]>(
+			(items, assignment) => {
+				if (!assignment.teamId) return items;
+
+				const teamName = teamById.get(assignment.teamId)?.name;
+				if (!teamName) return items;
+
+				const assignee = assignment.reviewers[0];
+				if (!assignee) return items;
+
+				const assigneeName =
+					assignee.reviewerName ||
+					reviewerById.get(assignee.reviewerId)?.name ||
+					"Unknown";
+				const assignerName =
+					assignment.actionByName ||
+					(assignment.actionByReviewerId
+						? reviewerById.get(assignment.actionByReviewerId)?.name
+						: undefined) ||
+					"Unknown";
+
+				items.push({
+					id: assignment.id,
+					teamName,
+					prNumber: extractPrNumber(assignment.prUrl),
+					assignerName,
+					assigneeName,
+					timestamp: assignment.timestamp,
+				});
+				return items;
+			},
+			[],
+		);
 	},
 });
 

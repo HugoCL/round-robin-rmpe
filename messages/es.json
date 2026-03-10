@@ -344,6 +344,11 @@
 			"title": "Selecciona un equipo",
 			"description": "Elige el equipo con el que quieres trabajar.",
 			"reviewedSummaryRich": "Se han revisado <highlight>{count}</highlight> PRs con La Lista.",
+			"tickerTitle": "Asignaciones en vivo",
+			"tickerEmpty": "Las nuevas asignaciones de PR aparecerán aquí a medida que los equipos usen La Lista.",
+			"tickerAriaLabel": "Ticker en vivo con las asignaciones de PR más recientes de todos los equipos.",
+			"tickerAnnouncement": "Nueva asignación: {teamName} - {assignerName} a {assigneeName}.",
+			"tickerNewAssignment": "Nueva asignación",
 			"teamListTitle": "Equipos disponibles",
 			"emptyTitle": "Aún no hay equipos",
 			"emptyDescription": "Crea tu primer equipo para comenzar a asignar revisiones de PR."

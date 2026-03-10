@@ -5,6 +5,7 @@ import { ArrowRight, GitPullRequest, Lightbulb, Plus } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { LandingAssignmentTicker } from "@/components/LandingAssignmentTicker";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 
@@ -156,6 +157,8 @@ export default function Page() {
 						</span>
 					</p>
 				</div>
+
+				<LandingAssignmentTicker />
 
 				<div className="mt-12 mb-4 flex items-center justify-between gap-4 flex-wrap md:mt-14 md:flex-nowrap">
 					<h2 className="text-xl font-semibold">
