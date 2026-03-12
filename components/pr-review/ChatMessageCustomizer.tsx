@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Toggle } from "@/components/ui/toggle";
 
 export interface ChatMessageCustomizerProps {
 	prUrl: string;
@@ -143,6 +144,14 @@ export function ChatMessageCustomizer({
 		});
 	};
 
+	const resetCustomMessage = () => {
+		onEnabledChange(false);
+		onMessageChange("");
+		setUserEdited(false);
+		setSelectedMods([]);
+		setHasGeneratedOnce(false);
+	};
+
 	return (
 		<div className={containerClass}>
 			{showSendToggle && (
@@ -164,9 +173,7 @@ export function ChatMessageCustomizer({
 						onCheckedChange={(v) => {
 							onSendMessageChange(v);
 							if (!v) {
-								onEnabledChange(false);
-								onMessageChange("");
-								setUserEdited(false);
+								resetCustomMessage();
 							}
 						}}
 					/>
@@ -224,29 +231,29 @@ export function ChatMessageCustomizer({
 						)}
 					</div>
 
-					<div className="pt-2 border-t border-muted/50 flex items-center justify-between">
-						<Label
-							htmlFor={toggleCustomId}
-							className="text-xs text-muted-foreground flex items-center gap-1"
-						>
-							<MessageSquare className="h-3 w-3" />{" "}
-							{t("googleChat.customizeToggle")}
-						</Label>
-						<Switch
+					<div className="flex flex-wrap items-center gap-2 pt-1">
+						<Toggle
 							id={toggleCustomId}
-							checked={enabled}
-							onCheckedChange={(val) => {
-								onEnabledChange(val);
-								if (!val) {
-									onMessageChange("");
-									setUserEdited(false);
+							pressed={enabled}
+							onPressedChange={(pressed) => {
+								if (!pressed) {
+									resetCustomMessage();
+									return;
 								}
+								onEnabledChange(true);
 							}}
-						/>
+							variant="outline"
+							size="sm"
+							aria-label={t("googleChat.customizeToggle")}
+							className="cursor-pointer rounded-full border-border/70 px-3 text-xs aria-pressed:!border-primary/40 aria-pressed:!bg-primary/10 aria-pressed:!text-primary data-[state=on]:!border-primary/40 data-[state=on]:!bg-primary/10 data-[state=on]:!text-primary"
+						>
+							<MessageSquare className="h-3.5 w-3.5" />
+							{t("googleChat.customizeToggle")}
+						</Toggle>
 					</div>
 
 					{enabled && (
-						<div className="space-y-2 pt-2">
+						<div className="space-y-2 rounded-lg border border-muted bg-muted/20 p-3">
 							<textarea
 								className="w-full text-sm  border bg-background p-2 resize-none h-28"
 								value={message}

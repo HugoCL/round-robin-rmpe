@@ -42,6 +42,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-03-12",
+		type: "improvement",
+		title: "Nuevos chips para opciones de asignación",
+		description:
+			"Rediseñamos las opciones de asignación múltiple y envío de mensaje dentro de la tarjeta principal para usar chips más compactos, con mejor feedback visual al activarse y paneles que aparecen solo cuando hace falta configurarlos.",
+	},
+	{
 		date: "2026-03-10",
 		type: "feature",
 		title: "Horarios part-time semanales",

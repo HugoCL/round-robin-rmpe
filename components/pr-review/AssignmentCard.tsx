@@ -28,7 +28,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { Toggle } from "@/components/ui/toggle";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
 	Tooltip,
 	TooltipContent,
@@ -200,8 +201,10 @@ export function AssignmentCard() {
 	useEffect(() => {
 		if (hideMultiAssignmentSection && isMultiAssignmentEnabled) {
 			setIsMultiAssignmentEnabled(false);
+			setReviewerCount(1);
+			setSlotConfigs([defaultSlotForMode(mode)]);
 		}
-	}, [hideMultiAssignmentSection, isMultiAssignmentEnabled]);
+	}, [hideMultiAssignmentSection, isMultiAssignmentEnabled, mode]);
 
 	useEffect(() => {
 		if (alwaysSendGoogleChatMessage && !sendMessage) {
@@ -813,90 +816,186 @@ export function AssignmentCard() {
 						</div>
 					)}
 
-					{!hideMultiAssignmentSection && (
-						<section className="space-y-3 rounded-lg border border-muted bg-muted/20 p-3">
-							<div className="flex items-start justify-between gap-4">
-								<div className="min-w-0">
-									<div className="flex items-center gap-2">
-										<Label
-											htmlFor="assignment-multi-toggle"
-											className="flex items-center gap-2 text-sm"
+					<div className="flex flex-wrap gap-3">
+						{!hideMultiAssignmentSection && (
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<ToggleGroup
+											type="multiple"
+											variant="outline"
+											size="sm"
+											spacing={2}
+											value={
+												isMultiAssignmentEnabled ? ["multi-assignment"] : []
+											}
+											onValueChange={(value) => {
+												const enabled = value.includes("multi-assignment");
+												setIsMultiAssignmentEnabled(enabled);
+												if (enabled) {
+													if (reviewerCount < 2) {
+														setReviewerCount(2);
+													}
+													return;
+												}
+												setReviewerCount(1);
+												setSlotConfigs([defaultSlotForMode(mode)]);
+											}}
+											className="inline-flex max-w-full"
 										>
-											<Users
-												className="h-4 w-4 text-primary"
-												aria-hidden="true"
-											/>
-											{t("pr.multipleAssignmentToggleLabel")}
-										</Label>
-										<TooltipProvider>
-											<Tooltip>
-												<TooltipTrigger asChild>
-													<Button
-														type="button"
-														variant="ghost"
-														size="icon"
-														className="h-6 w-6 shrink-0 text-muted-foreground"
-														aria-label={t(
-															"pr.multipleAssignmentToggleDescription",
-														)}
-													>
-														<Info className="h-4 w-4" aria-hidden="true" />
-													</Button>
-												</TooltipTrigger>
-												<TooltipContent className="max-w-64 text-xs">
-													<p>{t("pr.multipleAssignmentToggleDescription")}</p>
-												</TooltipContent>
-											</Tooltip>
-										</TooltipProvider>
-									</div>
-								</div>
-								<Switch
-									id="assignment-multi-toggle"
-									checked={isMultiAssignmentEnabled}
-									onCheckedChange={(value) => {
-										setIsMultiAssignmentEnabled(value);
-										if (value && reviewerCount < 2) {
-											setReviewerCount(2);
-										}
-									}}
-									className="focus-visible:ring-2 focus-visible:ring-primary"
-								/>
+											<ToggleGroupItem
+												value="multi-assignment"
+												aria-label={t("pr.multipleAssignmentToggleLabel")}
+												className="cursor-pointer h-10 max-w-full rounded-full border-border/70 px-3 text-xs aria-pressed:!border-primary/40 aria-pressed:!bg-primary/10 aria-pressed:!text-primary data-[state=on]:!border-primary/40 data-[state=on]:!bg-primary/10 data-[state=on]:!text-primary"
+											>
+												<div className="inline-flex items-center gap-2.5">
+													<span className="inline-flex size-4 items-center justify-center">
+														<Users
+															className="h-4 w-4 shrink-0"
+															aria-hidden="true"
+														/>
+													</span>
+													<span className="leading-none">
+														{t("pr.multipleAssignmentToggleLabel")}
+													</span>
+													<span className="inline-flex size-4 items-center justify-center">
+														<Info
+															className="h-4 w-4 shrink-0 text-muted-foreground/90"
+															aria-hidden="true"
+														/>
+													</span>
+												</div>
+											</ToggleGroupItem>
+										</ToggleGroup>
+									</TooltipTrigger>
+									<TooltipContent className="max-w-64 text-xs">
+										<p>{t("pr.multipleAssignmentToggleDescription")}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						)}
+
+						<section className="max-w-full">
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Toggle
+											id="assignment-send-message-toggle"
+											pressed={effectiveSendMessage}
+											onPressedChange={(pressed) => {
+												if (alwaysSendGoogleChatMessage) return;
+												setSendMessage(pressed);
+												if (!pressed) {
+													setEnableCustomMessage(false);
+													setCustomMessage("");
+													setShowDuplicateAlert(false);
+												}
+											}}
+											variant="outline"
+											size="sm"
+											disabled={alwaysSendGoogleChatMessage}
+											aria-label={t("googleChat.sendMessageToggle")}
+											className="cursor-pointer disabled:cursor-not-allowed h-10 max-w-full rounded-full border-border/70 px-3 text-xs aria-pressed:!border-primary/40 aria-pressed:!bg-primary/10 aria-pressed:!text-primary data-[state=on]:!border-primary/40 data-[state=on]:!bg-primary/10 data-[state=on]:!text-primary"
+										>
+											<div className="inline-flex items-center gap-2.5">
+												<span className="inline-flex size-4 items-center justify-center">
+													<MessageSquare
+														className="h-4 w-4 shrink-0"
+														aria-hidden="true"
+													/>
+												</span>
+												<span className="leading-none">
+													{t("googleChat.sendMessageToggle")}
+												</span>
+												<span className="inline-flex size-4 items-center justify-center">
+													<Info
+														className="h-4 w-4 shrink-0 text-muted-foreground/90"
+														aria-hidden="true"
+													/>
+												</span>
+											</div>
+										</Toggle>
+									</TooltipTrigger>
+									<TooltipContent className="max-w-64 text-xs">
+										<p>{t("pr.sendMessageToggleDescription")}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						</section>
+					</div>
+
+					{!hideMultiAssignmentSection && isMultiAssignmentEnabled && (
+						<section className="space-y-3 rounded-lg border border-muted bg-muted/20 p-3">
+							<div className="flex flex-wrap gap-2" aria-live="polite">
+								<Badge variant="secondary" className="max-w-full">
+									{t("pr.multipleAssignmentSummaryEnabled", {
+										count: reviewerCount,
+									})}
+								</Badge>
 							</div>
-							{isMultiAssignmentEnabled && (
-								<div className="flex flex-wrap gap-2" aria-live="polite">
-									<Badge variant="secondary" className="max-w-full">
-										{t("pr.multipleAssignmentSummaryEnabled", {
-											count: reviewerCount,
-										})}
-									</Badge>
-								</div>
-							)}
-							{isMultiAssignmentEnabled && (
-								<ReviewerSlotsConfigurator
-									mode={mode}
-									reviewerCount={reviewerCount}
-									minReviewerCount={2}
-									embedded
-									selectedTagId={selectedTagId}
-									slots={slotConfigs.slice(0, reviewerCount)}
-									reviewers={reviewers}
-									tags={tags}
-									previews={resolvePreview.slots}
-									allowReviewerCountChange
-									onReviewerCountChange={setReviewerCount}
-									onSlotChange={(index, patch) => {
-										setSlotConfigs((prev) =>
-											prev.map((slot, slotIndex) =>
-												slotIndex === index
-													? normalizeSlotForMode({ ...slot, ...patch }, mode)
-													: slot,
-											),
-										);
-									}}
-								/>
-							)}
+							<ReviewerSlotsConfigurator
+								mode={mode}
+								reviewerCount={reviewerCount}
+								minReviewerCount={2}
+								embedded
+								selectedTagId={selectedTagId}
+								slots={slotConfigs.slice(0, reviewerCount)}
+								reviewers={reviewers}
+								tags={tags}
+								previews={resolvePreview.slots}
+								allowReviewerCountChange
+								onReviewerCountChange={setReviewerCount}
+								onSlotChange={(index, patch) => {
+									setSlotConfigs((prev) =>
+										prev.map((slot, slotIndex) =>
+											slotIndex === index
+												? normalizeSlotForMode({ ...slot, ...patch }, mode)
+												: slot,
+										),
+									);
+								}}
+							/>
 						</section>
 					)}
+
+					{effectiveSendMessage && (
+						<section className="space-y-3 rounded-lg border border-muted bg-muted/20 p-3">
+							{alwaysSendGoogleChatMessage && (
+								<p className="text-xs text-muted-foreground">
+									{t("mySettings.messageAlwaysOnHint")}
+								</p>
+							)}
+
+							<ChatMessageCustomizer
+								prUrl={prUrl}
+								onPrUrlChange={(value) => {
+									setPrUrl(value);
+									if (showDuplicateAlert) setShowDuplicateAlert(false);
+								}}
+								onPrUrlBlur={handlePrUrlBlur}
+								contextUrl={contextUrl}
+								onContextUrlChange={setContextUrl}
+								sendMessage={effectiveSendMessage}
+								onSendMessageChange={(value) => {
+									if (alwaysSendGoogleChatMessage) return;
+									setSendMessage(value);
+								}}
+								enabled={enableCustomMessage}
+								onEnabledChange={(value) => {
+									setEnableCustomMessage(value);
+									if (!value) setCustomMessage("");
+								}}
+								message={customMessage}
+								onMessageChange={setCustomMessage}
+								nextReviewerName={
+									resolvedNamesForMessage || activeNextReviewer?.name
+								}
+								showSendToggle={false}
+								embedded
+							/>
+						</section>
+					)}
+
 					{showDuplicateAlert && duplicateAssignment && (
 						<Alert variant="destructive">
 							<AlertCircle className="h-4 w-4" aria-hidden="true" />
@@ -910,91 +1009,6 @@ export function AssignmentCard() {
 							</AlertDescription>
 						</Alert>
 					)}
-
-					<section className="space-y-3 rounded-lg border border-muted bg-muted/20 p-3">
-						<div className="flex items-start justify-between gap-4">
-							<div className="min-w-0">
-								<div className="flex items-center gap-2">
-									<Label
-										htmlFor="assignment-send-message-toggle"
-										className="flex items-center gap-2 text-sm"
-									>
-										<MessageSquare
-											className="h-4 w-4 text-primary"
-											aria-hidden="true"
-										/>
-										{t("googleChat.sendMessageToggle")}
-									</Label>
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon"
-													className="h-6 w-6 shrink-0 text-muted-foreground"
-													aria-label={t("pr.sendMessageToggleDescription")}
-												>
-													<Info className="h-4 w-4" aria-hidden="true" />
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent className="max-w-64 text-xs">
-												<p>{t("pr.sendMessageToggleDescription")}</p>
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-								</div>
-							</div>
-							<Switch
-								id="assignment-send-message-toggle"
-								checked={effectiveSendMessage}
-								onCheckedChange={(value) => {
-									if (alwaysSendGoogleChatMessage) return;
-									setSendMessage(value);
-									if (!value) {
-										setEnableCustomMessage(false);
-										setCustomMessage("");
-										setShowDuplicateAlert(false);
-									}
-								}}
-								disabled={alwaysSendGoogleChatMessage}
-								className="focus-visible:ring-2 focus-visible:ring-primary"
-							/>
-						</div>
-						{alwaysSendGoogleChatMessage && (
-							<p className="text-xs text-muted-foreground">
-								{t("mySettings.messageAlwaysOnHint")}
-							</p>
-						)}
-
-						<ChatMessageCustomizer
-							prUrl={prUrl}
-							onPrUrlChange={(value) => {
-								setPrUrl(value);
-								if (showDuplicateAlert) setShowDuplicateAlert(false);
-							}}
-							onPrUrlBlur={handlePrUrlBlur}
-							contextUrl={contextUrl}
-							onContextUrlChange={setContextUrl}
-							sendMessage={effectiveSendMessage}
-							onSendMessageChange={(value) => {
-								if (alwaysSendGoogleChatMessage) return;
-								setSendMessage(value);
-							}}
-							enabled={enableCustomMessage}
-							onEnabledChange={(value) => {
-								setEnableCustomMessage(value);
-								if (!value) setCustomMessage("");
-							}}
-							message={customMessage}
-							onMessageChange={setCustomMessage}
-							nextReviewerName={
-								resolvedNamesForMessage || activeNextReviewer?.name
-							}
-							showSendToggle={false}
-							embedded
-						/>
-					</section>
 
 					{liveSummary && (
 						<p className="text-sm text-muted-foreground" aria-live="polite">
