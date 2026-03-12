@@ -33,7 +33,9 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 						{assignmentHistory.map((item) => (
 							<div
 								key={item.id}
-								className="flex items-start p-3 border  bg-card/50"
+								className={`flex items-start p-3 border bg-card/50 ${
+									item.urgent ? "urgent-card" : ""
+								}`}
 							>
 								<div className="flex-1">
 									<p className="font-medium">
@@ -86,6 +88,14 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 									)}
 								</div>
 								<div>
+									{item.urgent && (
+										<Badge
+											variant="primarySoft"
+											className="mb-1 text-red-700 border-red-200 bg-red-50 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60"
+										>
+											{t("pr.urgent")}
+										</Badge>
+									)}
 									{item.forced && (
 										<Badge
 											variant="primarySoft"
@@ -102,14 +112,17 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 											{t("pr.skip")}
 										</Badge>
 									)}
-									{!item.forced && !item.skipped && !item.isAbsentSkip && (
-										<Badge
-											variant="primarySoft"
-											className="text-green-700 border-green-200 bg-green-50"
-										>
-											{t("pr.regular")}
-										</Badge>
-									)}
+									{!item.urgent &&
+										!item.forced &&
+										!item.skipped &&
+										!item.isAbsentSkip && (
+											<Badge
+												variant="primarySoft"
+												className="text-green-700 border-green-200 bg-green-50"
+											>
+												{t("pr.regular")}
+											</Badge>
+										)}
 								</div>
 							</div>
 						))}

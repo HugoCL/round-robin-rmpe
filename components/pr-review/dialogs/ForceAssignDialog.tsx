@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useMutation } from "convex/react";
-import { AlertTriangle, UserCheck } from "lucide-react";
+import { AlertTriangle, Info, UserCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -21,12 +21,25 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Toggle } from "@/components/ui/toggle";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
 
 import { usePRReview } from "../PRReviewContext";
+
+const selectedUrgentChipStyle = {
+	backgroundColor: "#dc2626",
+	borderColor: "#dc2626",
+	color: "#ffffff",
+};
 
 export function ForceAssignDialog() {
 	const t = useTranslations();
@@ -44,6 +57,7 @@ export function ForceAssignDialog() {
 	const [sendMessage, setSendMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
 	const [contextUrl, setContextUrl] = useState("");
+	const [urgent, setUrgent] = useState(false);
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [customMessage, setCustomMessage] = useState("");
 	const effectiveSendMessage = alwaysSendGoogleChatMessage || sendMessage;
@@ -62,6 +76,16 @@ export function ForceAssignDialog() {
 			"Hola {{reviewer_name}} 👋\n" +
 			"{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>"
 		);
+	}, []);
+
+	const resetDialogState = useCallback(() => {
+		setSelectedReviewerId("");
+		setSendMessage(false);
+		setPrUrl("");
+		setContextUrl("");
+		setUrgent(false);
+		setEnableCustomMessage(false);
+		setCustomMessage("");
 	}, []);
 
 	// Use Convex mutation for force assignment & active assignment creation
@@ -98,6 +122,8 @@ export function ForceAssignDialog() {
 				reviewerId: selectedReviewerId as Id<"reviewers">,
 				forced: true, // Mark as forced assignment
 				prUrl: prUrl.trim() || undefined,
+				contextUrl: contextUrl.trim() || undefined,
+				urgent,
 				actionByReviewerId,
 			});
 
@@ -120,6 +146,7 @@ export function ForceAssignDialog() {
 							assigneeId: selectedReviewerId as Id<"reviewers">,
 							assignerId: assigner._id as Id<"reviewers">,
 							prUrl: prUrl.trim() || undefined,
+							urgent,
 						});
 					}
 				} catch (e) {
@@ -147,6 +174,7 @@ export function ForceAssignDialog() {
 							locale,
 							teamSlug,
 							sendOnlyNames: false,
+							urgent,
 							customMessage:
 								enableCustomMessage && customMessage.trim().length > 0
 									? customMessage
@@ -176,11 +204,7 @@ export function ForceAssignDialog() {
 
 				// Close the dialog
 				setForceDialogOpen(false);
-				setSelectedReviewerId("");
-				setSendMessage(false);
-				setEnableCustomMessage(false);
-				setCustomMessage("");
-				setPrUrl("");
+				resetDialogState();
 			} else {
 				toast({
 					title: t("common.error"),
@@ -199,7 +223,15 @@ export function ForceAssignDialog() {
 	};
 
 	return (
-		<Dialog open={forceDialogOpen} onOpenChange={setForceDialogOpen}>
+		<Dialog
+			open={forceDialogOpen}
+			onOpenChange={(open) => {
+				setForceDialogOpen(open);
+				if (!open) {
+					resetDialogState();
+				}
+			}}
+		>
 			<DialogTrigger asChild>
 				<Button variant="outline" className="w-full">
 					<UserCheck className="h-4 w-4 mr-2" />
@@ -251,6 +283,35 @@ export function ForceAssignDialog() {
 								<span>{t("tags.absent")}</span>
 							</div>
 						)}
+
+					<div className="mt-4 flex flex-wrap gap-2">
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Toggle
+										pressed={urgent}
+										onPressedChange={setUrgent}
+										variant="outline"
+										size="sm"
+										aria-label={t("googleChat.urgentToggle")}
+										className="cursor-pointer rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 dark:border-red-900/50 dark:text-red-300"
+										style={urgent ? selectedUrgentChipStyle : undefined}
+									>
+										<AlertTriangle className="h-3.5 w-3.5" />
+										{t("googleChat.urgentToggle")}
+										<Info
+											className={`h-3.5 w-3.5 ${
+												urgent ? "text-white/80" : "text-muted-foreground/90"
+											}`}
+										/>
+									</Toggle>
+								</TooltipTrigger>
+								<TooltipContent className="max-w-64 text-xs">
+									<p>{t("googleChat.urgentToggleDescription")}</p>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					</div>
 
 					<ChatMessageCustomizer
 						prUrl={prUrl}

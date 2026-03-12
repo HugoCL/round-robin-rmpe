@@ -43,6 +43,13 @@ export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
 		date: "2026-03-12",
+		type: "feature",
+		title: "PRs urgentes con prioridad visual y en Google Chat",
+		description:
+			"Agregamos una opción para marcar PRs como urgentes desde los flujos de asignación, forzado y atajos. Ahora esa prioridad se guarda en las asignaciones, se refleja en el historial y en tareas activas, y los mensajes a Google Chat destacan que el PR debe revisarse lo antes posible.",
+	},
+	{
+		date: "2026-03-12",
 		type: "improvement",
 		title: "Nuevos chips para opciones de asignación",
 		description:

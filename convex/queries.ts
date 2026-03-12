@@ -9,6 +9,7 @@ type EnrichedAssignment = {
 	_id: Id<"prAssignments">;
 	teamId: Id<"teams">;
 	prUrl?: string | undefined;
+	urgent: boolean;
 	assigneeId: Id<"reviewers">;
 	assignerId: Id<"reviewers">;
 	status: string;
@@ -57,6 +58,7 @@ type GroupedAssignmentHistoryItem = {
 	forced: boolean;
 	skipped: boolean;
 	isAbsentSkip: boolean;
+	urgent: boolean;
 	prUrl?: string;
 	contextUrl?: string;
 	actionByName?: string;
@@ -215,6 +217,7 @@ function groupAssignmentHistory(
 				forced: item.forced,
 				skipped: item.skipped,
 				isAbsentSkip: item.isAbsentSkip,
+				urgent: item.urgent === true,
 				prUrl: item.prUrl,
 				contextUrl: item.contextUrl,
 				...actionBy,
@@ -230,6 +233,7 @@ function groupAssignmentHistory(
 		group.forced = group.forced || item.forced;
 		group.skipped = group.skipped || item.skipped;
 		group.isAbsentSkip = group.isAbsentSkip || item.isAbsentSkip;
+		group.urgent = group.urgent || item.urgent === true;
 		group.prUrl ??= item.prUrl;
 		group.contextUrl ??= item.contextUrl;
 		group.actionByName ??= actionBy.actionByName;
@@ -539,6 +543,7 @@ export const getAssignmentFeed = query({
 			...feed,
 			items: feed.items.map((item) => ({
 				...item,
+				urgent: item.urgent === true,
 				reviewerName: resolveReviewerName(
 					item.reviewerId,
 					byId,
@@ -796,6 +801,7 @@ export const getActiveAssignmentsForReviewer = query({
 				_id: row._id,
 				teamId: row.teamId as Id<"teams">,
 				prUrl: row.prUrl,
+				urgent: row.urgent === true,
 				assigneeId: row.assigneeId as Id<"reviewers">,
 				assignerId: row.assignerId as Id<"reviewers">,
 				status: "pending", // flattened model: treat existing row as pending until completion
@@ -841,6 +847,7 @@ export const getActiveAssignmentsByReviewer = query({
 				_id: row._id,
 				teamId: row.teamId as Id<"teams">,
 				prUrl: row.prUrl,
+				urgent: row.urgent === true,
 				assigneeId: row.assigneeId as Id<"reviewers">,
 				assignerId: row.assignerId as Id<"reviewers">,
 				status: "pending",

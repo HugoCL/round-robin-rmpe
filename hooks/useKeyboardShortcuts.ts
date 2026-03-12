@@ -1,8 +1,16 @@
 import { useEffect } from "react";
 
 interface KeyboardShortcutsProps {
-	onAssignPR: () => Promise<void>;
-	onSkipReviewer: () => Promise<void>;
+	onAssignPR: (opts?: {
+		prUrl?: string;
+		contextUrl?: string;
+		urgent?: boolean;
+	}) => Promise<void>;
+	onSkipReviewer: (opts?: {
+		prUrl?: string;
+		contextUrl?: string;
+		urgent?: boolean;
+	}) => Promise<void>;
 	onUndoAssignment: () => Promise<void>;
 	isNextReviewerAvailable: boolean;
 	/**
@@ -11,7 +19,11 @@ interface KeyboardShortcutsProps {
 	 */
 	onShortcutTriggered?: (
 		action: "assign" | "skip" | "undo",
-		run: () => void,
+		run: (opts?: {
+			prUrl?: string;
+			contextUrl?: string;
+			urgent?: boolean;
+		}) => Promise<void>,
 	) => void;
 }
 
@@ -34,30 +46,38 @@ export function useKeyboardShortcuts({
 				case "a":
 					if (isNextReviewerAvailable) {
 						event.preventDefault();
-						const run = () => {
-							void onAssignPR();
+						const run = (opts?: {
+							prUrl?: string;
+							contextUrl?: string;
+							urgent?: boolean;
+						}) => {
+							return onAssignPR(opts);
 						};
 						if (onShortcutTriggered) return onShortcutTriggered("assign", run);
-						run();
+						void run();
 					}
 					break;
 				case "s":
 					if (isNextReviewerAvailable) {
 						event.preventDefault();
-						const run = () => {
-							void onSkipReviewer();
+						const run = (opts?: {
+							prUrl?: string;
+							contextUrl?: string;
+							urgent?: boolean;
+						}) => {
+							return onSkipReviewer(opts);
 						};
 						if (onShortcutTriggered) return onShortcutTriggered("skip", run);
-						run();
+						void run();
 					}
 					break;
 				case "z": {
 					event.preventDefault();
 					const runUndo = () => {
-						void onUndoAssignment();
+						return onUndoAssignment();
 					};
 					if (onShortcutTriggered) return onShortcutTriggered("undo", runUndo);
-					runUndo();
+					void runUndo();
 					break;
 				}
 			}

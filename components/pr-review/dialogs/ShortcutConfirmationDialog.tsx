@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle, Info } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,20 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Toggle } from "@/components/ui/toggle";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
+
+const selectedUrgentChipStyle = {
+	backgroundColor: "#dc2626",
+	borderColor: "#dc2626",
+	color: "#ffffff",
+};
 
 export type ShortcutAction = "assign" | "skip" | "undo";
 
@@ -50,6 +64,7 @@ export function ShortcutConfirmationDialog({
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
 	const [contextUrl, setContextUrl] = useState("");
+	const [urgent, setUrgent] = useState(false);
 	const [customMessage, setCustomMessage] = useState("");
 	const effectiveSendMessage = forceSendMessage || sendMessage;
 	const requiresPrUrl =
@@ -63,6 +78,8 @@ export function ShortcutConfirmationDialog({
 			shouldSend: effectiveSendMessage,
 			customEnabled: enableCustomMessage,
 			prUrl: prUrl.trim() || undefined,
+			contextUrl: contextUrl.trim() || undefined,
+			urgent,
 			message:
 				enableCustomMessage && customMessage.trim().length > 0
 					? customMessage
@@ -71,7 +88,25 @@ export function ShortcutConfirmationDialog({
 		window.dispatchEvent(
 			new CustomEvent("shortcutDialogMessageState", { detail }),
 		);
-	}, [effectiveSendMessage, enableCustomMessage, prUrl, customMessage, isOpen]);
+	}, [
+		effectiveSendMessage,
+		enableCustomMessage,
+		prUrl,
+		contextUrl,
+		urgent,
+		customMessage,
+		isOpen,
+	]);
+
+	useEffect(() => {
+		if (isOpen) return;
+		setSendMessage(false);
+		setEnableCustomMessage(false);
+		setPrUrl("");
+		setContextUrl("");
+		setUrgent(false);
+		setCustomMessage("");
+	}, [isOpen]);
 
 	const base: Record<ShortcutAction, string> = {
 		assign: t("shortcutConfirm.assignDescription"),
@@ -166,29 +201,60 @@ export function ShortcutConfirmationDialog({
 					)}
 				</DialogHeader>
 				{action && (action === "assign" || action === "skip") && (
-					<ChatMessageCustomizer
-						prUrl={prUrl}
-						onPrUrlChange={setPrUrl}
-						contextUrl={contextUrl}
-						onContextUrlChange={setContextUrl}
-						sendMessage={effectiveSendMessage}
-						onSendMessageChange={(value) => {
-							if (forceSendMessage) return;
-							setSendMessage(value);
-						}}
-						enabled={enableCustomMessage}
-						onEnabledChange={setEnableCustomMessage}
-						message={customMessage}
-						onMessageChange={setCustomMessage}
-						nextReviewerName={nextReviewerName || undefined}
-						showSendToggle={!forceSendMessage}
-						compact
-						autoTemplate={
-							nextReviewerName
-								? `Hola {{reviewer_name}} 👋\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`
-								: undefined
-						}
-					/>
+					<>
+						<div className="flex flex-wrap gap-2">
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Toggle
+											pressed={urgent}
+											onPressedChange={setUrgent}
+											variant="outline"
+											size="sm"
+											aria-label={t("googleChat.urgentToggle")}
+											className="cursor-pointer rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 dark:border-red-900/50 dark:text-red-300"
+											style={urgent ? selectedUrgentChipStyle : undefined}
+										>
+											<AlertTriangle className="h-3.5 w-3.5" />
+											{t("googleChat.urgentToggle")}
+											<Info
+												className={`h-3.5 w-3.5 ${
+													urgent ? "text-white/80" : "text-muted-foreground/90"
+												}`}
+											/>
+										</Toggle>
+									</TooltipTrigger>
+									<TooltipContent className="max-w-64 text-xs">
+										<p>{t("googleChat.urgentToggleDescription")}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						</div>
+
+						<ChatMessageCustomizer
+							prUrl={prUrl}
+							onPrUrlChange={setPrUrl}
+							contextUrl={contextUrl}
+							onContextUrlChange={setContextUrl}
+							sendMessage={effectiveSendMessage}
+							onSendMessageChange={(value) => {
+								if (forceSendMessage) return;
+								setSendMessage(value);
+							}}
+							enabled={enableCustomMessage}
+							onEnabledChange={setEnableCustomMessage}
+							message={customMessage}
+							onMessageChange={setCustomMessage}
+							nextReviewerName={nextReviewerName || undefined}
+							showSendToggle={!forceSendMessage}
+							compact
+							autoTemplate={
+								nextReviewerName
+									? `Hola {{reviewer_name}} 👋\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`
+									: undefined
+							}
+						/>
+					</>
 				)}
 				{requiresPrUrl && (
 					<p className="text-xs text-muted-foreground">

@@ -59,6 +59,9 @@ export function useConvexPRReviewData(
 	const restoreFromBackupMutation = useMutation(
 		api.mutations.restoreFromBackup,
 	);
+	const createActivePRAssignmentMutation = useMutation(
+		api.mutations.createActivePRAssignment,
+	);
 
 	// Initialize data on first load if needed
 	const initializeIfNeeded = async () => {
@@ -87,16 +90,35 @@ export function useConvexPRReviewData(
 		return match?._id;
 	};
 
-	const assignPR = async (opts?: { prUrl?: string; contextUrl?: string }) => {
+	const assignPR = async (opts?: {
+		prUrl?: string;
+		contextUrl?: string;
+		urgent?: boolean;
+	}) => {
 		if (!nextReviewer) return;
 
 		try {
+			const actionByReviewerId = getActionByReviewerId();
 			await assignPRMutation({
 				reviewerId: nextReviewer._id,
 				prUrl: opts?.prUrl,
 				contextUrl: opts?.contextUrl,
-				actionByReviewerId: getActionByReviewerId(),
+				urgent: opts?.urgent,
+				actionByReviewerId,
 			});
+			if (teamSlug && actionByReviewerId) {
+				try {
+					await createActivePRAssignmentMutation({
+						teamSlug,
+						assigneeId: nextReviewer._id,
+						assignerId: actionByReviewerId,
+						prUrl: opts?.prUrl,
+						urgent: opts?.urgent,
+					});
+				} catch (error) {
+					console.warn("Failed to create active assignment", error);
+				}
+			}
 
 			toast({
 				title: t("data.prAssignedTitle"),
@@ -113,13 +135,20 @@ export function useConvexPRReviewData(
 		}
 	};
 
-	const skipReviewer = async () => {
+	const skipReviewer = async (opts?: {
+		prUrl?: string;
+		contextUrl?: string;
+		urgent?: boolean;
+	}) => {
 		if (!nextReviewer) return;
 
 		try {
 			await assignPRMutation({
 				reviewerId: nextReviewer._id,
 				skipped: true,
+				prUrl: opts?.prUrl,
+				contextUrl: opts?.contextUrl,
+				urgent: opts?.urgent,
 				actionByReviewerId: getActionByReviewerId(),
 			});
 
@@ -142,6 +171,7 @@ export function useConvexPRReviewData(
 	const autoSkipAndAssign = async (opts?: {
 		prUrl?: string;
 		contextUrl?: string;
+		urgent?: boolean;
 	}) => {
 		if (!nextReviewer) return;
 
@@ -184,6 +214,7 @@ export function useConvexPRReviewData(
 				actionByReviewerId: getActionByReviewerId(),
 				prUrl: opts?.prUrl,
 				contextUrl: opts?.contextUrl,
+				urgent: opts?.urgent,
 			});
 
 			toast({

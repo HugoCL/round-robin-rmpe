@@ -10,6 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Toggle } from "@/components/ui/toggle";
 
+const selectedPrimaryChipStyle = {
+	backgroundColor: "var(--primary)",
+	borderColor: "var(--primary)",
+	color: "var(--primary-foreground)",
+};
+
 export interface ChatMessageCustomizerProps {
 	prUrl: string;
 	onPrUrlChange: (v: string) => void;
@@ -245,7 +251,8 @@ export function ChatMessageCustomizer({
 							variant="outline"
 							size="sm"
 							aria-label={t("googleChat.customizeToggle")}
-							className="cursor-pointer rounded-full border-border/70 px-3 text-xs aria-pressed:!border-primary/40 aria-pressed:!bg-primary/10 aria-pressed:!text-primary data-[state=on]:!border-primary/40 data-[state=on]:!bg-primary/10 data-[state=on]:!text-primary"
+							className="cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
+							style={enabled ? selectedPrimaryChipStyle : undefined}
 						>
 							<MessageSquare className="h-3.5 w-3.5" />
 							{t("googleChat.customizeToggle")}

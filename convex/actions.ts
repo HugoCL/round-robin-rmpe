@@ -3,6 +3,18 @@ import type { Reviewer } from "../lib/types";
 import { api } from "./_generated/api";
 import { action } from "./_generated/server";
 
+function prependUrgentNotice(
+	message: string,
+	locale: string,
+	urgent?: boolean,
+) {
+	if (!urgent) return message;
+	const urgentNotice = locale.startsWith("es")
+		? "🚨 URGENTE: este PR debe revisarse lo antes posible."
+		: "🚨 URGENT: this PR should be reviewed as soon as possible.";
+	return `${urgentNotice}\n${message}`;
+}
+
 // Google Chat integration action
 export const sendGoogleChatMessage = action({
 	args: {
@@ -19,6 +31,7 @@ export const sendGoogleChatMessage = action({
 		sendOnlyNames: v.optional(v.boolean()),
 		// If provided, this message text will be sent as-is (no template building)
 		customMessage: v.optional(v.string()),
+		urgent: v.optional(v.boolean()),
 	},
 	handler: async (
 		ctx,
@@ -35,6 +48,7 @@ export const sendGoogleChatMessage = action({
 			teamSlug,
 			sendOnlyNames = false,
 			customMessage,
+			urgent = false,
 		},
 	): Promise<{ success: boolean; error?: string }> => {
 		// Normalize / sanitize potentially empty or whitespace chat IDs early to avoid rendering `<users/>`
@@ -164,7 +178,7 @@ export const sendGoogleChatMessage = action({
 				}
 			}
 
-			// builtMessage finalized
+			builtMessage = prependUrgentNotice(builtMessage, locale, urgent);
 
 			// Build Google Chat card with buttons for PR and context
 			const buttons = [
@@ -289,6 +303,7 @@ export const sendGoogleChatGroupMessage = action({
 		assignerChatId: v.optional(v.string()),
 		teamSlug: v.string(),
 		customMessage: v.optional(v.string()),
+		urgent: v.optional(v.boolean()),
 	},
 	handler: async (
 		ctx,
@@ -302,6 +317,7 @@ export const sendGoogleChatGroupMessage = action({
 			assignerChatId,
 			teamSlug,
 			customMessage,
+			urgent = false,
 		},
 	): Promise<{ success: boolean; error?: string }> => {
 		if (reviewers.length === 0) {
@@ -385,6 +401,7 @@ export const sendGoogleChatGroupMessage = action({
 					? `Hola ${reviewerList} 👋\n${assignerComposite} les ha asignado la revisión de este ${prLinked}`
 					: `Hello ${reviewerList} 👋\n${assignerComposite} has assigned all of you to review this ${prLinked}`;
 			}
+			builtMessage = prependUrgentNotice(builtMessage, locale, urgent);
 
 			const buttons = [
 				{

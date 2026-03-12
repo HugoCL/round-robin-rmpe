@@ -3,6 +3,7 @@
 import { useAction, useMutation, useQuery } from "convex/react";
 import {
 	AlertCircle,
+	AlertTriangle,
 	Info,
 	MessageSquare,
 	Sparkles,
@@ -65,6 +66,18 @@ type ResolvedPreview = {
 		reviewerId?: Id<"reviewers">;
 		tagId?: Id<"tags">;
 	}>;
+};
+
+const selectedPrimaryChipStyle = {
+	backgroundColor: "var(--primary)",
+	borderColor: "var(--primary)",
+	color: "var(--primary-foreground)",
+};
+
+const selectedUrgentChipStyle = {
+	backgroundColor: "#dc2626",
+	borderColor: "#dc2626",
+	color: "#ffffff",
 };
 
 const createSlotId = () =>
@@ -159,6 +172,7 @@ export function AssignmentCard() {
 	const [sendMessage, setSendMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
 	const [contextUrl, setContextUrl] = useState("");
+	const [urgent, setUrgent] = useState(false);
 	const [customMessage, setCustomMessage] = useState("");
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [mode, setMode] = useState<AssignmentMode>("regular");
@@ -496,6 +510,12 @@ export function AssignmentCard() {
 			? `${user.firstName} ${user.lastName}`
 			: user?.firstName || user?.lastName || "Unknown";
 
+	const resetMessageState = () => {
+		setEnableCustomMessage(false);
+		setCustomMessage("");
+		setShowDuplicateAlert(false);
+	};
+
 	const sendAssignmentMessage = async (targetReviewer: Reviewer) => {
 		if (!(effectiveSendMessage && prUrl.trim() && teamSlug)) return;
 		try {
@@ -512,6 +532,7 @@ export function AssignmentCard() {
 				assignerName: getAssignerName(),
 				teamSlug,
 				sendOnlyNames: false,
+				urgent,
 				customMessage:
 					enableCustomMessage && customMessage.trim().length > 0
 						? customMessage
@@ -537,6 +558,7 @@ export function AssignmentCard() {
 				slots: resolvePreview.payloadSlots.slice(0, effectiveReviewerCount),
 				prUrl: prUrl.trim() || undefined,
 				contextUrl: contextUrl.trim() || undefined,
+				urgent,
 				actionByReviewerId: getActionByReviewerId(),
 			});
 
@@ -570,6 +592,7 @@ export function AssignmentCard() {
 						assignerEmail: user?.email,
 						assignerName: getAssignerName(),
 						teamSlug,
+						urgent,
 						customMessage:
 							enableCustomMessage && customMessage.trim().length > 0
 								? customMessage
@@ -621,6 +644,7 @@ export function AssignmentCard() {
 					description: message,
 				});
 			}
+			resetMessageState();
 		} finally {
 			setTimeout(() => setIsAssigning(false), 600);
 		}
@@ -846,7 +870,12 @@ export function AssignmentCard() {
 											<ToggleGroupItem
 												value="multi-assignment"
 												aria-label={t("pr.multipleAssignmentToggleLabel")}
-												className="cursor-pointer h-10 max-w-full rounded-full border-border/70 px-3 text-xs aria-pressed:!border-primary/40 aria-pressed:!bg-primary/10 aria-pressed:!text-primary data-[state=on]:!border-primary/40 data-[state=on]:!bg-primary/10 data-[state=on]:!text-primary"
+												className="cursor-pointer h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
+												style={
+													isMultiAssignmentEnabled
+														? selectedPrimaryChipStyle
+														: undefined
+												}
 											>
 												<div className="inline-flex items-center gap-2.5">
 													<span className="inline-flex size-4 items-center justify-center">
@@ -860,7 +889,11 @@ export function AssignmentCard() {
 													</span>
 													<span className="inline-flex size-4 items-center justify-center">
 														<Info
-															className="h-4 w-4 shrink-0 text-muted-foreground/90"
+															className={`h-4 w-4 shrink-0 ${
+																isMultiAssignmentEnabled
+																	? "text-primary-foreground/80"
+																	: "text-muted-foreground/90"
+															}`}
 															aria-hidden="true"
 														/>
 													</span>
@@ -886,16 +919,19 @@ export function AssignmentCard() {
 												if (alwaysSendGoogleChatMessage) return;
 												setSendMessage(pressed);
 												if (!pressed) {
-													setEnableCustomMessage(false);
-													setCustomMessage("");
-													setShowDuplicateAlert(false);
+													resetMessageState();
 												}
 											}}
 											variant="outline"
 											size="sm"
 											disabled={alwaysSendGoogleChatMessage}
 											aria-label={t("googleChat.sendMessageToggle")}
-											className="cursor-pointer disabled:cursor-not-allowed h-10 max-w-full rounded-full border-border/70 px-3 text-xs aria-pressed:!border-primary/40 aria-pressed:!bg-primary/10 aria-pressed:!text-primary data-[state=on]:!border-primary/40 data-[state=on]:!bg-primary/10 data-[state=on]:!text-primary"
+											className="cursor-pointer disabled:cursor-not-allowed h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
+											style={
+												effectiveSendMessage
+													? selectedPrimaryChipStyle
+													: undefined
+											}
 										>
 											<div className="inline-flex items-center gap-2.5">
 												<span className="inline-flex size-4 items-center justify-center">
@@ -909,7 +945,11 @@ export function AssignmentCard() {
 												</span>
 												<span className="inline-flex size-4 items-center justify-center">
 													<Info
-														className="h-4 w-4 shrink-0 text-muted-foreground/90"
+														className={`h-4 w-4 shrink-0 ${
+															effectiveSendMessage
+																? "text-primary-foreground/80"
+																: "text-muted-foreground/90"
+														}`}
 														aria-hidden="true"
 													/>
 												</span>
@@ -918,6 +958,50 @@ export function AssignmentCard() {
 									</TooltipTrigger>
 									<TooltipContent className="max-w-64 text-xs">
 										<p>{t("pr.sendMessageToggleDescription")}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						</section>
+
+						<section className="max-w-full">
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Toggle
+											id="assignment-urgent-toggle"
+											pressed={urgent}
+											onPressedChange={setUrgent}
+											variant="outline"
+											size="sm"
+											aria-label={t("googleChat.urgentToggle")}
+											className="cursor-pointer h-10 max-w-full rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 dark:border-red-900/50 dark:text-red-300"
+											style={urgent ? selectedUrgentChipStyle : undefined}
+										>
+											<div className="inline-flex items-center gap-2.5">
+												<span className="inline-flex size-4 items-center justify-center">
+													<AlertTriangle
+														className="h-4 w-4 shrink-0"
+														aria-hidden="true"
+													/>
+												</span>
+												<span className="leading-none">
+													{t("googleChat.urgentToggle")}
+												</span>
+												<span className="inline-flex size-4 items-center justify-center">
+													<Info
+														className={`h-4 w-4 shrink-0 ${
+															urgent
+																? "text-white/80"
+																: "text-muted-foreground/90"
+														}`}
+														aria-hidden="true"
+													/>
+												</span>
+											</div>
+										</Toggle>
+									</TooltipTrigger>
+									<TooltipContent className="max-w-64 text-xs">
+										<p>{t("googleChat.urgentToggleDescription")}</p>
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>

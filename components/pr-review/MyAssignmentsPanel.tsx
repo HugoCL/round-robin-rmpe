@@ -5,6 +5,7 @@ import { enUS, es } from "date-fns/locale";
 import { Check, CheckSquare2, ExternalLink, Loader2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -85,12 +86,21 @@ export function MyAssignmentsPanel() {
 								return (
 									<div
 										key={a._id}
-										className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border  hover:bg-muted/50 transition-colors"
+										className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border hover:bg-muted/50 transition-colors ${
+											a.urgent ? "urgent-card" : ""
+										}`}
 									>
 										<div className="flex-1 min-w-0">
 											<p className="font-semibold text-sm md:text-base break-all">
 												{a.assignerName || t("pr.unknownUser")}
 											</p>
+											{a.urgent && (
+												<div className="mt-2">
+													<Badge className="border-red-200 bg-red-50 text-red-700 hover:border-red-200 hover:bg-red-50 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+														{t("pr.urgent")}
+													</Badge>
+												</div>
+											)}
 											<p className="text-xs mt-1 break-all">
 												{a.prUrl ? (
 													<a
@@ -190,12 +200,21 @@ export function MyAssignmentsPanel() {
 								return (
 									<div
 										key={a._id}
-										className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border  hover:bg-muted/50 transition-colors"
+										className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border hover:bg-muted/50 transition-colors ${
+											a.urgent ? "urgent-card" : ""
+										}`}
 									>
 										<div className="flex-1 min-w-0">
 											<p className="font-semibold text-sm md:text-base break-all">
 												{a.assigneeName || t("pr.unknownUser")}
 											</p>
+											{a.urgent && (
+												<div className="mt-2">
+													<Badge className="border-red-200 bg-red-50 text-red-700 hover:border-red-200 hover:bg-red-50 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+														{t("pr.urgent")}
+													</Badge>
+												</div>
+											)}
 											<p className="text-xs mt-1 break-all">
 												{a.prUrl ? (
 													<a

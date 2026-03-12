@@ -34,11 +34,21 @@ export interface PRReviewContextValue {
 	onDataUpdate: () => Promise<void>;
 
 	// Reviewer actions
-	assignPR: (opts?: { prUrl?: string; contextUrl?: string }) => Promise<void>;
+	assignPR: (opts?: {
+		prUrl?: string;
+		contextUrl?: string;
+		urgent?: boolean;
+	}) => Promise<void>;
 	undoAssignment: () => Promise<void>;
 	autoSkipAndAssign: (opts?: {
 		prUrl?: string;
 		contextUrl?: string;
+		urgent?: boolean;
+	}) => Promise<void>;
+	skipReviewer: (opts?: {
+		prUrl?: string;
+		contextUrl?: string;
+		urgent?: boolean;
 	}) => Promise<void>;
 	onToggleAbsence: (id: Id<"reviewers">) => Promise<void>;
 	onMarkAbsent: (id: Id<"reviewers">, absentUntil?: number) => Promise<void>;

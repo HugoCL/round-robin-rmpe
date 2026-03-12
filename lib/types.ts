@@ -39,6 +39,7 @@ export interface AssignmentItem {
 	isForced: boolean;
 	wasSkipped: boolean;
 	isAbsentSkip: boolean;
+	urgent: boolean;
 	actionByName?: string;
 	actionByEmail?: string;
 	prUrl?: string;
@@ -67,6 +68,7 @@ export interface GroupedAssignmentHistoryItem {
 	forced: boolean;
 	skipped: boolean;
 	isAbsentSkip: boolean;
+	urgent: boolean;
 	prUrl?: string;
 	contextUrl?: string;
 	actionByName?: string;

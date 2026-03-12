@@ -56,7 +56,9 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 						{assignmentHistory.slice(0, 6).map((item) => (
 							<div
 								key={item.id}
-								className="flex items-start justify-between p-3 border  hover:bg-muted/50 transition-colors"
+								className={`flex items-start justify-between p-3 border hover:bg-muted/50 transition-colors ${
+									item.urgent ? "urgent-card" : ""
+								}`}
 							>
 								<div className="flex-1">
 									<p className="font-semibold text-lg">
@@ -133,6 +135,11 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 									) : null}
 								</div>
 								<div className="flex flex-col items-end gap-1">
+									{item.urgent && (
+										<Badge className="bg-red-50 text-red-700 border-red-200 hover:border-transparent hover:bg-red-100 transition-colors dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60">
+											{t("pr.urgent")}
+										</Badge>
+									)}
 									{item.forced && (
 										<Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:border-transparent hover:bg-amber-100 transition-colors">
 											{t("pr.forceAssign")}
@@ -143,11 +150,14 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 											{t("pr.skip")}
 										</Badge>
 									)}
-									{!item.forced && !item.skipped && !item.isAbsentSkip && (
-										<Badge className="bg-green-50 text-green-700 border-green-200 hover:border-transparent hover:bg-green-100 transition-colors">
-											{t("pr.regular")}
-										</Badge>
-									)}
+									{!item.urgent &&
+										!item.forced &&
+										!item.skipped &&
+										!item.isAbsentSkip && (
+											<Badge className="bg-green-50 text-green-700 border-green-200 hover:border-transparent hover:bg-green-100 transition-colors">
+												{t("pr.regular")}
+											</Badge>
+										)}
 								</div>
 							</div>
 						))}

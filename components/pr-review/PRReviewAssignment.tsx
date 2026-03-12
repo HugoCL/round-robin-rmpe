@@ -2,7 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useAction } from "convex/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 
@@ -39,6 +39,12 @@ interface BackupEntry {
 	formattedDate?: string;
 }
 
+type ShortcutRunnerOptions = {
+	prUrl?: string;
+	contextUrl?: string;
+	urgent?: boolean;
+};
+
 /**
  * PRReviewAssignment is the main component for the PR review assignment tool.
  * It acts as a container, fetching data, managing state, and composing the UI
@@ -53,6 +59,7 @@ export default function PRReviewAssignment({
 	teamSlug?: string;
 }) {
 	const t = useTranslations();
+	const locale = useLocale();
 	const { user, isLoaded } = useUser();
 	const { signOut } = useClerk();
 	// Hidden file input id used by header dropdown import action
@@ -67,12 +74,16 @@ export default function PRReviewAssignment({
 	const [pendingShortcut, setPendingShortcut] = useState<ShortcutAction | null>(
 		null,
 	);
-	const pendingRunnerRef = useRef<(() => void) | null>(null);
+	const pendingRunnerRef = useRef<
+		((opts?: ShortcutRunnerOptions) => Promise<void>) | null
+	>(null);
 	// Capture message customization state emitted from dialog
 	const lastMessageState = useRef<null | {
 		shouldSend: boolean;
 		customEnabled: boolean;
 		prUrl?: string;
+		contextUrl?: string;
+		urgent?: boolean;
 		message?: string;
 	}>(null);
 	const sendChatMessage = useAction(api.actions.sendGoogleChatMessage);
@@ -143,9 +154,14 @@ export default function PRReviewAssignment({
 
 	const handleConfirmShortcut = async () => {
 		if (pendingRunnerRef.current && pendingShortcut) {
+			const shortcutOptions = {
+				prUrl: lastMessageState.current?.prUrl,
+				contextUrl: lastMessageState.current?.contextUrl,
+				urgent: lastMessageState.current?.urgent,
+			};
 			// Capture the reviewer before action (for assign)
 			const preReviewer = nextReviewer;
-			await pendingRunnerRef.current();
+			await pendingRunnerRef.current(shortcutOptions);
 			// After running, decide whether to send a message
 			if (
 				lastMessageState.current?.shouldSend &&
@@ -174,10 +190,13 @@ export default function PRReviewAssignment({
 							reviewerEmail: target.email,
 							reviewerChatId: reviewerWithChat.googleChatUserId,
 							prUrl: lastMessageState.current.prUrl,
+							contextUrl: lastMessageState.current.contextUrl,
 							customMessage: lastMessageState.current.message,
 							assignerEmail: userInfo?.email,
 							assignerName: userInfo?.firstName || userInfo?.email,
+							locale,
 							teamSlug,
+							urgent: lastMessageState.current.urgent,
 						});
 					}
 				} catch (e) {
@@ -188,12 +207,14 @@ export default function PRReviewAssignment({
 		setShortcutDialogOpen(false);
 		setPendingShortcut(null);
 		pendingRunnerRef.current = null;
+		lastMessageState.current = null;
 	};
 
 	const handleCancelShortcut = () => {
 		setShortcutDialogOpen(false);
 		setPendingShortcut(null);
 		pendingRunnerRef.current = null;
+		lastMessageState.current = null;
 	};
 
 	// Listen for customization events from dialog
@@ -221,6 +242,7 @@ export default function PRReviewAssignment({
 					isForced: item.forced,
 					wasSkipped: item.skipped,
 					isAbsentSkip: item.isAbsentSkip,
+					urgent: item.urgent === true,
 					actionByName: item.actionByName,
 					actionByEmail: item.actionByEmail,
 					prUrl: item.prUrl,
@@ -488,6 +510,7 @@ export default function PRReviewAssignment({
 			handleManualRefresh,
 			onDataUpdate: handleDataUpdate,
 			assignPR,
+			skipReviewer,
 			undoAssignment,
 			autoSkipAndAssign,
 			onToggleAbsence: handleToggleAbsence,
@@ -522,6 +545,7 @@ export default function PRReviewAssignment({
 			handleManualRefresh,
 			handleDataUpdate,
 			assignPR,
+			skipReviewer,
 			undoAssignment,
 			autoSkipAndAssign,
 			handleToggleAbsence,

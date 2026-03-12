@@ -761,6 +761,7 @@ type AssignmentFeedItemRecord = {
 	forced: boolean;
 	skipped: boolean;
 	isAbsentSkip: boolean;
+	urgent?: boolean;
 	prUrl?: string;
 	contextUrl?: string;
 	tagId?: string;
@@ -780,6 +781,7 @@ function sanitizeAssignmentFeedItem(
 		forced: item.forced,
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
+		urgent: item.urgent === true,
 		prUrl: item.prUrl,
 		contextUrl: item.contextUrl,
 		tagId: item.tagId,
@@ -803,6 +805,7 @@ type AssignmentHistoryRecord = {
 	forced: boolean;
 	skipped: boolean;
 	isAbsentSkip: boolean;
+	urgent?: boolean;
 	prUrl?: string;
 	contextUrl?: string;
 	tagId?: string;
@@ -820,6 +823,7 @@ function sanitizeAssignmentHistoryRecord(
 		forced: item.forced,
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
+		urgent: item.urgent === true,
 		prUrl: item.prUrl,
 		contextUrl: item.contextUrl,
 		tagId: item.tagId,
@@ -894,6 +898,7 @@ async function updateAssignmentFeedAfterUndo(
 		forced: item.forced,
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
+		urgent: item.urgent === true,
 		prUrl: item.prUrl,
 		contextUrl: item.contextUrl,
 		tagId: item.tagId,
@@ -959,6 +964,7 @@ export const assignPRBatch = mutation({
 		),
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
+		urgent: v.optional(v.boolean()),
 		actionByReviewerId: v.optional(v.id("reviewers")),
 	},
 	handler: async (
@@ -970,6 +976,7 @@ export const assignPRBatch = mutation({
 			slots,
 			prUrl,
 			contextUrl,
+			urgent = false,
 			actionByReviewerId,
 		},
 	) => {
@@ -1129,6 +1136,7 @@ export const assignPRBatch = mutation({
 			forced: boolean;
 			skipped: boolean;
 			isAbsentSkip: boolean;
+			urgent?: boolean;
 			prUrl?: string;
 			contextUrl?: string;
 			tagId?: string;
@@ -1155,6 +1163,7 @@ export const assignPRBatch = mutation({
 				forced: false,
 				skipped: false,
 				isAbsentSkip: false,
+				urgent,
 				prUrl,
 				contextUrl,
 				tagId: item.tagId ? String(item.tagId) : undefined,
@@ -1167,6 +1176,7 @@ export const assignPRBatch = mutation({
 					teamId: team._id,
 					prUrl: prUrl?.trim(),
 					batchId,
+					urgent,
 					assigneeId: item.reviewer._id,
 					assignerId: assigner._id,
 					createdAt: timestamp,
@@ -1182,6 +1192,7 @@ export const assignPRBatch = mutation({
 				forced: false,
 				skipped: false,
 				isAbsentSkip: false,
+				urgent,
 				prUrl,
 				contextUrl,
 				tagId: item.tagId ? String(item.tagId) : undefined,
@@ -1240,6 +1251,7 @@ export const assignPR = mutation({
 		forced: v.optional(v.boolean()),
 		skipped: v.optional(v.boolean()),
 		isAbsentSkip: v.optional(v.boolean()),
+		urgent: v.optional(v.boolean()),
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
 		tagId: v.optional(v.id("tags")),
@@ -1252,6 +1264,7 @@ export const assignPR = mutation({
 			forced = false,
 			skipped = false,
 			isAbsentSkip = false,
+			urgent = false,
 			prUrl,
 			contextUrl,
 			tagId,
@@ -1279,6 +1292,7 @@ export const assignPR = mutation({
 			forced,
 			skipped,
 			isAbsentSkip,
+			urgent,
 			prUrl,
 			contextUrl,
 			tagId,
@@ -1304,6 +1318,7 @@ export const assignPR = mutation({
 					forced,
 					skipped,
 					isAbsentSkip,
+					urgent,
 					prUrl,
 					contextUrl,
 					tagId,
@@ -1363,10 +1378,11 @@ export const createActivePRAssignment = mutation({
 		assignerId: v.id("reviewers"),
 		prUrl: v.optional(v.string()),
 		batchId: v.optional(v.string()),
+		urgent: v.optional(v.boolean()),
 	},
 	handler: async (
 		ctx,
-		{ teamSlug, assigneeId, assignerId, prUrl, batchId },
+		{ teamSlug, assigneeId, assignerId, prUrl, batchId, urgent = false },
 	) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 		// Basic validation: ensure reviewers exist
@@ -1378,6 +1394,7 @@ export const createActivePRAssignment = mutation({
 			teamId: team._id,
 			prUrl: prUrl?.trim(),
 			batchId,
+			urgent,
 			assigneeId,
 			assignerId,
 			createdAt: now,
@@ -1421,6 +1438,7 @@ export const cleanupLegacyPRAssignmentStatus = mutation({
 				teamId: row.teamId,
 				prUrl: row.prUrl,
 				batchId: row.batchId,
+				urgent: row.urgent,
 				assigneeId: row.assigneeId,
 				assignerId: row.assignerId,
 				createdAt: row.createdAt,
@@ -1851,6 +1869,7 @@ export const cleanupAssignmentFeedSchemaDrift = mutation({
 							"forced",
 							"skipped",
 							"isAbsentSkip",
+							"urgent",
 							"prUrl",
 							"contextUrl",
 							"tagId",
