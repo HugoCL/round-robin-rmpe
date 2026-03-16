@@ -53,6 +53,102 @@ type AgentWarning = {
 	slotIndex?: number;
 };
 
+type AgentTeamSummary = {
+	id: string;
+	name: string;
+	slug: string;
+};
+
+type AgentReviewerSummary = {
+	id: string;
+	name: string;
+	email: string;
+	assignmentCount: number;
+	effectiveIsAbsent: boolean;
+	tags: string[];
+};
+
+type AgentTagSummary = {
+	id: string;
+	name: string;
+	color: string;
+};
+
+type AgentRecentAssignmentSummary = {
+	prUrl?: string;
+	reviewerName?: string;
+	actionByName?: string;
+	timestamp: number;
+	urgent: boolean;
+	source: "agent" | "ui";
+};
+
+type AgentDuplicateSummary = {
+	reviewerName?: string;
+	timestamp: number;
+};
+
+function summarizeTeam(
+	team: AuthenticatedAgent["teams"][number],
+): AgentTeamSummary {
+	return {
+		id: String(team.id),
+		name: team.name,
+		slug: team.slug,
+	};
+}
+
+function summarizeReviewer(reviewer: {
+	_id: string;
+	name?: string;
+	email?: string;
+	assignmentCount?: number;
+	effectiveIsAbsent?: boolean;
+	tags?: string[];
+}): AgentReviewerSummary {
+	return {
+		id: String(reviewer._id),
+		name: reviewer.name ?? "Unknown",
+		email: reviewer.email ?? "",
+		assignmentCount: reviewer.assignmentCount ?? 0,
+		effectiveIsAbsent: reviewer.effectiveIsAbsent === true,
+		tags: (reviewer.tags ?? []).map((tagId) => String(tagId)),
+	};
+}
+
+function summarizeTag(tag: {
+	_id: string;
+	name?: string;
+	color?: string;
+}): AgentTagSummary {
+	return {
+		id: String(tag._id),
+		name: tag.name ?? "",
+		color: tag.color ?? "",
+	};
+}
+
+function summarizeRecentAssignments(
+	items: Array<{
+		prUrl?: string;
+		reviewerName?: string;
+		actionByName?: string;
+		timestamp: number;
+		urgent?: boolean;
+		source?: string;
+	}>,
+	limit = 15,
+): AgentRecentAssignmentSummary[] {
+	return items.slice(0, limit).map((item) => ({
+		prUrl: item.prUrl,
+		reviewerName: item.reviewerName,
+		actionByName: item.actionByName,
+		timestamp: item.timestamp,
+		urgent: item.urgent === true,
+		source: item.source === "agent" ? "agent" : "ui",
+	}));
+}
+
 type TeamResolution =
 	| {
 			error: Response;
@@ -297,17 +393,21 @@ export async function buildAgentContextResponse(
 ): Promise<
 	AgentResult<{
 		actorEmail?: string;
-		accessibleTeams: AuthenticatedAgent["teams"];
+		accessibleTeams: AgentTeamSummary[];
 		defaultTeamSlug?: string;
-		selectedTeam: AuthenticatedAgent["teams"][number] | null;
-		reviewers: unknown[];
-		tags: unknown[];
+		selectedTeam: AgentTeamSummary | null;
+		reviewers: AgentReviewerSummary[];
+		tags: AgentTagSummary[];
 		nextReviewerHints: {
-			regular: unknown;
-			byTag: Array<{ tagId: string; tagName: string; reviewer: unknown }>;
+			regular: AgentReviewerSummary | null;
+			byTag: Array<{
+				tagId: string;
+				tagName: string;
+				reviewer: AgentReviewerSummary | null;
+			}>;
 		};
-		recentAssignments: unknown[];
-		duplicate: unknown;
+		recentAssignments: AgentRecentAssignmentSummary[];
+		duplicate: AgentDuplicateSummary | null;
 		warnings: AgentWarning[];
 	}>
 > {
@@ -320,7 +420,7 @@ export async function buildAgentContextResponse(
 		return {
 			body: {
 				actorEmail: auth.email,
-				accessibleTeams: auth.teams,
+				accessibleTeams: auth.teams.map(summarizeTeam),
 				defaultTeamSlug: teamResolution.defaultTeamSlug,
 				selectedTeam: null,
 				reviewers: [],
@@ -340,38 +440,46 @@ export async function buildAgentContextResponse(
 	const selectedTeamSlug = teamResolution.selectedTeam.slug;
 	const { reviewers, tags, assignmentFeed, duplicate } =
 		await fetchSelectedTeamData(selectedTeamSlug, query.prUrl);
+	const summarizedTags = tags.map((tag) =>
+		summarizeTag({
+			_id: String(tag._id),
+			name: tag.name,
+			color: tag.color,
+		}),
+	);
+	const normalizedReviewers = reviewers.map((reviewer) => ({
+		...reviewer,
+		_id: String(reviewer._id),
+		tags: reviewer.tags.map((tagId) => String(tagId)),
+	}));
+	const regularHint = selectNextReviewer(normalizedReviewers);
 
 	return {
 		body: {
 			actorEmail: auth.email,
-			accessibleTeams: auth.teams,
+			accessibleTeams: auth.teams.map(summarizeTeam),
 			defaultTeamSlug: teamResolution.defaultTeamSlug,
-			selectedTeam: teamResolution.selectedTeam,
-			reviewers,
-			tags,
+			selectedTeam: summarizeTeam(teamResolution.selectedTeam),
+			reviewers: normalizedReviewers.map(summarizeReviewer),
+			tags: summarizedTags,
 			nextReviewerHints: {
-				regular: selectNextReviewer(
-					reviewers.map((reviewer) => ({
-						...reviewer,
-						_id: String(reviewer._id),
-						tags: reviewer.tags.map((tagId) => String(tagId)),
-					})),
-				),
-				byTag: tags.map((tag) => ({
-					tagId: String(tag._id),
-					tagName: tag.name,
-					reviewer: selectNextReviewer(
-						reviewers.map((reviewer) => ({
-							...reviewer,
-							_id: String(reviewer._id),
-							tags: reviewer.tags.map((tagId) => String(tagId)),
-						})),
-						String(tag._id),
-					),
-				})),
+				regular: regularHint ? summarizeReviewer(regularHint) : null,
+				byTag: summarizedTags.map((tag) => {
+					const tagHint = selectNextReviewer(normalizedReviewers, tag.id);
+					return {
+						tagId: tag.id,
+						tagName: tag.name,
+						reviewer: tagHint ? summarizeReviewer(tagHint) : null,
+					};
+				}),
 			},
-			recentAssignments: assignmentFeed.items,
-			duplicate,
+			recentAssignments: summarizeRecentAssignments(assignmentFeed.items),
+			duplicate: duplicate
+				? {
+						reviewerName: duplicate.reviewerName,
+						timestamp: duplicate.timestamp,
+					}
+				: null,
 			warnings: teamResolution.warnings,
 		},
 		tokenId: auth.tokenId,
