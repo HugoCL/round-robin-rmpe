@@ -1,10 +1,19 @@
 "use client";
 
-import { Clock, Eye, Settings, User, Webhook } from "lucide-react";
+import {
+	Clock,
+	Eye,
+	FlaskConical,
+	KeyRound,
+	Settings,
+	User,
+	Webhook,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsHelp";
+import { AgentSetupSection } from "@/components/settings/AgentSetupSection";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -33,6 +42,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 import { TeamSettingsDialog } from "./dialogs/TeamSettingsDialog";
 import { usePRReview } from "./PRReviewContext";
@@ -41,6 +51,7 @@ export function HeaderOptionsDrawer() {
 	const t = useTranslations();
 	const isMobile = useIsMobile();
 	const [open, setOpen] = React.useState(false);
+	const { preferences, updatePreferences } = useUserPreferences();
 	const {
 		teamSlug,
 		openSnapshotDialog,
@@ -138,9 +149,6 @@ export function HeaderOptionsDrawer() {
 							onToggle: toggleAlwaysSendGoogleChatMessage,
 						})}
 					</div>
-					<p className="text-xs text-muted-foreground">
-						{t("mySettings.autoSaveHint")}
-					</p>
 				</div>
 			</section>
 
@@ -183,6 +191,49 @@ export function HeaderOptionsDrawer() {
 					</div>
 				</div>
 			</section>
+
+			<section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+				<div className="space-y-4">
+					<div className="space-y-1">
+						<h3 className="flex items-center gap-2 text-sm font-semibold">
+							<FlaskConical className="h-4 w-4 text-primary" />
+							{t("experiments.title")}
+						</h3>
+						<p className="text-xs text-muted-foreground">
+							{t("experiments.description")}
+						</p>
+					</div>
+					<div className="space-y-3">
+						{renderMySetting({
+							id: "experiment-agent-setup",
+							label: t("experiments.agentSetupLabel"),
+							description: t("experiments.agentSetupDescription"),
+							checked: preferences.enableAgentSetupExperiment,
+							onToggle: () => {
+								void updatePreferences({
+									enableAgentSetupExperiment:
+										!preferences.enableAgentSetupExperiment,
+								});
+							},
+						})}
+					</div>
+				</div>
+			</section>
+
+			{preferences.enableAgentSetupExperiment ? (
+				<section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+					<div className="space-y-3">
+						<h3 className="flex items-center gap-2 text-sm font-semibold">
+							<KeyRound className="h-4 w-4 text-primary" />
+							{t("agentSetup.title")}
+						</h3>
+						<p className="text-xs text-muted-foreground">
+							{t("agentSetup.drawerDescription")}
+						</p>
+						<AgentSetupSection />
+					</div>
+				</section>
+			) : null}
 
 			<section className="rounded-xl border border-border bg-card p-4 shadow-sm">
 				<div className="space-y-4">
@@ -260,7 +311,7 @@ export function HeaderOptionsDrawer() {
 		<>
 			{triggerButton}
 			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent className="max-h-[85vh] overflow-y-auto overscroll-contain p-0 sm:max-w-3xl">
+				<DialogContent className="max-h-[85vh] overflow-y-auto overscroll-contain p-0 sm:max-w-5xl">
 					<div className="px-4 pt-4">
 						<DialogHeader>
 							<DialogTitle>{t("common.options")}</DialogTitle>

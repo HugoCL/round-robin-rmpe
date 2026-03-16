@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { resolveAssignmentSlots } from "../lib/assignmentResolver";
 import {
 	DEFAULT_TEAM_TIMEZONE,
 	getReviewerAvailability,
@@ -16,7 +17,17 @@ type UserPreferenceFlags = {
 	showEmails: boolean;
 	hideMultiAssignmentSection: boolean;
 	alwaysSendGoogleChatMessage: boolean;
+	enableAgentSetupExperiment: boolean;
+	defaultAgentTeamSlug?: string;
 };
+
+type UserPreferencePatch = Partial<
+	Omit<UserPreferenceFlags, "defaultAgentTeamSlug">
+> & {
+	defaultAgentTeamSlug?: string | null;
+};
+
+type AssignmentSource = "ui" | "agent";
 
 const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	showAssignments: false,
@@ -24,6 +35,8 @@ const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	showEmails: false,
 	hideMultiAssignmentSection: false,
 	alwaysSendGoogleChatMessage: false,
+	enableAgentSetupExperiment: false,
+	defaultAgentTeamSlug: undefined,
 };
 
 const weekdayValidator = v.union(
@@ -42,8 +55,12 @@ const partTimeScheduleValidator = v.optional(
 	}),
 );
 
+const assignmentSourceValidator = v.optional(
+	v.union(v.literal("ui"), v.literal("agent")),
+);
+
 function resolvePreferencePatch(
-	patch: Partial<UserPreferenceFlags>,
+	patch: UserPreferencePatch,
 ): Partial<UserPreferenceFlags> {
 	const resolved: Partial<UserPreferenceFlags> = {};
 	if (typeof patch.showAssignments === "boolean") {
@@ -60,6 +77,13 @@ function resolvePreferencePatch(
 	}
 	if (typeof patch.alwaysSendGoogleChatMessage === "boolean") {
 		resolved.alwaysSendGoogleChatMessage = patch.alwaysSendGoogleChatMessage;
+	}
+	if (typeof patch.enableAgentSetupExperiment === "boolean") {
+		resolved.enableAgentSetupExperiment = patch.enableAgentSetupExperiment;
+	}
+	if (patch.defaultAgentTeamSlug !== undefined) {
+		resolved.defaultAgentTeamSlug =
+			patch.defaultAgentTeamSlug?.trim() || undefined;
 	}
 	return resolved;
 }
@@ -212,6 +236,8 @@ export const bootstrapMyUserPreferences = mutation({
 		showEmails: v.optional(v.boolean()),
 		hideMultiAssignmentSection: v.optional(v.boolean()),
 		alwaysSendGoogleChatMessage: v.optional(v.boolean()),
+		enableAgentSetupExperiment: v.optional(v.boolean()),
+		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -257,6 +283,8 @@ export const updateMyUserPreferences = mutation({
 		showEmails: v.optional(v.boolean()),
 		hideMultiAssignmentSection: v.optional(v.boolean()),
 		alwaysSendGoogleChatMessage: v.optional(v.boolean()),
+		enableAgentSetupExperiment: v.optional(v.boolean()),
+		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -762,6 +790,7 @@ type AssignmentFeedItemRecord = {
 	skipped: boolean;
 	isAbsentSkip: boolean;
 	urgent?: boolean;
+	source?: AssignmentSource;
 	prUrl?: string;
 	contextUrl?: string;
 	tagId?: string;
@@ -782,6 +811,7 @@ function sanitizeAssignmentFeedItem(
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
 		urgent: item.urgent === true,
+		source: (item.source === "agent" ? "agent" : "ui") as AssignmentSource,
 		prUrl: item.prUrl,
 		contextUrl: item.contextUrl,
 		tagId: item.tagId,
@@ -806,6 +836,7 @@ type AssignmentHistoryRecord = {
 	skipped: boolean;
 	isAbsentSkip: boolean;
 	urgent?: boolean;
+	source?: AssignmentSource;
 	prUrl?: string;
 	contextUrl?: string;
 	tagId?: string;
@@ -824,6 +855,7 @@ function sanitizeAssignmentHistoryRecord(
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
 		urgent: item.urgent === true,
+		source: (item.source === "agent" ? "agent" : "ui") as AssignmentSource,
 		prUrl: item.prUrl,
 		contextUrl: item.contextUrl,
 		tagId: item.tagId,
@@ -899,6 +931,7 @@ async function updateAssignmentFeedAfterUndo(
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
 		urgent: item.urgent === true,
+		source: (item.source === "agent" ? "agent" : "ui") as AssignmentSource,
 		prUrl: item.prUrl,
 		contextUrl: item.contextUrl,
 		tagId: item.tagId,
@@ -910,43 +943,6 @@ async function updateAssignmentFeedAfterUndo(
 		items: newItems,
 		lastAssigned: newLastAssigned, // Store just the reviewer ID
 	});
-}
-
-type BatchSlotInput = {
-	strategy: string;
-	reviewerId?: Id<"reviewers">;
-	tagId?: Id<"tags">;
-};
-
-type BatchFailure = {
-	slotIndex: number;
-	reason:
-		| "invalid_strategy"
-		| "missing_reviewer"
-		| "reviewer_not_found"
-		| "reviewer_absent"
-		| "duplicate_reviewer"
-		| "missing_tag"
-		| "no_candidates";
-};
-
-type BatchResolved = {
-	slotIndex: number;
-	reviewer: Doc<"reviewers">;
-	tagId?: Id<"tags">;
-};
-
-function selectRandomCandidate(
-	reviewers: Doc<"reviewers">[],
-	virtualCounts: Map<Id<"reviewers">, number>,
-) {
-	const sorted = [...reviewers].sort((a, b) => {
-		const aCount = virtualCounts.get(a._id) ?? a.assignmentCount;
-		const bCount = virtualCounts.get(b._id) ?? b.assignmentCount;
-		if (aCount !== bCount) return aCount - bCount;
-		return a.createdAt - b.createdAt;
-	});
-	return sorted[0];
 }
 
 // Assignment mutations
@@ -966,6 +962,7 @@ export const assignPRBatch = mutation({
 		contextUrl: v.optional(v.string()),
 		urgent: v.optional(v.boolean()),
 		actionByReviewerId: v.optional(v.id("reviewers")),
+		source: assignmentSourceValidator,
 	},
 	handler: async (
 		ctx,
@@ -978,10 +975,13 @@ export const assignPRBatch = mutation({
 			contextUrl,
 			urgent = false,
 			actionByReviewerId,
+			source = "ui",
 		},
 	) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 		const availabilityNow = Date.now();
+		const assignmentSource: AssignmentSource =
+			source === "agent" ? "agent" : "ui";
 		if (slots.length === 0) {
 			return {
 				success: false,
@@ -1014,111 +1014,28 @@ export const assignPRBatch = mutation({
 		const byId = new Map<Id<"reviewers">, Doc<"reviewers">>();
 		for (const reviewer of reviewers) byId.set(reviewer._id, reviewer);
 
-		const selectedReviewerIds = new Set<string>();
-		const virtualCounts = new Map<Id<"reviewers">, number>();
-		for (const reviewer of reviewers) {
-			virtualCounts.set(reviewer._id, reviewer.assignmentCount);
-		}
+		const resolution = resolveAssignmentSlots({
+			mode: mode === "tag" ? "tag" : "regular",
+			selectedTagId,
+			slots,
+			reviewers: reviewers.map((reviewer) => ({
+				...reviewer,
+				effectiveIsAbsent: isReviewerEffectivelyAbsentForTeam(
+					reviewer,
+					team,
+					availabilityNow,
+				),
+			})),
+			excludedReviewerId: actionByReviewerId,
+		});
 
-		const resolved: BatchResolved[] = [];
-		const failed: BatchFailure[] = [];
-
-		for (const [slotIndex, slot] of slots.entries()) {
-			const strategy = slot.strategy as BatchSlotInput["strategy"];
-			let chosenTagId: Id<"tags"> | undefined;
-
-			if (strategy === "specific") {
-				if (!slot.reviewerId) {
-					failed.push({ slotIndex, reason: "missing_reviewer" });
-					continue;
-				}
-				const reviewer = byId.get(slot.reviewerId);
-				if (!reviewer) {
-					failed.push({ slotIndex, reason: "reviewer_not_found" });
-					continue;
-				}
-				if (
-					isReviewerEffectivelyAbsentForTeam(reviewer, team, availabilityNow)
-				) {
-					failed.push({ slotIndex, reason: "reviewer_absent" });
-					continue;
-				}
-				if (selectedReviewerIds.has(String(reviewer._id))) {
-					failed.push({ slotIndex, reason: "duplicate_reviewer" });
-					continue;
-				}
-				resolved.push({ slotIndex, reviewer, tagId: slot.tagId });
-				selectedReviewerIds.add(String(reviewer._id));
-				virtualCounts.set(reviewer._id, reviewer.assignmentCount + 1);
-				continue;
-			}
-
-			let requiredTagId: Id<"tags"> | undefined;
-			if (mode === "regular") {
-				if (strategy !== "random") {
-					failed.push({ slotIndex, reason: "invalid_strategy" });
-					continue;
-				}
-			} else if (mode === "tag") {
-				if (strategy === "tag_random_selected") {
-					requiredTagId = selectedTagId;
-				} else if (strategy === "tag_random_other") {
-					requiredTagId = slot.tagId;
-				} else if (strategy === "random") {
-					// Backward-compatible fallback
-					requiredTagId = selectedTagId;
-				} else {
-					failed.push({ slotIndex, reason: "invalid_strategy" });
-					continue;
-				}
-				if (!requiredTagId) {
-					failed.push({ slotIndex, reason: "missing_tag" });
-					continue;
-				}
-				chosenTagId = requiredTagId;
-			} else {
-				failed.push({ slotIndex, reason: "invalid_strategy" });
-				continue;
-			}
-
-			const candidates = reviewers.filter((reviewer) => {
-				if (
-					isReviewerEffectivelyAbsentForTeam(reviewer, team, availabilityNow)
-				) {
-					return false;
-				}
-				if (actionByReviewerId && reviewer._id === actionByReviewerId)
-					return false;
-				if (selectedReviewerIds.has(String(reviewer._id))) return false;
-				if (chosenTagId && !reviewer.tags.includes(chosenTagId)) return false;
-				return true;
-			});
-
-			const selected = selectRandomCandidate(candidates, virtualCounts);
-			if (!selected) {
-				failed.push({ slotIndex, reason: "no_candidates" });
-				continue;
-			}
-
-			resolved.push({
-				slotIndex,
-				reviewer: selected,
-				tagId: chosenTagId,
-			});
-			selectedReviewerIds.add(String(selected._id));
-			virtualCounts.set(
-				selected._id,
-				(virtualCounts.get(selected._id) ?? selected.assignmentCount) + 1,
-			);
-		}
-
-		if (resolved.length === 0) {
+		if (resolution.resolved.length === 0) {
 			return {
 				success: false,
 				assigned: [],
-				failed,
+				failed: resolution.failed,
 				assignedCount: 0,
-				failedCount: failed.length,
+				failedCount: resolution.failed.length,
 				totalRequested: slots.length,
 			};
 		}
@@ -1137,6 +1054,7 @@ export const assignPRBatch = mutation({
 			skipped: boolean;
 			isAbsentSkip: boolean;
 			urgent?: boolean;
+			source?: AssignmentSource;
 			prUrl?: string;
 			contextUrl?: string;
 			tagId?: string;
@@ -1145,25 +1063,27 @@ export const assignPRBatch = mutation({
 		}> = [];
 
 		const assigned = [];
-		for (const [index, item] of resolved.entries()) {
+		for (const [index, item] of resolution.resolved.entries()) {
 			const timestamp = now + index;
-			const nextCount = (virtualCounts.get(item.reviewer._id) ??
-				item.reviewer.assignmentCount) as number;
+			const reviewer = byId.get(item.reviewer._id);
+			if (!reviewer) continue;
+			const nextCount = reviewer.assignmentCount + 1;
 
-			await ctx.db.patch(item.reviewer._id, {
+			await ctx.db.patch(reviewer._id, {
 				assignmentCount: nextCount,
 			});
 
 			await ctx.db.insert("assignmentHistory", {
 				teamId: team._id,
-				reviewerId: item.reviewer._id,
-				reviewerName: item.reviewer.name,
+				reviewerId: reviewer._id,
+				reviewerName: reviewer.name,
 				timestamp,
 				batchId,
 				forced: false,
 				skipped: false,
 				isAbsentSkip: false,
 				urgent,
+				source: assignmentSource,
 				prUrl,
 				contextUrl,
 				tagId: item.tagId ? String(item.tagId) : undefined,
@@ -1177,7 +1097,7 @@ export const assignPRBatch = mutation({
 					prUrl: prUrl?.trim(),
 					batchId,
 					urgent,
-					assigneeId: item.reviewer._id,
+					assigneeId: reviewer._id,
 					assignerId: assigner._id,
 					createdAt: timestamp,
 					updatedAt: timestamp,
@@ -1185,14 +1105,15 @@ export const assignPRBatch = mutation({
 			}
 
 			feedEntries.push({
-				reviewerId: item.reviewer._id,
-				reviewerName: item.reviewer.name,
+				reviewerId: reviewer._id,
+				reviewerName: reviewer.name,
 				timestamp,
 				batchId,
 				forced: false,
 				skipped: false,
 				isAbsentSkip: false,
 				urgent,
+				source: assignmentSource,
 				prUrl,
 				contextUrl,
 				tagId: item.tagId ? String(item.tagId) : undefined,
@@ -1203,18 +1124,14 @@ export const assignPRBatch = mutation({
 			assigned.push({
 				slotIndex: item.slotIndex,
 				reviewer: {
-					id: item.reviewer._id,
-					name: item.reviewer.name,
-					email: item.reviewer.email,
+					id: reviewer._id,
+					name: reviewer.name,
+					email: reviewer.email,
 					assignmentCount: nextCount,
-					isAbsent: item.reviewer.isAbsent,
-					effectiveIsAbsent: isReviewerEffectivelyAbsentForTeam(
-						item.reviewer,
-						team,
-						availabilityNow,
-					),
-					createdAt: item.reviewer.createdAt,
-					tags: item.reviewer.tags,
+					isAbsent: reviewer.isAbsent,
+					effectiveIsAbsent: item.reviewer.effectiveIsAbsent,
+					createdAt: reviewer.createdAt,
+					tags: reviewer.tags,
 				},
 				tagId: item.tagId ? String(item.tagId) : undefined,
 			});
@@ -1236,9 +1153,9 @@ export const assignPRBatch = mutation({
 			success: true,
 			batchId,
 			assigned,
-			failed,
+			failed: resolution.failed,
 			assignedCount: assigned.length,
-			failedCount: failed.length,
+			failedCount: resolution.failed.length,
 			totalRequested: slots.length,
 		};
 	},
@@ -1252,6 +1169,7 @@ export const assignPR = mutation({
 		skipped: v.optional(v.boolean()),
 		isAbsentSkip: v.optional(v.boolean()),
 		urgent: v.optional(v.boolean()),
+		source: assignmentSourceValidator,
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
 		tagId: v.optional(v.id("tags")),
@@ -1265,6 +1183,7 @@ export const assignPR = mutation({
 			skipped = false,
 			isAbsentSkip = false,
 			urgent = false,
+			source = "ui",
 			prUrl,
 			contextUrl,
 			tagId,
@@ -1280,6 +1199,8 @@ export const assignPR = mutation({
 		await ctx.db.patch(reviewerId, {
 			assignmentCount: reviewer.assignmentCount + 1,
 		});
+		const assignmentSource: AssignmentSource =
+			source === "agent" ? "agent" : "ui";
 
 		const timestamp = Date.now();
 
@@ -1293,6 +1214,7 @@ export const assignPR = mutation({
 			skipped,
 			isAbsentSkip,
 			urgent,
+			source: assignmentSource,
 			prUrl,
 			contextUrl,
 			tagId,
@@ -1319,6 +1241,7 @@ export const assignPR = mutation({
 					skipped,
 					isAbsentSkip,
 					urgent,
+					source: assignmentSource,
 					prUrl,
 					contextUrl,
 					tagId,

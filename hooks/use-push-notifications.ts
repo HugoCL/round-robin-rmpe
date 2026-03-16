@@ -148,12 +148,18 @@ export function usePushNotifications({
 
 			const subscription = await registration.pushManager.subscribe({
 				userVisibleOnly: true,
-				applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+				applicationServerKey: urlBase64ToUint8Array(
+					vapidPublicKey,
+				) as unknown as BufferSource,
 			});
 
 			// Extract the subscription data
 			const subscriptionJSON = subscription.toJSON();
-			if (!subscriptionJSON.endpoint || !subscriptionJSON.keys) {
+			if (
+				!subscriptionJSON.endpoint ||
+				!subscriptionJSON.keys?.p256dh ||
+				!subscriptionJSON.keys?.auth
+			) {
 				throw new Error("Invalid subscription data");
 			}
 
@@ -163,8 +169,8 @@ export function usePushNotifications({
 				subscription: {
 					endpoint: subscriptionJSON.endpoint,
 					keys: {
-						p256dh: subscriptionJSON.keys.p256dh!,
-						auth: subscriptionJSON.keys.auth!,
+						p256dh: subscriptionJSON.keys.p256dh,
+						auth: subscriptionJSON.keys.auth,
 					},
 				},
 			});

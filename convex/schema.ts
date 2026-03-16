@@ -19,11 +19,25 @@ export default defineSchema({
 		showEmails: v.boolean(),
 		hideMultiAssignmentSection: v.boolean(),
 		alwaysSendGoogleChatMessage: v.boolean(),
+		enableAgentSetupExperiment: v.optional(v.boolean()),
+		defaultAgentTeamSlug: v.optional(v.string()),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
 		.index("by_user_token_identifier", ["userTokenIdentifier"])
 		.index("by_email", ["email"]),
+	agentTokens: defineTable({
+		userTokenIdentifier: v.string(),
+		email: v.optional(v.string()),
+		label: v.string(),
+		tokenHash: v.string(),
+		tokenPrefix: v.string(),
+		createdAt: v.number(),
+		lastUsedAt: v.optional(v.number()),
+		revokedAt: v.optional(v.number()),
+	})
+		.index("by_user_token_identifier", ["userTokenIdentifier"])
+		.index("by_token_hash", ["tokenHash"]),
 	appMetrics: defineTable({
 		key: v.string(),
 		value: v.number(),
@@ -78,6 +92,7 @@ export default defineSchema({
 		skipped: v.boolean(),
 		isAbsentSkip: v.boolean(),
 		urgent: v.optional(v.boolean()),
+		source: v.optional(v.union(v.literal("ui"), v.literal("agent"))),
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
 		tagId: v.optional(v.string()),
@@ -100,6 +115,7 @@ export default defineSchema({
 				skipped: v.boolean(),
 				isAbsentSkip: v.boolean(),
 				urgent: v.optional(v.boolean()),
+				source: v.optional(v.union(v.literal("ui"), v.literal("agent"))),
 				prUrl: v.optional(v.string()),
 				contextUrl: v.optional(v.string()),
 				tagId: v.optional(v.string()),

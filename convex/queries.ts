@@ -59,6 +59,7 @@ type GroupedAssignmentHistoryItem = {
 	skipped: boolean;
 	isAbsentSkip: boolean;
 	urgent: boolean;
+	source: "ui" | "agent";
 	prUrl?: string;
 	contextUrl?: string;
 	actionByName?: string;
@@ -85,6 +86,8 @@ type UserPreferenceFlags = {
 	showEmails: boolean;
 	hideMultiAssignmentSection: boolean;
 	alwaysSendGoogleChatMessage: boolean;
+	enableAgentSetupExperiment: boolean;
+	defaultAgentTeamSlug?: string;
 };
 
 const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
@@ -93,6 +96,8 @@ const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	showEmails: false,
 	hideMultiAssignmentSection: false,
 	alwaysSendGoogleChatMessage: false,
+	enableAgentSetupExperiment: false,
+	defaultAgentTeamSlug: undefined,
 };
 
 function selectLatestUserPreference(
@@ -218,6 +223,7 @@ function groupAssignmentHistory(
 				skipped: item.skipped,
 				isAbsentSkip: item.isAbsentSkip,
 				urgent: item.urgent === true,
+				source: item.source === "agent" ? "agent" : "ui",
 				prUrl: item.prUrl,
 				contextUrl: item.contextUrl,
 				...actionBy,
@@ -234,6 +240,8 @@ function groupAssignmentHistory(
 		group.skipped = group.skipped || item.skipped;
 		group.isAbsentSkip = group.isAbsentSkip || item.isAbsentSkip;
 		group.urgent = group.urgent || item.urgent === true;
+		group.source =
+			group.source === "agent" || item.source === "agent" ? "agent" : "ui";
 		group.prUrl ??= item.prUrl;
 		group.contextUrl ??= item.contextUrl;
 		group.actionByName ??= actionBy.actionByName;
@@ -494,6 +502,8 @@ export const getMyUserPreferences = query({
 			showEmails: existing.showEmails,
 			hideMultiAssignmentSection: existing.hideMultiAssignmentSection,
 			alwaysSendGoogleChatMessage: existing.alwaysSendGoogleChatMessage,
+			enableAgentSetupExperiment: existing.enableAgentSetupExperiment === true,
+			defaultAgentTeamSlug: existing.defaultAgentTeamSlug,
 			isAuthenticated: true,
 			exists: true,
 		};
@@ -544,6 +554,7 @@ export const getAssignmentFeed = query({
 			items: feed.items.map((item) => ({
 				...item,
 				urgent: item.urgent === true,
+				source: item.source === "agent" ? "agent" : "ui",
 				reviewerName: resolveReviewerName(
 					item.reviewerId,
 					byId,

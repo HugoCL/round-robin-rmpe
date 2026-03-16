@@ -243,6 +243,7 @@ export default function PRReviewAssignment({
 					wasSkipped: item.skipped,
 					isAbsentSkip: item.isAbsentSkip,
 					urgent: item.urgent === true,
+					source: item.source === "agent" ? "agent" : "ui",
 					actionByName: item.actionByName,
 					actionByEmail: item.actionByEmail,
 					prUrl: item.prUrl,

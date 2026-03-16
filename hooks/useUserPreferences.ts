@@ -12,6 +12,14 @@ export type UserPreferences = {
 	showEmails: boolean;
 	hideMultiAssignmentSection: boolean;
 	alwaysSendGoogleChatMessage: boolean;
+	enableAgentSetupExperiment: boolean;
+	defaultAgentTeamSlug?: string;
+};
+
+type UserPreferencePatch = Partial<
+	Omit<UserPreferences, "defaultAgentTeamSlug">
+> & {
+	defaultAgentTeamSlug?: string | null;
 };
 
 const USER_PREFERENCE_DEFAULTS: UserPreferences = {
@@ -20,6 +28,8 @@ const USER_PREFERENCE_DEFAULTS: UserPreferences = {
 	showEmails: false,
 	hideMultiAssignmentSection: false,
 	alwaysSendGoogleChatMessage: false,
+	enableAgentSetupExperiment: false,
+	defaultAgentTeamSlug: undefined,
 };
 
 const LEGACY_LOCAL_STORAGE_KEYS = [
@@ -75,14 +85,14 @@ function isSamePreferenceState(a: UserPreferences, b: UserPreferences) {
 		a.showTags === b.showTags &&
 		a.showEmails === b.showEmails &&
 		a.hideMultiAssignmentSection === b.hideMultiAssignmentSection &&
-		a.alwaysSendGoogleChatMessage === b.alwaysSendGoogleChatMessage
+		a.alwaysSendGoogleChatMessage === b.alwaysSendGoogleChatMessage &&
+		a.enableAgentSetupExperiment === b.enableAgentSetupExperiment &&
+		a.defaultAgentTeamSlug === b.defaultAgentTeamSlug
 	);
 }
 
-function resolvePatch(
-	patch: Partial<UserPreferences>,
-): Partial<UserPreferences> {
-	const resolved: Partial<UserPreferences> = {};
+function resolvePatch(patch: UserPreferencePatch): UserPreferencePatch {
+	const resolved: UserPreferencePatch = {};
 
 	if (typeof patch.showAssignments === "boolean") {
 		resolved.showAssignments = patch.showAssignments;
@@ -98,6 +108,12 @@ function resolvePatch(
 	}
 	if (typeof patch.alwaysSendGoogleChatMessage === "boolean") {
 		resolved.alwaysSendGoogleChatMessage = patch.alwaysSendGoogleChatMessage;
+	}
+	if (typeof patch.enableAgentSetupExperiment === "boolean") {
+		resolved.enableAgentSetupExperiment = patch.enableAgentSetupExperiment;
+	}
+	if (patch.defaultAgentTeamSlug !== undefined) {
+		resolved.defaultAgentTeamSlug = patch.defaultAgentTeamSlug;
 	}
 
 	return resolved;
@@ -126,6 +142,9 @@ export function useUserPreferences() {
 			showEmails: preferenceQuery.showEmails,
 			hideMultiAssignmentSection: preferenceQuery.hideMultiAssignmentSection,
 			alwaysSendGoogleChatMessage: preferenceQuery.alwaysSendGoogleChatMessage,
+			enableAgentSetupExperiment:
+				preferenceQuery.enableAgentSetupExperiment === true,
+			defaultAgentTeamSlug: preferenceQuery.defaultAgentTeamSlug,
 		};
 	}, [preferenceQuery]);
 
@@ -176,7 +195,7 @@ export function useUserPreferences() {
 	}, [bootstrapPreferences, preferenceQuery, t]);
 
 	const updatePreferences = useCallback(
-		async (patch: Partial<UserPreferences>) => {
+		async (patch: UserPreferencePatch) => {
 			const resolvedPatch = resolvePatch(patch);
 			if (Object.keys(resolvedPatch).length === 0) return;
 
@@ -184,6 +203,11 @@ export function useUserPreferences() {
 			const nextPreferences = {
 				...previousPreferences,
 				...resolvedPatch,
+				defaultAgentTeamSlug:
+					resolvedPatch.defaultAgentTeamSlug === null
+						? undefined
+						: (resolvedPatch.defaultAgentTeamSlug ??
+							previousPreferences.defaultAgentTeamSlug),
 			};
 
 			setOptimisticPreferences(nextPreferences);
