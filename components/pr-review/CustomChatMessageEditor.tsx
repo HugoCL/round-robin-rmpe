@@ -6,6 +6,11 @@ import { useEffect, useId, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+	GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
+	GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
+	GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
+} from "@/lib/googleChatMessageTemplate";
 
 /**
  * Lightweight reusable editor for (PR URL + custom Google Chat message) used across dialogs.
@@ -97,10 +102,11 @@ export function CustomChatMessageEditor({
 				{enabled && (
 					<p className="text-[10px] text-muted-foreground leading-snug">
 						{t("googleChat.placeholdersHint", {
-							reviewer: "{{reviewer_name}}",
-							requester: "{{requester_name}}",
-							pr: "{{PR}}",
-							defaultValue: "Use {reviewer}, {requester} and {pr}",
+							reviewer: GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
+							requester: GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
+							pr: GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
+							defaultValue:
+								"Use {{reviewer_name}}, {{requester_name}} and <URL_PLACEHOLDER|PR>",
 						})}
 					</p>
 				)}

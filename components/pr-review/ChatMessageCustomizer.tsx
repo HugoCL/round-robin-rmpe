@@ -9,6 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Toggle } from "@/components/ui/toggle";
+import {
+	GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
+	GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
+	GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
+	getDefaultPRChatMessageTemplate,
+} from "@/lib/googleChatMessageTemplate";
 
 const selectedPrimaryChipStyle = {
 	backgroundColor: "var(--primary)",
@@ -61,6 +67,7 @@ export function ChatMessageCustomizer({
 	const sendToggleId = useId();
 	const [userEdited, setUserEdited] = useState(false);
 	const [selectedMods, setSelectedMods] = useState<string[]>([]);
+	const [customPrompt, setCustomPrompt] = useState("");
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
 	const [_isPending, startTransition] = useTransition();
@@ -95,10 +102,11 @@ export function ChatMessageCustomizer({
 	];
 
 	const placeholdersHint = t("googleChat.placeholdersHint", {
-		reviewer: "{{reviewer_name}}",
-		requester: "{{requester_name}}",
-		pr: "{{PR}}",
-		defaultValue: "Use {reviewer}, {requester} and {pr}",
+		reviewer: GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
+		requester: GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
+		pr: GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
+		defaultValue:
+			"Use {{reviewer_name}}, {{requester_name}} and <URL_PLACEHOLDER|PR>",
 	});
 
 	// Prefill template when enabling custom message
@@ -107,9 +115,7 @@ export function ChatMessageCustomizer({
 			if (autoTemplate) {
 				onMessageChange(autoTemplate);
 			} else if (nextReviewerName) {
-				// Always use Spanish default template regardless of app locale
-				const baseMessage = `Hola {{reviewer_name}} 👋\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`;
-				onMessageChange(baseMessage);
+				onMessageChange(getDefaultPRChatMessageTemplate(locale));
 			}
 		}
 	}, [
@@ -120,6 +126,7 @@ export function ChatMessageCustomizer({
 		autoTemplate,
 		nextReviewerName,
 		onMessageChange,
+		locale,
 	]);
 
 	if (!showSendToggle && !sendMessage) {
@@ -136,6 +143,8 @@ export function ChatMessageCustomizer({
 			try {
 				const { response } = await generatePRChatMessage({
 					mods: selectedMods.length ? selectedMods : undefined,
+					customPrompt: customPrompt.trim() || undefined,
+					locale,
 				});
 				if (response) {
 					onMessageChange(response);
@@ -155,6 +164,7 @@ export function ChatMessageCustomizer({
 		onMessageChange("");
 		setUserEdited(false);
 		setSelectedMods([]);
+		setCustomPrompt("");
 		setHasGeneratedOnce(false);
 	};
 
@@ -271,6 +281,29 @@ export function ChatMessageCustomizer({
 								placeholder={t("googleChat.textareaPlaceholder")}
 							/>
 
+							<div className="space-y-1">
+								<Label className="text-xs text-muted-foreground">
+									{t("googleChat.customPromptLabel", {
+										defaultValue: "AI custom instructions (optional)",
+									})}
+								</Label>
+								<Input
+									value={customPrompt}
+									onChange={(e) => setCustomPrompt(e.target.value)}
+									placeholder={t("googleChat.customPromptPlaceholder", {
+										defaultValue:
+											"e.g. Keep it short, avoid movie references, mention teamwork",
+									})}
+									className="text-sm"
+								/>
+								<p className="text-[10px] text-muted-foreground leading-snug">
+									{t("googleChat.customPromptHint", {
+										defaultValue:
+											"Used only when generating with AI. It is not saved.",
+									})}
+								</p>
+							</div>
+
 							{!compact && (
 								<>
 									<div className="space-y-2">
@@ -300,37 +333,35 @@ export function ChatMessageCustomizer({
 											})}
 										</div>
 									</div>
-
-									<div className="flex flex-wrap gap-2 items-center">
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											disabled={
-												isGenerating || !prUrl.trim() || !nextReviewerName
-											}
-											onClick={() => {
-												setUserEdited(false);
-												generateMessage();
-											}}
-										>
-											{isGenerating ? (
-												<>
-													<Sparkles className="h-3 w-3 mr-1 animate-pulse" />{" "}
-													{t("googleChat.generating")}
-												</>
-											) : (
-												<>
-													<Sparkles className="h-3 w-3 mr-1" />
-													{hasGeneratedOnce
-														? t("googleChat.generateNew")
-														: t("googleChat.generate")}
-												</>
-											)}
-										</Button>
-									</div>
 								</>
 							)}
+
+							<div className="flex flex-wrap gap-2 items-center">
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									disabled={isGenerating || !prUrl.trim() || !nextReviewerName}
+									onClick={() => {
+										setUserEdited(false);
+										generateMessage();
+									}}
+								>
+									{isGenerating ? (
+										<>
+											<Sparkles className="h-3 w-3 mr-1 animate-pulse" />{" "}
+											{t("googleChat.generating")}
+										</>
+									) : (
+										<>
+											<Sparkles className="h-3 w-3 mr-1" />
+											{hasGeneratedOnce
+												? t("googleChat.generateNew")
+												: t("googleChat.generate")}
+										</>
+									)}
+								</Button>
+							</div>
 
 							<p className="text-[10px] text-muted-foreground leading-snug">
 								{placeholdersHint}

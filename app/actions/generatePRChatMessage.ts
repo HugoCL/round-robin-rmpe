@@ -1,13 +1,24 @@
 "use server";
 import { generateObject } from "ai";
 import z from "zod/v4";
+import {
+	GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
+	GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
+	GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
+	getDefaultPRChatMessageTemplate,
+	REQUIRED_PR_CHAT_PLACEHOLDERS,
+} from "@/lib/googleChatMessageTemplate";
 
 interface GenerateArgs {
 	mods?: string[]; // stylistic modifiers
+	customPrompt?: string;
+	locale?: string;
 }
 
 export async function generatePRChatMessage({
 	mods,
+	customPrompt,
+	locale,
 }: GenerateArgs): Promise<{ response: string }> {
 	const gatewayUrl = process.env.AI_GATEWAY_API_KEY;
 	if (!gatewayUrl) {
@@ -18,9 +29,9 @@ export async function generatePRChatMessage({
 	let system = `Eres un asistente que genera mensajes breves para avisar que hay que revisar un Pull Request.
 
 	REQUISITOS ESTRICTOS (NO LOS ROMPAS):
-	1. Siempre debes incluir EXACTAMENTE estos placeholders una sola vez cada uno: {{reviewer_name}} {{requester_name}} <URL_PLACEHOLDER|PR>
+	1. Siempre debes incluir EXACTAMENTE estos placeholders una sola vez cada uno: ${GOOGLE_CHAT_REVIEWER_PLACEHOLDER} ${GOOGLE_CHAT_REQUESTER_PLACEHOLDER} ${GOOGLE_CHAT_PR_LINK_PLACEHOLDER}
 	2. No reemplaces ni traduzcas los placeholders. No cambies "URL_PLACEHOLDER" ni "PR" dentro del formato de enlace.
-	3. El formato del enlace debe ser exactamente: <URL_PLACEHOLDER|PR> (con los símbolos <, > y la barra vertical).
+	3. El formato del enlace debe ser exactamente: ${GOOGLE_CHAT_PR_LINK_PLACEHOLDER} (con los símbolos <, > y la barra vertical).
 	4. No añadas otros enlaces ni repitas el placeholder de PR.
 	5. Mensaje de 1 o 2 líneas, máximo 280 caracteres (límite duro 400). Tono amistoso, divertido, español latino neutral (a menos que se te diga lo contrario).
 	6. Puedes usar emojis moderados. Sin comillas ni markdown.
@@ -40,7 +51,7 @@ export async function generatePRChatMessage({
 					break;
 				case "references":
 					styleDirectives.push(
-						"Al menos 1 referencia breve y natural a cultura pop / películas / series / refranes / memes.",
+						"Al menos 1 referencia breve y natural a cultura pop / películas / series / refranes / memes. Evita referencias genéricas repetidas y prioriza variedad.",
 					);
 					break;
 				case "spanglish":
@@ -71,16 +82,16 @@ export async function generatePRChatMessage({
 		}
 	}
 
+	if (customPrompt?.trim()) {
+		system += `\n\nINSTRUCCIONES ADICIONALES DEL USUARIO (debes seguirlas sin romper las reglas estrictas):\n- ${customPrompt.trim()}`;
+	}
+
 	const prompt = `Genera el mensaje cumpliendo estrictamente las reglas.`;
 
 	try {
 		let attempts = 0;
 		let finalText = "";
-		const REQUIRED = [
-			"{{reviewer_name}}",
-			"{{requester_name}}",
-			"<URL_PLACEHOLDER|PR>",
-		] as const;
+		const REQUIRED = REQUIRED_PR_CHAT_PLACEHOLDERS;
 
 		while (attempts < 2) {
 			attempts++;
@@ -88,15 +99,15 @@ export async function generatePRChatMessage({
 				schema: z.object({
 					response: z.string().min(1).max(400),
 				}),
-				model: "openai/gpt-5.1-instant",
+				model: "google/gemini-3-flash",
 				prompt,
 				system,
 			});
 			const candidate = object.response ? object.response.trim() : "";
 
-			const hasAll = REQUIRED.every((p) => candidate.includes(p));
+			const hasAll = REQUIRED.every((p: string) => candidate.includes(p));
 			const duplicates = REQUIRED.some(
-				(p) => candidate.split(p).length - 1 > 1,
+				(p: string) => candidate.split(p).length - 1 > 1,
 			);
 			if (hasAll && !duplicates) {
 				finalText = candidate;
@@ -106,7 +117,7 @@ export async function generatePRChatMessage({
 		}
 
 		if (!finalText) {
-			finalText = `Hola {{reviewer_name}} 👋\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`;
+			finalText = getDefaultPRChatMessageTemplate(locale);
 		}
 
 		if (finalText.length > 400) finalText = `${finalText.slice(0, 397)}...`;

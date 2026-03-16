@@ -31,6 +31,7 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
+import { getDefaultPRChatMessageTemplate } from "@/lib/googleChatMessageTemplate";
 import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
 
 import { usePRReview } from "../PRReviewContext";
@@ -70,13 +71,6 @@ export function ForceAssignDialog() {
 	}, [alwaysSendGoogleChatMessage, sendMessage]);
 
 	const sendChatMessage = useAction(api.actions.sendGoogleChatMessage);
-
-	const buildDefaultTemplate = useCallback(() => {
-		return (
-			"Hola {{reviewer_name}} 👋\n" +
-			"{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>"
-		);
-	}, []);
 
 	const resetDialogState = useCallback(() => {
 		setSelectedReviewerId("");
@@ -332,7 +326,7 @@ export function ForceAssignDialog() {
 						}
 						showSendToggle={!alwaysSendGoogleChatMessage}
 						compact
-						autoTemplate={buildDefaultTemplate()}
+						autoTemplate={getDefaultPRChatMessageTemplate(locale)}
 					/>
 					{effectiveSendMessage && (
 						<p className="text-xs text-muted-foreground">

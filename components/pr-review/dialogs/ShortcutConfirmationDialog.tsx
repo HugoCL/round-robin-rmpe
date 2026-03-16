@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Info } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getDefaultPRChatMessageTemplate } from "@/lib/googleChatMessageTemplate";
 import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
 
 const selectedUrgentChipStyle = {
@@ -58,6 +59,7 @@ export function ShortcutConfirmationDialog({
 	forceSendMessage = false,
 }: ShortcutConfirmationDialogProps) {
 	const t = useTranslations();
+	const locale = useLocale();
 
 	// Unified chat message customization state
 	const [sendMessage, setSendMessage] = useState(false);
@@ -182,7 +184,7 @@ export function ShortcutConfirmationDialog({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[460px]">
+			<DialogContent className="sm:max-w-115">
 				<DialogHeader>
 					<div className="flex items-center gap-2">
 						<span className="inline-flex h-10 w-10 items-center justify-center  bg-primary/10 text-primary">
@@ -250,7 +252,7 @@ export function ShortcutConfirmationDialog({
 							compact
 							autoTemplate={
 								nextReviewerName
-									? `Hola {{reviewer_name}} 👋\n{{requester_name}} te ha asignado la revisión de este <URL_PLACEHOLDER|PR>`
+									? getDefaultPRChatMessageTemplate(locale)
 									: undefined
 							}
 						/>
