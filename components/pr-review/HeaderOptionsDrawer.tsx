@@ -96,7 +96,7 @@ export function HeaderOptionsDrawer() {
 	);
 
 	const bodyContent = (
-		<div className="space-y-4 px-4 pb-5">
+		<div className="min-w-0 space-y-4 px-4 pb-5">
 			<section className="rounded-xl border border-border bg-card p-4 shadow-sm">
 				<div className="space-y-4">
 					<div className="space-y-1">

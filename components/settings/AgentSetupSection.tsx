@@ -53,7 +53,7 @@ function CodeSnippet({
 	copiedLabel: string;
 }) {
 	return (
-		<div className="space-y-2">
+		<div className="min-w-0 w-full space-y-2">
 			<div className="flex items-center justify-between gap-3">
 				<p className="text-sm font-medium">{title}</p>
 				<Button type="button" variant="outline" size="sm" onClick={onCopy}>
@@ -65,7 +65,7 @@ function CodeSnippet({
 					{copied ? copiedLabel : copyLabel}
 				</Button>
 			</div>
-			<pre className="overflow-x-auto rounded-lg border bg-muted/40 p-3 text-xs leading-6 text-foreground">
+			<pre className="w-full overflow-x-auto rounded-lg border bg-muted/40 p-3 text-xs leading-6 text-foreground">
 				<code>{code}</code>
 			</pre>
 		</div>
