@@ -183,6 +183,27 @@ function isReviewerEffectivelyAbsentForTeam(
 	return getReviewerAvailabilityForTeam(reviewer, team, now).effectiveIsAbsent;
 }
 
+function isPartTimeReviewer(
+	reviewer: Pick<Doc<"reviewers">, "partTimeSchedule">,
+): boolean {
+	return normalizePartTimeSchedule(reviewer.partTimeSchedule) !== undefined;
+}
+
+function getMinAssignmentCountAmongNonPartTimeReviewers(
+	reviewers: Array<
+		Pick<Doc<"reviewers">, "assignmentCount" | "partTimeSchedule">
+	>,
+): number {
+	const nonPartTimeReviewers = reviewers.filter(
+		(reviewer) => !isPartTimeReviewer(reviewer),
+	);
+	if (nonPartTimeReviewers.length === 0) {
+		return 0;
+	}
+
+	return Math.min(...nonPartTimeReviewers.map((r) => r.assignmentCount));
+}
+
 // Create team
 export const createTeam = mutation({
 	args: { name: v.string(), slug: v.string() },
@@ -398,18 +419,20 @@ export const addReviewer = mutation({
 			throw new Error("Email already exists");
 		}
 
+		const normalizedPartTimeSchedule =
+			normalizePartTimeSchedule(partTimeSchedule);
+
 		// Get all reviewers to find minimum assignment count
 		const allReviewers = await ctx.db
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
 		const minCount =
-			allReviewers.length > 0
-				? Math.min(...allReviewers.map((r) => r.assignmentCount))
-				: 0;
-
-		const normalizedPartTimeSchedule =
-			normalizePartTimeSchedule(partTimeSchedule);
+			normalizedPartTimeSchedule !== undefined
+				? getMinAssignmentCountAmongNonPartTimeReviewers(allReviewers)
+				: allReviewers.length > 0
+					? Math.min(...allReviewers.map((r) => r.assignmentCount))
+					: 0;
 
 		const reviewerId = await ctx.db.insert("reviewers", {
 			teamId: team._id,
@@ -997,6 +1020,54 @@ export const assignPRBatch = mutation({
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
+
+		const availabilityByReviewerId = new Map<
+			Id<"reviewers">,
+			{ effectiveIsAbsent: boolean; isPartTime: boolean }
+		>();
+		for (const reviewer of reviewers) {
+			const availability = getReviewerAvailabilityForTeam(
+				reviewer,
+				team,
+				availabilityNow,
+			);
+			availabilityByReviewerId.set(reviewer._id, {
+				effectiveIsAbsent: availability.effectiveIsAbsent,
+				isPartTime: availability.partTimeSchedule !== undefined,
+			});
+		}
+
+		const partTimeCatchUpBaseline =
+			getMinAssignmentCountAmongNonPartTimeReviewers(reviewers);
+		const partTimeCatchUpCountsById = new Map<Id<"reviewers">, number>();
+		for (const reviewer of reviewers) {
+			const availability = availabilityByReviewerId.get(reviewer._id);
+			if (!availability) {
+				continue;
+			}
+			if (!availability.isPartTime || availability.effectiveIsAbsent) {
+				continue;
+			}
+
+			if (reviewer.assignmentCount < partTimeCatchUpBaseline) {
+				await ctx.db.patch(reviewer._id, {
+					assignmentCount: partTimeCatchUpBaseline,
+				});
+				partTimeCatchUpCountsById.set(reviewer._id, partTimeCatchUpBaseline);
+			}
+		}
+
+		const reviewersForAssignment = reviewers.map((reviewer) => {
+			const syncedCount = partTimeCatchUpCountsById.get(reviewer._id);
+			if (syncedCount === undefined) {
+				return reviewer;
+			}
+			return {
+				...reviewer,
+				assignmentCount: syncedCount,
+			};
+		});
+
 		if (reviewers.length === 0) {
 			return {
 				success: false,
@@ -1012,19 +1083,19 @@ export const assignPRBatch = mutation({
 		}
 
 		const byId = new Map<Id<"reviewers">, Doc<"reviewers">>();
-		for (const reviewer of reviewers) byId.set(reviewer._id, reviewer);
+		for (const reviewer of reviewersForAssignment) {
+			byId.set(reviewer._id, reviewer);
+		}
 
 		const resolution = resolveAssignmentSlots({
 			mode: mode === "tag" ? "tag" : "regular",
 			selectedTagId,
 			slots,
-			reviewers: reviewers.map((reviewer) => ({
+			reviewers: reviewersForAssignment.map((reviewer) => ({
 				...reviewer,
-				effectiveIsAbsent: isReviewerEffectivelyAbsentForTeam(
-					reviewer,
-					team,
-					availabilityNow,
-				),
+				effectiveIsAbsent:
+					availabilityByReviewerId.get(reviewer._id)?.effectiveIsAbsent ??
+					isReviewerEffectivelyAbsentForTeam(reviewer, team, availabilityNow),
 			})),
 			excludedReviewerId: actionByReviewerId,
 		});

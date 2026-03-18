@@ -42,6 +42,14 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-03-18",
+		type: "fix",
+		title: "Contadores part-time se nivelan al volver por horario",
+		description:
+			"Corregimos un caso donde las personas part-time podían quedar con un contador desfasado al volver disponibles por su calendario semanal. Ahora, cuando vuelven a estar asignables por horario, su contador se ajusta automáticamente al mínimo de asignaciones del resto del equipo no part-time, evitando desbalances en la rotación.",
+		suggestedBy: "Cristián Concha",
+	},
+	{
 		date: "2026-03-12",
 		type: "feature",
 		title: "PRs urgentes con prioridad visual y en Google Chat",
