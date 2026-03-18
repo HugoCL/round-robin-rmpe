@@ -140,6 +140,11 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 											{t("pr.urgent")}
 										</Badge>
 									)}
+									{item.crossTeamReview && (
+										<Badge className="border-sky-200 bg-sky-50 text-sky-700 transition-colors hover:border-transparent hover:bg-sky-100 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300">
+											{t("pr.crossTeamReview")}
+										</Badge>
+									)}
 									{item.forced && (
 										<Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:border-transparent hover:bg-amber-100 transition-colors">
 											{t("pr.forceAssign")}
@@ -151,6 +156,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 										</Badge>
 									)}
 									{!item.urgent &&
+										!item.crossTeamReview &&
 										!item.forced &&
 										!item.skipped &&
 										!item.isAbsentSkip && (

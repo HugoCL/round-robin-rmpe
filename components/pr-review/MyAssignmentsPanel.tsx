@@ -101,6 +101,13 @@ export function MyAssignmentsPanel() {
 													</Badge>
 												</div>
 											)}
+											{a.crossTeamReview && (
+												<div className="mt-2">
+													<Badge className="border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-200 hover:bg-sky-50 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300">
+														{t("pr.crossTeamReview")}
+													</Badge>
+												</div>
+											)}
 											<p className="text-xs mt-1 break-all">
 												{a.prUrl ? (
 													<a
@@ -212,6 +219,13 @@ export function MyAssignmentsPanel() {
 												<div className="mt-2">
 													<Badge className="border-red-200 bg-red-50 text-red-700 hover:border-red-200 hover:bg-red-50 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
 														{t("pr.urgent")}
+													</Badge>
+												</div>
+											)}
+											{a.crossTeamReview && (
+												<div className="mt-2">
+													<Badge className="border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-200 hover:bg-sky-50 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300">
+														{t("pr.crossTeamReview")}
 													</Badge>
 												</div>
 											)}

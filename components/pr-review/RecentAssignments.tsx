@@ -96,6 +96,14 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 											{t("pr.urgent")}
 										</Badge>
 									)}
+									{item.crossTeamReview && (
+										<Badge
+											variant="primarySoft"
+											className="mb-1 border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300"
+										>
+											{t("pr.crossTeamReview")}
+										</Badge>
+									)}
 									{item.forced && (
 										<Badge
 											variant="primarySoft"
@@ -113,6 +121,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 										</Badge>
 									)}
 									{!item.urgent &&
+										!item.crossTeamReview &&
 										!item.forced &&
 										!item.skipped &&
 										!item.isAbsentSkip && (

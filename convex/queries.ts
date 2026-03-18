@@ -10,6 +10,7 @@ type EnrichedAssignment = {
 	teamId: Id<"teams">;
 	prUrl?: string | undefined;
 	urgent: boolean;
+	crossTeamReview: boolean;
 	assigneeId: Id<"reviewers">;
 	assignerId: Id<"reviewers">;
 	status: string;
@@ -59,6 +60,7 @@ type GroupedAssignmentHistoryItem = {
 	skipped: boolean;
 	isAbsentSkip: boolean;
 	urgent: boolean;
+	crossTeamReview: boolean;
 	source: "ui" | "agent";
 	prUrl?: string;
 	contextUrl?: string;
@@ -223,6 +225,7 @@ function groupAssignmentHistory(
 				skipped: item.skipped,
 				isAbsentSkip: item.isAbsentSkip,
 				urgent: item.urgent === true,
+				crossTeamReview: item.crossTeamReview === true,
 				source: item.source === "agent" ? "agent" : "ui",
 				prUrl: item.prUrl,
 				contextUrl: item.contextUrl,
@@ -240,6 +243,8 @@ function groupAssignmentHistory(
 		group.skipped = group.skipped || item.skipped;
 		group.isAbsentSkip = group.isAbsentSkip || item.isAbsentSkip;
 		group.urgent = group.urgent || item.urgent === true;
+		group.crossTeamReview =
+			group.crossTeamReview || item.crossTeamReview === true;
 		group.source =
 			group.source === "agent" || item.source === "agent" ? "agent" : "ui";
 		group.prUrl ??= item.prUrl;
@@ -554,6 +559,7 @@ export const getAssignmentFeed = query({
 			items: feed.items.map((item) => ({
 				...item,
 				urgent: item.urgent === true,
+				crossTeamReview: item.crossTeamReview === true,
 				source: item.source === "agent" ? "agent" : "ui",
 				reviewerName: resolveReviewerName(
 					item.reviewerId,
@@ -813,6 +819,7 @@ export const getActiveAssignmentsForReviewer = query({
 				teamId: row.teamId as Id<"teams">,
 				prUrl: row.prUrl,
 				urgent: row.urgent === true,
+				crossTeamReview: row.crossTeamReview === true,
 				assigneeId: row.assigneeId as Id<"reviewers">,
 				assignerId: row.assignerId as Id<"reviewers">,
 				status: "pending", // flattened model: treat existing row as pending until completion
@@ -859,6 +866,7 @@ export const getActiveAssignmentsByReviewer = query({
 				teamId: row.teamId as Id<"teams">,
 				prUrl: row.prUrl,
 				urgent: row.urgent === true,
+				crossTeamReview: row.crossTeamReview === true,
 				assigneeId: row.assigneeId as Id<"reviewers">,
 				assignerId: row.assignerId as Id<"reviewers">,
 				status: "pending",

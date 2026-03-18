@@ -813,6 +813,7 @@ type AssignmentFeedItemRecord = {
 	skipped: boolean;
 	isAbsentSkip: boolean;
 	urgent?: boolean;
+	crossTeamReview?: boolean;
 	source?: AssignmentSource;
 	prUrl?: string;
 	contextUrl?: string;
@@ -834,6 +835,7 @@ function sanitizeAssignmentFeedItem(
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
 		urgent: item.urgent === true,
+		crossTeamReview: item.crossTeamReview === true,
 		source: (item.source === "agent" ? "agent" : "ui") as AssignmentSource,
 		prUrl: item.prUrl,
 		contextUrl: item.contextUrl,
@@ -853,12 +855,15 @@ function sanitizeAssignmentFeedItems(
 type AssignmentHistoryRecord = {
 	teamId?: Id<"teams">;
 	reviewerId: Id<"reviewers">;
+	reviewerTeamId?: Id<"teams">;
+	reviewerPoolTeamIds?: Id<"teams">[];
 	timestamp: number;
 	batchId?: string;
 	forced: boolean;
 	skipped: boolean;
 	isAbsentSkip: boolean;
 	urgent?: boolean;
+	crossTeamReview?: boolean;
 	source?: AssignmentSource;
 	prUrl?: string;
 	contextUrl?: string;
@@ -872,12 +877,15 @@ function sanitizeAssignmentHistoryRecord(
 	return {
 		teamId: item.teamId,
 		reviewerId: item.reviewerId,
+		reviewerTeamId: item.reviewerTeamId,
+		reviewerPoolTeamIds: item.reviewerPoolTeamIds,
 		timestamp: item.timestamp,
 		batchId: item.batchId,
 		forced: item.forced,
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
 		urgent: item.urgent === true,
+		crossTeamReview: item.crossTeamReview === true,
 		source: (item.source === "agent" ? "agent" : "ui") as AssignmentSource,
 		prUrl: item.prUrl,
 		contextUrl: item.contextUrl,
@@ -954,6 +962,7 @@ async function updateAssignmentFeedAfterUndo(
 		skipped: item.skipped,
 		isAbsentSkip: item.isAbsentSkip,
 		urgent: item.urgent === true,
+		crossTeamReview: item.crossTeamReview === true,
 		source: (item.source === "agent" ? "agent" : "ui") as AssignmentSource,
 		prUrl: item.prUrl,
 		contextUrl: item.contextUrl,
@@ -972,6 +981,7 @@ async function updateAssignmentFeedAfterUndo(
 export const assignPRBatch = mutation({
 	args: {
 		teamSlug: v.string(),
+		additionalTeamSlugs: v.optional(v.array(v.string())),
 		mode: v.string(), // "regular" | "tag"
 		selectedTagId: v.optional(v.id("tags")),
 		slots: v.array(
@@ -984,6 +994,8 @@ export const assignPRBatch = mutation({
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
 		urgent: v.optional(v.boolean()),
+		crossTeamReview: v.optional(v.boolean()),
+		excludeTeammates: v.optional(v.boolean()),
 		actionByReviewerId: v.optional(v.id("reviewers")),
 		source: assignmentSourceValidator,
 	},
@@ -991,17 +1003,42 @@ export const assignPRBatch = mutation({
 		ctx,
 		{
 			teamSlug,
+			additionalTeamSlugs = [],
 			mode,
 			selectedTagId,
 			slots,
 			prUrl,
 			contextUrl,
 			urgent = false,
+			crossTeamReview = false,
+			excludeTeammates = false,
 			actionByReviewerId,
 			source = "ui",
 		},
 	) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const normalizedAdditionalTeamSlugs = [
+			...new Set(
+				additionalTeamSlugs
+					.map((slug) => slug.trim())
+					.filter((slug) => slug.length > 0 && slug !== teamSlug),
+			),
+		];
+		const selectedAdditionalTeams = crossTeamReview
+			? await Promise.all(
+					normalizedAdditionalTeamSlugs.map((slug) =>
+						getTeamBySlugOrThrow(ctx, slug),
+					),
+				)
+			: [];
+		const reviewerPoolTeams =
+			crossTeamReview && excludeTeammates
+				? selectedAdditionalTeams
+				: [team, ...selectedAdditionalTeams];
+		const reviewerPoolTeamIds =
+			reviewerPoolTeams.length > 0
+				? reviewerPoolTeams.map((item) => item._id)
+				: undefined;
 		const availabilityNow = Date.now();
 		const assignmentSource: AssignmentSource =
 			source === "agent" ? "agent" : "ui";
@@ -1016,19 +1053,41 @@ export const assignPRBatch = mutation({
 			};
 		}
 
-		const reviewers = await ctx.db
-			.query("reviewers")
-			.withIndex("by_team", (q) => q.eq("teamId", team._id))
-			.collect();
+		const reviewersByTeam = await Promise.all(
+			reviewerPoolTeams.map(async (reviewerPoolTeam) => {
+				const reviewersForTeam = await ctx.db
+					.query("reviewers")
+					.withIndex("by_team", (q) => q.eq("teamId", reviewerPoolTeam._id))
+					.collect();
+				return { reviewerPoolTeam, reviewersForTeam };
+			}),
+		);
+
+		const reviewers = reviewersByTeam.flatMap(
+			(entry) => entry.reviewersForTeam,
+		);
+		const reviewerTeamById = new Map<Id<"reviewers">, Id<"teams">>();
+		const reviewerTimezoneTeamById = new Map<
+			Id<"reviewers">,
+			Pick<Doc<"teams">, "timezone"> | null
+		>();
+		for (const entry of reviewersByTeam) {
+			for (const reviewer of entry.reviewersForTeam) {
+				reviewerTeamById.set(reviewer._id, entry.reviewerPoolTeam._id);
+				reviewerTimezoneTeamById.set(reviewer._id, entry.reviewerPoolTeam);
+			}
+		}
 
 		const availabilityByReviewerId = new Map<
 			Id<"reviewers">,
 			{ effectiveIsAbsent: boolean; isPartTime: boolean }
 		>();
 		for (const reviewer of reviewers) {
+			const reviewerTimezoneTeam =
+				reviewerTimezoneTeamById.get(reviewer._id) ?? team;
 			const availability = getReviewerAvailabilityForTeam(
 				reviewer,
-				team,
+				reviewerTimezoneTeam,
 				availabilityNow,
 			);
 			availabilityByReviewerId.set(reviewer._id, {
@@ -1038,9 +1097,14 @@ export const assignPRBatch = mutation({
 		}
 
 		const partTimeCatchUpBaseline =
-			getMinAssignmentCountAmongNonPartTimeReviewers(reviewers);
+			crossTeamReview && selectedAdditionalTeams.length > 0
+				? 0
+				: getMinAssignmentCountAmongNonPartTimeReviewers(reviewers);
 		const partTimeCatchUpCountsById = new Map<Id<"reviewers">, number>();
 		for (const reviewer of reviewers) {
+			if (crossTeamReview && selectedAdditionalTeams.length > 0) {
+				continue;
+			}
 			const availability = availabilityByReviewerId.get(reviewer._id);
 			if (!availability) {
 				continue;
@@ -1095,7 +1159,11 @@ export const assignPRBatch = mutation({
 				...reviewer,
 				effectiveIsAbsent:
 					availabilityByReviewerId.get(reviewer._id)?.effectiveIsAbsent ??
-					isReviewerEffectivelyAbsentForTeam(reviewer, team, availabilityNow),
+					isReviewerEffectivelyAbsentForTeam(
+						reviewer,
+						reviewerTimezoneTeamById.get(reviewer._id) ?? team,
+						availabilityNow,
+					),
 			})),
 			excludedReviewerId: actionByReviewerId,
 		});
@@ -1125,6 +1193,7 @@ export const assignPRBatch = mutation({
 			skipped: boolean;
 			isAbsentSkip: boolean;
 			urgent?: boolean;
+			crossTeamReview?: boolean;
 			source?: AssignmentSource;
 			prUrl?: string;
 			contextUrl?: string;
@@ -1147,6 +1216,8 @@ export const assignPRBatch = mutation({
 			await ctx.db.insert("assignmentHistory", {
 				teamId: team._id,
 				reviewerId: reviewer._id,
+				reviewerTeamId: reviewerTeamById.get(reviewer._id),
+				reviewerPoolTeamIds,
 				reviewerName: reviewer.name,
 				timestamp,
 				batchId,
@@ -1154,6 +1225,7 @@ export const assignPRBatch = mutation({
 				skipped: false,
 				isAbsentSkip: false,
 				urgent,
+				crossTeamReview,
 				source: assignmentSource,
 				prUrl,
 				contextUrl,
@@ -1165,9 +1237,12 @@ export const assignPRBatch = mutation({
 			if (assigner) {
 				await ctx.db.insert("prAssignments", {
 					teamId: team._id,
+					reviewerTeamId: reviewerTeamById.get(reviewer._id),
+					reviewerPoolTeamIds,
 					prUrl: prUrl?.trim(),
 					batchId,
 					urgent,
+					crossTeamReview,
 					assigneeId: reviewer._id,
 					assignerId: assigner._id,
 					createdAt: timestamp,
@@ -1184,6 +1259,7 @@ export const assignPRBatch = mutation({
 				skipped: false,
 				isAbsentSkip: false,
 				urgent,
+				crossTeamReview,
 				source: assignmentSource,
 				prUrl,
 				contextUrl,
@@ -1240,6 +1316,7 @@ export const assignPR = mutation({
 		skipped: v.optional(v.boolean()),
 		isAbsentSkip: v.optional(v.boolean()),
 		urgent: v.optional(v.boolean()),
+		crossTeamReview: v.optional(v.boolean()),
 		source: assignmentSourceValidator,
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
@@ -1254,6 +1331,7 @@ export const assignPR = mutation({
 			skipped = false,
 			isAbsentSkip = false,
 			urgent = false,
+			crossTeamReview = false,
 			source = "ui",
 			prUrl,
 			contextUrl,
@@ -1279,12 +1357,14 @@ export const assignPR = mutation({
 		await ctx.db.insert("assignmentHistory", {
 			teamId: reviewer.teamId,
 			reviewerId,
+			reviewerTeamId: reviewer.teamId,
 			reviewerName: reviewer.name,
 			timestamp,
 			forced,
 			skipped,
 			isAbsentSkip,
 			urgent,
+			crossTeamReview,
 			source: assignmentSource,
 			prUrl,
 			contextUrl,
@@ -1312,6 +1392,7 @@ export const assignPR = mutation({
 					skipped,
 					isAbsentSkip,
 					urgent,
+					crossTeamReview,
 					source: assignmentSource,
 					prUrl,
 					contextUrl,
@@ -1373,10 +1454,19 @@ export const createActivePRAssignment = mutation({
 		prUrl: v.optional(v.string()),
 		batchId: v.optional(v.string()),
 		urgent: v.optional(v.boolean()),
+		crossTeamReview: v.optional(v.boolean()),
 	},
 	handler: async (
 		ctx,
-		{ teamSlug, assigneeId, assignerId, prUrl, batchId, urgent = false },
+		{
+			teamSlug,
+			assigneeId,
+			assignerId,
+			prUrl,
+			batchId,
+			urgent = false,
+			crossTeamReview = false,
+		},
 	) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 		// Basic validation: ensure reviewers exist
@@ -1386,9 +1476,11 @@ export const createActivePRAssignment = mutation({
 		const now = Date.now();
 		const id = await ctx.db.insert("prAssignments", {
 			teamId: team._id,
+			reviewerTeamId: assignee.teamId,
 			prUrl: prUrl?.trim(),
 			batchId,
 			urgent,
+			crossTeamReview,
 			assigneeId,
 			assignerId,
 			createdAt: now,
@@ -1430,9 +1522,12 @@ export const cleanupLegacyPRAssignmentStatus = mutation({
 
 			await ctx.db.replace(row._id, {
 				teamId: row.teamId,
+				reviewerTeamId: row.reviewerTeamId,
+				reviewerPoolTeamIds: row.reviewerPoolTeamIds,
 				prUrl: row.prUrl,
 				batchId: row.batchId,
 				urgent: row.urgent,
+				crossTeamReview: row.crossTeamReview,
 				assigneeId: row.assigneeId,
 				assignerId: row.assignerId,
 				createdAt: row.createdAt,
@@ -1858,16 +1953,20 @@ export const cleanupAssignmentFeedSchemaDrift = mutation({
 					(key) =>
 						![
 							"reviewerId",
+							"reviewerName",
 							"timestamp",
 							"batchId",
 							"forced",
 							"skipped",
 							"isAbsentSkip",
 							"urgent",
+							"crossTeamReview",
 							"prUrl",
 							"contextUrl",
 							"tagId",
 							"actionByReviewerId",
+							"actionByName",
+							"source",
 						].includes(key),
 				),
 			);

@@ -40,6 +40,7 @@ export interface AssignmentItem {
 	wasSkipped: boolean;
 	isAbsentSkip: boolean;
 	urgent: boolean;
+	crossTeamReview: boolean;
 	source: "ui" | "agent";
 	actionByName?: string;
 	actionByEmail?: string;
@@ -70,6 +71,7 @@ export interface GroupedAssignmentHistoryItem {
 	skipped: boolean;
 	isAbsentSkip: boolean;
 	urgent: boolean;
+	crossTeamReview: boolean;
 	source: "ui" | "agent";
 	prUrl?: string;
 	contextUrl?: string;

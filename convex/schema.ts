@@ -85,6 +85,8 @@ export default defineSchema({
 	assignmentHistory: defineTable({
 		teamId: v.optional(v.id("teams")),
 		reviewerId: v.id("reviewers"),
+		reviewerTeamId: v.optional(v.id("teams")),
+		reviewerPoolTeamIds: v.optional(v.array(v.id("teams"))),
 		reviewerName: v.optional(v.string()),
 		timestamp: v.number(),
 		batchId: v.optional(v.string()),
@@ -92,6 +94,7 @@ export default defineSchema({
 		skipped: v.boolean(),
 		isAbsentSkip: v.boolean(),
 		urgent: v.optional(v.boolean()),
+		crossTeamReview: v.optional(v.boolean()),
 		source: v.optional(v.union(v.literal("ui"), v.literal("agent"))),
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
@@ -115,6 +118,7 @@ export default defineSchema({
 				skipped: v.boolean(),
 				isAbsentSkip: v.boolean(),
 				urgent: v.optional(v.boolean()),
+				crossTeamReview: v.optional(v.boolean()),
 				source: v.optional(v.union(v.literal("ui"), v.literal("agent"))),
 				prUrl: v.optional(v.string()),
 				contextUrl: v.optional(v.string()),
@@ -128,9 +132,12 @@ export default defineSchema({
 	// Active PR assignments requiring mutual confirmation
 	prAssignments: defineTable({
 		teamId: v.optional(v.id("teams")),
+		reviewerTeamId: v.optional(v.id("teams")),
+		reviewerPoolTeamIds: v.optional(v.array(v.id("teams"))),
 		prUrl: v.optional(v.string()),
 		batchId: v.optional(v.string()),
 		urgent: v.optional(v.boolean()),
+		crossTeamReview: v.optional(v.boolean()),
 		assigneeId: v.id("reviewers"), // reviewer who must review
 		assignerId: v.id("reviewers"), // reviewer who requested review
 		createdAt: v.number(),

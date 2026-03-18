@@ -43,6 +43,13 @@ export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
 		date: "2026-03-18",
+		type: "feature",
+		title: "Revisión entre equipos en una sola asignación",
+		description:
+			"Agregamos la opción 'Revisión entre equipos' para incluir personas de otros equipos al asignar un PR. ¿No ves al team que necesitas? Puedes invitarlos a La Lista para que aparezcan como opción ;)",
+	},
+	{
+		date: "2026-03-18",
 		type: "fix",
 		title: "Contadores part-time se nivelan al volver por horario",
 		description:

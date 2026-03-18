@@ -4,6 +4,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import {
 	AlertCircle,
 	AlertTriangle,
+	Globe2,
 	Info,
 	MessageSquare,
 	Sparkles,
@@ -21,6 +22,7 @@ import {
 	CardFooter,
 	CardHeader,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -77,6 +79,12 @@ const selectedPrimaryChipStyle = {
 const selectedUrgentChipStyle = {
 	backgroundColor: "#dc2626",
 	borderColor: "#dc2626",
+	color: "#ffffff",
+};
+
+const selectedCrossTeamChipStyle = {
+	backgroundColor: "#0284c7",
+	borderColor: "#0284c7",
 	color: "#ffffff",
 };
 
@@ -173,6 +181,11 @@ export function AssignmentCard() {
 	const [prUrl, setPrUrl] = useState("");
 	const [contextUrl, setContextUrl] = useState("");
 	const [urgent, setUrgent] = useState(false);
+	const [crossTeamReview, setCrossTeamReview] = useState(false);
+	const [excludeTeammates, setExcludeTeammates] = useState(false);
+	const [selectedCrossTeamSlugs, setSelectedCrossTeamSlugs] = useState<
+		string[]
+	>([]);
 	const [customMessage, setCustomMessage] = useState("");
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [mode, setMode] = useState<AssignmentMode>("regular");
@@ -196,6 +209,17 @@ export function AssignmentCard() {
 
 	const tags =
 		useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") || [];
+	const allTeams = useQuery(api.queries.getTeams) || [];
+	const availableCrossTeamTargets = useMemo(
+		() =>
+			allTeams.filter(
+				(team): team is NonNullable<(typeof allTeams)[number]> =>
+					team !== null &&
+					typeof team.slug === "string" &&
+					team.slug !== teamSlug,
+			),
+		[allTeams, teamSlug],
+	);
 	const nextReviewerByTag = useQuery(
 		api.queries.getNextReviewerByTag,
 		mode === "tag" && selectedTagId && teamSlug
@@ -225,6 +249,49 @@ export function AssignmentCard() {
 			setSendMessage(true);
 		}
 	}, [alwaysSendGoogleChatMessage, sendMessage]);
+
+	useEffect(() => {
+		if (!crossTeamReview && selectedCrossTeamSlugs.length > 0) {
+			setSelectedCrossTeamSlugs([]);
+			return;
+		}
+		if (!crossTeamReview && excludeTeammates) {
+			setExcludeTeammates(false);
+		}
+		if (crossTeamReview && availableCrossTeamTargets.length === 0) {
+			setSelectedCrossTeamSlugs([]);
+			return;
+		}
+		if (selectedCrossTeamSlugs.length === 0) {
+			return;
+		}
+		const allowedSlugs = new Set<string>();
+		for (const candidate of availableCrossTeamTargets) {
+			if (candidate?.slug) {
+				allowedSlugs.add(candidate.slug);
+			}
+		}
+		const filtered = selectedCrossTeamSlugs.filter((slug) =>
+			allowedSlugs.has(slug),
+		);
+		if (filtered.length !== selectedCrossTeamSlugs.length) {
+			setSelectedCrossTeamSlugs(filtered);
+		}
+	}, [
+		availableCrossTeamTargets,
+		crossTeamReview,
+		excludeTeammates,
+		selectedCrossTeamSlugs,
+	]);
+
+	useEffect(() => {
+		if (!crossTeamReview) return;
+		if (selectedCrossTeamSlugs.length > 0) return;
+		if (availableCrossTeamTargets.length !== 1) return;
+		const onlyTeamSlug = availableCrossTeamTargets[0]?.slug;
+		if (typeof onlyTeamSlug !== "string" || onlyTeamSlug.length === 0) return;
+		setSelectedCrossTeamSlugs([onlyTeamSlug]);
+	}, [availableCrossTeamTargets, crossTeamReview, selectedCrossTeamSlugs]);
 
 	useEffect(() => {
 		setSlotConfigs((prev) => {
@@ -257,6 +324,7 @@ export function AssignmentCard() {
 				mode,
 				isMultiAssignmentEnabled: isMultiAssignmentActive,
 				reviewerCount: effectiveReviewerCount,
+				excludeTeammates,
 				selectedTagId: selectedTagId ? String(selectedTagId) : null,
 				slots: effectiveSlotConfigs.map((slot) => ({
 					id: slot.id,
@@ -271,6 +339,7 @@ export function AssignmentCard() {
 			effectiveSlotConfigs,
 			isMultiAssignmentActive,
 			mode,
+			excludeTeammates,
 			selectedTagId,
 			effectiveSendMessage,
 		],
@@ -531,6 +600,9 @@ export function AssignmentCard() {
 				assignerEmail: user?.email,
 				assignerName: getAssignerName(),
 				teamSlug,
+				broadcastTeamSlugs: crossTeamReview
+					? selectedCrossTeamSlugs
+					: undefined,
 				sendOnlyNames: false,
 				urgent,
 				customMessage:
@@ -559,6 +631,11 @@ export function AssignmentCard() {
 				prUrl: prUrl.trim() || undefined,
 				contextUrl: contextUrl.trim() || undefined,
 				urgent,
+				crossTeamReview,
+				excludeTeammates,
+				additionalTeamSlugs: crossTeamReview
+					? selectedCrossTeamSlugs
+					: undefined,
 				actionByReviewerId: getActionByReviewerId(),
 			});
 
@@ -592,6 +669,9 @@ export function AssignmentCard() {
 						assignerEmail: user?.email,
 						assignerName: getAssignerName(),
 						teamSlug,
+						broadcastTeamSlugs: crossTeamReview
+							? selectedCrossTeamSlugs
+							: undefined,
 						urgent,
 						customMessage:
 							enableCustomMessage && customMessage.trim().length > 0
@@ -672,6 +752,7 @@ export function AssignmentCard() {
 	const isAssignDisabled =
 		isAssigning ||
 		(effectiveSendMessage && !prUrl.trim()) ||
+		(crossTeamReview && selectedCrossTeamSlugs.length === 0) ||
 		resolvePreview.resolved.length === 0;
 
 	return (
@@ -1006,7 +1087,120 @@ export function AssignmentCard() {
 								</Tooltip>
 							</TooltipProvider>
 						</section>
+
+						<section className="max-w-full">
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Toggle
+											id="assignment-cross-team-toggle"
+											pressed={crossTeamReview}
+											onPressedChange={setCrossTeamReview}
+											variant="outline"
+											size="sm"
+											aria-label={t("googleChat.crossTeamToggle")}
+											className="cursor-pointer h-10 max-w-full rounded-full border-sky-200/80 bg-transparent px-3 text-xs text-sky-700 transition-all duration-150 dark:border-sky-900/50 dark:text-sky-300"
+											style={
+												crossTeamReview ? selectedCrossTeamChipStyle : undefined
+											}
+										>
+											<div className="inline-flex items-center gap-2.5">
+												<span className="inline-flex size-4 items-center justify-center">
+													<Globe2
+														className="h-4 w-4 shrink-0"
+														aria-hidden="true"
+													/>
+												</span>
+												<span className="leading-none">
+													{t("googleChat.crossTeamToggle")}
+												</span>
+												<span className="inline-flex size-4 items-center justify-center">
+													<Info
+														className={`h-4 w-4 shrink-0 ${
+															crossTeamReview
+																? "text-white/80"
+																: "text-muted-foreground/90"
+														}`}
+														aria-hidden="true"
+													/>
+												</span>
+											</div>
+										</Toggle>
+									</TooltipTrigger>
+									<TooltipContent className="max-w-64 text-xs">
+										<p>{t("googleChat.crossTeamToggleDescription")}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						</section>
 					</div>
+
+					{crossTeamReview && (
+						<section className="space-y-3 rounded-lg border border-sky-200/60 bg-sky-50/30 p-3 dark:border-sky-900/40 dark:bg-sky-950/15">
+							<p className="text-xs text-sky-800 dark:text-sky-200">
+								{t("googleChat.crossTeamSharePrompt")}
+							</p>
+							{availableCrossTeamTargets.length > 0 ? (
+								<>
+									<Label>{t("googleChat.crossTeamTargetTeamsLabel")}</Label>
+									<ToggleGroup
+										type="multiple"
+										variant="outline"
+										size="sm"
+										spacing={2}
+										value={selectedCrossTeamSlugs}
+										onValueChange={setSelectedCrossTeamSlugs}
+										className="inline-flex max-w-full flex-wrap justify-start"
+									>
+										{availableCrossTeamTargets.map((teamOption) => {
+											if (!teamOption) {
+												return null;
+											}
+											return (
+												<ToggleGroupItem
+													key={teamOption._id}
+													value={teamOption.slug}
+													aria-label={teamOption.name}
+													className="h-8 rounded-full border-border/70 bg-transparent px-3 text-xs"
+												>
+													{teamOption.name}
+												</ToggleGroupItem>
+											);
+										})}
+									</ToggleGroup>
+									{selectedCrossTeamSlugs.length === 0 && (
+										<p className="text-xs text-muted-foreground">
+											{t("googleChat.crossTeamTargetTeamsRequired")}
+										</p>
+									)}
+									<div className="flex items-start gap-2 rounded-md border border-sky-200/70 bg-background/70 p-2 dark:border-sky-900/40">
+										<Checkbox
+											id="cross-team-exclude-teammates"
+											checked={excludeTeammates}
+											onCheckedChange={(checked) =>
+												setExcludeTeammates(checked === true)
+											}
+										/>
+										<div className="space-y-1">
+											<Label
+												htmlFor="cross-team-exclude-teammates"
+												className="cursor-pointer text-xs font-medium text-sky-800 dark:text-sky-200"
+											>
+												{t("googleChat.crossTeamExcludeTeammatesToggle")}
+											</Label>
+											<p className="text-xs text-muted-foreground">
+												{t("googleChat.crossTeamExcludeTeammatesDescription")}
+											</p>
+										</div>
+									</div>
+								</>
+							) : (
+								<p className="text-xs text-muted-foreground">
+									{t("googleChat.crossTeamNoTeamsAvailable")}
+								</p>
+							)}
+						</section>
+					)}
 
 					{!hideMultiAssignmentSection && isMultiAssignmentEnabled && (
 						<section className="space-y-3 rounded-lg border border-muted bg-muted/20 p-3">

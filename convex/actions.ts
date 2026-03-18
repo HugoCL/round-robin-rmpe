@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Reviewer } from "../lib/types";
 import { api } from "./_generated/api";
-import { action } from "./_generated/server";
+import { type ActionCtx, action } from "./_generated/server";
 
 function prependUrgentNotice(
 	message: string,
@@ -13,6 +13,65 @@ function prependUrgentNotice(
 		? "🚨 URGENTE: este PR debe revisarse lo antes posible."
 		: "🚨 URGENT: this PR should be reviewed as soon as possible.";
 	return `${urgentNotice}\n${message}`;
+}
+
+function prependOriginTeamNotice(
+	message: string,
+	locale: string,
+	sourceTeamName: string,
+	isExternalTarget: boolean,
+) {
+	if (!isExternalTarget) return message;
+	const notice = locale.startsWith("es")
+		? `🔁 Esta solicitud de revisión viene del equipo ${sourceTeamName}.`
+		: `🔁 This review request comes from team ${sourceTeamName}.`;
+	return `${notice}\n${message}`;
+}
+
+type ChatWebhookTarget = {
+	slug: string;
+	name: string;
+	webhookUrl: string;
+	isExternalTarget: boolean;
+};
+
+async function resolveWebhookTargets(
+	ctx: ActionCtx,
+	teamSlug: string,
+	broadcastTeamSlugs: string[] | undefined,
+) {
+	const requestedSlugs = [
+		teamSlug,
+		...((broadcastTeamSlugs || []).map((slug) => slug.trim()) || []),
+	].filter(
+		(slug, index, self) => slug.length > 0 && self.indexOf(slug) === index,
+	);
+
+	const teams = await Promise.all(
+		requestedSlugs.map((slug) =>
+			ctx.runQuery(api.queries.getTeam, { teamSlug: slug }),
+		),
+	);
+
+	const targetByWebhook = new Map<string, ChatWebhookTarget>();
+	for (const [index, team] of teams.entries()) {
+		const requestedSlug = requestedSlugs[index];
+		const webhookUrl = team?.googleChatWebhookUrl?.trim();
+		if (!webhookUrl) {
+			continue;
+		}
+		if (targetByWebhook.has(webhookUrl)) {
+			continue;
+		}
+		targetByWebhook.set(webhookUrl, {
+			slug: requestedSlug,
+			name: team?.name?.trim() || requestedSlug,
+			webhookUrl,
+			isExternalTarget: requestedSlug !== teamSlug,
+		});
+	}
+
+	return Array.from(targetByWebhook.values());
 }
 
 // Google Chat integration action
@@ -28,6 +87,7 @@ export const sendGoogleChatMessage = action({
 		assignerName: v.optional(v.string()),
 		assignerChatId: v.optional(v.string()),
 		teamSlug: v.string(), // Now required to fetch team-specific webhook
+		broadcastTeamSlugs: v.optional(v.array(v.string())),
 		sendOnlyNames: v.optional(v.boolean()),
 		// If provided, this message text will be sent as-is (no template building)
 		customMessage: v.optional(v.string()),
@@ -46,6 +106,7 @@ export const sendGoogleChatMessage = action({
 			assignerName,
 			assignerChatId,
 			teamSlug,
+			broadcastTeamSlugs,
 			sendOnlyNames = false,
 			customMessage,
 			urgent = false,
@@ -55,13 +116,16 @@ export const sendGoogleChatMessage = action({
 		reviewerChatId = reviewerChatId?.trim() || undefined;
 		assignerChatId = assignerChatId?.trim() || undefined;
 
-		// Fetch team-specific webhook URL from database
-		const team = (await ctx.runQuery(api.queries.getTeam, { teamSlug })) as {
-			googleChatWebhookUrl?: string;
-		} | null;
-		const GOOGLE_CHAT_WEBHOOK_URL = team?.googleChatWebhookUrl?.trim();
+		const webhookTargets = await resolveWebhookTargets(
+			ctx,
+			teamSlug,
+			broadcastTeamSlugs,
+		);
+		const sourceTeamName =
+			webhookTargets.find((target) => target.slug === teamSlug)?.name ||
+			teamSlug;
 
-		if (!GOOGLE_CHAT_WEBHOOK_URL) {
+		if (webhookTargets.length === 0) {
 			return {
 				success: false,
 				error: "Google Chat webhook URL not configured for this team",
@@ -204,42 +268,50 @@ export const sendGoogleChatMessage = action({
 				});
 			}
 
-			const message = {
-				text: builtMessage, // Show full message as text (with mentions working)
-				cardsV2: [
-					{
-						cardId: "pr-assignment-card",
-						card: {
-							sections: [
-								{
-									widgets: [
-										{
-											buttonList: {
-												buttons: buttons,
+			for (const target of webhookTargets) {
+				const targetMessage = prependOriginTeamNotice(
+					builtMessage,
+					locale,
+					sourceTeamName,
+					target.isExternalTarget,
+				);
+				const message = {
+					text: targetMessage, // Show full message as text (with mentions working)
+					cardsV2: [
+						{
+							cardId: "pr-assignment-card",
+							card: {
+								sections: [
+									{
+										widgets: [
+											{
+												buttonList: {
+													buttons: buttons,
+												},
 											},
-										},
-									],
-								},
-							],
+										],
+									},
+								],
+							},
 						},
-					},
-				],
-				thread: { threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD " },
-			};
-
-			const response = await fetch(GOOGLE_CHAT_WEBHOOK_URL, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(message),
-			});
-
-			if (!response.ok) {
-				return {
-					success: false,
-					error: `HTTP ${response.status}: ${response.statusText}`,
+					],
+					thread: { threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD " },
 				};
+
+				const response = await fetch(target.webhookUrl, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(message),
+				});
+
+				if (!response.ok) {
+					return {
+						success: false,
+						error: `HTTP ${response.status}: ${response.statusText}`,
+					};
+				}
 			}
 
 			// Fire and forget logging of the message (keep last 3)
@@ -302,6 +374,7 @@ export const sendGoogleChatGroupMessage = action({
 		assignerName: v.optional(v.string()),
 		assignerChatId: v.optional(v.string()),
 		teamSlug: v.string(),
+		broadcastTeamSlugs: v.optional(v.array(v.string())),
 		customMessage: v.optional(v.string()),
 		urgent: v.optional(v.boolean()),
 	},
@@ -316,6 +389,7 @@ export const sendGoogleChatGroupMessage = action({
 			assignerName,
 			assignerChatId,
 			teamSlug,
+			broadcastTeamSlugs,
 			customMessage,
 			urgent = false,
 		},
@@ -330,12 +404,16 @@ export const sendGoogleChatGroupMessage = action({
 			reviewerChatId: reviewer.reviewerChatId?.trim() || undefined,
 		}));
 
-		const team = (await ctx.runQuery(api.queries.getTeam, { teamSlug })) as {
-			googleChatWebhookUrl?: string;
-		} | null;
-		const webhookUrl = team?.googleChatWebhookUrl?.trim();
+		const webhookTargets = await resolveWebhookTargets(
+			ctx,
+			teamSlug,
+			broadcastTeamSlugs,
+		);
+		const sourceTeamName =
+			webhookTargets.find((target) => target.slug === teamSlug)?.name ||
+			teamSlug;
 
-		if (!webhookUrl) {
+		if (webhookTargets.length === 0) {
 			return {
 				success: false,
 				error: "Google Chat webhook URL not configured for this team",
@@ -424,41 +502,49 @@ export const sendGoogleChatGroupMessage = action({
 				});
 			}
 
-			const message = {
-				text: builtMessage,
-				cardsV2: [
-					{
-						cardId: "pr-assignment-batch-card",
-						card: {
-							sections: [
-								{
-									widgets: [
-										{
-											buttonList: {
-												buttons,
-											},
-										},
-									],
-								},
-							],
-						},
-					},
-				],
-				thread: { threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD " },
-			};
-
-			const response = await fetch(webhookUrl, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(message),
-			});
-			if (!response.ok) {
-				const text = await response.text().catch(() => "");
-				throw new Error(
-					`Google Chat webhook failed: ${response.status} ${response.statusText} ${text}`,
+			for (const target of webhookTargets) {
+				const targetMessage = prependOriginTeamNotice(
+					builtMessage,
+					locale,
+					sourceTeamName,
+					target.isExternalTarget,
 				);
+				const message = {
+					text: targetMessage,
+					cardsV2: [
+						{
+							cardId: "pr-assignment-batch-card",
+							card: {
+								sections: [
+									{
+										widgets: [
+											{
+												buttonList: {
+													buttons,
+												},
+											},
+										],
+									},
+								],
+							},
+						},
+					],
+					thread: { threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD " },
+				};
+
+				const response = await fetch(target.webhookUrl, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(message),
+				});
+				if (!response.ok) {
+					const text = await response.text().catch(() => "");
+					throw new Error(
+						`Google Chat webhook failed: ${response.status} ${response.statusText} ${text}`,
+					);
+				}
 			}
 
 			try {
