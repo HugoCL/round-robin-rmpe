@@ -659,12 +659,25 @@ export const getTeamWeeklyPrCount = query({
 			)
 			.collect();
 
-		let count = 0;
+		const uniqueAssignedPrKeys = new Set<string>();
 		for (const row of weeklyRows) {
 			if (!row.skipped && !row.isAbsentSkip) {
-				count += 1;
+				const normalizedPrUrl = row.prUrl?.trim().toLowerCase();
+				if (normalizedPrUrl) {
+					uniqueAssignedPrKeys.add(`pr:${normalizedPrUrl}`);
+					continue;
+				}
+
+				if (row.batchId) {
+					uniqueAssignedPrKeys.add(`batch:${row.batchId}`);
+					continue;
+				}
+
+				uniqueAssignedPrKeys.add(`single:${row._id}`);
 			}
 		}
+
+		const count = uniqueAssignedPrKeys.size;
 
 		return {
 			count,

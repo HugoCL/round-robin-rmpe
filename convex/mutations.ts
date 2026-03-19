@@ -784,26 +784,6 @@ export const resetAllCounts = mutation({
 	},
 });
 
-// Helper function to clean up old assignments (keep only last 100 per team)
-async function cleanupOldAssignments(
-	ctx: MutationCtx,
-	teamId: Id<"teams"> | undefined,
-) {
-	const teamAssignments = await ctx.db
-		.query("assignmentHistory")
-		.withIndex("by_team_timestamp", (q) => q.eq("teamId", teamId))
-		.order("desc")
-		.collect();
-
-	// If we have more than 100 assignments for this team, delete the oldest ones
-	if (teamAssignments.length > 100) {
-		const assignmentsToDelete = teamAssignments.slice(100);
-		for (const assignment of assignmentsToDelete) {
-			await ctx.db.delete(assignment._id);
-		}
-	}
-}
-
 type AssignmentFeedItemRecord = {
 	reviewerId: string;
 	reviewerName?: string;
@@ -1286,7 +1266,6 @@ export const assignPRBatch = mutation({
 
 		await incrementGlobalReviewedPRCounter(ctx);
 		await updateAssignmentFeedBatch(ctx, feedEntries, team._id);
-		await cleanupOldAssignments(ctx, team._id);
 
 		await createSnapshot(
 			ctx,
@@ -1405,9 +1384,6 @@ export const assignPR = mutation({
 				reviewer.teamId,
 			);
 		}
-
-		// Clean up old assignment history (keep only last 100 assignments per team)
-		await cleanupOldAssignments(ctx, reviewer.teamId);
 
 		// Create backup snapshot
 		let action = "Assigned PR to";
