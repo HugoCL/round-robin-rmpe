@@ -36,11 +36,22 @@ import {
 } from "@/lib/changelog";
 
 function formatDate(dateStr: string, locale: string): string {
-	const date = new Date(dateStr);
+	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+	const date = match
+		? new Date(
+				Date.UTC(
+					Number.parseInt(match[1], 10),
+					Number.parseInt(match[2], 10) - 1,
+					Number.parseInt(match[3], 10),
+					12,
+				),
+			)
+		: new Date(dateStr);
 	return date.toLocaleDateString(locale.startsWith("es") ? "es-ES" : "en-US", {
 		day: "numeric",
 		month: "long",
 		year: "numeric",
+		timeZone: "UTC",
 	});
 }
 

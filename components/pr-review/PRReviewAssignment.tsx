@@ -108,6 +108,7 @@ export default function PRReviewAssignment({
 	} = useUserPreferences();
 	const {
 		showAssignments,
+		myAssignmentsOnly,
 		showTags,
 		showEmails,
 		hideMultiAssignmentSection,
@@ -322,6 +323,13 @@ export default function PRReviewAssignment({
 		() => void updatePreferences({ showAssignments: !showAssignments }),
 		[showAssignments, updatePreferences],
 	);
+	const toggleMyAssignmentsOnly = useCallback(
+		() =>
+			void updatePreferences({
+				myAssignmentsOnly: !myAssignmentsOnly,
+			}),
+		[myAssignmentsOnly, updatePreferences],
+	);
 	const toggleShowTags = useCallback(
 		() => void updatePreferences({ showTags: !showTags }),
 		[showTags, updatePreferences],
@@ -493,6 +501,8 @@ export default function PRReviewAssignment({
 			teamSlug,
 			showAssignments,
 			toggleShowAssignments,
+			myAssignmentsOnly,
+			toggleMyAssignmentsOnly,
 			showTags,
 			toggleShowTags,
 			showEmails,
@@ -528,6 +538,8 @@ export default function PRReviewAssignment({
 			teamSlug,
 			showAssignments,
 			toggleShowAssignments,
+			myAssignmentsOnly,
+			toggleMyAssignmentsOnly,
 			showTags,
 			toggleShowTags,
 			showEmails,

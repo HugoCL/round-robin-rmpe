@@ -13,6 +13,7 @@ import { type MutationCtx, mutation, type QueryCtx } from "./_generated/server";
 const GLOBAL_REVIEWED_PR_COUNTER_KEY = "reviewed_pr_total";
 type UserPreferenceFlags = {
 	showAssignments: boolean;
+	myAssignmentsOnly: boolean;
 	showTags: boolean;
 	showEmails: boolean;
 	hideMultiAssignmentSection: boolean;
@@ -31,6 +32,7 @@ type AssignmentSource = "ui" | "agent";
 
 const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	showAssignments: false,
+	myAssignmentsOnly: false,
 	showTags: true,
 	showEmails: false,
 	hideMultiAssignmentSection: false,
@@ -65,6 +67,9 @@ function resolvePreferencePatch(
 	const resolved: Partial<UserPreferenceFlags> = {};
 	if (typeof patch.showAssignments === "boolean") {
 		resolved.showAssignments = patch.showAssignments;
+	}
+	if (typeof patch.myAssignmentsOnly === "boolean") {
+		resolved.myAssignmentsOnly = patch.myAssignmentsOnly;
 	}
 	if (typeof patch.showTags === "boolean") {
 		resolved.showTags = patch.showTags;
@@ -253,6 +258,7 @@ export const updateTeamSettings = mutation({
 export const bootstrapMyUserPreferences = mutation({
 	args: {
 		showAssignments: v.optional(v.boolean()),
+		myAssignmentsOnly: v.optional(v.boolean()),
 		showTags: v.optional(v.boolean()),
 		showEmails: v.optional(v.boolean()),
 		hideMultiAssignmentSection: v.optional(v.boolean()),
@@ -300,6 +306,7 @@ export const bootstrapMyUserPreferences = mutation({
 export const updateMyUserPreferences = mutation({
 	args: {
 		showAssignments: v.optional(v.boolean()),
+		myAssignmentsOnly: v.optional(v.boolean()),
 		showTags: v.optional(v.boolean()),
 		showEmails: v.optional(v.boolean()),
 		hideMultiAssignmentSection: v.optional(v.boolean()),

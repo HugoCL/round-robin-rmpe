@@ -427,6 +427,7 @@
 	},
 	"history": {
 		"title": "Assignment History",
+		"myAssignmentsOnlyLabel": "My assignments",
 		"assignedBy": "Assigned by",
 		"assignees": "Assignees",
 		"assigneesCount": "{count, plural, one {# assignee} other {# assignees}}",

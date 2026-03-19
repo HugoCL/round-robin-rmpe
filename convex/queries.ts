@@ -65,6 +65,7 @@ type GroupedAssignmentHistoryItem = {
 	source: "ui" | "agent";
 	prUrl?: string;
 	contextUrl?: string;
+	actionByReviewerId?: string;
 	actionByName?: string;
 	actionByEmail?: string;
 	reviewers: Array<{
@@ -85,6 +86,7 @@ type LandingAssignmentTickerItem = {
 };
 type UserPreferenceFlags = {
 	showAssignments: boolean;
+	myAssignmentsOnly: boolean;
 	showTags: boolean;
 	showEmails: boolean;
 	hideMultiAssignmentSection: boolean;
@@ -95,6 +97,7 @@ type UserPreferenceFlags = {
 
 const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	showAssignments: false,
+	myAssignmentsOnly: false,
 	showTags: true,
 	showEmails: false,
 	hideMultiAssignmentSection: false,
@@ -230,6 +233,9 @@ function groupAssignmentHistory(
 				source: item.source === "agent" ? "agent" : "ui",
 				prUrl: item.prUrl,
 				contextUrl: item.contextUrl,
+				actionByReviewerId: item.actionByReviewerId
+					? String(item.actionByReviewerId)
+					: undefined,
 				...actionBy,
 				reviewers: [],
 				reviewerCount: 0,
@@ -250,6 +256,9 @@ function groupAssignmentHistory(
 			group.source === "agent" || item.source === "agent" ? "agent" : "ui";
 		group.prUrl ??= item.prUrl;
 		group.contextUrl ??= item.contextUrl;
+		group.actionByReviewerId ??= item.actionByReviewerId
+			? String(item.actionByReviewerId)
+			: undefined;
 		group.actionByName ??= actionBy.actionByName;
 		group.actionByEmail ??= actionBy.actionByEmail;
 		group.reviewers.push({
@@ -718,6 +727,7 @@ export const getMyUserPreferences = query({
 
 		return {
 			showAssignments: existing.showAssignments,
+			myAssignmentsOnly: existing.myAssignmentsOnly === true,
 			showTags: existing.showTags,
 			showEmails: existing.showEmails,
 			hideMultiAssignmentSection: existing.hideMultiAssignmentSection,

@@ -10,6 +10,8 @@ export interface PRReviewContextValue {
 	// Visibility / layout
 	showAssignments: boolean;
 	toggleShowAssignments: () => void;
+	myAssignmentsOnly: boolean;
+	toggleMyAssignmentsOnly: () => void;
 	showTags: boolean;
 	toggleShowTags: () => void;
 	showEmails: boolean;

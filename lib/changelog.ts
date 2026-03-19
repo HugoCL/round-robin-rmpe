@@ -43,6 +43,13 @@ export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
 		date: "2026-03-19",
+		type: "feature",
+		title: 'Filtro "Mis asignaciones" en el historial',
+		description:
+			"Agregamos un toggle persistente de 'Mis asignaciones' en la esquina superior derecha del historial. Al activarlo, se muestran solo PRs asignados por ti o para ti.",
+	},
+	{
+		date: "2026-03-19",
 		type: "improvement",
 		title: "Contador semanal de PRs del equipo en el header",
 		description:

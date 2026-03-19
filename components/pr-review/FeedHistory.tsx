@@ -4,14 +4,19 @@ import { useQuery } from "convex/react";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import type { GroupedAssignmentHistoryItem } from "@/lib/types";
+import { usePRReview } from "./PRReviewContext";
 
 export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 	const t = useTranslations();
+	const { userInfo, reviewers, myAssignmentsOnly, toggleMyAssignmentsOnly } =
+		usePRReview();
 
 	// Use Convex for real-time tags and assignment history
 	const tags =
@@ -21,6 +26,33 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 			api.queries.getAssignmentHistory,
 			teamSlug ? { teamSlug } : "skip",
 		) || [];
+
+	const filteredAssignmentHistory = useMemo(() => {
+		if (!myAssignmentsOnly) return assignmentHistory;
+		const userEmail = userInfo?.email?.toLowerCase().trim();
+		if (!userEmail) return assignmentHistory;
+
+		const myReviewerIds = new Set(
+			reviewers
+				.filter((reviewer) => reviewer.email.toLowerCase().trim() === userEmail)
+				.map((reviewer) => String(reviewer._id)),
+		);
+
+		return assignmentHistory.filter((item) => {
+			const assignedForMe = item.reviewers.some((reviewer) =>
+				myReviewerIds.has(reviewer.reviewerId),
+			);
+			const assignedByMe =
+				(item.actionByReviewerId
+					? myReviewerIds.has(item.actionByReviewerId)
+					: false) ||
+				(item.actionByEmail
+					? item.actionByEmail.toLowerCase().trim() === userEmail
+					: false);
+
+			return assignedForMe || assignedByMe;
+		});
+	}, [assignmentHistory, myAssignmentsOnly, reviewers, userInfo?.email]);
 
 	const getTagBadge = (tagId: string) => {
 		const tag = tags.find((t: Doc<"tags">) => t._id === tagId);
@@ -43,17 +75,34 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 
 	return (
 		<Card>
-			<CardHeader className="shrink-0">
-				<CardTitle>{t("history.title")}</CardTitle>
+			<CardHeader className="shrink-0 flex flex-row items-start justify-between gap-4">
+				<CardTitle className="mt-1">{t("history.title")}</CardTitle>
+				<div className="flex items-center gap-2">
+					<label
+						htmlFor="history-my-assignments-toggle"
+						className="text-xs text-muted-foreground whitespace-nowrap"
+					>
+						{t("history.myAssignmentsOnlyLabel")}
+					</label>
+					<Switch
+						id="history-my-assignments-toggle"
+						checked={myAssignmentsOnly}
+						onCheckedChange={(checked) => {
+							if (checked !== myAssignmentsOnly) {
+								toggleMyAssignmentsOnly();
+							}
+						}}
+					/>
+				</div>
 			</CardHeader>
 			<CardContent>
-				{assignmentHistory.length === 0 ? (
+				{filteredAssignmentHistory.length === 0 ? (
 					<div className="text-center p-4 border  bg-muted h-full flex items-center justify-center">
 						<p>{t("pr.noAssignments")}</p>
 					</div>
 				) : (
 					<div className="space-y-3">
-						{assignmentHistory.slice(0, 6).map((item) => (
+						{filteredAssignmentHistory.slice(0, 6).map((item) => (
 							<div
 								key={item.id}
 								className={`flex items-start justify-between p-3 border hover:bg-muted/50 transition-colors ${

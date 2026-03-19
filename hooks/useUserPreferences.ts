@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 
 export type UserPreferences = {
 	showAssignments: boolean;
+	myAssignmentsOnly: boolean;
 	showTags: boolean;
 	showEmails: boolean;
 	hideMultiAssignmentSection: boolean;
@@ -24,6 +25,7 @@ type UserPreferencePatch = Partial<
 
 const USER_PREFERENCE_DEFAULTS: UserPreferences = {
 	showAssignments: false,
+	myAssignmentsOnly: false,
 	showTags: true,
 	showEmails: false,
 	hideMultiAssignmentSection: false,
@@ -82,6 +84,7 @@ function clearLegacyLocalPreferences() {
 function isSamePreferenceState(a: UserPreferences, b: UserPreferences) {
 	return (
 		a.showAssignments === b.showAssignments &&
+		a.myAssignmentsOnly === b.myAssignmentsOnly &&
 		a.showTags === b.showTags &&
 		a.showEmails === b.showEmails &&
 		a.hideMultiAssignmentSection === b.hideMultiAssignmentSection &&
@@ -96,6 +99,9 @@ function resolvePatch(patch: UserPreferencePatch): UserPreferencePatch {
 
 	if (typeof patch.showAssignments === "boolean") {
 		resolved.showAssignments = patch.showAssignments;
+	}
+	if (typeof patch.myAssignmentsOnly === "boolean") {
+		resolved.myAssignmentsOnly = patch.myAssignmentsOnly;
 	}
 	if (typeof patch.showTags === "boolean") {
 		resolved.showTags = patch.showTags;
@@ -138,6 +144,7 @@ export function useUserPreferences() {
 		if (!preferenceQuery) return null;
 		return {
 			showAssignments: preferenceQuery.showAssignments,
+			myAssignmentsOnly: preferenceQuery.myAssignmentsOnly === true,
 			showTags: preferenceQuery.showTags,
 			showEmails: preferenceQuery.showEmails,
 			hideMultiAssignmentSection: preferenceQuery.hideMultiAssignmentSection,

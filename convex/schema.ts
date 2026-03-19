@@ -15,6 +15,7 @@ export default defineSchema({
 		userTokenIdentifier: v.string(),
 		email: v.optional(v.string()),
 		showAssignments: v.boolean(),
+		myAssignmentsOnly: v.optional(v.boolean()),
 		showTags: v.boolean(),
 		showEmails: v.boolean(),
 		hideMultiAssignmentSection: v.boolean(),
