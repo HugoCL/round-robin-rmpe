@@ -1336,7 +1336,9 @@ export function AssignmentCard() {
 								className="h-12 flex-1 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 								size="lg"
 							>
-								{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
+								<TextMorph ease={{ stiffness: 200, damping: 20 }}>
+									{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
+								</TextMorph>
 							</Button>
 
 							<TooltipProvider>
