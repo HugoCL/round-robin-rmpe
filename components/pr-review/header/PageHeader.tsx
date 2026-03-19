@@ -56,6 +56,7 @@ import { HeaderOptionsDrawer } from "../HeaderOptionsDrawer";
 import { usePRReview } from "../PRReviewContext";
 import { ReviewersTable } from "../ReviewersTable";
 import { TagManager } from "../TagManager";
+import { TeamWeeklyPRCounter } from "./TeamWeeklyPRCounter";
 
 interface PageHeaderProps {
 	teamSlug?: string;
@@ -149,6 +150,7 @@ export function PageHeader({
 			<div className="flex items-center gap-3 flex-wrap">
 				<h1 className="text-3xl font-bold">{t("pr.title")}</h1>
 				<TeamSwitcher teamSlug={teamSlug} />
+				<TeamWeeklyPRCounter teamSlug={teamSlug} />
 			</div>
 			<div className="flex items-center gap-1">
 				{userInfo?.email && (

@@ -3,6 +3,7 @@ import {
 	getReviewerAvailability,
 	normalizePartTimeSchedule,
 	resolveTeamTimezone,
+	type Weekday,
 } from "../lib/reviewerAvailability";
 
 type EnrichedAssignment = {
@@ -277,6 +278,171 @@ function extractPrNumber(prUrl?: string) {
 	return fallbackMatch?.[1];
 }
 
+const WEEKDAY_TO_MONDAY_INDEX: Record<Weekday, number> = {
+	monday: 0,
+	tuesday: 1,
+	wednesday: 2,
+	thursday: 3,
+	friday: 4,
+	saturday: 5,
+	sunday: 6,
+};
+
+function parseGmtOffsetToMs(value: string) {
+	if (value === "GMT") return 0;
+
+	const match = value.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
+	if (!match) {
+		throw new Error(`Unsupported timezone offset format: ${value}`);
+	}
+
+	const sign = match[1] === "+" ? 1 : -1;
+	const hours = Number.parseInt(match[2], 10);
+	const minutes = Number.parseInt(match[3] ?? "0", 10);
+	return sign * (hours * 60 + minutes) * 60 * 1000;
+}
+
+function getTimeZoneOffsetMs(timeZone: string, timestamp: number) {
+	const parts = new Intl.DateTimeFormat("en-US", {
+		timeZone,
+		timeZoneName: "shortOffset",
+	}).formatToParts(new Date(timestamp));
+	const offsetText = parts.find((part) => part.type === "timeZoneName")?.value;
+
+	if (!offsetText) {
+		throw new Error(`Unable to resolve timezone offset for ${timeZone}`);
+	}
+
+	return parseGmtOffsetToMs(offsetText);
+}
+
+function getTimeZoneDateParts(
+	now: number,
+	timeZone: string,
+): {
+	year: number;
+	month: number;
+	day: number;
+	weekday: Weekday;
+} {
+	const parts = new Intl.DateTimeFormat("en-US", {
+		timeZone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		weekday: "long",
+	}).formatToParts(new Date(now));
+
+	const year = Number.parseInt(
+		parts.find((part) => part.type === "year")?.value ?? "0",
+		10,
+	);
+	const month = Number.parseInt(
+		parts.find((part) => part.type === "month")?.value ?? "0",
+		10,
+	);
+	const day = Number.parseInt(
+		parts.find((part) => part.type === "day")?.value ?? "0",
+		10,
+	);
+	const weekdayText = (
+		parts.find((part) => part.type === "weekday")?.value ?? ""
+	).toLowerCase();
+
+	if (
+		Number.isNaN(year) ||
+		Number.isNaN(month) ||
+		Number.isNaN(day) ||
+		!(weekdayText in WEEKDAY_TO_MONDAY_INDEX)
+	) {
+		throw new Error(`Unable to parse timezone date parts for ${timeZone}`);
+	}
+
+	return {
+		year,
+		month,
+		day,
+		weekday: weekdayText as Weekday,
+	};
+}
+
+function zonedDateTimeToUtcMs(
+	timeZone: string,
+	parts: {
+		year: number;
+		month: number;
+		day: number;
+		hour?: number;
+		minute?: number;
+		second?: number;
+		millisecond?: number;
+	},
+) {
+	const hour = parts.hour ?? 0;
+	const minute = parts.minute ?? 0;
+	const second = parts.second ?? 0;
+	const millisecond = parts.millisecond ?? 0;
+
+	let candidateUtc = Date.UTC(
+		parts.year,
+		parts.month - 1,
+		parts.day,
+		hour,
+		minute,
+		second,
+		millisecond,
+	);
+
+	for (let i = 0; i < 3; i += 1) {
+		const offset = getTimeZoneOffsetMs(timeZone, candidateUtc);
+		const nextCandidate =
+			Date.UTC(
+				parts.year,
+				parts.month - 1,
+				parts.day,
+				hour,
+				minute,
+				second,
+				millisecond,
+			) - offset;
+		if (nextCandidate === candidateUtc) {
+			break;
+		}
+		candidateUtc = nextCandidate;
+	}
+
+	return candidateUtc;
+}
+
+function getCurrentWeekRangeInTimezone(now: number, timeZone: string) {
+	const dateParts = getTimeZoneDateParts(now, timeZone);
+	const weekDayOffset = WEEKDAY_TO_MONDAY_INDEX[dateParts.weekday];
+
+	const weekStartLocalDate = new Date(
+		Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day),
+	);
+	weekStartLocalDate.setUTCDate(
+		weekStartLocalDate.getUTCDate() - weekDayOffset,
+	);
+
+	const weekStartMs = zonedDateTimeToUtcMs(timeZone, {
+		year: weekStartLocalDate.getUTCFullYear(),
+		month: weekStartLocalDate.getUTCMonth() + 1,
+		day: weekStartLocalDate.getUTCDate(),
+	});
+
+	const weekEndLocalDate = new Date(weekStartLocalDate);
+	weekEndLocalDate.setUTCDate(weekEndLocalDate.getUTCDate() + 7);
+
+	const weekEndMs = zonedDateTimeToUtcMs(timeZone, {
+		year: weekEndLocalDate.getUTCFullYear(),
+		month: weekEndLocalDate.getUTCMonth() + 1,
+		day: weekEndLocalDate.getUTCDate(),
+	});
+
+	return { weekStartMs, weekEndMs };
+}
+
 // Teams
 export const getTeams = query({
 	args: {},
@@ -469,6 +635,42 @@ export const getTeam = query({
 		return {
 			...team,
 			timezone: resolveTeamTimezone(team.timezone),
+		};
+	},
+});
+
+export const getTeamWeeklyPrCount = query({
+	args: { teamSlug: v.string() },
+	handler: async (ctx, { teamSlug }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const timeZone = resolveTeamTimezone(team.timezone);
+		const { weekStartMs, weekEndMs } = getCurrentWeekRangeInTimezone(
+			Date.now(),
+			timeZone,
+		);
+
+		const weeklyRows = await ctx.db
+			.query("assignmentHistory")
+			.withIndex("by_team_timestamp", (q) =>
+				q
+					.eq("teamId", team._id)
+					.gte("timestamp", weekStartMs)
+					.lt("timestamp", weekEndMs),
+			)
+			.collect();
+
+		let count = 0;
+		for (const row of weeklyRows) {
+			if (!row.skipped && !row.isAbsentSkip) {
+				count += 1;
+			}
+		}
+
+		return {
+			count,
+			weekStartMs,
+			weekEndMs,
+			timeZone,
 		};
 	},
 });

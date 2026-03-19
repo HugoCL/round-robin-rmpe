@@ -217,7 +217,9 @@
 		"assignedBy": "Asignado por",
 		"reviewer": "Revisor",
 		"noPrLink": "Sin enlace de PR",
-		"unknownUser": "Desconocido"
+		"unknownUser": "Desconocido",
+		"teamPrsThisWeek": "PRs del equipo esta semana",
+		"teamPrsThisWeekAria": "PRs del equipo esta semana: {count}"
 	},
 	"tags": {
 		"title": "Tags",

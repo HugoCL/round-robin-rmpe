@@ -42,6 +42,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-03-19",
+		type: "improvement",
+		title: "Contador semanal de PRs del equipo en el header",
+		description:
+			"Agregamos un contador de 'PRs del equipo esta semana' en el header de la app.",
+	},
+	{
 		date: "2026-03-18",
 		type: "feature",
 		title: "Revisión entre equipos en una sola asignación",
