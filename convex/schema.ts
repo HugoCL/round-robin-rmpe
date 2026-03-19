@@ -99,6 +99,7 @@ export default defineSchema({
 		source: v.optional(v.union(v.literal("ui"), v.literal("agent"))),
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
+		googleChatThreadUrl: v.optional(v.string()),
 		tagId: v.optional(v.string()),
 		actionByReviewerId: v.optional(v.id("reviewers")),
 		actionByName: v.optional(v.string()),

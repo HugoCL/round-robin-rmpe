@@ -67,23 +67,42 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 											{item.actionByName || item.actionByEmail}
 										</p>
 									)}
-									{item.prUrl && (
-										<p className="text-xs mt-1">
-											<Link
-												href={item.prUrl}
-												target="_blank"
-												rel="noreferrer noopener"
-												aria-label={t("common.viewPR")}
-												className="inline-flex items-center gap-1"
-											>
-												<Badge
-													variant="outline"
-													className="cursor-pointer hover:bg-primary/10 transition-colors"
+									{(item.prUrl || item.googleChatThreadUrl) && (
+										<p className="text-xs mt-1 flex gap-2 flex-wrap">
+											{item.prUrl && (
+												<Link
+													href={item.prUrl}
+													target="_blank"
+													rel="noreferrer noopener"
+													aria-label={t("common.viewPR")}
+													className="inline-flex items-center gap-1"
 												>
-													{t("common.viewPR")}
-													<ExternalLink className="h-3 w-3 ml-1" />
-												</Badge>
-											</Link>
+													<Badge
+														variant="outline"
+														className="cursor-pointer hover:bg-primary/10 transition-colors"
+													>
+														{t("common.viewPR")}
+														<ExternalLink className="h-3 w-3 ml-1" />
+													</Badge>
+												</Link>
+											)}
+											{item.googleChatThreadUrl && (
+												<Link
+													href={item.googleChatThreadUrl}
+													target="_blank"
+													rel="noreferrer noopener"
+													aria-label={t("common.viewChatThread")}
+													className="inline-flex items-center gap-1"
+												>
+													<Badge
+														variant="outline"
+														className="cursor-pointer hover:bg-primary/10 transition-colors"
+													>
+														{t("common.viewChatThread")}
+														<ExternalLink className="h-3 w-3 ml-1" />
+													</Badge>
+												</Link>
+											)}
 										</p>
 									)}
 								</div>

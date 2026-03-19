@@ -75,6 +75,7 @@ export interface GroupedAssignmentHistoryItem {
 	source: "ui" | "agent";
 	prUrl?: string;
 	contextUrl?: string;
+	googleChatThreadUrl?: string;
 	actionByReviewerId?: string;
 	actionByName?: string;
 	actionByEmail?: string;

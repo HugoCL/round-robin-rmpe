@@ -65,6 +65,7 @@ type GroupedAssignmentHistoryItem = {
 	source: "ui" | "agent";
 	prUrl?: string;
 	contextUrl?: string;
+	googleChatThreadUrl?: string;
 	actionByReviewerId?: string;
 	actionByName?: string;
 	actionByEmail?: string;
@@ -233,6 +234,7 @@ function groupAssignmentHistory(
 				source: item.source === "agent" ? "agent" : "ui",
 				prUrl: item.prUrl,
 				contextUrl: item.contextUrl,
+				googleChatThreadUrl: item.googleChatThreadUrl,
 				actionByReviewerId: item.actionByReviewerId
 					? String(item.actionByReviewerId)
 					: undefined,
@@ -256,6 +258,7 @@ function groupAssignmentHistory(
 			group.source === "agent" || item.source === "agent" ? "agent" : "ui";
 		group.prUrl ??= item.prUrl;
 		group.contextUrl ??= item.contextUrl;
+		group.googleChatThreadUrl ??= item.googleChatThreadUrl;
 		group.actionByReviewerId ??= item.actionByReviewerId
 			? String(item.actionByReviewerId)
 			: undefined;

@@ -35,6 +35,45 @@ type ChatWebhookTarget = {
 	isExternalTarget: boolean;
 };
 
+type GoogleChatWebhookResponse = {
+	thread?: {
+		name?: string;
+	};
+	name?: string;
+	messageLink?: string;
+};
+
+function toGoogleChatThreadUrl(
+	response: GoogleChatWebhookResponse | null,
+): string | undefined {
+	const directLink = response?.messageLink?.trim();
+	if (directLink?.startsWith("http")) {
+		return directLink;
+	}
+
+	const threadName = response?.thread?.name?.trim();
+	if (threadName) {
+		const threadMatch = threadName.match(/^spaces\/([^/]+)\/threads\/([^/]+)$/);
+		if (threadMatch) {
+			const [, spaceId, threadId] = threadMatch;
+			return `https://chat.google.com/room/${encodeURIComponent(spaceId)}/${encodeURIComponent(threadId)}`;
+		}
+	}
+
+	const messageName = response?.name?.trim();
+	if (messageName) {
+		const messageMatch = messageName.match(
+			/^spaces\/([^/]+)\/messages\/([^/]+)$/,
+		);
+		if (messageMatch) {
+			const [, spaceId, messageId] = messageMatch;
+			return `https://chat.google.com/room/${encodeURIComponent(spaceId)}/${encodeURIComponent(messageId)}`;
+		}
+	}
+
+	return undefined;
+}
+
 async function resolveWebhookTargets(
 	ctx: ActionCtx,
 	teamSlug: string,
@@ -133,6 +172,7 @@ export const sendGoogleChatMessage = action({
 		}
 
 		try {
+			const normalizedPrUrl = prUrl.trim();
 			// If no assignerChatId provided by client but we have email + teamSlug, attempt server-side lookup
 			if (!assignerChatId && assignerEmail && teamSlug) {
 				try {
@@ -268,6 +308,7 @@ export const sendGoogleChatMessage = action({
 				});
 			}
 
+			let googleChatThreadUrl: string | undefined;
 			for (const target of webhookTargets) {
 				const targetMessage = prependOriginTeamNotice(
 					builtMessage,
@@ -311,6 +352,30 @@ export const sendGoogleChatMessage = action({
 						success: false,
 						error: `HTTP ${response.status}: ${response.statusText}`,
 					};
+				}
+
+				if (!googleChatThreadUrl) {
+					const responseBody = (await response
+						.clone()
+						.json()
+						.catch(() => null)) as GoogleChatWebhookResponse | null;
+					googleChatThreadUrl = toGoogleChatThreadUrl(responseBody);
+				}
+			}
+
+			if (googleChatThreadUrl && reviewerEmail.trim()) {
+				try {
+					await ctx.runMutation(
+						api.mutations.attachGoogleChatThreadUrlToAssignmentHistory,
+						{
+							teamSlug,
+							prUrl: normalizedPrUrl,
+							reviewerEmails: [reviewerEmail],
+							googleChatThreadUrl,
+						},
+					);
+				} catch (e) {
+					console.warn("Failed to persist Google Chat thread URL", e);
 				}
 			}
 
@@ -421,6 +486,7 @@ export const sendGoogleChatGroupMessage = action({
 		}
 
 		try {
+			const normalizedPrUrl = prUrl.trim();
 			if (!assignerChatId && assignerEmail && teamSlug) {
 				try {
 					const teamReviewers = await ctx.runQuery(api.queries.getReviewers, {
@@ -502,6 +568,7 @@ export const sendGoogleChatGroupMessage = action({
 				});
 			}
 
+			let googleChatThreadUrl: string | undefined;
 			for (const target of webhookTargets) {
 				const targetMessage = prependOriginTeamNotice(
 					builtMessage,
@@ -544,6 +611,32 @@ export const sendGoogleChatGroupMessage = action({
 					throw new Error(
 						`Google Chat webhook failed: ${response.status} ${response.statusText} ${text}`,
 					);
+				}
+
+				if (!googleChatThreadUrl) {
+					const responseBody = (await response
+						.clone()
+						.json()
+						.catch(() => null)) as GoogleChatWebhookResponse | null;
+					googleChatThreadUrl = toGoogleChatThreadUrl(responseBody);
+				}
+			}
+
+			if (googleChatThreadUrl) {
+				try {
+					await ctx.runMutation(
+						api.mutations.attachGoogleChatThreadUrlToAssignmentHistory,
+						{
+							teamSlug,
+							prUrl: normalizedPrUrl,
+							reviewerEmails: normalizedReviewers.map(
+								(reviewer) => reviewer.email,
+							),
+							googleChatThreadUrl,
+						},
+					);
+				} catch (e) {
+					console.warn("Failed to persist Google Chat thread URL", e);
 				}
 			}
 
@@ -1144,6 +1237,32 @@ export const flashAssign = action({
 					console.warn(
 						`Google Chat webhook failed: ${response.status} ${response.statusText}`,
 					);
+				}
+
+				if (response.ok && prUrl.trim() && nextReviewer.email.trim()) {
+					const responseBody = (await response
+						.clone()
+						.json()
+						.catch(() => null)) as GoogleChatWebhookResponse | null;
+					const googleChatThreadUrl = toGoogleChatThreadUrl(responseBody);
+					if (googleChatThreadUrl) {
+						try {
+							await ctx.runMutation(
+								api.mutations.attachGoogleChatThreadUrlToAssignmentHistory,
+								{
+									teamSlug,
+									prUrl: prUrl.trim(),
+									reviewerEmails: [nextReviewer.email],
+									googleChatThreadUrl,
+								},
+							);
+						} catch (persistError) {
+							console.warn(
+								"Failed to persist Google Chat thread URL for flash assignment",
+								persistError,
+							);
+						}
+					}
 				}
 
 				// Log the sent message (fire and forget)

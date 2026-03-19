@@ -44,6 +44,13 @@ export const changelogEntries: ChangelogEntry[] = [
 	{
 		date: "2026-03-19",
 		type: "feature",
+		title: "Link al hilo de Google Chat en el historial",
+		description:
+			"Ahora las nuevas asignaciones guardan el enlace al hilo generado en Google Chat y lo mostramos en el historial de asignaciones, para que puedas abrir la conversación desde La Lista con un clic.",
+	},
+	{
+		date: "2026-03-19",
+		type: "feature",
 		title: 'Filtro "Mis asignaciones" en el historial',
 		description:
 			"Agregamos un toggle persistente de 'Mis asignaciones' en la esquina superior derecha del historial. Al activarlo, se muestran solo PRs asignados por ti o para ti.",

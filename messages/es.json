@@ -88,6 +88,7 @@
 		"help": "Ayuda",
 		"viewPR": "Ver PR",
 		"viewContext": "Ver Contexto",
+		"viewChatThread": "Ver hilo de Chat",
 		"signIn": "Iniciar Sesión",
 		"creating": "Creando…"
 	},

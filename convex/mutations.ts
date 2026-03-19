@@ -854,6 +854,7 @@ type AssignmentHistoryRecord = {
 	source?: AssignmentSource;
 	prUrl?: string;
 	contextUrl?: string;
+	googleChatThreadUrl?: string;
 	tagId?: string;
 	actionByReviewerId?: Id<"reviewers">;
 };
@@ -876,6 +877,10 @@ function sanitizeAssignmentHistoryRecord(
 		source: (item.source === "agent" ? "agent" : "ui") as AssignmentSource,
 		prUrl: item.prUrl,
 		contextUrl: item.contextUrl,
+		googleChatThreadUrl:
+			typeof item.googleChatThreadUrl === "string"
+				? item.googleChatThreadUrl
+				: undefined,
 		tagId: item.tagId,
 		actionByReviewerId: item.actionByReviewerId,
 	};
@@ -1424,6 +1429,97 @@ export const assignPR = mutation({
 				createdAt: reviewer.createdAt,
 				tags: reviewer.tags,
 			},
+		};
+	},
+});
+
+export const attachGoogleChatThreadUrlToAssignmentHistory = mutation({
+	args: {
+		teamSlug: v.string(),
+		prUrl: v.string(),
+		reviewerEmails: v.array(v.string()),
+		googleChatThreadUrl: v.string(),
+	},
+	handler: async (
+		ctx,
+		{ teamSlug, prUrl, reviewerEmails, googleChatThreadUrl },
+	) => {
+		const normalizedPrUrl = prUrl.trim().toLowerCase();
+		const normalizedThreadUrl = googleChatThreadUrl.trim();
+		const normalizedEmails = [
+			...new Set(
+				reviewerEmails
+					.map((email) => email.toLowerCase().trim())
+					.filter((email) => email.length > 0),
+			),
+		];
+
+		if (
+			normalizedPrUrl.length === 0 ||
+			normalizedThreadUrl.length === 0 ||
+			normalizedEmails.length === 0
+		) {
+			return { success: true, updated: 0 };
+		}
+
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+
+		const reviewerRows = (
+			await Promise.all(
+				normalizedEmails.map((email) =>
+					ctx.db
+						.query("reviewers")
+						.withIndex("by_email", (q) => q.eq("email", email))
+						.collect(),
+				),
+			)
+		).flat();
+
+		const targetReviewerIds = new Set<Id<"reviewers">>(
+			reviewerRows.map((row) => row._id),
+		);
+
+		if (targetReviewerIds.size === 0) {
+			return { success: true, updated: 0 };
+		}
+
+		const recentHistory = await ctx.db
+			.query("assignmentHistory")
+			.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
+			.order("desc")
+			.take(200);
+
+		let updated = 0;
+		const updatedReviewers = new Set<Id<"reviewers">>();
+
+		for (const row of recentHistory) {
+			if (updatedReviewers.size >= targetReviewerIds.size) {
+				break;
+			}
+			if (!targetReviewerIds.has(row.reviewerId)) {
+				continue;
+			}
+			if (updatedReviewers.has(row.reviewerId)) {
+				continue;
+			}
+			if ((row.prUrl?.trim().toLowerCase() || "") !== normalizedPrUrl) {
+				continue;
+			}
+			if (row.googleChatThreadUrl?.trim()) {
+				updatedReviewers.add(row.reviewerId);
+				continue;
+			}
+
+			await ctx.db.patch(row._id, {
+				googleChatThreadUrl: normalizedThreadUrl,
+			});
+			updated += 1;
+			updatedReviewers.add(row.reviewerId);
+		}
+
+		return {
+			success: true,
+			updated,
 		};
 	},
 });
