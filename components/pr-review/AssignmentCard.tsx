@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TextMorph } from "torph/react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -620,6 +621,7 @@ export function AssignmentCard() {
 
 	const handleAssignPR = async () => {
 		if (!teamSlug) return;
+
 		setIsAssigning(true);
 		setLiveSummary("");
 		try {
@@ -772,7 +774,9 @@ export function AssignmentCard() {
 											isAssigning ? "opacity-0" : "opacity-80"
 										}`}
 									>
-										{lastAssignedReviewer.name}
+										<TextMorph ease={{ stiffness: 200, damping: 20 }}>
+											{lastAssignedReviewer.name}
+										</TextMorph>
 									</h4>
 								</div>
 							)}
@@ -799,7 +803,9 @@ export function AssignmentCard() {
 													: "translate-y-0 opacity-100"
 											}`}
 										>
-											{activeNextReviewer.name}
+											<TextMorph ease={{ stiffness: 200, damping: 20 }}>
+												{activeNextReviewer.name}
+											</TextMorph>
 										</h3>
 										{mode === "tag" && selectedTag && (
 											<div className="flex justify-center">
@@ -819,13 +825,41 @@ export function AssignmentCard() {
 								</div>
 							</div>
 
+							{/* Auto-skip message when current user is the next reviewer */}
+							{activeNextReviewer &&
+								user?.email &&
+								activeNextReviewer.email.toLowerCase() ===
+									user.email.toLowerCase() && (
+									<Alert className="border-border/60 bg-muted/35">
+										<Info className="h-4 w-4 self-center text-muted-foreground" />
+										<AlertTitle className="text-sm text-foreground">
+											{t("pr.autoSkipTitle")}
+										</AlertTitle>
+										<AlertDescription className="text-sm text-muted-foreground">
+											{upcomingReviewer ? (
+												<>
+													{t("pr.autoSkipDescriptionPrefix")}{" "}
+													<TextMorph ease={{ stiffness: 200, damping: 20 }}>
+														{upcomingReviewer.name}
+													</TextMorph>{" "}
+													{t("pr.autoSkipDescriptionSuffix")}
+												</>
+											) : (
+												t("pr.autoSkipDescriptionNoNext")
+											)}
+										</AlertDescription>
+									</Alert>
+								)}
+
 							{upcomingReviewer && (
 								<div className="space-y-1">
 									<span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
 										{t("pr.upNext")}
 									</span>
 									<h4 className="text-lg font-medium text-muted-foreground opacity-80">
-										{upcomingReviewer.name}
+										<TextMorph ease={{ stiffness: 200, damping: 20 }}>
+											{upcomingReviewer.name}
+										</TextMorph>
 									</h4>
 								</div>
 							)}

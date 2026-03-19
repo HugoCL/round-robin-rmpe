@@ -150,6 +150,8 @@
 		"suggestImTheNext": "Use \"I'm the Next\"",
 		"autoSkipTitle": "You're the Next Reviewer",
 		"autoSkipDescription": "Since you're the next in line, the PR will be assigned to {nextReviewer} instead. Your count won't be incremented.",
+		"autoSkipDescriptionPrefix": "Since you're the next in line, the PR will be assigned to",
+		"autoSkipDescriptionSuffix": "instead. Your count won't be incremented.",
 		"autoSkipDescriptionNoNext": "Since you're the next reviewer, the assignment will skip you. However, there are no other available reviewers at the moment.",
 		"actions": "Actions",
 		"available": "Available",

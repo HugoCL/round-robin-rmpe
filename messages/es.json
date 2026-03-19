@@ -197,6 +197,8 @@
 		"suggestImTheNext": "Usar \"Soy el Siguiente\"",
 		"autoSkipTitle": "Eres el Siguiente Revisor",
 		"autoSkipDescription": "Como eres el siguiente en la lista, el PR se asignará a {nextReviewer} en su lugar. Tu contador no se incrementará.",
+		"autoSkipDescriptionPrefix": "Como eres el siguiente en la lista, el PR se asignará a",
+		"autoSkipDescriptionSuffix": "en su lugar. Tu contador no se incrementará.",
 		"autoSkipDescriptionNoNext": "Como eres el siguiente revisor, la asignación te omitirá. Sin embargo, no hay otros revisores disponibles en este momento.",
 		"actions": "Acciones",
 		"available": "Disponible",
