@@ -510,6 +510,42 @@ export const getMyTeamAccess = query({
 	},
 });
 
+export const getMyOnboardingState = query({
+	args: {},
+	handler: async (ctx) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			return {
+				isAuthenticated: false,
+				isAdmin: false,
+				hasTeams: false,
+				memberTeamSlugs: [] as string[],
+				joinableTeams: [] as Doc<"teams">[],
+			};
+		}
+
+		const normalizedEmail = normalizeEmail(identity.email);
+		const memberTeams = normalizedEmail
+			? await getMemberTeamsForEmail(ctx, normalizedEmail)
+			: [];
+		const memberTeamSlugs = memberTeams
+			.map((team) => team.slug)
+			.filter((slug): slug is string => typeof slug === "string");
+		const allTeams = await ctx.db.query("teams").order("desc").collect();
+		const joinableTeams = allTeams.filter(
+			(team) => !memberTeamSlugs.includes(team.slug),
+		);
+
+		return {
+			isAuthenticated: true,
+			isAdmin: isAdminEmail(identity.email),
+			hasTeams: memberTeamSlugs.length > 0,
+			memberTeamSlugs,
+			joinableTeams,
+		};
+	},
+});
+
 export const getGlobalReviewedPRCount = query({
 	args: {},
 	handler: async (ctx) => {

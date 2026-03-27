@@ -1,5 +1,6 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { ArrowRight, GitPullRequest, Lightbulb, Plus } from "lucide-react";
 import Link from "next/link";
@@ -21,7 +22,9 @@ function getTeamInitials(name: string) {
 export default function Page() {
 	const t = useTranslations();
 	const locale = useLocale();
+	const { user } = useUser();
 	const teams = useQuery(api.queries.getTeams);
+	const onboardingState = useQuery(api.queries.getMyOnboardingState);
 	const reviewedPRsCount = useQuery(api.queries.getGlobalReviewedPRCount);
 	const [animatedReviewedPRs, setAnimatedReviewedPRs] = useState(0);
 	const [isCounterAnimating, setIsCounterAnimating] = useState(false);
@@ -32,6 +35,11 @@ export default function Page() {
 
 	const isLoading = teams === undefined || reviewedPRsCount === undefined;
 	const teamsList = teams ?? [];
+	const shouldShowOnboardingPrompt =
+		!!user &&
+		onboardingState !== undefined &&
+		!onboardingState.isAdmin &&
+		!onboardingState.hasTeams;
 
 	useEffect(() => {
 		if (reviewedPRsCount === undefined) {
@@ -190,6 +198,24 @@ export default function Page() {
 				<section className="page-enter mt-6">
 					<LandingAssignmentTicker />
 				</section>
+
+				{shouldShowOnboardingPrompt ? (
+					<section className="page-enter mt-6">
+						<div className="calm-section flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							<div className="space-y-1">
+								<p className="text-sm font-medium">{t("onboarding.title")}</p>
+								<p className="text-sm text-muted-foreground">
+									{t("onboarding.description")}
+								</p>
+							</div>
+							<Button asChild className="rounded-full px-5">
+								<Link href={`/${locale}/onboarding`}>
+									{t("onboarding.continueCta")}
+								</Link>
+							</Button>
+						</div>
+					</section>
+				) : null}
 
 				<div className="mt-10 mb-4 flex flex-wrap items-end justify-between gap-4 md:mt-12">
 					<div className="space-y-1">

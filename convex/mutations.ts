@@ -126,6 +126,23 @@ async function assertCanMutateTeamBySlug(ctx: MutationCtx, teamSlug: string) {
 	return team;
 }
 
+async function assertCanAssignFromAnyTeam(ctx: MutationCtx) {
+	const identity = await requireIdentity(ctx);
+	if (isAdminEmail(identity.email)) {
+		return;
+	}
+
+	const normalizedEmail = normalizeEmail(identity.email);
+	if (!normalizedEmail) {
+		throw new Error("Unauthorized");
+	}
+
+	const memberTeams = await getMemberTeamsForEmail(ctx, normalizedEmail);
+	if (memberTeams.length === 0) {
+		throw new Error("Onboarding required: join or create a team first");
+	}
+}
+
 async function findReviewerByEmail(
 	ctx: QueryCtx | MutationCtx,
 	teamId: Id<"teams">,
@@ -226,17 +243,39 @@ function getMinAssignmentCountAmongNonPartTimeReviewers(
 export const createTeam = mutation({
 	args: { name: v.string(), slug: v.string() },
 	handler: async (ctx, { name, slug }) => {
+		const identity = await requireIdentity(ctx);
 		const existing = await ctx.db
 			.query("teams")
 			.withIndex("by_slug", (q) => q.eq("slug", slug))
 			.first();
 		if (existing) throw new Error("Slug already in use");
+		const now = Date.now();
+		const normalizedEmail = normalizeEmail(identity.email);
+		if (!normalizedEmail) {
+			throw new Error("Unable to resolve user email");
+		}
+		const fallbackName = normalizedEmail.split("@")[0] ?? "New Reviewer";
+		const reviewerName =
+			identity.name?.trim().length && identity.name.trim().length > 0
+				? identity.name.trim()
+				: fallbackName;
 		const teamId = await ctx.db.insert("teams", {
 			name: name.trim(),
 			slug: slug.trim(),
-			createdAt: Date.now(),
+			createdAt: now,
 			timezone: DEFAULT_TEAM_TIMEZONE,
 		});
+
+		await ctx.db.insert("reviewers", {
+			teamId,
+			name: reviewerName,
+			email: normalizedEmail,
+			assignmentCount: 0,
+			isAbsent: false,
+			createdAt: now,
+			tags: [],
+		});
+
 		// Create empty feed row for team
 		await ctx.db.insert("assignmentFeed", {
 			teamId,
@@ -244,6 +283,72 @@ export const createTeam = mutation({
 			lastAssigned: undefined,
 		});
 		return teamId;
+	},
+});
+
+export const joinMyselfToTeam = mutation({
+	args: { teamSlug: v.string() },
+	handler: async (ctx, { teamSlug }) => {
+		const identity = await requireIdentity(ctx);
+		const normalizedEmail = normalizeEmail(identity.email);
+		if (!normalizedEmail) {
+			throw new Error("Unable to resolve user email");
+		}
+
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const existingReviewer = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team_email", (q) =>
+				q.eq("teamId", team._id).eq("email", normalizedEmail),
+			)
+			.first();
+
+		if (existingReviewer) {
+			return {
+				success: true,
+				alreadyMember: true,
+				teamSlug: team.slug,
+				reviewerId: existingReviewer._id,
+			};
+		}
+
+		const fallbackName = normalizedEmail.split("@")[0] ?? "New Reviewer";
+		const reviewerName =
+			identity.name?.trim().length && identity.name.trim().length > 0
+				? identity.name.trim()
+				: fallbackName;
+
+		const allReviewers = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.collect();
+		const minCount =
+			allReviewers.length > 0
+				? Math.min(...allReviewers.map((reviewer) => reviewer.assignmentCount))
+				: 0;
+
+		const reviewerId = await ctx.db.insert("reviewers", {
+			teamId: team._id,
+			name: reviewerName,
+			email: normalizedEmail,
+			assignmentCount: minCount,
+			isAbsent: false,
+			createdAt: Date.now(),
+			tags: [],
+		});
+
+		await createSnapshot(
+			ctx,
+			team._id,
+			`Added reviewer via onboarding: ${reviewerName} (${normalizedEmail})`,
+		);
+
+		return {
+			success: true,
+			alreadyMember: false,
+			teamSlug: team.slug,
+			reviewerId,
+		};
 	},
 });
 
@@ -1039,6 +1144,7 @@ export const assignPRBatch = mutation({
 			source = "ui",
 		},
 	) => {
+		await assertCanAssignFromAnyTeam(ctx);
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 		const normalizedAdditionalTeamSlugs = [
 			...new Set(
@@ -1361,6 +1467,7 @@ export const assignPR = mutation({
 			actionByReviewerId,
 		},
 	) => {
+		await assertCanAssignFromAnyTeam(ctx);
 		const reviewer = await ctx.db.get(reviewerId);
 		if (!reviewer) {
 			throw new Error("Reviewer not found");

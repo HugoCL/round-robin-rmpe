@@ -13,14 +13,49 @@ export default function TeamPage() {
 	const t = useTranslations();
 	const locale = useLocale();
 	const team = useQuery(api.queries.getTeam, { teamSlug });
+	const accessContext = useQuery(api.queries.getMyTeamAccess, {
+		teamSlug: teamSlug ?? undefined,
+	});
 
-	if (team === undefined) {
+	if (team === undefined || accessContext === undefined) {
 		return (
 			<div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4 py-10">
 				<div className="calm-section page-enter max-w-xl text-center">
 					<p className="calm-kicker">{t("pr.title")}</p>
 					<h2 className="text-xl font-semibold">{t("common.loading")}</h2>
 					<p className="text-muted-foreground">{t("pr.loadingPleaseWait")}</p>
+				</div>
+			</div>
+		);
+	}
+
+	if (
+		accessContext.isAuthenticated &&
+		!accessContext.isAdmin &&
+		accessContext.memberTeamSlugs.length === 0
+	) {
+		return (
+			<div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4 py-10">
+				<div className="calm-section page-enter max-w-xl text-center space-y-3">
+					<p className="calm-kicker">{t("pr.title")}</p>
+					<h1 className="text-2xl font-semibold">{t("onboarding.title")}</h1>
+					<p className="text-muted-foreground">
+						{t("onboarding.teamRequiredDescription")}
+					</p>
+					<div className="flex flex-col sm:flex-row gap-3 justify-center">
+						<Link
+							href={`/${locale}/onboarding`}
+							className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+						>
+							{t("onboarding.continueCta")}
+						</Link>
+						<Link
+							href={`/${locale}`}
+							className="inline-flex items-center justify-center rounded-full border border-border/70 bg-background/70 px-5 py-2.5 text-sm font-medium transition hover:bg-muted/40"
+						>
+							{t("team.backHome")}
+						</Link>
+					</div>
 				</div>
 			</div>
 		);

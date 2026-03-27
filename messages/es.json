@@ -370,6 +370,27 @@
 			"emptyDescription": "Crea tu primer equipo para comenzar a asignar revisiones de PR."
 		}
 	},
+	"onboarding": {
+		"title": "Vamos a sumarte a un equipo",
+		"description": "Antes de asignar PRs, únete a un equipo existente o crea uno nuevo.",
+		"teamRequiredDescription": "Necesitas unirte o crear un equipo antes de entrar a este espacio.",
+		"continueCta": "Continuar onboarding",
+		"joinTitle": "Unirme a un equipo existente",
+		"joinDescription": "Elige un equipo de la lista y te agregaremos de inmediato.",
+		"selectTeamLabel": "Equipo",
+		"selectTeamPlaceholder": "Selecciona un equipo",
+		"joinCta": "Unirme al equipo",
+		"joining": "Uniéndome...",
+		"joinFailed": "No pudimos agregarte a ese equipo. Inténtalo de nuevo.",
+		"noJoinableTeams": "Todavía no hay equipos disponibles para unirse.",
+		"createTitle": "Crear un nuevo equipo",
+		"createDescription": "Comienza desde cero y configura tu propio pool de revisores.",
+		"createHelper": "Te agregaremos automáticamente como primer revisor.",
+		"createCta": "Crear equipo",
+		"adminTitle": "Acceso de admin disponible",
+		"adminDescription": "Puedes navegar equipos sin onboarding porque tu cuenta tiene acceso de admin.",
+		"goHome": "Ir al inicio"
+	},
 	"mySettings": {
 		"title": "Mis ajustes",
 		"description": "Configura tus preferencias personales para PR Review.",

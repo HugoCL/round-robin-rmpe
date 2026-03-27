@@ -323,6 +323,27 @@
 			"emptyDescription": "Create your first team to start assigning PR reviews."
 		}
 	},
+	"onboarding": {
+		"title": "Let's get you into a team",
+		"description": "Before assigning PRs, join an existing team or create a new one.",
+		"teamRequiredDescription": "You need to join or create a team before accessing this workspace.",
+		"continueCta": "Continue onboarding",
+		"joinTitle": "Join an existing team",
+		"joinDescription": "Pick a team from the list and we'll add you right away.",
+		"selectTeamLabel": "Team",
+		"selectTeamPlaceholder": "Select a team",
+		"joinCta": "Join team",
+		"joining": "Joining...",
+		"joinFailed": "We couldn't join you to that team. Please try again.",
+		"noJoinableTeams": "There are no teams available to join yet.",
+		"createTitle": "Create a new team",
+		"createDescription": "Start from scratch and set up your own reviewer pool.",
+		"createHelper": "You'll be added as the first reviewer automatically.",
+		"createCta": "Create team",
+		"adminTitle": "Admin access available",
+		"adminDescription": "You can browse teams without onboarding because your account has admin access.",
+		"goHome": "Go to home"
+	},
 	"mySettings": {
 		"title": "My settings",
 		"description": "Configure your personal PR Review preferences.",
