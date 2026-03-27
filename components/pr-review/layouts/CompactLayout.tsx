@@ -1,4 +1,5 @@
 import { useQuery } from "convex/react";
+import { useTranslations } from "next-intl";
 import { api } from "@/convex/_generated/api";
 import { ActiveEventsList } from "../ActiveEventsList";
 import { AssignmentCard } from "../AssignmentCard";
@@ -10,6 +11,7 @@ import { usePRReview } from "../PRReviewContext";
 
 export function CompactLayout() {
 	const { teamSlug } = usePRReview();
+	const t = useTranslations();
 	const activeEvents = useQuery(
 		api.queries.getActiveEvents,
 		teamSlug ? { teamSlug } : "skip",
