@@ -63,6 +63,7 @@ export function ReviewersTable({
 		userInfo,
 		onDataUpdate,
 		updateReviewer,
+		canManageCurrentTeam,
 	} = usePRReview();
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<number>(0);
@@ -92,6 +93,7 @@ export function ReviewersTable({
 	};
 
 	const saveEditing = async () => {
+		if (!canManageCurrentTeam) return;
 		if (!editingId) return;
 
 		// Validate input
@@ -131,7 +133,9 @@ export function ReviewersTable({
 	};
 
 	const getTagBadge = (tagId: string) => {
-		const tag = tags.find((t) => t._id === tagId);
+		const tag = tags.find(
+			(t: { _id: string; name: string; color: string }) => t._id === tagId,
+		);
 		if (!tag) return null;
 
 		return (
@@ -172,7 +176,7 @@ export function ReviewersTable({
 			{showViewControls && (
 				<section className="flex justify-end">
 					<div className="flex shrink-0 items-center gap-2">
-						<Badge variant="neutral" size="xs">
+						<Badge variant="secondary" className="h-5 px-2 py-0.5 text-xs">
 							{visibleColumnsCount}/3
 						</Badge>
 						<DropdownMenu>
@@ -264,13 +268,19 @@ export function ReviewersTable({
 									</Avatar>
 									<span className="truncate max-w-[16ch]">{reviewer.name}</span>
 									{nextReviewer?._id === reviewer._id && (
-										<Badge variant="primarySoft" size="xs">
+										<Badge
+											variant="default"
+											className="h-5 px-2 py-0.5 text-xs"
+										>
 											{t("pr.next")}
 										</Badge>
 									)}
 									{assignmentFeed.lastAssigned &&
 										assignmentFeed.lastAssigned.reviewerId === reviewer._id && (
-											<Badge variant="neutral" size="xs">
+											<Badge
+												variant="secondary"
+												className="h-5 px-2 py-0.5 text-xs"
+											>
 												{t("pr.lastAssigned")}
 											</Badge>
 										)}
@@ -324,6 +334,7 @@ export function ReviewersTable({
 											<Button
 												size="icon"
 												variant="ghost"
+												disabled={!canManageCurrentTeam}
 												onClick={() =>
 													startEditing(reviewer._id, reviewer.assignmentCount)
 												}
@@ -341,7 +352,9 @@ export function ReviewersTable({
 											id={`absence-${reviewer._id}`}
 											aria-label={t("partTime.manualControl")}
 											checked={!reviewer.manualIsAbsent}
+											disabled={!canManageCurrentTeam}
 											onCheckedChange={(checked) => {
+												if (!canManageCurrentTeam) return;
 												if (!checked) {
 													setSelectedReviewer(reviewer);
 													setAbsentDialogOpen(true);
@@ -360,9 +373,9 @@ export function ReviewersTable({
 									<div className="flex flex-wrap items-center gap-2">
 										<Badge
 											variant={
-												reviewer.effectiveIsAbsent ? "secondary" : "primarySoft"
+												reviewer.effectiveIsAbsent ? "secondary" : "default"
 											}
-											size="xs"
+											className="h-5 px-2 py-0.5 text-xs"
 										>
 											{reviewer.effectiveIsAbsent
 												? t("pr.absent")
@@ -398,6 +411,7 @@ export function ReviewersTable({
 										<Button
 											size="icon"
 											variant="ghost"
+											disabled={!canManageCurrentTeam}
 											className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
 											aria-label={t("common.edit")}
 										>

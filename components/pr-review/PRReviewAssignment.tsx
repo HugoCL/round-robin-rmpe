@@ -1,7 +1,7 @@
 "use client";
 
 import { useClerk, useUser } from "@clerk/nextjs";
-import { useAction } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
@@ -87,6 +87,10 @@ export default function PRReviewAssignment({
 		message?: string;
 	}>(null);
 	const sendChatMessage = useAction(api.actions.sendGoogleChatMessage);
+	const accessContext = useQuery(
+		api.queries.getMyTeamAccess,
+		teamSlug ? { teamSlug } : { teamSlug: undefined },
+	);
 	// Track the last processed assignment to avoid duplicate notifications
 	const lastProcessedAssignmentRef = useRef<string | null>(null);
 	// Reusable AudioContext for short beeps
@@ -499,6 +503,9 @@ export default function PRReviewAssignment({
 	const providerValue = useMemo(
 		() => ({
 			teamSlug,
+			isAdmin: accessContext?.isAdmin === true,
+			isForeignTeamView: accessContext?.isForeignTeam === true,
+			canManageCurrentTeam: accessContext?.canManageCurrentTeam === true,
 			showAssignments,
 			toggleShowAssignments,
 			myAssignmentsOnly,
@@ -536,6 +543,7 @@ export default function PRReviewAssignment({
 		}),
 		[
 			teamSlug,
+			accessContext,
 			showAssignments,
 			toggleShowAssignments,
 			myAssignmentsOnly,
@@ -574,7 +582,7 @@ export default function PRReviewAssignment({
 	);
 
 	// Render loading state
-	if (isLoading || !isLoaded || !isUserPreferencesReady) {
+	if (isLoading || !isLoaded || !isUserPreferencesReady || !accessContext) {
 		return (
 			<div className="container mx-auto flex h-[50vh] items-center justify-center px-4 py-6">
 				<div className="calm-section max-w-xl text-center">
@@ -646,6 +654,8 @@ export default function PRReviewAssignment({
 					id={IMPORT_INPUT_ID}
 					type="file"
 					accept=".json"
+					title={t("history.import")}
+					aria-label={t("history.import")}
 					onChange={importFileHandler}
 					className="hidden"
 				/>

@@ -9,6 +9,13 @@ import {
 } from "../lib/reviewerAvailability";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx } from "./_generated/server";
+import {
+	assertCanMutateTeamById,
+	getMemberTeamsForEmail,
+	isAdminEmail,
+	normalizeEmail,
+	requireIdentity,
+} from "./authz";
 
 const GLOBAL_REVIEWED_PR_COUNTER_KEY = "reviewed_pr_total";
 type UserPreferenceFlags = {
@@ -110,6 +117,12 @@ async function getTeamBySlugOrThrow(
 		.withIndex("by_slug", (q) => q.eq("slug", teamSlug))
 		.first();
 	if (!team) throw new Error("Team not found");
+	return team;
+}
+
+async function assertCanMutateTeamBySlug(ctx: MutationCtx, teamSlug: string) {
+	const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+	await assertCanMutateTeamById(ctx, team._id);
 	return team;
 }
 
@@ -242,7 +255,7 @@ export const updateTeamSettings = mutation({
 		timezone: v.optional(v.string()),
 	},
 	handler: async (ctx, { teamSlug, googleChatWebhookUrl, timezone }) => {
-		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
 		const normalizedTimezone = timezone?.trim() || DEFAULT_TEAM_TIMEZONE;
 		if (!isValidTimezone(normalizedTimezone)) {
 			throw new Error("Invalid timezone");
@@ -267,10 +280,7 @@ export const bootstrapMyUserPreferences = mutation({
 		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
 	},
 	handler: async (ctx, args) => {
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) {
-			throw new Error("Unauthorized");
-		}
+		const identity = await requireIdentity(ctx);
 
 		const existingRows = await ctx.db
 			.query("userPreferences")
@@ -315,10 +325,7 @@ export const updateMyUserPreferences = mutation({
 		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
 	},
 	handler: async (ctx, args) => {
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) {
-			throw new Error("Unauthorized");
-		}
+		const identity = await requireIdentity(ctx);
 
 		const existingRows = await ctx.db
 			.query("userPreferences")
@@ -362,7 +369,7 @@ export const updateMyUserPreferences = mutation({
 export const initializeData = mutation({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
-		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
 		// Check if we already have data for this team
 		const existingReviewers = await ctx.db
 			.query("reviewers")
@@ -413,7 +420,7 @@ export const addReviewer = mutation({
 		ctx,
 		{ teamSlug, name, email, googleChatUserId, partTimeSchedule },
 	) => {
-		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
 		// Check if email already exists
 		const existingReviewer = await ctx.db
 			.query("reviewers")
@@ -483,6 +490,10 @@ export const updateReviewer = mutation({
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
 		}
+		if (!reviewer.teamId) {
+			throw new Error("Reviewer is missing team assignment");
+		}
+		await assertCanMutateTeamById(ctx, reviewer.teamId);
 
 		// Check if email conflicts with another reviewer
 		const emailConflict = await ctx.db
@@ -530,6 +541,10 @@ export const removeReviewer = mutation({
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
 		}
+		if (!reviewer.teamId) {
+			throw new Error("Reviewer is missing team assignment");
+		}
+		await assertCanMutateTeamById(ctx, reviewer.teamId);
 
 		await ctx.db.delete(id);
 
@@ -553,6 +568,10 @@ export const toggleReviewerAbsence = mutation({
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
 		}
+		if (!reviewer.teamId) {
+			throw new Error("Reviewer is missing team assignment");
+		}
+		await assertCanMutateTeamById(ctx, reviewer.teamId);
 		const team =
 			reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
 		const now = Date.now();
@@ -606,6 +625,10 @@ export const markReviewerAbsent = mutation({
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
 		}
+		if (!reviewer.teamId) {
+			throw new Error("Reviewer is missing team assignment");
+		}
+		await assertCanMutateTeamById(ctx, reviewer.teamId);
 
 		await ctx.db.patch(id, {
 			isAbsent: true,
@@ -636,6 +659,10 @@ export const markReviewerAvailable = mutation({
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
 		}
+		if (!reviewer.teamId) {
+			throw new Error("Reviewer is missing team assignment");
+		}
+		await assertCanMutateTeamById(ctx, reviewer.teamId);
 		const team =
 			reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
 		const now = Date.now();
@@ -735,6 +762,10 @@ export const updateAssignmentCount = mutation({
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
 		}
+		if (!reviewer.teamId) {
+			throw new Error("Reviewer is missing team assignment");
+		}
+		await assertCanMutateTeamById(ctx, reviewer.teamId);
 
 		await ctx.db.patch(id, { assignmentCount: count });
 
@@ -752,7 +783,7 @@ export const updateAssignmentCount = mutation({
 export const resetAllCounts = mutation({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
-		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
 		const allReviewers = await ctx.db
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
@@ -1626,7 +1657,7 @@ export const cleanupLegacyPRAssignmentStatus = mutation({
 export const undoLastAssignment = mutation({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
-		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
 		const lastAssignment = await ctx.db
 			.query("assignmentHistory")
 			.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
@@ -1721,7 +1752,7 @@ export const addTag = mutation({
 		description: v.optional(v.string()),
 	},
 	handler: async (ctx, { teamSlug, name, color, description }) => {
-		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
 		const tagId = await ctx.db.insert("tags", {
 			teamId: team._id,
 			name: name.trim(),
@@ -1746,6 +1777,10 @@ export const updateTag = mutation({
 		if (!tag) {
 			throw new Error("Tag not found");
 		}
+		if (!tag.teamId) {
+			throw new Error("Tag is missing team assignment");
+		}
+		await assertCanMutateTeamById(ctx, tag.teamId);
 
 		await ctx.db.patch(id, {
 			name: name.trim(),
@@ -1766,6 +1801,10 @@ export const removeTag = mutation({
 		if (!tag) {
 			throw new Error("Tag not found");
 		}
+		if (!tag.teamId) {
+			throw new Error("Tag is missing team assignment");
+		}
+		await assertCanMutateTeamById(ctx, tag.teamId);
 
 		// Remove tag from all reviewers
 		const allReviewers = await ctx.db
@@ -1798,10 +1837,17 @@ export const assignTagToReviewer = mutation({
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
 		}
+		if (!reviewer.teamId) {
+			throw new Error("Reviewer is missing team assignment");
+		}
+		await assertCanMutateTeamById(ctx, reviewer.teamId);
 
 		const tag = await ctx.db.get(tagId);
 		if (!tag) {
 			throw new Error("Tag not found");
+		}
+		if (tag.teamId !== reviewer.teamId) {
+			throw new Error("Tag and reviewer team mismatch");
 		}
 
 		// Add tag if not already present
@@ -1825,6 +1871,10 @@ export const removeTagFromReviewer = mutation({
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
 		}
+		if (!reviewer.teamId) {
+			throw new Error("Reviewer is missing team assignment");
+		}
+		await assertCanMutateTeamById(ctx, reviewer.teamId);
 
 		const updatedTags = reviewer.tags.filter((t) => t !== tagId);
 		await ctx.db.patch(reviewerId, { tags: updatedTags });
@@ -1851,7 +1901,7 @@ export const importReviewersData = mutation({
 		),
 	},
 	handler: async (ctx, { teamSlug, reviewersData }) => {
-		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
 		// Clear existing reviewers
 		const existingReviewers = await ctx.db
 			.query("reviewers")
@@ -1882,6 +1932,107 @@ export const importReviewersData = mutation({
 		await createSnapshot(ctx, team._id, "Imported reviewers data");
 
 		return { success: true };
+	},
+});
+
+export const auditReviewerTeamAssignments = mutation({
+	args: {},
+	handler: async (ctx) => {
+		const reviewers = await ctx.db.query("reviewers").collect();
+		const reviewersMissingTeam = reviewers.filter(
+			(reviewer) => !reviewer.teamId,
+		);
+
+		return {
+			totalReviewers: reviewers.length,
+			missingTeamCount: reviewersMissingTeam.length,
+			missingTeamReviewers: reviewersMissingTeam.map((reviewer) => ({
+				id: reviewer._id,
+				name: reviewer.name,
+				email: reviewer.email,
+			})),
+		};
+	},
+});
+
+export const assertReviewerTeamsBackfillReady = mutation({
+	args: {},
+	handler: async (ctx) => {
+		const reviewers = await ctx.db.query("reviewers").collect();
+		const missingTeamCount = reviewers.filter(
+			(reviewer) => !reviewer.teamId,
+		).length;
+		if (missingTeamCount > 0) {
+			throw new Error(
+				`Backfill blocked: ${missingTeamCount} reviewers are missing teamId`,
+			);
+		}
+
+		return {
+			success: true,
+			message: "All reviewers have team assignments",
+			totalReviewers: reviewers.length,
+		};
+	},
+});
+
+export const backfillUserPreferenceDefaultTeamSlug = mutation({
+	args: {
+		dryRun: v.optional(v.boolean()),
+	},
+	handler: async (ctx, { dryRun = true }) => {
+		const identity = await requireIdentity(ctx);
+		if (!isAdminEmail(identity.email)) {
+			throw new Error("Unauthorized");
+		}
+
+		const preferences = await ctx.db.query("userPreferences").collect();
+		let updatedCount = 0;
+		const ambiguous: Array<{ email: string; teamSlugs: string[] }> = [];
+		const skippedNoEmail: string[] = [];
+
+		for (const preference of preferences) {
+			if (preference.defaultAgentTeamSlug) {
+				continue;
+			}
+
+			const normalizedEmail = normalizeEmail(preference.email);
+			if (!normalizedEmail) {
+				skippedNoEmail.push(preference._id);
+				continue;
+			}
+
+			const memberTeams = await getMemberTeamsForEmail(ctx, normalizedEmail);
+			const teamSlugs = memberTeams
+				.map((team) => team.slug)
+				.filter((slug): slug is string => typeof slug === "string");
+
+			if (teamSlugs.length === 1) {
+				if (!dryRun) {
+					await ctx.db.patch(preference._id, {
+						defaultAgentTeamSlug: teamSlugs[0],
+						updatedAt: Date.now(),
+					});
+				}
+				updatedCount += 1;
+				continue;
+			}
+
+			if (teamSlugs.length > 1) {
+				ambiguous.push({ email: normalizedEmail, teamSlugs });
+			}
+		}
+
+		return {
+			success: true,
+			dryRun,
+			totalPreferences: preferences.length,
+			updatedCount,
+			ambiguousCount: ambiguous.length,
+			ambiguous,
+			skippedNoEmailCount: skippedNoEmail.length,
+			skippedNoEmail,
+		};
 	},
 });
 
@@ -2091,7 +2242,7 @@ export const restoreFromBackup = mutation({
 	args: { teamSlug: v.string(), backupId: v.id("backups") },
 	handler: async (ctx, { teamSlug, backupId }) => {
 		try {
-			const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+			const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
 			// Get the backup data
 			const backup = await ctx.db.get(backupId);
 			if (!backup) {
@@ -2177,7 +2328,7 @@ export const createEvent = mutation({
 		ctx,
 		{ teamSlug, title, description, scheduledAt, createdBy },
 	) => {
-		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
 		const createdByEmail = createdBy.email.toLowerCase().trim();
 		const createdByReviewer = await findReviewerByEmail(
 			ctx,
@@ -2226,6 +2377,7 @@ export const joinEvent = mutation({
 		if (!event) {
 			return { success: false, error: "Event not found" };
 		}
+		await assertCanMutateTeamById(ctx, event.teamId);
 
 		if (event.status === "cancelled" || event.status === "completed") {
 			return { success: false, error: "Event is no longer active" };
@@ -2278,6 +2430,7 @@ export const leaveEvent = mutation({
 		if (!event) {
 			return { success: false, error: "Event not found" };
 		}
+		await assertCanMutateTeamById(ctx, event.teamId);
 
 		if (event.status === "cancelled" || event.status === "completed") {
 			return { success: false, error: "Event is no longer active" };
@@ -2317,6 +2470,7 @@ export const cancelEvent = mutation({
 		if (!event) {
 			return { success: false, error: "Event not found" };
 		}
+		await assertCanMutateTeamById(ctx, event.teamId);
 
 		await ctx.db.patch(eventId, {
 			status: "cancelled",
@@ -2369,6 +2523,7 @@ export const startEvent = mutation({
 		if (!event) {
 			return { success: false, error: "Event not found" };
 		}
+		await assertCanMutateTeamById(ctx, event.teamId);
 
 		if (event.status !== "scheduled") {
 			return { success: false, error: "Event cannot be started" };
@@ -2399,6 +2554,7 @@ export const completeEvent = mutation({
 		if (!event) {
 			return { success: false, error: "Event not found" };
 		}
+		await assertCanMutateTeamById(ctx, event.teamId);
 
 		await ctx.db.patch(eventId, {
 			status: "completed",
@@ -2473,6 +2629,7 @@ export const addEventParticipant = mutation({
 		if (!event) {
 			return { success: false, error: "Event not found" };
 		}
+		await assertCanMutateTeamById(ctx, event.teamId);
 
 		if (event.status === "cancelled" || event.status === "completed") {
 			return { success: false, error: "Event is no longer active" };

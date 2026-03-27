@@ -334,6 +334,11 @@
 	"team": {
 		"notFoundTitle": "El equipo no existe",
 		"notFoundDescription": "El equipo <code>{slug}</code> no se encontró. Puedes crearlo ahora.",
+		"foreignTeamPromptTitle": "Estás visitando otro equipo",
+		"foreignTeamPromptDescription": "No puedes administrar este equipo, pero sí puedes asignar el siguiente PR a un revisor de este equipo.",
+		"assignToVisitedTeamCta": "Asignar PR a {reviewer}",
+		"foreignTeamReadonlyBanner": "Estás viendo el espacio de otro equipo. Las acciones de gestión están deshabilitadas.",
+		"foreignTeamAdminBanner": "Modo admin: puedes gestionar este equipo aunque no sea tu equipo actual.",
 		"createThisTeamCta": "Crear un equipo",
 		"createTitle": "Crear un equipo",
 		"createDescription": "Crea un equipo para comenzar a asignar revisiones de PR. Cada equipo tiene sus propios revisores, tags e historial.",

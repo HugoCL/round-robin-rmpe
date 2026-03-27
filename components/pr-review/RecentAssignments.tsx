@@ -109,7 +109,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 								<div>
 									{item.urgent && (
 										<Badge
-											variant="primarySoft"
+											variant="outline"
 											className="mb-1 text-red-700 border-red-200 bg-red-50 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60"
 										>
 											{t("pr.urgent")}
@@ -117,7 +117,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 									)}
 									{item.crossTeamReview && (
 										<Badge
-											variant="primarySoft"
+											variant="outline"
 											className="mb-1 border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300"
 										>
 											{t("pr.crossTeamReview")}
@@ -125,7 +125,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 									)}
 									{item.forced && (
 										<Badge
-											variant="primarySoft"
+											variant="outline"
 											className="text-amber-700 border-amber-200 bg-amber-50"
 										>
 											{t("pr.forceAssign")}
@@ -133,7 +133,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 									)}
 									{(item.skipped || item.isAbsentSkip) && (
 										<Badge
-											variant="primarySoft"
+											variant="outline"
 											className="text-blue-700 border-blue-200 bg-blue-50"
 										>
 											{t("pr.skip")}
@@ -145,7 +145,7 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 										!item.skipped &&
 										!item.isAbsentSkip && (
 											<Badge
-												variant="primarySoft"
+												variant="outline"
 												className="text-green-700 border-green-200 bg-green-50"
 											>
 												{t("pr.regular")}

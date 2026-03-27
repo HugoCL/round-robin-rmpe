@@ -93,7 +93,6 @@ export function TeamWeeklyPRCounter({ teamSlug }: { teamSlug?: string }) {
 	return (
 		<Badge
 			variant="secondary"
-			size="lg"
 			className="gap-1.5 text-xs font-medium text-muted-foreground"
 			aria-live="polite"
 			aria-label={t("pr.teamPrsThisWeekAria", {

@@ -5,6 +5,7 @@ import {
 	resolveTeamTimezone,
 	type Weekday,
 } from "../lib/reviewerAvailability";
+import { getMemberTeamsForEmail, isAdminEmail, normalizeEmail } from "./authz";
 
 type EnrichedAssignment = {
 	_id: Id<"prAssignments">;
@@ -467,19 +468,45 @@ export const getTeams = query({
 export const getTeamsForUserEmail = query({
 	args: { email: v.string() },
 	handler: async (ctx, { email }) => {
-		const normalizedEmail = email.toLowerCase();
-		// Query all reviewers and find those matching the email (case-insensitive)
-		const allReviewers = await ctx.db.query("reviewers").collect();
-		const matchingReviewers = allReviewers.filter(
-			(r) => r.email.toLowerCase() === normalizedEmail && r.teamId,
-		);
-		const teamIds = [
-			...new Set(matchingReviewers.map((r) => r.teamId).filter(Boolean)),
-		];
-		const teams = await Promise.all(
-			teamIds.map((id) => (id ? ctx.db.get(id) : null)),
-		);
-		return teams.filter(Boolean);
+		return await getMemberTeamsForEmail(ctx, email);
+	},
+});
+
+export const getMyTeamAccess = query({
+	args: { teamSlug: v.optional(v.string()) },
+	handler: async (ctx, { teamSlug }) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			return {
+				isAuthenticated: false,
+				isAdmin: false,
+				memberTeamSlugs: [] as string[],
+				canManageCurrentTeam: false,
+				isForeignTeam: false,
+			};
+		}
+
+		const normalizedEmail = normalizeEmail(identity.email);
+		const memberTeams = normalizedEmail
+			? await getMemberTeamsForEmail(ctx, normalizedEmail)
+			: [];
+		const memberTeamSlugs = memberTeams
+			.map((team) => team.slug)
+			.filter((slug): slug is string => typeof slug === "string");
+		const isAdmin = isAdminEmail(identity.email);
+		const isMemberOfCurrentTeam =
+			typeof teamSlug === "string" ? memberTeamSlugs.includes(teamSlug) : false;
+
+		return {
+			isAuthenticated: true,
+			isAdmin,
+			memberTeamSlugs,
+			canManageCurrentTeam: isAdmin || isMemberOfCurrentTeam,
+			isForeignTeam:
+				typeof teamSlug === "string"
+					? !isAdmin && !isMemberOfCurrentTeam
+					: false,
+		};
 	},
 });
 

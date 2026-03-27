@@ -7,6 +7,9 @@ import type { Assignment, Reviewer, UserInfo } from "@/lib/types";
 
 export interface PRReviewContextValue {
 	teamSlug?: string;
+	isAdmin: boolean;
+	isForeignTeamView: boolean;
+	canManageCurrentTeam: boolean;
 	// Visibility / layout
 	showAssignments: boolean;
 	toggleShowAssignments: () => void;

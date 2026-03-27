@@ -16,19 +16,34 @@ export function TeamSwitcher({ teamSlug }: { teamSlug?: string }) {
 	const locale = useLocale();
 	const router = useRouter();
 	const teams = useQuery(api.queries.getTeams) ?? [];
+	const accessContext = useQuery(api.queries.getMyTeamAccess, {
+		teamSlug: teamSlug ?? undefined,
+	});
 	const t = useTranslations();
+	const visibleTeams = !accessContext
+		? teams
+		: accessContext.isAdmin
+			? teams
+			: teams.filter((team) =>
+					accessContext.memberTeamSlugs.includes(team.slug),
+				);
+	const valueInVisibleTeams = visibleTeams.some(
+		(team) => team.slug === teamSlug,
+	)
+		? teamSlug
+		: undefined;
 
 	const onChange = (value: string) => {
 		router.push(`/${locale}/${value}`);
 	};
 
 	return (
-		<Select value={teamSlug} onValueChange={onChange}>
+		<Select value={valueInVisibleTeams} onValueChange={onChange}>
 			<SelectTrigger className="w-56">
 				<SelectValue placeholder={t("placeholders.selectTeam")} />
 			</SelectTrigger>
 			<SelectContent>
-				{teams.map((t: { _id: string; slug: string; name: string }) => (
+				{visibleTeams.map((t: { _id: string; slug: string; name: string }) => (
 					<SelectItem key={t._id} value={t.slug}>
 						{t.name}
 					</SelectItem>

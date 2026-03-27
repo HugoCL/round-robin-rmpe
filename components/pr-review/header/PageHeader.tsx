@@ -82,6 +82,9 @@ export function PageHeader({
 		addReviewer,
 		removeReviewer,
 		reviewers,
+		isAdmin,
+		isForeignTeamView,
+		canManageCurrentTeam,
 		showAssignments,
 		showTags,
 		showEmails,
@@ -99,7 +102,7 @@ export function PageHeader({
 		Boolean,
 	).length;
 
-	const reviewerActions = (
+	const reviewerActions = canManageCurrentTeam ? (
 		<div className="flex flex-wrap gap-2 justify-center">
 			<TagManager />
 			<AddReviewerDialog
@@ -120,9 +123,9 @@ export function PageHeader({
 				}
 			/>
 		</div>
-	);
+	) : null;
 
-	const deleteReviewerButton = (
+	const deleteReviewerButton = canManageCurrentTeam ? (
 		<DeleteReviewerDialog
 			reviewers={reviewers}
 			onDeleteReviewer={removeReviewer}
@@ -137,7 +140,7 @@ export function PageHeader({
 				</Button>
 			}
 		/>
-	);
+	) : null;
 
 	const reviewerColumnsButton = (
 		<div className="flex items-center gap-2">
@@ -216,6 +219,11 @@ export function PageHeader({
 									<h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
 										{t("pr.title")}
 									</h1>
+									{isForeignTeamView && (
+										<p className="mt-1 text-sm text-muted-foreground">
+											{t("team.foreignTeamReadonlyBanner")}
+										</p>
+									)}
 								</div>
 								<div className="flex flex-wrap items-center gap-2">
 									<TeamSwitcher teamSlug={teamSlug} />
@@ -277,143 +285,151 @@ export function PageHeader({
 					</div>
 					<CollapsibleContent className="overflow-hidden border-t border-border/60 pt-3 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
 						<div className="flex flex-wrap items-center justify-end gap-2">
-							<div className="flex items-center gap-2">
-								{reviewerActions}
-								<div className="mx-1 h-6 w-px bg-border/70" />
-								{isMobile ? (
-									<Drawer
-										open={reviewersDrawerOpen}
-										onOpenChange={setReviewersDrawerOpen}
-									>
-										<DrawerTrigger asChild>
-											<Button
-												variant="outline"
-												size="sm"
-												className="rounded-full border-border/70 bg-background/70"
-											>
-												<Menu className="h-4 w-4" />
-												<span>{t("pr.manageReviewers")}</span>
-											</Button>
-										</DrawerTrigger>
-										<DrawerContent>
-											<DrawerHeader>
-												<DrawerTitle>{t("pr.reviewers")}</DrawerTitle>
-												<DrawerDescription>
-													{t("manage-reviewers-and-their-assignments")}
-												</DrawerDescription>
-											</DrawerHeader>
-											<div className="space-y-3 px-4 pb-4">
-												<div className="flex flex-wrap items-center justify-end gap-2">
-													<Button
-														variant="outline"
-														size="sm"
-														className="rounded-full border-border/70 bg-background/70"
-														onClick={handleResetCounts}
-													>
-														<RotateCw className="h-4 w-4 mr-2" />
-														{t("reset-counts")}
-													</Button>
-													<Button
-														variant="outline"
-														size="sm"
-														className="rounded-full border-border/70 bg-background/70"
-														onClick={exportData}
-													>
-														<Save className="h-4 w-4 mr-2" />
-														{t("pr.exportData")}
-													</Button>
-													<Button
-														variant="outline"
-														size="sm"
-														className="rounded-full border-border/70 bg-background/70"
-														onClick={() =>
-															document.getElementById("import-file")?.click()
-														}
-													>
-														<Download className="h-4 w-4 mr-2" />
-														{t("history.import")}
-													</Button>
-													{deleteReviewerButton}
-													{reviewerColumnsButton}
-												</div>
-												<div className="max-h-[60vh] overflow-y-auto">
-													<ReviewersTable
-														teamSlug={teamSlug}
-														showViewControls={false}
-													/>
-												</div>
-											</div>
-										</DrawerContent>
-									</Drawer>
-								) : (
-									<Dialog
-										open={reviewersDrawerOpen}
-										onOpenChange={setReviewersDrawerOpen}
-									>
-										<DialogTrigger asChild>
-											<Button
-												variant="outline"
-												size="sm"
-												className="rounded-full border-border/70 bg-background/70"
-											>
-												<Menu className="h-4 w-4" />
-												<span>{t("pr.manageReviewers")}</span>
-											</Button>
-										</DialogTrigger>
-										<DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-4xl">
-											<div className="px-6 pt-4">
-												<DialogHeader>
-													<DialogTitle>{t("pr.reviewers")}</DialogTitle>
-													<DialogDescription>
+							{!canManageCurrentTeam ? (
+								<div className="rounded-full border border-border/70 bg-background/70 px-4 py-2 text-sm text-muted-foreground">
+									{isAdmin
+										? t("team.foreignTeamAdminBanner")
+										: t("team.foreignTeamReadonlyBanner")}
+								</div>
+							) : (
+								<div className="flex items-center gap-2">
+									{reviewerActions}
+									<div className="mx-1 h-6 w-px bg-border/70" />
+									{isMobile ? (
+										<Drawer
+											open={reviewersDrawerOpen}
+											onOpenChange={setReviewersDrawerOpen}
+										>
+											<DrawerTrigger asChild>
+												<Button
+													variant="outline"
+													size="sm"
+													className="rounded-full border-border/70 bg-background/70"
+												>
+													<Menu className="h-4 w-4" />
+													<span>{t("pr.manageReviewers")}</span>
+												</Button>
+											</DrawerTrigger>
+											<DrawerContent>
+												<DrawerHeader>
+													<DrawerTitle>{t("pr.reviewers")}</DrawerTitle>
+													<DrawerDescription>
 														{t("manage-reviewers-and-their-assignments")}
-													</DialogDescription>
-												</DialogHeader>
-											</div>
-											<div className="space-y-3 px-6 pb-4">
-												<div className="flex flex-wrap items-center justify-end gap-2">
-													<Button
-														variant="outline"
-														size="sm"
-														className="rounded-full border-border/70 bg-background/70"
-														onClick={handleResetCounts}
-													>
-														<RotateCw className="h-4 w-4 mr-2" />
-														{t("reset-counts")}
-													</Button>
-													<Button
-														variant="outline"
-														size="sm"
-														className="rounded-full border-border/70 bg-background/70"
-														onClick={exportData}
-													>
-														<Save className="h-4 w-4 mr-2" />
-														{t("pr.exportData")}
-													</Button>
-													<Button
-														variant="outline"
-														size="sm"
-														className="rounded-full border-border/70 bg-background/70"
-														onClick={() =>
-															document.getElementById("import-file")?.click()
-														}
-													>
-														<Download className="h-4 w-4 mr-2" />
-														{t("history.import")}
-													</Button>
-													{deleteReviewerButton}
-													{reviewerColumnsButton}
+													</DrawerDescription>
+												</DrawerHeader>
+												<div className="space-y-3 px-4 pb-4">
+													<div className="flex flex-wrap items-center justify-end gap-2">
+														<Button
+															variant="outline"
+															size="sm"
+															className="rounded-full border-border/70 bg-background/70"
+															onClick={handleResetCounts}
+														>
+															<RotateCw className="h-4 w-4 mr-2" />
+															{t("reset-counts")}
+														</Button>
+														<Button
+															variant="outline"
+															size="sm"
+															className="rounded-full border-border/70 bg-background/70"
+															onClick={exportData}
+														>
+															<Save className="h-4 w-4 mr-2" />
+															{t("pr.exportData")}
+														</Button>
+														<Button
+															variant="outline"
+															size="sm"
+															className="rounded-full border-border/70 bg-background/70"
+															onClick={() =>
+																document.getElementById("import-file")?.click()
+															}
+														>
+															<Download className="h-4 w-4 mr-2" />
+															{t("history.import")}
+														</Button>
+														{deleteReviewerButton}
+														{reviewerColumnsButton}
+													</div>
+													<div className="max-h-[60vh] overflow-y-auto">
+														<ReviewersTable
+															teamSlug={teamSlug}
+															showViewControls={false}
+														/>
+													</div>
 												</div>
-												<div className="max-h-[60vh] overflow-y-auto">
-													<ReviewersTable
-														teamSlug={teamSlug}
-														showViewControls={false}
-													/>
+											</DrawerContent>
+										</Drawer>
+									) : (
+										<Dialog
+											open={reviewersDrawerOpen}
+											onOpenChange={setReviewersDrawerOpen}
+										>
+											<DialogTrigger asChild>
+												<Button
+													variant="outline"
+													size="sm"
+													className="rounded-full border-border/70 bg-background/70"
+												>
+													<Menu className="h-4 w-4" />
+													<span>{t("pr.manageReviewers")}</span>
+												</Button>
+											</DialogTrigger>
+											<DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-4xl">
+												<div className="px-6 pt-4">
+													<DialogHeader>
+														<DialogTitle>{t("pr.reviewers")}</DialogTitle>
+														<DialogDescription>
+															{t("manage-reviewers-and-their-assignments")}
+														</DialogDescription>
+													</DialogHeader>
 												</div>
-											</div>
-										</DialogContent>
-									</Dialog>
-								)}
-							</div>
+												<div className="space-y-3 px-6 pb-4">
+													<div className="flex flex-wrap items-center justify-end gap-2">
+														<Button
+															variant="outline"
+															size="sm"
+															className="rounded-full border-border/70 bg-background/70"
+															onClick={handleResetCounts}
+														>
+															<RotateCw className="h-4 w-4 mr-2" />
+															{t("reset-counts")}
+														</Button>
+														<Button
+															variant="outline"
+															size="sm"
+															className="rounded-full border-border/70 bg-background/70"
+															onClick={exportData}
+														>
+															<Save className="h-4 w-4 mr-2" />
+															{t("pr.exportData")}
+														</Button>
+														<Button
+															variant="outline"
+															size="sm"
+															className="rounded-full border-border/70 bg-background/70"
+															onClick={() =>
+																document.getElementById("import-file")?.click()
+															}
+														>
+															<Download className="h-4 w-4 mr-2" />
+															{t("history.import")}
+														</Button>
+														{deleteReviewerButton}
+														{reviewerColumnsButton}
+													</div>
+													<div className="max-h-[60vh] overflow-y-auto">
+														<ReviewersTable
+															teamSlug={teamSlug}
+															showViewControls={false}
+														/>
+													</div>
+												</div>
+											</DialogContent>
+										</Dialog>
+									)}
+								</div>
+							)}
 						</div>
 					</CollapsibleContent>
 				</div>

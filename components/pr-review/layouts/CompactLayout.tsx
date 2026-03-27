@@ -4,13 +4,14 @@ import { api } from "@/convex/_generated/api";
 import { ActiveEventsList } from "../ActiveEventsList";
 import { AssignmentCard } from "../AssignmentCard";
 import { FeedHistory } from "../FeedHistory";
+import { ForeignTeamAssignmentCard } from "../ForeignTeamAssignmentCard";
 /**
  * CompactLayout component displays a compact layout for the PR review assignment page.
  */
 import { usePRReview } from "../PRReviewContext";
 
 export function CompactLayout() {
-	const { teamSlug } = usePRReview();
+	const { teamSlug, isForeignTeamView } = usePRReview();
 	const t = useTranslations();
 	const activeEvents = useQuery(
 		api.queries.getActiveEvents,
@@ -22,7 +23,11 @@ export function CompactLayout() {
 			<div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(360px,0.9fr)]">
 				<div className="space-y-6">
 					<section className="page-enter-soft xl:sticky xl:top-5">
-						<AssignmentCard />
+						{isForeignTeamView ? (
+							<ForeignTeamAssignmentCard />
+						) : (
+							<AssignmentCard />
+						)}
 					</section>
 				</div>
 

@@ -287,6 +287,11 @@
 	"team": {
 		"notFoundTitle": "Team does not exist",
 		"notFoundDescription": "The team <code>{slug}</code> was not found. You can create it now.",
+		"foreignTeamPromptTitle": "You are visiting another team",
+		"foreignTeamPromptDescription": "You cannot manage this team, but you can still assign the next PR reviewer from this team.",
+		"assignToVisitedTeamCta": "Assign PR to {reviewer}",
+		"foreignTeamReadonlyBanner": "You are viewing another team's workspace. Management actions are disabled.",
+		"foreignTeamAdminBanner": "Admin mode: you can manage this team across workspaces.",
 		"createThisTeamCta": "Create a team",
 		"createTitle": "Create a team",
 		"createDescription": "Create a team to start assigning PR reviews. Each team has its own reviewers, tags and history.",
