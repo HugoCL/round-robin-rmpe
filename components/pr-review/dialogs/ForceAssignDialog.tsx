@@ -42,7 +42,11 @@ const selectedUrgentChipStyle = {
 	color: "#ffffff",
 };
 
-export function ForceAssignDialog() {
+interface ForceAssignDialogProps {
+	trigger?: React.ReactNode;
+}
+
+export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 	const t = useTranslations();
 	const locale = useLocale();
 	const {
@@ -227,10 +231,12 @@ export function ForceAssignDialog() {
 			}}
 		>
 			<DialogTrigger asChild>
-				<Button variant="outline" className="w-full">
-					<UserCheck className="h-4 w-4 mr-2" />
-					{t("pr.forceAssign")} PR
-				</Button>
+				{trigger || (
+					<Button variant="outline" className="w-full">
+						<UserCheck className="h-4 w-4 mr-2" />
+						{t("pr.forceAssign")} PR
+					</Button>
+				)}
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-135">
 				<DialogHeader>

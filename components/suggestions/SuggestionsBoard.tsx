@@ -47,82 +47,102 @@ export function SuggestionsBoard() {
 	};
 
 	return (
-		<div className="container mx-auto max-w-5xl px-4 py-8 space-y-6">
-			<div className="space-y-2">
-				<div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-					<Lightbulb className="h-4 w-4" />
-					{t("suggestions.title")}
-				</div>
-				<h1 className="text-3xl font-bold">{t("suggestions.heading")}</h1>
-				<p className="text-muted-foreground">{t("suggestions.description")}</p>
-				<Button asChild variant="outline" size="sm">
-					<Link href={`/${locale}`}>{t("suggestions.backHome")}</Link>
-				</Button>
-			</div>
-
-			<SuggestionComposer />
-
-			<div className="flex justify-end">
-				<div className="flex gap-2">
-					<Button
-						type="button"
-						variant={sort === "top" ? "default" : "outline"}
-						onClick={() => setSort("top")}
-					>
-						{t("suggestions.sort.top")}
-					</Button>
-					<Button
-						type="button"
-						variant={sort === "new" ? "default" : "outline"}
-						onClick={() => setSort("new")}
-					>
-						{t("suggestions.sort.new")}
-					</Button>
-				</div>
-			</div>
-
-			{suggestionsBoard === undefined ? (
-				<SuggestionsBoardSkeleton />
-			) : (
-				<div className="grid gap-4 lg:grid-cols-3 lg:items-start">
-					{statuses.map((status) => (
-						<section
-							key={status}
-							className="rounded-lg border bg-muted/20 p-4 space-y-4"
-						>
-							<div className="flex items-center justify-between gap-3 border-b pb-3">
-								<h2 className="font-semibold">
-									{t(`suggestions.status.${status}`)}
-								</h2>
-								<div className="rounded-full border bg-background px-2.5 py-1 text-sm font-medium">
-									{suggestionsBoard[status].length}
-								</div>
+		<div className="container mx-auto max-w-6xl px-4 py-8">
+			<div className="space-y-6">
+				<section className="page-enter-soft calm-shell px-5 py-7 md:px-7 md:py-8">
+					<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] lg:items-end">
+						<div className="space-y-3">
+							<div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
+								<Lightbulb className="h-4 w-4" />
+								{t("suggestions.title")}
 							</div>
+							<h1 className="text-3xl font-semibold tracking-tight md:text-5xl">
+								{t("suggestions.heading")}
+							</h1>
+							<p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
+								{t("suggestions.description")}
+							</p>
+						</div>
+						<div className="flex flex-wrap items-center gap-2 lg:justify-end">
+							<Button
+								type="button"
+								variant={sort === "top" ? "default" : "outline"}
+								onClick={() => setSort("top")}
+								className="rounded-full px-5"
+							>
+								{t("suggestions.sort.top")}
+							</Button>
+							<Button
+								type="button"
+								variant={sort === "new" ? "default" : "outline"}
+								onClick={() => setSort("new")}
+								className="rounded-full px-5"
+							>
+								{t("suggestions.sort.new")}
+							</Button>
+							<Button asChild variant="outline" className="rounded-full px-5">
+								<Link href={`/${locale}`}>{t("suggestions.backHome")}</Link>
+							</Button>
+						</div>
+					</div>
+				</section>
 
-							{suggestionsBoard[status].length === 0 ? (
-								<div className="rounded-lg border border-dashed bg-background p-4 space-y-1">
-									<p className="font-medium">{t("suggestions.emptyTitle")}</p>
-									<p className="text-sm text-muted-foreground">
-										{t("suggestions.emptyDescription")}
-									</p>
-								</div>
-							) : (
-								<div className="grid gap-4">
-									{suggestionsBoard[status].map((suggestion) => (
-										<SuggestionCard
-											key={suggestion._id}
-											suggestion={suggestion}
-											locale={locale}
-											voting={votingSuggestionId === suggestion._id}
-											onToggleVote={handleToggleVote}
-										/>
-									))}
-								</div>
-							)}
-						</section>
-					))}
-				</div>
-			)}
+				<section className="page-enter">
+					<SuggestionComposer />
+				</section>
+
+				<section className="page-enter space-y-4">
+					<div className="space-y-1">
+						<p className="calm-kicker">{t("suggestions.title")}</p>
+						<h2 className="text-2xl font-semibold tracking-tight">
+							{t("suggestions.heading")}
+						</h2>
+					</div>
+					{suggestionsBoard === undefined ? (
+						<SuggestionsBoardSkeleton />
+					) : (
+						<div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+							{statuses.map((status) => (
+								<section key={status} className="calm-section">
+									<div className="calm-section-header pb-3">
+										<div>
+											<h3 className="text-base font-semibold">
+												{t(`suggestions.status.${status}`)}
+											</h3>
+										</div>
+										<div className="rounded-full border border-border/70 bg-background/75 px-2.5 py-1 text-sm font-medium">
+											{suggestionsBoard[status].length}
+										</div>
+									</div>
+
+									{suggestionsBoard[status].length === 0 ? (
+										<div className="rounded-2xl border border-dashed border-border/70 bg-muted/16 p-4 space-y-1">
+											<p className="font-medium">
+												{t("suggestions.emptyTitle")}
+											</p>
+											<p className="text-sm text-muted-foreground">
+												{t("suggestions.emptyDescription")}
+											</p>
+										</div>
+									) : (
+										<div className="calm-list">
+											{suggestionsBoard[status].map((suggestion) => (
+												<SuggestionCard
+													key={suggestion._id}
+													suggestion={suggestion}
+													locale={locale}
+													voting={votingSuggestionId === suggestion._id}
+													onToggleVote={handleToggleVote}
+												/>
+											))}
+										</div>
+									)}
+								</section>
+							))}
+						</div>
+					)}
+				</section>
+			</div>
 		</div>
 	);
 }
@@ -131,15 +151,12 @@ function SuggestionsBoardSkeleton() {
 	return (
 		<div className="grid gap-4 lg:grid-cols-3 lg:items-start">
 			{statuses.map((status) => (
-				<div
-					key={status}
-					className="rounded-lg border bg-muted/20 p-4 space-y-4"
-				>
-					<div className="flex items-center justify-between gap-3 border-b pb-3">
+				<div key={status} className="calm-section">
+					<div className="calm-section-header pb-3">
 						<Skeleton className="h-5 w-24" />
 						<Skeleton className="h-8 w-10 rounded-full" />
 					</div>
-					<div className="grid gap-4">
+					<div className="calm-list">
 						<SuggestionCardSkeleton />
 						<SuggestionCardSkeleton />
 					</div>
@@ -151,7 +168,7 @@ function SuggestionsBoardSkeleton() {
 
 function SuggestionCardSkeleton() {
 	return (
-		<div className="rounded-lg border bg-background p-6 space-y-4">
+		<div className="px-4 py-4 space-y-4 md:px-5">
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-2 flex-1">
 					<Skeleton className="h-5 w-3/4" />

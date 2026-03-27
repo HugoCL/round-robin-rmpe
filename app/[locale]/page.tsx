@@ -116,84 +116,104 @@ export default function Page() {
 		<div className="relative overflow-hidden">
 			<div
 				aria-hidden
-				className="pointer-events-none absolute -top-24 -left-10 h-72 w-72 rounded-full bg-primary/20 blur-3xl"
+				className="pointer-events-none absolute -top-24 left-0 h-72 w-72 rounded-full bg-primary/12 blur-3xl"
 			/>
 			<div
 				aria-hidden
-				className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl"
+				className="pointer-events-none absolute top-24 right-0 h-80 w-80 rounded-full bg-primary/8 blur-3xl"
 			/>
+			<div className="container mx-auto max-w-6xl px-4 py-8 md:py-10">
+				<section className="page-enter-soft calm-shell relative overflow-hidden px-5 py-8 md:px-8 md:py-10">
+					<div
+						aria-hidden
+						className="absolute inset-y-0 right-0 hidden w-1/2 bg-[radial-gradient(circle_at_top_right,color-mix(in_oklab,var(--primary)_12%,transparent),transparent_65%)] md:block"
+					/>
+					<div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:items-center">
+						<div className="space-y-6">
+							<div className="space-y-3">
+								<p className="calm-kicker">La Lista</p>
+								<h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-foreground md:text-6xl">
+									{t("team.switcher.title")}
+								</h1>
+								<p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
+									{t("team.switcher.description")}
+								</p>
+							</div>
 
-			<div className="container mx-auto max-w-5xl px-4 py-10 md:py-14">
-				<div className="space-y-2">
-					<p className="inline-flex items-center border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-						La Lista
-					</p>
-					<h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-						{t("team.switcher.title")}
-					</h1>
-					<p className="max-w-2xl text-base text-muted-foreground md:text-lg">
-						{t("team.switcher.description")}
-					</p>
-				</div>
+							<div className="flex flex-wrap items-center gap-3">
+								<Button asChild size="lg" className="rounded-full px-5">
+									<Link href={`/${locale}/create-team`}>
+										<Plus className="h-4 w-4" />
+										{t("team.createButton")}
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="outline"
+									size="lg"
+									className="rounded-full border-border/70 bg-background/70 px-5"
+								>
+									<Link href={`/${locale}/suggestions`}>
+										<Lightbulb className="h-4 w-4" />
+										{t("suggestions.openBoard")}
+									</Link>
+								</Button>
+							</div>
+						</div>
 
-				<div className="mt-5 py-3 md:py-4">
-					<p className="flex items-center gap-2 text-sm md:text-base text-muted-foreground">
-						<GitPullRequest className="h-4 w-4 shrink-0 opacity-80" />
-						<span className="leading-relaxed">
-							{t.rich("team.switcher.reviewedSummaryRich", {
-								count: animatedReviewedPRs.toLocaleString(locale),
-								highlight: (chunks) => (
-									<span
-										className={`inline-block px-1 text-xl md:text-2xl font-bold tabular-nums align-middle transition-all duration-300 ${
-											isCounterAnimating
-												? "scale-110 text-primary"
-												: "scale-100 text-foreground"
-										}`}
-									>
-										{chunks}
-									</span>
-								),
-							})}
-						</span>
-					</p>
-				</div>
+						<div className="page-enter flex justify-center">
+							<div className="calm-subtle-panel flex min-h-40 w-full max-w-2xl items-center justify-center px-4 py-5 md:px-6">
+								<div className="flex items-center justify-center gap-3 md:gap-4">
+									<div className="inline-flex size-10 items-center justify-center rounded-2xl bg-primary/8 text-primary">
+										<GitPullRequest className="h-5 w-5 shrink-0" />
+									</div>
+									<div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+										<span
+											className={`text-4xl font-semibold leading-none tabular-nums text-foreground transition-all duration-300 md:text-5xl ${
+												isCounterAnimating
+													? "scale-105 text-primary"
+													: "scale-100"
+											}`}
+										>
+											{animatedReviewedPRs.toLocaleString(locale)}
+										</span>
+										<span className="pb-1 text-sm text-muted-foreground md:text-base">
+											{t("team.switcher.reviewedSummaryLabel")}
+										</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
 
-				<LandingAssignmentTicker />
+				<section className="page-enter mt-6">
+					<LandingAssignmentTicker />
+				</section>
 
-				<div className="mt-12 mb-4 flex items-center justify-between gap-4 flex-wrap md:mt-14 md:flex-nowrap">
-					<h2 className="text-xl font-semibold">
-						{t("team.switcher.teamListTitle")}
-					</h2>
-					<div className="flex items-center gap-2">
-						<Button asChild variant="outline" className="shrink-0">
-							<Link href={`/${locale}/suggestions`}>
-								<Lightbulb className="h-4 w-4" />
-								{t("suggestions.openBoard")}
-							</Link>
-						</Button>
-						<Button
-							asChild
-							className="shrink-0 shadow-[0_8px_24px_-12px_hsl(var(--primary))]"
-						>
-							<Link href={`/${locale}/create-team`}>
-								<Plus className="h-4 w-4" />
-								{t("team.createButton")}
-							</Link>
-						</Button>
+				<div className="mt-10 mb-4 flex flex-wrap items-end justify-between gap-4 md:mt-12">
+					<div className="space-y-1">
+						<p className="calm-kicker">{t("team.switcher.teamListTitle")}</p>
+						<h2 className="text-2xl font-semibold tracking-tight">
+							{t("team.switcher.teamListTitle")}
+						</h2>
 					</div>
 				</div>
 
 				{isLoading ? (
-					<div className="mt-0 border bg-background/60 p-6 text-sm text-muted-foreground">
+					<div className="calm-section text-sm text-muted-foreground">
 						{t("common.loading")}
 					</div>
 				) : teamsList.length === 0 ? (
-					<div className="mt-0 border bg-background/60 p-6 space-y-3">
-						<p className="font-medium">{t("team.switcher.emptyTitle")}</p>
+					<div className="calm-section max-w-2xl space-y-3">
+						<p className="calm-kicker">La Lista</p>
+						<p className="text-xl font-semibold">
+							{t("team.switcher.emptyTitle")}
+						</p>
 						<p className="text-sm text-muted-foreground">
 							{t("team.switcher.emptyDescription")}
 						</p>
-						<Button asChild variant="outline">
+						<Button asChild className="w-fit rounded-full px-5">
 							<Link href={`/${locale}/create-team`}>
 								<Plus className="h-4 w-4" />
 								{t("team.createTitle")}
@@ -201,34 +221,28 @@ export default function Page() {
 						</Button>
 					</div>
 				) : (
-					<div className="mt-0 grid gap-3 md:grid-cols-2">
+					<div className="calm-list">
 						{teamsList.map((team) => (
 							<Link
 								key={team._id}
 								href={`/${locale}/${team.slug}`}
-								className="group relative overflow-hidden border border-border/70 bg-gradient-to-b from-background/90 to-background/40 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-muted/40"
+								className="group relative flex items-center justify-between gap-4 px-4 py-4 transition-colors duration-200 hover:bg-muted/30 md:px-5"
 							>
-								<div
-									aria-hidden
-									className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-[linear-gradient(135deg,transparent_25%,hsl(var(--primary)/0.12)_100%)]"
-								/>
-								<div className="relative flex h-full min-h-28 flex-col justify-between gap-3">
-									<div className="flex items-start justify-between gap-3">
-										<div className="inline-flex h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10 text-xs font-semibold tracking-wide text-primary">
-											{getTeamInitials(team.name) || "TM"}
-										</div>
-										<div className="inline-flex h-8 w-8 items-center justify-center border border-border text-muted-foreground transition-colors group-hover:border-primary/40 group-hover:text-primary">
-											<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-										</div>
+								<div className="flex min-w-0 items-center gap-4">
+									<div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/8 text-xs font-semibold tracking-[0.18em] text-primary">
+										{getTeamInitials(team.name) || "TM"}
 									</div>
 									<div className="min-w-0">
-										<p className="font-semibold text-xl leading-tight truncate">
+										<p className="truncate text-lg font-semibold leading-tight">
 											{team.name}
 										</p>
-										<p className="mt-1 text-sm text-muted-foreground font-mono truncate">
+										<p className="mt-1 truncate font-mono text-xs text-muted-foreground">
 											/{team.slug}
 										</p>
 									</div>
+								</div>
+								<div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/75 text-muted-foreground transition-all duration-200 group-hover:border-primary/30 group-hover:text-primary">
+									<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
 								</div>
 							</Link>
 						))}

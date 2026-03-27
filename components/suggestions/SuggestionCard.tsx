@@ -5,12 +5,6 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-} from "@/components/ui/card";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 
@@ -79,56 +73,63 @@ export function SuggestionCard({
 	};
 
 	return (
-		<Card>
-			<CardHeader className="space-y-3">
-				<div className="flex items-start justify-between gap-3">
-					<div className="space-y-1">
-						<h3 className="text-lg font-semibold leading-tight">
+		<article className="group px-4 py-4 transition-colors hover:bg-muted/30 md:px-5">
+			<div className="flex items-start justify-between gap-3">
+				<div className="min-w-0 space-y-2">
+					<div className="flex flex-wrap items-center gap-2">
+						<h3 className="text-base font-semibold leading-tight text-foreground">
 							{suggestion.title}
 						</h3>
-						<p className="text-xs text-muted-foreground">
-							{t("suggestions.createdBy", {
-								name: suggestion.authorName,
-								date: formattedDate,
-							})}
-						</p>
+						<Badge variant={statusVariant(suggestion.status)}>
+							{t(`suggestions.status.${suggestion.status}`)}
+						</Badge>
 					</div>
-					<Badge variant={statusVariant(suggestion.status)}>
-						{t(`suggestions.status.${suggestion.status}`)}
-					</Badge>
+					<p className="text-xs text-muted-foreground">
+						{t("suggestions.createdBy", {
+							name: suggestion.authorName,
+							date: formattedDate,
+						})}
+					</p>
+					<p className="max-w-xl text-sm leading-6 text-muted-foreground line-clamp-3">
+						{suggestion.description}
+					</p>
 				</div>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<p className="text-sm text-muted-foreground line-clamp-3">
-					{suggestion.description}
-				</p>
-			</CardContent>
-			<CardFooter className="flex flex-wrap items-center justify-between gap-2">
+				<Button
+					asChild
+					variant="ghost"
+					size="sm"
+					className="shrink-0 rounded-full"
+				>
+					<Link href={suggestionPath}>{t("suggestions.openDetail")}</Link>
+				</Button>
+			</div>
+			<div className="mt-4 flex flex-wrap items-center justify-between gap-3">
 				<div className="flex items-center gap-2">
 					<Button
 						variant={suggestion.viewerHasUpvoted ? "default" : "outline"}
 						size="sm"
 						onClick={() => void onToggleVote(suggestion._id)}
 						disabled={voting}
+						className="rounded-full"
 					>
 						<ArrowUp className="h-4 w-4" />
 						{suggestion.upvoteCount}
 					</Button>
-					<div className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+					<div className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/75 px-3 py-2 text-xs text-muted-foreground">
 						<MessageSquare className="h-4 w-4" />
 						{suggestion.commentCount}
 					</div>
 				</div>
-				<div className="flex items-center gap-2">
-					<Button variant="ghost" size="sm" onClick={() => void handleShare()}>
-						<Share2 className="h-4 w-4" />
-						{t("suggestions.share")}
-					</Button>
-					<Button asChild size="sm" variant="outline">
-						<Link href={suggestionPath}>{t("suggestions.openDetail")}</Link>
-					</Button>
-				</div>
-			</CardFooter>
-		</Card>
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={() => void handleShare()}
+					className="rounded-full text-muted-foreground"
+				>
+					<Share2 className="h-4 w-4" />
+					{t("suggestions.share")}
+				</Button>
+			</div>
+		</article>
 	);
 }

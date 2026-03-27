@@ -37,11 +37,15 @@ import { MarkAbsentDialog } from "./dialogs/MarkAbsentDialog";
 
 interface ReviewersTableProps {
 	teamSlug?: string;
+	showViewControls?: boolean;
 }
 
 import { usePRReview } from "./PRReviewContext";
 
-export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
+export function ReviewersTable({
+	teamSlug,
+	showViewControls = true,
+}: ReviewersTableProps) {
 	const t = useTranslations();
 	const locale = useLocale();
 	const {
@@ -165,73 +169,69 @@ export function ReviewersTable({ teamSlug }: ReviewersTableProps) {
 
 	return (
 		<div className="space-y-4">
-			<section className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2">
-				<div className="min-w-0">
-					<h4 className="text-sm font-semibold">{t("common.viewOptions")}</h4>
-					<p className="truncate text-xs text-muted-foreground">
-						{t("pr.reviewersViewOptionsDescription")}
-					</p>
-				</div>
-				<div className="flex shrink-0 items-center gap-2">
-					<Badge variant="neutral" size="xs">
-						{visibleColumnsCount}/3
-					</Badge>
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button variant="outline" size="sm" className="h-8 gap-2">
-								<SlidersHorizontal className="h-3.5 w-3.5" />
-								{t("pr.viewColumns")}
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-72">
-							<DropdownMenuLabel>{t("common.viewOptions")}</DropdownMenuLabel>
-							<DropdownMenuSeparator />
-							<DropdownMenuCheckboxItem
-								checked={showAssignments}
-								onSelect={(event) => event.preventDefault()}
-								onCheckedChange={(checked) => {
-									if (checked !== showAssignments) toggleShowAssignments();
-								}}
-							>
-								<div className="space-y-1">
-									<p>{t("pr.showAssignments")}</p>
-									<p className="text-[11px] text-muted-foreground">
-										{t("pr.showAssignmentsDescription")}
-									</p>
-								</div>
-							</DropdownMenuCheckboxItem>
-							<DropdownMenuCheckboxItem
-								checked={showTags}
-								onSelect={(event) => event.preventDefault()}
-								onCheckedChange={(checked) => {
-									if (checked !== showTags) toggleShowTags();
-								}}
-							>
-								<div className="space-y-1">
-									<p>{t("pr.showTags")}</p>
-									<p className="text-[11px] text-muted-foreground">
-										{t("pr.showTagsDescription")}
-									</p>
-								</div>
-							</DropdownMenuCheckboxItem>
-							<DropdownMenuCheckboxItem
-								checked={showEmails}
-								onSelect={(event) => event.preventDefault()}
-								onCheckedChange={(checked) => {
-									if (checked !== showEmails) toggleShowEmails();
-								}}
-							>
-								<div className="space-y-1">
-									<p>{t("pr.showEmails")}</p>
-									<p className="text-[11px] text-muted-foreground">
-										{t("pr.showEmailsDescription")}
-									</p>
-								</div>
-							</DropdownMenuCheckboxItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			</section>
+			{showViewControls && (
+				<section className="flex justify-end">
+					<div className="flex shrink-0 items-center gap-2">
+						<Badge variant="neutral" size="xs">
+							{visibleColumnsCount}/3
+						</Badge>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button variant="outline" size="sm" className="h-8 gap-2">
+									<SlidersHorizontal className="h-3.5 w-3.5" />
+									{t("pr.viewColumns")}
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end" className="w-72">
+								<DropdownMenuLabel>{t("common.viewOptions")}</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								<DropdownMenuCheckboxItem
+									checked={showAssignments}
+									onSelect={(event) => event.preventDefault()}
+									onCheckedChange={(checked) => {
+										if (checked !== showAssignments) toggleShowAssignments();
+									}}
+								>
+									<div className="space-y-1">
+										<p>{t("pr.showAssignments")}</p>
+										<p className="text-[11px] text-muted-foreground">
+											{t("pr.showAssignmentsDescription")}
+										</p>
+									</div>
+								</DropdownMenuCheckboxItem>
+								<DropdownMenuCheckboxItem
+									checked={showTags}
+									onSelect={(event) => event.preventDefault()}
+									onCheckedChange={(checked) => {
+										if (checked !== showTags) toggleShowTags();
+									}}
+								>
+									<div className="space-y-1">
+										<p>{t("pr.showTags")}</p>
+										<p className="text-[11px] text-muted-foreground">
+											{t("pr.showTagsDescription")}
+										</p>
+									</div>
+								</DropdownMenuCheckboxItem>
+								<DropdownMenuCheckboxItem
+									checked={showEmails}
+									onSelect={(event) => event.preventDefault()}
+									onCheckedChange={(checked) => {
+										if (checked !== showEmails) toggleShowEmails();
+									}}
+								>
+									<div className="space-y-1">
+										<p>{t("pr.showEmails")}</p>
+										<p className="text-[11px] text-muted-foreground">
+											{t("pr.showEmailsDescription")}
+										</p>
+									</div>
+								</DropdownMenuCheckboxItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</div>
+				</section>
+			)}
 
 			<Table>
 				<TableHeader>

@@ -17,13 +17,6 @@ import { CommentList } from "@/components/suggestions/CommentList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import {
 	Select,
 	SelectContent,
 	SelectItem,
@@ -197,8 +190,8 @@ export function SuggestionDetail({ suggestionId }: { suggestionId: string }) {
 
 	if (detail === undefined) {
 		return (
-			<div className="container mx-auto max-w-4xl px-4 py-8">
-				<div className="rounded-lg border p-6 text-sm text-muted-foreground">
+			<div className="container mx-auto max-w-5xl px-4 py-8">
+				<div className="calm-section text-sm text-muted-foreground">
 					{t("common.loading")}
 				</div>
 			</div>
@@ -207,22 +200,20 @@ export function SuggestionDetail({ suggestionId }: { suggestionId: string }) {
 
 	if (!detail) {
 		return (
-			<div className="container mx-auto max-w-4xl px-4 py-8">
-				<Card>
-					<CardHeader>
-						<CardTitle>{t("suggestions.notFoundTitle")}</CardTitle>
-						<CardDescription>
-							{t("suggestions.notFoundDescription")}
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<Button asChild>
-							<Link href={`/${locale}/suggestions`}>
-								{t("suggestions.backToBoard")}
-							</Link>
-						</Button>
-					</CardContent>
-				</Card>
+			<div className="container mx-auto max-w-5xl px-4 py-8">
+				<section className="calm-section max-w-2xl">
+					<h2 className="text-2xl font-semibold">
+						{t("suggestions.notFoundTitle")}
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						{t("suggestions.notFoundDescription")}
+					</p>
+					<Button asChild className="w-fit rounded-full px-5">
+						<Link href={`/${locale}/suggestions`}>
+							{t("suggestions.backToBoard")}
+						</Link>
+					</Button>
+				</section>
 			</div>
 		);
 	}
@@ -237,9 +228,9 @@ export function SuggestionDetail({ suggestionId }: { suggestionId: string }) {
 	}).format(suggestion.createdAt);
 
 	return (
-		<div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
+		<div className="container mx-auto max-w-5xl px-4 py-8 space-y-6">
 			<div>
-				<Button variant="ghost" asChild>
+				<Button variant="ghost" asChild className="rounded-full">
 					<Link href={`/${locale}/suggestions`}>
 						<ArrowLeft className="h-4 w-4" />
 						{t("suggestions.backToBoard")}
@@ -247,54 +238,59 @@ export function SuggestionDetail({ suggestionId }: { suggestionId: string }) {
 				</Button>
 			</div>
 
-			<Card>
-				<CardHeader className="space-y-3">
-					<div className="flex items-start justify-between gap-3">
-						<div className="space-y-2">
-							<CardTitle className="text-2xl leading-tight">
-								{suggestion.title}
-							</CardTitle>
-							<CardDescription>
-								{t("suggestions.createdBy", {
-									name: suggestion.authorName,
-									date: formattedDate,
-								})}
-							</CardDescription>
+			<section className="page-enter-soft calm-shell px-5 py-6 md:px-7 md:py-7">
+				<div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
+					<div className="space-y-5">
+						<div className="flex items-start justify-between gap-3">
+							<div className="space-y-2">
+								<p className="calm-kicker">{t("suggestions.title")}</p>
+								<h1 className="text-3xl font-semibold leading-tight tracking-tight md:text-4xl">
+									{suggestion.title}
+								</h1>
+								<p className="text-sm text-muted-foreground">
+									{t("suggestions.createdBy", {
+										name: suggestion.authorName,
+										date: formattedDate,
+									})}
+								</p>
+							</div>
+							<Badge variant={statusVariant(suggestion.status)}>
+								{t(`suggestions.status.${suggestion.status}`)}
+							</Badge>
 						</div>
-						<Badge variant={statusVariant(suggestion.status)}>
-							{t(`suggestions.status.${suggestion.status}`)}
-						</Badge>
-					</div>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<p className="text-sm leading-relaxed whitespace-pre-wrap">
-						{suggestion.description}
-					</p>
-					<div className="flex flex-wrap items-center gap-2">
-						<Button
-							variant={suggestion.viewerHasUpvoted ? "default" : "outline"}
-							size="sm"
-							onClick={() => void handleToggleVote()}
-							disabled={voting}
-						>
-							<ArrowUp className="h-4 w-4" />
-							{suggestion.upvoteCount}
-						</Button>
-						<div className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-							<MessageSquare className="h-4 w-4" />
-							{suggestion.commentCount}
+						<p className="max-w-3xl text-sm leading-7 whitespace-pre-wrap text-foreground/90">
+							{suggestion.description}
+						</p>
+						<div className="flex flex-wrap items-center gap-2">
+							<Button
+								variant={suggestion.viewerHasUpvoted ? "default" : "outline"}
+								size="sm"
+								onClick={() => void handleToggleVote()}
+								disabled={voting}
+								className="rounded-full"
+							>
+								<ArrowUp className="h-4 w-4" />
+								{suggestion.upvoteCount}
+							</Button>
+							<div className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/75 px-3 py-2 text-xs text-muted-foreground">
+								<MessageSquare className="h-4 w-4" />
+								{suggestion.commentCount}
+							</div>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => void handleShare()}
+								className="rounded-full"
+							>
+								<Share2 className="h-4 w-4" />
+								{t("suggestions.share")}
+							</Button>
 						</div>
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => void handleShare()}
-						>
-							<Share2 className="h-4 w-4" />
-							{t("suggestions.share")}
-						</Button>
 					</div>
+
 					{canModerate ? (
-						<div className="flex flex-wrap items-center gap-2 pt-2">
+						<div className="calm-subtle-panel space-y-3 px-4 py-4">
+							<p className="calm-kicker">{t("common.manage")}</p>
 							<Select
 								value={suggestion.status}
 								onValueChange={(value) =>
@@ -302,7 +298,7 @@ export function SuggestionDetail({ suggestionId }: { suggestionId: string }) {
 								}
 								disabled={statusUpdating}
 							>
-								<SelectTrigger className="w-52">
+								<SelectTrigger className="w-full rounded-2xl border-border/70 bg-background/70">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
@@ -322,26 +318,30 @@ export function SuggestionDetail({ suggestionId }: { suggestionId: string }) {
 								size="sm"
 								onClick={() => void handleDeleteSuggestion()}
 								disabled={deletingSuggestion}
+								className="rounded-full"
 							>
 								<Trash2 className="h-4 w-4" />
 								{t("suggestions.deleteSuggestion")}
 							</Button>
 						</div>
 					) : null}
-				</CardContent>
-			</Card>
+				</div>
+			</section>
 
-			<Card>
-				<CardHeader>
-					<CardTitle>{t("suggestions.addCommentTitle")}</CardTitle>
-				</CardHeader>
-				<CardContent>
+			<section className="calm-section">
+				<div className="space-y-1">
+					<p className="calm-kicker">{t("suggestions.addCommentTitle")}</p>
+					<h2 className="text-xl font-semibold">
+						{t("suggestions.addCommentTitle")}
+					</h2>
+				</div>
+				<div className="rounded-2xl border border-border/60 bg-background/70 p-4">
 					<CommentComposer
 						submitting={commenting}
 						onSubmit={handleCommentSubmit}
 					/>
-				</CardContent>
-			</Card>
+				</div>
+			</section>
 
 			<CommentList
 				locale={locale}

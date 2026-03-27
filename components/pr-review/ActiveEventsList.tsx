@@ -277,7 +277,7 @@ export function ActiveEventsList() {
 	}
 
 	return (
-		<div className="w-full space-y-2">
+		<div className="calm-list w-full">
 			{sortedEvents.map((event) => {
 				const { dateStr, timeStr } = formatDateTime(event.scheduledAt);
 				const participating = isParticipating(event);
@@ -288,7 +288,7 @@ export function ActiveEventsList() {
 				return (
 					<div
 						key={event._id}
-						className="rounded-md border border-border/70 bg-muted/10 p-4"
+						className="px-4 py-4 transition-colors hover:bg-muted/30 md:px-5"
 					>
 						<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 							<div className="min-w-0 flex-1 space-y-2.5">
@@ -317,18 +317,18 @@ export function ActiveEventsList() {
 									)}
 								</div>
 
-								<div className="flex flex-wrap items-center gap-2.5 mt-4">
-									<span className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border/60 bg-background/25 px-2.5 text-xs text-muted-foreground">
+								<div className="mt-4 flex flex-wrap items-center gap-2.5">
+									<span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 text-xs text-muted-foreground">
 										<User className="h-3 w-3 shrink-0" />
 										{t("events.createdBy", {
 											name: event.createdBy.name,
 										})}
 									</span>
-									<span className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border/60 bg-background/25 px-2.5 text-xs text-muted-foreground">
+									<span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 text-xs text-muted-foreground">
 										<Calendar className="h-3 w-3 shrink-0" />
 										{dateStr}
 									</span>
-									<span className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border/60 bg-background/25 px-2.5 text-xs text-muted-foreground">
+									<span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 text-xs text-muted-foreground">
 										<Clock className="h-3 w-3 shrink-0" />
 										{timeStr}
 									</span>
@@ -336,7 +336,7 @@ export function ActiveEventsList() {
 
 								{event.participants.length > 0 && (
 									<div className="flex flex-wrap items-center gap-1.5">
-										<span className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border/60 bg-background/25 px-2.5 text-xs text-muted-foreground">
+										<span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 text-xs text-muted-foreground">
 											<Users className="h-3 w-3 shrink-0" />
 											{t("events.participantsLabel")}
 										</span>

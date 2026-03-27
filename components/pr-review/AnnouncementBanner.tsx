@@ -78,7 +78,11 @@ export function AnnouncementBanner() {
 	return (
 		<div className="space-y-2">
 			{visibleAnnouncements.map((announcement) => (
-				<Alert key={announcement.id} variant={announcement.variant}>
+				<Alert
+					key={announcement.id}
+					variant={announcement.variant}
+					className="rounded-2xl border-border/70 bg-background/82"
+				>
 					<Info className="h-4 w-4" />
 					<AlertTitle>{t("common.info")}</AlertTitle>
 					<AlertDescription>{t(announcement.translationKey)}</AlertDescription>

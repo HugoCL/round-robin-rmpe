@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import {
 	GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
@@ -271,8 +272,8 @@ export function ChatMessageCustomizer({
 
 					{enabled && (
 						<div className="space-y-2 rounded-lg border border-muted bg-muted/20 p-3">
-							<textarea
-								className="w-full text-sm  border bg-background p-2 resize-none h-28"
+							<Textarea
+								className="min-h-28 text-sm"
 								value={message}
 								onChange={(e) => {
 									onMessageChange(e.target.value);
@@ -305,35 +306,33 @@ export function ChatMessageCustomizer({
 							</div>
 
 							{!compact && (
-								<>
-									<div className="space-y-2">
-										<Label className="text-xs text-muted-foreground">
-											{t("modifiers.styleModifiers")}
-										</Label>
-										<div className="flex flex-wrap gap-2">
-											{availableMods.map((mod) => {
-												const isActive = selectedMods.includes(mod.id);
-												return (
-													<Badge
-														key={mod.id}
-														variant={isActive ? "default" : "outline"}
-														className="cursor-pointer hover:bg-primary/80 transition-colors text-xs"
-														onClick={() => {
-															setSelectedMods((prev) =>
-																prev.includes(mod.id)
-																	? prev.filter((m) => m !== mod.id)
-																	: [...prev, mod.id],
-															);
-														}}
-													>
-														<span className="mr-1">{mod.emoji}</span>
-														{mod.label}
-													</Badge>
-												);
-											})}
-										</div>
+								<div className="space-y-2">
+									<Label className="text-xs text-muted-foreground">
+										{t("modifiers.styleModifiers")}
+									</Label>
+									<div className="flex flex-wrap gap-2">
+										{availableMods.map((mod) => {
+											const isActive = selectedMods.includes(mod.id);
+											return (
+												<Badge
+													key={mod.id}
+													variant={isActive ? "default" : "outline"}
+													className="cursor-pointer hover:bg-primary/80 transition-colors text-xs"
+													onClick={() => {
+														setSelectedMods((prev) =>
+															prev.includes(mod.id)
+																? prev.filter((m) => m !== mod.id)
+																: [...prev, mod.id],
+														);
+													}}
+												>
+													<span className="mr-1">{mod.emoji}</span>
+													{mod.label}
+												</Badge>
+											);
+										})}
 									</div>
-								</>
+								</div>
 							)}
 
 							<div className="flex flex-wrap gap-2 items-center">

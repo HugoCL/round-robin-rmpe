@@ -576,8 +576,9 @@ export default function PRReviewAssignment({
 	// Render loading state
 	if (isLoading || !isLoaded || !isUserPreferencesReady) {
 		return (
-			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
-				<div className="text-center">
+			<div className="container mx-auto flex h-[50vh] items-center justify-center px-4 py-6">
+				<div className="calm-section max-w-xl text-center">
+					<p className="calm-kicker">{t("pr.title")}</p>
 					<h2 className="text-xl font-semibold mb-2">{t("common.loading")}</h2>
 					<p className="text-muted-foreground">{t("pr.loadingPleaseWait")}</p>
 				</div>
@@ -588,8 +589,9 @@ export default function PRReviewAssignment({
 	// Render not authenticated state
 	if (!user) {
 		return (
-			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
-				<div className="text-center">
+			<div className="container mx-auto flex h-[50vh] items-center justify-center px-4 py-6">
+				<div className="calm-section max-w-xl text-center">
+					<p className="calm-kicker">{t("pr.title")}</p>
 					<h2 className="text-xl font-semibold mb-2">
 						{t("you-are-not-authenticated")}
 					</h2>
@@ -602,8 +604,9 @@ export default function PRReviewAssignment({
 	// Render not authorized state for non-company emails
 	if (userInfo && !/^.+@buk\.[a-zA-Z0-9-]+$/.test(userInfo.email)) {
 		return (
-			<div className="container mx-auto py-6 flex justify-center items-center h-[50vh]">
-				<div className="text-center">
+			<div className="container mx-auto flex h-[50vh] items-center justify-center px-4 py-6">
+				<div className="calm-section max-w-xl text-center">
+					<p className="calm-kicker">{t("pr.title")}</p>
 					<h2 className="text-xl font-semibold mb-2">
 						{t("pr.notAuthorizedTitle")}
 					</h2>
@@ -616,7 +619,9 @@ export default function PRReviewAssignment({
 							await signOut();
 						}}
 					>
-						<Button type="submit">{t("pr.signOut")}</Button>
+						<Button type="submit" className="rounded-full px-5">
+							{t("pr.signOut")}
+						</Button>
 					</form>
 				</div>
 			</div>
@@ -625,14 +630,15 @@ export default function PRReviewAssignment({
 
 	return (
 		<PRReviewProvider value={providerValue}>
-			<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-				<PageHeader
-					teamSlug={teamSlug}
-					reviewersDrawerOpen={reviewersDrawerOpen}
-					setReviewersDrawerOpen={setReviewersDrawerOpen}
-				/>
-				<AnnouncementBanner />
-
+			<div className="container mx-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+				<div className="page-enter space-y-5">
+					<PageHeader
+						teamSlug={teamSlug}
+						reviewersDrawerOpen={reviewersDrawerOpen}
+						setReviewersDrawerOpen={setReviewersDrawerOpen}
+					/>
+					<AnnouncementBanner />
+				</div>
 				<CompactLayout />
 
 				{/* Hidden file input for importing reviewer data. Triggered by header actions via document.getElementById('import-file')?.click() */}

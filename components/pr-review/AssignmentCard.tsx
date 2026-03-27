@@ -9,6 +9,7 @@ import {
 	MessageSquare,
 	Sparkles,
 	Undo2,
+	UserCheck,
 	Users,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -51,6 +52,7 @@ import {
 	ReviewerSlotsConfigurator,
 } from "./assignment/ReviewerSlotsConfigurator";
 import { ChatMessageCustomizer } from "./ChatMessageCustomizer";
+import { ForceAssignDialog } from "./dialogs/ForceAssignDialog";
 import { usePRReview } from "./PRReviewContext";
 
 type AssignmentMode = "regular" | "tag";
@@ -711,7 +713,6 @@ export function AssignmentCard() {
 				const message = t("messages.batchAssignSingleSuccess", {
 					reviewer: result.assigned[0].reviewer.name,
 				});
-				setLiveSummary(message);
 				toast({
 					title: t("common.success"),
 					description: message,
@@ -720,7 +721,6 @@ export function AssignmentCard() {
 				const message = t("messages.batchAssignSuccess", {
 					count: result.assignedCount,
 				});
-				setLiveSummary(message);
 				toast({
 					title: t("common.success"),
 					description: message,
@@ -758,11 +758,11 @@ export function AssignmentCard() {
 		resolvePreview.resolved.length === 0;
 
 	return (
-		<Card className="flex flex-col overflow-hidden">
-			<CardHeader className="flex-shrink-0" />
-			<CardContent className="flex flex-1 items-center justify-center">
+		<Card className="calm-shell flex flex-col overflow-hidden border-0 bg-transparent py-0 shadow-none ring-0">
+			<CardHeader className="sr-only flex-shrink-0" />
+			<CardContent className="flex flex-1 items-center justify-center px-5 pt-5 md:px-6 md:pt-6">
 				{activeNextReviewer ? (
-					<div className="w-full overflow-hidden py-8 text-center">
+					<div className="w-full overflow-hidden py-6 text-center md:py-8">
 						<div className="space-y-6">
 							{mode === "regular" && lastAssignedReviewer && (
 								<div className="space-y-1">
@@ -783,14 +783,14 @@ export function AssignmentCard() {
 
 							<div className="space-y-3">
 								<div>
-									<span className="inline-flex items-center gap-2 bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 dark:bg-white/12 dark:text-white dark:ring-white/20">
+									<span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 dark:bg-white/12 dark:text-white dark:ring-white/20">
 										<Sparkles className="h-3 w-3" aria-hidden="true" />
 										{mode === "tag"
 											? t("tags.nextReviewer")
 											: t("pr.nextReviewer")}
 									</span>
 								</div>
-								<div className="relative mx-auto max-w-xl overflow-hidden border border-white/6 bg-gradient-to-br from-primary/20 via-primary/16 to-primary/10 p-7 shadow-md ring-1 ring-primary/14 dark:border-white/5 dark:from-primary/28 dark:via-primary/32 dark:to-primary/20 dark:ring-primary/30">
+								<div className="relative mx-auto max-w-xl overflow-hidden rounded-[2rem] border border-primary/16 bg-gradient-to-br from-primary/14 via-background to-primary/8 p-7 shadow-[0_28px_72px_-44px_rgba(37,99,235,0.55)] ring-1 ring-primary/12 dark:border-primary/18 dark:from-primary/20 dark:via-background dark:to-primary/10 dark:ring-primary/22">
 									<div
 										className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.25),transparent_36%),radial-gradient(circle_at_78%_20%,rgba(59,130,246,0.14),transparent_45%)] dark:bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.08),transparent_36%),radial-gradient(circle_at_78%_20%,rgba(59,130,246,0.22),transparent_45%)]"
 										aria-hidden
@@ -866,7 +866,7 @@ export function AssignmentCard() {
 						</div>
 					</div>
 				) : (
-					<div className="w-full border-2 border-muted bg-muted p-6 text-center">
+					<div className="w-full rounded-[2rem] border border-dashed border-border/70 bg-muted/22 p-8 text-center">
 						{mode === "tag" ? (
 							selectedTagId ? (
 								<p className="text-sm text-muted-foreground">
@@ -892,10 +892,10 @@ export function AssignmentCard() {
 					</div>
 				)}
 			</CardContent>
-			<CardFooter className="flex-shrink-0 space-y-6">
+			<CardFooter className="flex-shrink-0 space-y-6 border-t border-border/60 px-5 pb-5 pt-5 md:px-6 md:pb-6">
 				<div className="w-full space-y-4">
 					{tags.length > 0 && (
-						<div className="space-y-3 border border-muted bg-muted/30 p-3">
+						<div className="space-y-3 rounded-2xl border border-border/60 bg-muted/18 p-4">
 							<div className="grid grid-cols-2 gap-2">
 								<Button
 									variant={mode === "regular" ? "default" : "outline"}
@@ -1022,6 +1022,41 @@ export function AssignmentCard() {
 								</Tooltip>
 							</TooltipProvider>
 						)}
+
+						<section className="max-w-full">
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<div>
+											<ForceAssignDialog
+												trigger={
+													<Button
+														variant="outline"
+														size="sm"
+														className="h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
+													>
+														<div className="inline-flex items-center gap-2.5">
+															<span className="inline-flex size-4 items-center justify-center">
+																<UserCheck
+																	className="h-4 w-4 shrink-0"
+																	aria-hidden="true"
+																/>
+															</span>
+															<span className="leading-none">
+																{t("pr.forceAssign")}
+															</span>
+														</div>
+													</Button>
+												}
+											/>
+										</div>
+									</TooltipTrigger>
+									<TooltipContent className="max-w-64 text-xs">
+										<p>{t("reviewer.forceAssignDescription")}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						</section>
 
 						<section className="max-w-full">
 							<TooltipProvider>
@@ -1170,7 +1205,7 @@ export function AssignmentCard() {
 					</div>
 
 					{crossTeamReview && (
-						<section className="space-y-3 rounded-lg border border-sky-200/60 bg-sky-50/30 p-3 dark:border-sky-900/40 dark:bg-sky-950/15">
+						<section className="space-y-3 rounded-2xl border border-sky-200/60 bg-sky-50/30 p-4 dark:border-sky-900/40 dark:bg-sky-950/15">
 							<p className="text-xs text-sky-800 dark:text-sky-200">
 								{t("googleChat.crossTeamSharePrompt")}
 							</p>
@@ -1207,7 +1242,7 @@ export function AssignmentCard() {
 											{t("googleChat.crossTeamTargetTeamsRequired")}
 										</p>
 									)}
-									<div className="flex items-start gap-2 rounded-md border border-sky-200/70 bg-background/70 p-2 dark:border-sky-900/40">
+									<div className="flex items-start gap-2 rounded-xl border border-sky-200/70 bg-background/70 p-3 dark:border-sky-900/40">
 										<Checkbox
 											id="cross-team-exclude-teammates"
 											checked={excludeTeammates}
@@ -1237,7 +1272,7 @@ export function AssignmentCard() {
 					)}
 
 					{!hideMultiAssignmentSection && isMultiAssignmentEnabled && (
-						<section className="space-y-3 rounded-lg border border-muted bg-muted/20 p-3">
+						<section className="space-y-3 rounded-2xl border border-border/60 bg-muted/18 p-4">
 							<div className="flex flex-wrap gap-2" aria-live="polite">
 								<Badge variant="secondary" className="max-w-full">
 									{t("pr.multipleAssignmentSummaryEnabled", {
@@ -1271,7 +1306,7 @@ export function AssignmentCard() {
 					)}
 
 					{effectiveSendMessage && (
-						<section className="space-y-3 rounded-lg border border-muted bg-muted/20 p-3">
+						<section className="space-y-3 rounded-2xl border border-border/60 bg-muted/18 p-4">
 							{alwaysSendGoogleChatMessage && (
 								<p className="text-xs text-muted-foreground">
 									{t("mySettings.messageAlwaysOnHint")}

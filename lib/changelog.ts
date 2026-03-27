@@ -42,6 +42,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-03-27",
+		type: "improvement",
+		title: "Diseño unificado en toda la app",
+		description:
+			"Unificamos el diseño de La Lista para que toda la experiencia se sienta parte de la misma app: dejamos atrás ese look más rígido (adios rounded: none) para dar paso a una interfaz mucho más clara y consistente.",
+	},
+	{
 		date: "2026-03-19",
 		type: "feature",
 		title: "Link al hilo de Google Chat en el historial",

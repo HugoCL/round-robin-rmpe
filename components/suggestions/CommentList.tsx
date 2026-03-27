@@ -3,13 +3,6 @@
 import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import type { Id } from "@/convex/_generated/dataModel";
 
 type CommentItem = {
@@ -38,21 +31,29 @@ export function CommentList({
 
 	if (comments.length === 0) {
 		return (
-			<Card>
-				<CardHeader>
-					<CardTitle>{t("suggestions.commentsTitle")}</CardTitle>
-					<CardDescription>{t("suggestions.commentsEmpty")}</CardDescription>
-				</CardHeader>
-			</Card>
+			<section className="calm-section">
+				<div className="space-y-1">
+					<p className="calm-kicker">{t("suggestions.commentsTitle")}</p>
+					<h3 className="text-lg font-semibold">
+						{t("suggestions.commentsTitle")}
+					</h3>
+				</div>
+				<p className="text-sm text-muted-foreground">
+					{t("suggestions.commentsEmpty")}
+				</p>
+			</section>
 		);
 	}
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>{t("suggestions.commentsTitle")}</CardTitle>
-			</CardHeader>
-			<CardContent className="space-y-4">
+		<section className="calm-section">
+			<div className="space-y-1">
+				<p className="calm-kicker">{t("suggestions.commentsTitle")}</p>
+				<h3 className="text-lg font-semibold">
+					{t("suggestions.commentsTitle")}
+				</h3>
+			</div>
+			<div className="calm-list">
 				{comments.map((comment) => {
 					const formattedDate = new Intl.DateTimeFormat(locale, {
 						year: "numeric",
@@ -63,7 +64,7 @@ export function CommentList({
 					}).format(comment.createdAt);
 
 					return (
-						<div key={comment._id} className="rounded-lg border p-3 space-y-2">
+						<div key={comment._id} className="px-4 py-4 space-y-2 md:px-5">
 							<div className="flex items-center justify-between gap-2">
 								<p className="text-sm font-medium">
 									{t("suggestions.commentBy", {
@@ -77,6 +78,7 @@ export function CommentList({
 										size="sm"
 										disabled={deletingCommentId === comment._id}
 										onClick={() => void onDeleteComment(comment._id)}
+										className="rounded-full"
 									>
 										<Trash2 className="h-4 w-4" />
 										{t("suggestions.deleteComment")}
@@ -89,7 +91,7 @@ export function CommentList({
 						</div>
 					);
 				})}
-			</CardContent>
-		</Card>
+			</div>
+		</section>
 	);
 }

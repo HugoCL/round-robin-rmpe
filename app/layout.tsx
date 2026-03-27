@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 
 const jetbrainsMono = JetBrains_Mono({
 	subsets: ["latin"],
-	variable: "--font-sans",
+	variable: "--font-mono",
 });
 
 const spaceGrotesk = Space_Grotesk({
@@ -48,7 +48,7 @@ export default function RootLayout({
 			<html
 				lang="en"
 				suppressHydrationWarning
-				className={jetbrainsMono.variable}
+				className={`${jetbrainsMono.variable} ${spaceGrotesk.variable}`}
 			>
 				<head>
 					<link rel="manifest" href="/manifest.webmanifest" />
@@ -61,7 +61,7 @@ export default function RootLayout({
 					<meta name="apple-mobile-web-app-title" content="La Lista" />
 					<link rel="apple-touch-icon" href="/icon-192x192.png" />
 				</head>
-				<body className={`${spaceGrotesk.className} antialiased min-h-screen`}>
+				<body className="min-h-screen antialiased">
 					<ConvexClientProvider>
 						<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 							{children}

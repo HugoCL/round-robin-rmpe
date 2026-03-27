@@ -4,13 +4,6 @@ import { useMutation } from "convex/react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,12 +66,17 @@ export function SuggestionComposer({ onCreated }: SuggestionComposerProps) {
 	};
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>{t("suggestions.composeTitle")}</CardTitle>
-				<CardDescription>{t("suggestions.composeDescription")}</CardDescription>
-			</CardHeader>
-			<CardContent>
+		<section className="calm-shell px-5 py-6 md:px-7">
+			<div className="grid gap-6 lg:grid-cols-[minmax(220px,0.7fr)_minmax(0,1.3fr)]">
+				<div className="space-y-2">
+					<p className="calm-kicker">{t("suggestions.composeTitle")}</p>
+					<h2 className="text-2xl font-semibold tracking-tight">
+						{t("suggestions.composeTitle")}
+					</h2>
+					<p className="text-sm leading-7 text-muted-foreground">
+						{t("suggestions.composeDescription")}
+					</p>
+				</div>
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div className="space-y-2">
 						<Label htmlFor="suggestion-title">
@@ -91,6 +89,7 @@ export function SuggestionComposer({ onCreated }: SuggestionComposerProps) {
 							placeholder={t("suggestions.titlePlaceholder")}
 							maxLength={120}
 							disabled={submitting}
+							className="calm-input-surface h-12"
 						/>
 					</div>
 					<div className="space-y-2">
@@ -103,8 +102,9 @@ export function SuggestionComposer({ onCreated }: SuggestionComposerProps) {
 							onChange={(event) => setDescription(event.target.value)}
 							placeholder={t("suggestions.descriptionPlaceholder")}
 							maxLength={2000}
-							rows={4}
+							rows={5}
 							disabled={submitting}
+							className="calm-input-surface min-h-32"
 						/>
 					</div>
 					{error ? (
@@ -112,11 +112,15 @@ export function SuggestionComposer({ onCreated }: SuggestionComposerProps) {
 							{error}
 						</p>
 					) : null}
-					<Button type="submit" disabled={submitting}>
+					<Button
+						type="submit"
+						disabled={submitting}
+						className="rounded-full px-5"
+					>
 						{submitting ? t("suggestions.submitting") : t("suggestions.submit")}
 					</Button>
 				</form>
-			</CardContent>
-		</Card>
+			</div>
+		</section>
 	);
 }

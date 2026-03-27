@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
@@ -74,9 +73,9 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 	};
 
 	return (
-		<Card>
-			<CardHeader className="shrink-0 flex flex-row items-start justify-between gap-4">
-				<CardTitle className="mt-1">{t("history.title")}</CardTitle>
+		<section className="calm-section">
+			<div className="calm-section-header">
+				<h4 className="text-lg font-semibold">{t("pr.history")}</h4>
 				<div className="flex items-center gap-2">
 					<label
 						htmlFor="history-my-assignments-toggle"
@@ -94,18 +93,18 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 						}}
 					/>
 				</div>
-			</CardHeader>
-			<CardContent>
+			</div>
+			<div>
 				{filteredAssignmentHistory.length === 0 ? (
-					<div className="text-center p-4 border  bg-muted h-full flex items-center justify-center">
+					<div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
 						<p>{t("pr.noAssignments")}</p>
 					</div>
 				) : (
-					<div className="space-y-3">
+					<div className="calm-list">
 						{filteredAssignmentHistory.slice(0, 6).map((item) => (
 							<div
 								key={item.id}
-								className={`flex items-start justify-between p-3 border hover:bg-muted/50 transition-colors ${
+								className={`flex items-start justify-between gap-4 px-4 py-4 transition-colors hover:bg-muted/30 md:px-5 ${
 									item.urgent ? "urgent-card" : ""
 								}`}
 							>
@@ -122,7 +121,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 											{item.reviewers.map((reviewer) => (
 												<div
 													key={`${reviewer.reviewerId}-${reviewer.timestamp}`}
-													className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs"
+													className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1 text-xs"
 												>
 													<span className="font-medium">
 														{reviewer.reviewerName}
@@ -235,7 +234,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 						))}
 					</div>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</section>
 	);
 }

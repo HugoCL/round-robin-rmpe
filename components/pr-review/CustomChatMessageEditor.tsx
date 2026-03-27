@@ -6,6 +6,7 @@ import { useEffect, useId, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
 	GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
@@ -89,8 +90,8 @@ export function CustomChatMessageEditor({
 				</div>
 
 				{enabled && (
-					<textarea
-						className="w-full text-sm  border bg-background p-2 resize-none h-24"
+					<Textarea
+						className="min-h-24 text-sm"
 						value={message}
 						onChange={(e) => {
 							onMessageChange(e.target.value);
