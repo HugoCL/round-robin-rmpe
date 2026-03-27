@@ -1002,16 +1002,6 @@ export function AssignmentCard() {
 													<span className="leading-none">
 														{t("pr.multipleAssignmentToggleLabel")}
 													</span>
-													<span className="inline-flex size-4 items-center justify-center">
-														<Info
-															className={`h-4 w-4 shrink-0 ${
-																isMultiAssignmentEnabled
-																	? "text-primary-foreground/80"
-																	: "text-muted-foreground/90"
-															}`}
-															aria-hidden="true"
-														/>
-													</span>
 												</div>
 											</ToggleGroupItem>
 										</ToggleGroup>
@@ -1093,16 +1083,6 @@ export function AssignmentCard() {
 												<span className="leading-none">
 													{t("googleChat.sendMessageToggle")}
 												</span>
-												<span className="inline-flex size-4 items-center justify-center">
-													<Info
-														className={`h-4 w-4 shrink-0 ${
-															effectiveSendMessage
-																? "text-primary-foreground/80"
-																: "text-muted-foreground/90"
-														}`}
-														aria-hidden="true"
-													/>
-												</span>
 											</div>
 										</Toggle>
 									</TooltipTrigger>
@@ -1136,16 +1116,6 @@ export function AssignmentCard() {
 												</span>
 												<span className="leading-none">
 													{t("googleChat.urgentToggle")}
-												</span>
-												<span className="inline-flex size-4 items-center justify-center">
-													<Info
-														className={`h-4 w-4 shrink-0 ${
-															urgent
-																? "text-white/80"
-																: "text-muted-foreground/90"
-														}`}
-														aria-hidden="true"
-													/>
 												</span>
 											</div>
 										</Toggle>
@@ -1182,16 +1152,6 @@ export function AssignmentCard() {
 												</span>
 												<span className="leading-none">
 													{t("googleChat.crossTeamToggle")}
-												</span>
-												<span className="inline-flex size-4 items-center justify-center">
-													<Info
-														className={`h-4 w-4 shrink-0 ${
-															crossTeamReview
-																? "text-white/80"
-																: "text-muted-foreground/90"
-														}`}
-														aria-hidden="true"
-													/>
 												</span>
 											</div>
 										</Toggle>
