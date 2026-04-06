@@ -2418,6 +2418,45 @@ export const restoreFromBackup = mutation({
 // EVENT MUTATIONS
 // ============================================
 
+const DEFAULT_EVENT_DURATION_MINUTES = 20;
+const MINUTE_IN_MS = 60 * 1000;
+
+function getEventExpectedEndTime(
+	event: Pick<
+		Doc<"events">,
+		"scheduledAt" | "durationMinutes" | "expectedEndTime"
+	>,
+) {
+	const durationMinutes =
+		event.durationMinutes ?? DEFAULT_EVENT_DURATION_MINUTES;
+	const fallbackEndTime = event.scheduledAt + durationMinutes * MINUTE_IN_MS;
+	return event.expectedEndTime ?? fallbackEndTime;
+}
+
+function hasEventEnded(
+	event: Pick<
+		Doc<"events">,
+		"scheduledAt" | "durationMinutes" | "expectedEndTime"
+	>,
+	now: number,
+) {
+	return getEventExpectedEndTime(event) <= now;
+}
+
+function isEventActiveForParticipation(
+	event: Pick<
+		Doc<"events">,
+		"status" | "scheduledAt" | "durationMinutes" | "expectedEndTime"
+	>,
+	now: number,
+) {
+	if (event.status === "cancelled" || event.status === "completed") {
+		return false;
+	}
+
+	return !hasEventEnded(event, now);
+}
+
 // Create a new team event
 export const createEvent = mutation({
 	args: {
@@ -2486,7 +2525,7 @@ export const joinEvent = mutation({
 		}
 		await assertCanMutateTeamById(ctx, event.teamId);
 
-		if (event.status === "cancelled" || event.status === "completed") {
+		if (!isEventActiveForParticipation(event, Date.now())) {
 			return { success: false, error: "Event is no longer active" };
 		}
 
@@ -2539,7 +2578,7 @@ export const leaveEvent = mutation({
 		}
 		await assertCanMutateTeamById(ctx, event.teamId);
 
-		if (event.status === "cancelled" || event.status === "completed") {
+		if (!isEventActiveForParticipation(event, Date.now())) {
 			return { success: false, error: "Event is no longer active" };
 		}
 
@@ -2636,11 +2675,16 @@ export const startEvent = mutation({
 			return { success: false, error: "Event cannot be started" };
 		}
 
-		// Calculate expected end time for optimization
 		const now = Date.now();
-		const durationMinutes =
-			event.durationMinutes ?? DEFAULT_EVENT_DURATION_MINUTES;
-		const expectedEndTime = now + durationMinutes * 60 * 1000;
+		const expectedEndTime = getEventExpectedEndTime(event);
+
+		if (expectedEndTime <= now) {
+			await ctx.db.patch(eventId, {
+				status: "completed",
+				expectedEndTime: undefined,
+			});
+			return { success: true };
+		}
 
 		await ctx.db.patch(eventId, {
 			status: "started",
@@ -2671,9 +2715,6 @@ export const completeEvent = mutation({
 	},
 });
 
-// Default duration in minutes for events
-const DEFAULT_EVENT_DURATION_MINUTES = 20;
-
 // Auto-complete events that have exceeded their duration (called by cron)
 export const autoCompleteExpiredEvents = mutation({
 	args: {},
@@ -2688,14 +2729,37 @@ export const autoCompleteExpiredEvents = mutation({
 			.filter((q) => q.lte(q.field("expectedEndTime"), now))
 			.collect();
 
+		// Backstop: include stale scheduled/started events (for delayed start jobs or legacy rows)
+		const staleCandidates = await ctx.db
+			.query("events")
+			.withIndex("by_scheduled_at", (q) => q.lte("scheduledAt", now))
+			.collect();
+
+		const expiredEventsById = new Map<Id<"events">, Doc<"events">>();
 		for (const event of expiredEvents) {
+			expiredEventsById.set(event._id, event);
+		}
+
+		for (const event of staleCandidates) {
+			if (event.status !== "scheduled" && event.status !== "started") {
+				continue;
+			}
+
+			if (!hasEventEnded(event, now)) {
+				continue;
+			}
+
+			expiredEventsById.set(event._id, event);
+		}
+
+		for (const event of expiredEventsById.values()) {
 			await ctx.db.patch(event._id, {
 				status: "completed",
 				expectedEndTime: undefined, // Clean up the field
 			});
 		}
 
-		return { completedCount: expiredEvents.length };
+		return { completedCount: expiredEventsById.size };
 	},
 });
 
@@ -2738,7 +2802,7 @@ export const addEventParticipant = mutation({
 		}
 		await assertCanMutateTeamById(ctx, event.teamId);
 
-		if (event.status === "cancelled" || event.status === "completed") {
+		if (!isEventActiveForParticipation(event, Date.now())) {
 			return { success: false, error: "Event is no longer active" };
 		}
 

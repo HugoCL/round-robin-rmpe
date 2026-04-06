@@ -211,6 +211,36 @@ function resolveEvent(
 	};
 }
 
+const DEFAULT_EVENT_DURATION_MINUTES = 20;
+const MINUTE_IN_MS = 60 * 1000;
+
+function getEventExpectedEndTime(
+	event: Pick<EventDoc, "scheduledAt" | "durationMinutes" | "expectedEndTime">,
+) {
+	const durationMinutes =
+		event.durationMinutes ?? DEFAULT_EVENT_DURATION_MINUTES;
+	const fallbackEndTime = event.scheduledAt + durationMinutes * MINUTE_IN_MS;
+	return event.expectedEndTime ?? fallbackEndTime;
+}
+
+function isEventStillActive(
+	event: Pick<
+		EventDoc,
+		"status" | "scheduledAt" | "durationMinutes" | "expectedEndTime"
+	>,
+	now: number,
+) {
+	if (event.status === "cancelled" || event.status === "completed") {
+		return false;
+	}
+
+	if (event.status === "scheduled" || event.status === "started") {
+		return getEventExpectedEndTime(event) > now;
+	}
+
+	return false;
+}
+
 function groupAssignmentHistory(
 	history: Doc<"assignmentHistory">[],
 	byId: Map<Id<"reviewers">, ReviewerDoc>,
@@ -1182,6 +1212,7 @@ export const getActiveEvents = query({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const now = Date.now();
 		const events = await ctx.db
 			.query("events")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
@@ -1194,7 +1225,7 @@ export const getActiveEvents = query({
 
 		// Filter for active events and sort by scheduled time
 		return events
-			.filter((e) => e.status === "scheduled" || e.status === "started")
+			.filter((event) => isEventStillActive(event, now))
 			.sort((a, b) => a.scheduledAt - b.scheduledAt)
 			.map((event) => resolveEvent(event, byId));
 	},
@@ -1205,6 +1236,7 @@ export const getUpcomingEvents = query({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const now = Date.now();
 		const events = await ctx.db
 			.query("events")
 			.withIndex("by_team_status", (q) =>
@@ -1218,6 +1250,7 @@ export const getUpcomingEvents = query({
 		const { byId } = buildReviewerMaps(reviewers);
 
 		return events
+			.filter((event) => getEventExpectedEndTime(event) > now)
 			.sort((a, b) => a.scheduledAt - b.scheduledAt)
 			.map((event) => resolveEvent(event, byId));
 	},

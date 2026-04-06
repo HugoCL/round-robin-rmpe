@@ -946,85 +946,92 @@ export const sendEventStartNotification = action({
 		const team = await ctx.runQuery(api.queries.getTeam, { teamSlug });
 		const webhookUrl = team?.googleChatWebhookUrl?.trim();
 
-		if (!webhookUrl) {
-			return {
-				success: false,
-				error: "Google Chat webhook URL not configured",
-			};
-		}
+		let notificationError: string | undefined;
 
-		try {
-			// Messages always in Spanish
-			const messages = {
-				started: "🚀 ¡El evento ha comenzado!",
-				participants: "Participantes",
-				noParticipants: "No hay participantes confirmados",
-			};
-
-			// Build participant mentions
-			let participantMentions = "";
-			if (event.participants.length > 0) {
-				participantMentions = event.participants
-					.map((p) => {
-						if (p.googleChatUserId?.trim()) {
-							return `${p.name} (<users/${p.googleChatUserId}>)`;
-						}
-						return p.name;
-					})
-					.join(", ");
-			} else {
-				participantMentions = messages.noParticipants;
-			}
-
-			const messageText = `*${messages.started}*\n\n*${event.title}*\n\n${messages.participants}: ${participantMentions}`;
-
-			const message = {
-				text: messageText,
-			};
-
-			const response = await fetch(webhookUrl, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(message),
-			});
-
-			if (!response.ok) {
-				return {
-					success: false,
-					error: `HTTP ${response.status}: ${response.statusText}`,
+		if (webhookUrl) {
+			try {
+				// Messages always in Spanish
+				const messages = {
+					started: "🚀 ¡El evento ha comenzado!",
+					participants: "Participantes",
+					noParticipants: "No hay participantes confirmados",
 				};
-			}
 
-			// Mark start notification as sent and update status
-			await ctx.runMutation(api.mutations.markEventStartNotificationSent, {
-				eventId,
-			});
-			await ctx.runMutation(api.mutations.startEvent, { eventId });
-
-			// Send PWA push notifications to all participants (fire and forget)
-			if (event.participants.length > 0) {
-				try {
-					const participantEmails = event.participants.map((p) => p.email);
-					await ctx.runAction(api.pushActions.sendPushToParticipants, {
-						emails: participantEmails,
-						title: `🚀 ${event.title}`,
-						body: "¡El evento ha comenzado!",
-						url: `/`, // Could be enhanced to link to event page
-						tag: `event-${eventId}`,
-					});
-				} catch (e) {
-					console.warn("Failed to send PWA push to participants", e);
+				// Build participant mentions
+				let participantMentions = "";
+				if (event.participants.length > 0) {
+					participantMentions = event.participants
+						.map((p) => {
+							if (p.googleChatUserId?.trim()) {
+								return `${p.name} (<users/${p.googleChatUserId}>)`;
+							}
+							return p.name;
+						})
+						.join(", ");
+				} else {
+					participantMentions = messages.noParticipants;
 				}
-			}
 
-			return { success: true };
-		} catch (error) {
-			console.error("Error sending event start notification:", error);
+				const messageText = `*${messages.started}*\n\n*${event.title}*\n\n${messages.participants}: ${participantMentions}`;
+
+				const message = {
+					text: messageText,
+				};
+
+				const response = await fetch(webhookUrl, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(message),
+				});
+
+				if (!response.ok) {
+					notificationError = `HTTP ${response.status}: ${response.statusText}`;
+				} else {
+					await ctx.runMutation(api.mutations.markEventStartNotificationSent, {
+						eventId,
+					});
+				}
+			} catch (error) {
+				notificationError =
+					error instanceof Error ? error.message : "Unknown notification error";
+			}
+		} else {
+			notificationError = "Google Chat webhook URL not configured";
+		}
+
+		const startResult = await ctx.runMutation(api.mutations.startEvent, {
+			eventId,
+		});
+		if (!startResult.success) {
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
+				error: startResult.error || notificationError,
 			};
 		}
+
+		// Send PWA push notifications to all participants (fire and forget)
+		if (event.participants.length > 0) {
+			try {
+				const participantEmails = event.participants.map((p) => p.email);
+				await ctx.runAction(api.pushActions.sendPushToParticipants, {
+					emails: participantEmails,
+					title: `🚀 ${event.title}`,
+					body: "¡El evento ha comenzado!",
+					url: `/`, // Could be enhanced to link to event page
+					tag: `event-${eventId}`,
+				});
+			} catch (e) {
+				console.warn("Failed to send PWA push to participants", e);
+			}
+		}
+
+		if (notificationError) {
+			console.warn(
+				`Event ${eventId} started without Google Chat notification: ${notificationError}`,
+			);
+		}
+
+		return { success: true };
 	},
 });
 
