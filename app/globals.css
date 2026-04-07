@@ -174,7 +174,7 @@
 }
 
 @utility calm-list {
-	@apply divide-y divide-border/60 rounded-2xl border border-border/60 bg-background/60;
+	@apply divide-y divide-border/60 rounded-2xl border border-border/60 bg-background/60 overflow-hidden;
 }
 
 @utility calm-input-surface {

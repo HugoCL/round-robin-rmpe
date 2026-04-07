@@ -104,7 +104,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 						{filteredAssignmentHistory.slice(0, 6).map((item) => (
 							<div
 								key={item.id}
-								className={`flex items-start justify-between gap-4 px-4 py-4 transition-colors hover:bg-muted/30 md:px-5 ${
+								className={`flex items-start justify-between gap-4 px-4 py-4 transition-colors hover:bg-muted/30 first:rounded-t-2xl last:rounded-b-2xl md:px-5 ${
 									item.urgent ? "urgent-card" : ""
 								}`}
 							>
