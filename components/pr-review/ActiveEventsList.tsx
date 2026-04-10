@@ -290,10 +290,10 @@ export function ActiveEventsList() {
 						key={event._id}
 						className="px-4 py-4 transition-colors hover:bg-muted/30 md:px-5"
 					>
-						<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-							<div className="min-w-0 flex-1 space-y-2.5">
-								<div className="flex flex-wrap items-center gap-2">
-									<p className="truncate text-sm font-semibold leading-tight">
+						<div className="flex flex-col gap-4">
+							<div className="min-w-0 space-y-3">
+								<div className="flex flex-wrap items-center gap-2.5">
+									<p className="min-w-0 text-sm font-semibold leading-tight break-words">
 										{event.title}
 									</p>
 									{event.status === "started" && (
@@ -317,39 +317,45 @@ export function ActiveEventsList() {
 									)}
 								</div>
 
-								<div className="mt-4 flex flex-wrap items-center gap-2.5">
-									<span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 text-xs text-muted-foreground">
+								<div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5">
+									<span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 py-1.5 text-xs text-muted-foreground sm:max-w-fit">
 										<User className="h-3 w-3 shrink-0" />
-										{t("events.createdBy", {
-											name: event.createdBy.name,
-										})}
+										<span className="truncate">
+											{t("events.createdBy", {
+												name: event.createdBy.name,
+											})}
+										</span>
 									</span>
-									<span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 text-xs text-muted-foreground">
-										<Calendar className="h-3 w-3 shrink-0" />
-										{dateStr}
-									</span>
-									<span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 text-xs text-muted-foreground">
-										<Clock className="h-3 w-3 shrink-0" />
-										{timeStr}
-									</span>
+									<div className="flex flex-wrap items-center gap-2.5">
+										<span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 py-1.5 text-xs text-muted-foreground">
+											<Calendar className="h-3 w-3 shrink-0" />
+											{dateStr}
+										</span>
+										<span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 py-1.5 text-xs text-muted-foreground">
+											<Clock className="h-3 w-3 shrink-0" />
+											{timeStr}
+										</span>
+									</div>
 								</div>
 
 								{event.participants.length > 0 && (
-									<div className="flex flex-wrap items-center gap-1.5">
-										<span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 text-xs text-muted-foreground">
+									<div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5">
+										<span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 py-1.5 text-xs text-muted-foreground">
 											<Users className="h-3 w-3 shrink-0" />
 											{t("events.participantsLabel")}
 										</span>
-										{event.participants.map((participant) => (
-											<Badge
-												key={participant.email}
-												variant="secondary"
-												className="max-w-full truncate text-xs font-normal"
-												title={participant.name}
-											>
-												{participant.name}
-											</Badge>
-										))}
+										<div className="flex flex-wrap items-center gap-1.5">
+											{event.participants.map((participant) => (
+												<Badge
+													key={participant.email}
+													variant="secondary"
+													className="max-w-full truncate text-xs font-normal"
+													title={participant.name}
+												>
+													{participant.name}
+												</Badge>
+											))}
+										</div>
 									</div>
 								)}
 
@@ -360,7 +366,7 @@ export function ActiveEventsList() {
 								)}
 							</div>
 
-							<div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end lg:pl-4">
+							<div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
 								{event.status === "scheduled" &&
 									(participating ? (
 										<Button
@@ -447,11 +453,12 @@ export function ActiveEventsList() {
 											<TooltipTrigger asChild>
 												<Button
 													variant="outline"
-													size="icon"
-													className="h-8 w-8 text-destructive hover:text-destructive"
+													size="sm"
+													className="text-destructive hover:text-destructive"
 													onClick={() => handleCancel(event._id)}
 												>
-													<Trash2 className="h-4 w-4" />
+													<Trash2 className="h-4 w-4 mr-1" />
+													{t("events.cancelEvent")}
 												</Button>
 											</TooltipTrigger>
 											<TooltipContent>{t("events.cancelEvent")}</TooltipContent>
