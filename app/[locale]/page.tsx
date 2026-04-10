@@ -219,7 +219,6 @@ export default function Page() {
 
 				<div className="mt-10 mb-4 flex flex-wrap items-end justify-between gap-4 md:mt-12">
 					<div className="space-y-1">
-						<p className="calm-kicker">{t("team.switcher.teamListTitle")}</p>
 						<h2 className="text-2xl font-semibold tracking-tight">
 							{t("team.switcher.teamListTitle")}
 						</h2>
