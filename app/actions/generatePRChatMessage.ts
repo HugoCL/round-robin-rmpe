@@ -15,6 +15,20 @@ interface GenerateArgs {
 	locale?: string;
 }
 
+function getErrorSummary(error: unknown): string {
+	if (error instanceof Error) {
+		return `${error.name}: ${error.message}`;
+	}
+	if (typeof error === "string") {
+		return error;
+	}
+	try {
+		return JSON.stringify(error);
+	} catch {
+		return "Error desconocido (no serializable)";
+	}
+}
+
 export async function generatePRChatMessage({
 	mods,
 	customPrompt,
@@ -122,7 +136,22 @@ export async function generatePRChatMessage({
 
 		if (finalText.length > 400) finalText = `${finalText.slice(0, 397)}...`;
 		return { response: finalText };
-	} catch (_e) {
+	} catch (error) {
+		const errorSummary = getErrorSummary(error);
+		const isProduction = process.env.NODE_ENV === "production";
+		const exposeServerErrors = process.env.EXPOSE_SERVER_ERRORS === "true";
+		console.error("[generatePRChatMessage] AI generation failed", {
+			model: "google/gemini-3-flash",
+			errorSummary,
+			hasGatewayKey: Boolean(gatewayUrl),
+			...(isProduction ? {} : { error }),
+		});
+
+		if (!isProduction && exposeServerErrors) {
+			const safeSummary = errorSummary.slice(0, 220);
+			return { response: `Error generando mensaje: ${safeSummary}` };
+		}
+
 		return { response: "Error generando mensaje" };
 	}
 }
