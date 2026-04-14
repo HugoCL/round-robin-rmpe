@@ -15,6 +15,7 @@
     "ext:pack": "cd chrome-extension && node scripts/pack.mjs"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.68",
     "@base-ui/react": "^1.1.0",
     "@clerk/nextjs": "^6.36.9",
     "@convex-dev/migrations": "^0.3.3",

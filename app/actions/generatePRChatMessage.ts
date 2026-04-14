@@ -1,4 +1,5 @@
 "use server";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import z from "zod/v4";
 import {
@@ -14,6 +15,8 @@ interface GenerateArgs {
 	customPrompt?: string;
 	locale?: string;
 }
+
+const GOOGLE_MODEL = "gemini-3-flash-preview";
 
 function getErrorSummary(error: unknown): string {
 	if (error instanceof Error) {
@@ -34,10 +37,14 @@ export async function generatePRChatMessage({
 	customPrompt,
 	locale,
 }: GenerateArgs): Promise<{ response: string }> {
-	const gatewayUrl = process.env.AI_GATEWAY_API_KEY;
-	if (!gatewayUrl) {
-		return { response: "No configurado: AI_GATEWAY_API_KEY" };
+	const googleGenerativeAiApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+	if (!googleGenerativeAiApiKey) {
+		return { response: "No configurado: GOOGLE_GENERATIVE_AI_API_KEY" };
 	}
+
+	const google = createGoogleGenerativeAI({
+		apiKey: googleGenerativeAiApiKey,
+	});
 
 	// Base system prompt
 	let system = `Eres un asistente que genera mensajes breves para avisar que hay que revisar un Pull Request.
@@ -113,7 +120,7 @@ export async function generatePRChatMessage({
 				schema: z.object({
 					response: z.string().min(1).max(400),
 				}),
-				model: "google/gemini-3-flash",
+				model: google(GOOGLE_MODEL),
 				prompt,
 				system,
 			});
@@ -141,9 +148,9 @@ export async function generatePRChatMessage({
 		const isProduction = process.env.NODE_ENV === "production";
 		const exposeServerErrors = process.env.EXPOSE_SERVER_ERRORS === "true";
 		console.error("[generatePRChatMessage] AI generation failed", {
-			model: "google/gemini-3-flash",
+			model: GOOGLE_MODEL,
 			errorSummary,
-			hasGatewayKey: Boolean(gatewayUrl),
+			hasGoogleGenerativeAiKey: Boolean(googleGenerativeAiApiKey),
 			...(isProduction ? {} : { error }),
 		});
 
