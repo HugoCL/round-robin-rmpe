@@ -1,20 +1,10 @@
 "use client";
 
 import { useClerk, useUser } from "@clerk/nextjs";
-import { useAction, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { api } from "@/convex/_generated/api";
-
-// Extend Window typing to allow vendor-prefixed AudioContext in older browsers
-declare global {
-	interface Window {
-		webkitAudioContext?: typeof AudioContext;
-	}
-}
-
-import { Button } from "@/components/ui/button";
-
 import { toast } from "@/hooks/use-toast";
 import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
@@ -22,16 +12,15 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import type { Assignment, UserInfo } from "@/lib/types";
 import { AnnouncementBanner } from "./AnnouncementBanner";
-import {
-	type ShortcutAction,
-	ShortcutConfirmationDialog,
-} from "./dialogs/ShortcutConfirmationDialog";
+import { ShortcutConfirmationDialog } from "./dialogs/ShortcutConfirmationDialog";
 import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
+import { useAssignmentNotificationAudio } from "./hooks/useAssignmentNotificationAudio";
+import { useShortcutDialogFlow } from "./hooks/useShortcutDialogFlow";
 import { CompactLayout } from "./layouts/CompactLayout";
 import { PRReviewProvider } from "./PRReviewContext";
+import { PRReviewGuard } from "./PRReviewGuard";
 
-// Define the structure for a backup entry
 interface BackupEntry {
 	key: string;
 	description: string;
@@ -39,20 +28,6 @@ interface BackupEntry {
 	formattedDate?: string;
 }
 
-type ShortcutRunnerOptions = {
-	prUrl?: string;
-	contextUrl?: string;
-	urgent?: boolean;
-};
-
-/**
- * PRReviewAssignment is the main component for the PR review assignment tool.
- * It acts as a container, fetching data, managing state, and composing the UI
- * from smaller components like layouts, dialogs, and headers.
- *
- * @param {object} props - The component props.
- * @param {string} [props.teamSlug] - The slug of the team currently being viewed.
- */
 export default function PRReviewAssignment({
 	teamSlug,
 }: {
@@ -62,41 +37,18 @@ export default function PRReviewAssignment({
 	const locale = useLocale();
 	const { user, isLoaded } = useUser();
 	const { signOut } = useClerk();
-	// Hidden file input id used by header dropdown import action
 	const IMPORT_INPUT_ID = "import-file";
 
-	// State for managing UI preferences and dialogs
 	const [snapshots, setSnapshots] = useState<BackupEntry[]>([]);
 	const [snapshotsLoading, setSnapshotsLoading] = useState(false);
 	const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
 	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
-	const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
-	const [pendingShortcut, setPendingShortcut] = useState<ShortcutAction | null>(
-		null,
-	);
-	const pendingRunnerRef = useRef<
-		((opts?: ShortcutRunnerOptions) => Promise<void>) | null
-	>(null);
-	// Capture message customization state emitted from dialog
-	const lastMessageState = useRef<null | {
-		shouldSend: boolean;
-		customEnabled: boolean;
-		prUrl?: string;
-		contextUrl?: string;
-		urgent?: boolean;
-		message?: string;
-	}>(null);
-	const sendChatMessage = useAction(api.actions.sendGoogleChatMessage);
+
 	const accessContext = useQuery(
 		api.queries.getMyTeamAccess,
 		teamSlug ? { teamSlug } : { teamSlug: undefined },
 	);
-	// Track the last processed assignment to avoid duplicate notifications
-	const lastProcessedAssignmentRef = useRef<string | null>(null);
-	// Reusable AudioContext for short beeps
-	const audioCtxRef = useRef<AudioContext | null>(null);
 
-	// Custom hooks for data fetching and business logic
 	const { hasTags, refreshTags } = useConvexTags(teamSlug);
 	const userInfo: UserInfo | null = user
 		? {
@@ -144,97 +96,6 @@ export default function PRReviewAssignment({
 		formatLastUpdated,
 	} = useConvexPRReviewData(userInfo, teamSlug);
 
-	// Enable keyboard shortcuts for common actions
-	useKeyboardShortcuts({
-		onAssignPR: assignPR,
-		onSkipReviewer: skipReviewer,
-		onUndoAssignment: undoAssignment,
-		isNextReviewerAvailable: !!nextReviewer,
-		onShortcutTriggered: (action, run) => {
-			setPendingShortcut(action);
-			pendingRunnerRef.current = run;
-			setShortcutDialogOpen(true);
-		},
-	});
-
-	const handleConfirmShortcut = async () => {
-		if (pendingRunnerRef.current && pendingShortcut) {
-			const shortcutOptions = {
-				prUrl: lastMessageState.current?.prUrl,
-				contextUrl: lastMessageState.current?.contextUrl,
-				urgent: lastMessageState.current?.urgent,
-			};
-			// Capture the reviewer before action (for assign)
-			const preReviewer = nextReviewer;
-			await pendingRunnerRef.current(shortcutOptions);
-			// After running, decide whether to send a message
-			if (
-				lastMessageState.current?.shouldSend &&
-				lastMessageState.current.prUrl
-			) {
-				try {
-					let target = preReviewer;
-					// For skip action, target might change; attempt to derive from assignment feed latest
-					if (pendingShortcut === "skip" || pendingShortcut === "assign") {
-						const newest = assignmentFeed.items[0];
-						if (newest) {
-							target =
-								reviewers.find(
-									(r) => String(r._id) === String(newest.reviewerId),
-								) || target;
-						}
-					}
-					if (target && teamSlug) {
-						const reviewerWithChat = target as unknown as {
-							googleChatUserId?: string;
-							name: string;
-							email: string;
-						};
-						await sendChatMessage({
-							reviewerName: target.name,
-							reviewerEmail: target.email,
-							reviewerChatId: reviewerWithChat.googleChatUserId,
-							prUrl: lastMessageState.current.prUrl,
-							contextUrl: lastMessageState.current.contextUrl,
-							customMessage: lastMessageState.current.message,
-							assignerEmail: userInfo?.email,
-							assignerName: userInfo?.firstName || userInfo?.email,
-							locale,
-							teamSlug,
-							urgent: lastMessageState.current.urgent,
-						});
-					}
-				} catch (e) {
-					console.warn("Failed to send chat message from shortcut", e);
-				}
-			}
-		}
-		setShortcutDialogOpen(false);
-		setPendingShortcut(null);
-		pendingRunnerRef.current = null;
-		lastMessageState.current = null;
-	};
-
-	const handleCancelShortcut = () => {
-		setShortcutDialogOpen(false);
-		setPendingShortcut(null);
-		pendingRunnerRef.current = null;
-		lastMessageState.current = null;
-	};
-
-	// Listen for customization events from dialog
-	useEffect(() => {
-		const handler = (e: Event) => {
-			if (!(e instanceof CustomEvent)) return;
-			const detail = e.detail as typeof lastMessageState.current;
-			lastMessageState.current = detail;
-		};
-		window.addEventListener("shortcutDialogMessageState", handler);
-		return () =>
-			window.removeEventListener("shortcutDialogMessageState", handler);
-	}, []);
-
-	// Transform assignment feed data for child components
 	const assignmentFeed: Assignment = useMemo(
 		() => ({
 			items:
@@ -256,8 +117,7 @@ export default function PRReviewAssignment({
 					tagId: item.tagId,
 				})) || [],
 			lastAssigned: convexAssignmentFeed?.lastAssigned
-				? // convexAssignmentFeed.lastAssigned appears to be a string reviewerId; timestamp not provided in original code so set null semantics
-					{
+				? {
 						reviewerId:
 							typeof convexAssignmentFeed.lastAssigned === "string"
 								? convexAssignmentFeed.lastAssigned
@@ -269,21 +129,42 @@ export default function PRReviewAssignment({
 		[convexAssignmentFeed],
 	);
 
+	const shortcutFlow = useShortcutDialogFlow({
+		assignmentFeed,
+		nextReviewer: nextReviewer || null,
+		reviewers: reviewers || [],
+		teamSlug,
+		locale,
+		userInfo,
+	});
+
+	useKeyboardShortcuts({
+		onAssignPR: assignPR,
+		onSkipReviewer: skipReviewer,
+		onUndoAssignment: undoAssignment,
+		isNextReviewerAvailable: !!nextReviewer,
+		onShortcutTriggered: shortcutFlow.onShortcutTriggered,
+	});
+
+	useAssignmentNotificationAudio({
+		assignmentItems: convexAssignmentFeed?.items,
+		reviewers: reviewers || [],
+		userEmail: userInfo?.email,
+	});
+
 	const handleDataUpdate = useCallback(async () => {
 		await refreshTags();
 	}, [refreshTags]);
 
-	// Handles file import for data recovery
 	const importFileHandler = async (
 		event: React.ChangeEvent<HTMLInputElement>,
 	) => {
 		const file = event.target.files?.[0];
 		if (!file) return;
 		await importData(file);
-		event.target.value = ""; // Reset input
+		event.target.value = "";
 	};
 
-	// Opens the snapshot dialog
 	const handleOpenSnapshotDialog = useCallback(async () => {
 		setSnapshotsLoading(true);
 		try {
@@ -305,7 +186,6 @@ export default function PRReviewAssignment({
 		setSnapshotDialogOpen(true);
 	}, [backups, t]);
 
-	// Restores data from a selected snapshot
 	const handleRestoreSnapshot = async (key: string) => {
 		try {
 			const success = await restoreFromBackup(key);
@@ -322,7 +202,6 @@ export default function PRReviewAssignment({
 		}
 	};
 
-	// Toggles for various UI preferences
 	const toggleShowAssignments = useCallback(
 		() => void updatePreferences({ showAssignments: !showAssignments }),
 		[showAssignments, updatePreferences],
@@ -356,149 +235,6 @@ export default function PRReviewAssignment({
 			}),
 		[alwaysSendGoogleChatMessage, updatePreferences],
 	);
-
-	// Ensure AudioContext can start after a user gesture (required by some browsers)
-	useEffect(() => {
-		const ensureAudioContext = async () => {
-			try {
-				if (!audioCtxRef.current) {
-					// Prefer standardized AudioContext if available
-					const Ctx: typeof AudioContext | undefined =
-						window.AudioContext || window.webkitAudioContext;
-					if (!Ctx) return; // No audio context available
-					audioCtxRef.current = new Ctx();
-				}
-				if (audioCtxRef.current.state === "suspended") {
-					await audioCtxRef.current.resume();
-				}
-			} catch {
-				// ignore; some environments block autoplay until interaction
-			}
-		};
-
-		const onFirstInteraction = () => {
-			ensureAudioContext();
-			window.removeEventListener("pointerdown", onFirstInteraction);
-			window.removeEventListener("keydown", onFirstInteraction);
-		};
-
-		window.addEventListener("pointerdown", onFirstInteraction, { once: true });
-		window.addEventListener("keydown", onFirstInteraction, { once: true });
-
-		return () => {
-			window.removeEventListener("pointerdown", onFirstInteraction);
-			window.removeEventListener("keydown", onFirstInteraction);
-		};
-	}, []);
-
-	// Play a short beep
-	const playMelody = useCallback(async () => {
-		try {
-			// Lazily init context if needed
-			if (!audioCtxRef.current) {
-				const Ctx: typeof AudioContext | undefined =
-					window.AudioContext || window.webkitAudioContext;
-				if (!Ctx) return;
-				audioCtxRef.current = new Ctx();
-			}
-			const ctx = audioCtxRef.current;
-			if (ctx.state === "suspended") {
-				await ctx.resume();
-			}
-
-			// Simple pleasant up-chime melody (frequencies in Hz)
-			// Notes: A5 (880), C#6 (~1108.73), E6 (~1318.51)
-			const sequence: Array<{ f: number; d: number }> = [
-				{ f: 880, d: 0.18 },
-				{ f: 1108.73, d: 0.18 },
-				{ f: 1318.51, d: 0.24 },
-			];
-
-			const startAt = ctx.currentTime;
-			let when = startAt;
-
-			const scheduleTone = (
-				frequency: number,
-				start: number,
-				duration: number,
-			) => {
-				const osc = ctx.createOscillator();
-				const gain = ctx.createGain();
-				osc.type = "sine";
-				osc.frequency.value = frequency;
-				// Gentle envelope to avoid clicks
-				const baseVol = 0.05; // soft volume
-				gain.gain.setValueAtTime(0, start);
-				gain.gain.linearRampToValueAtTime(baseVol, start + 0.01);
-				gain.gain.linearRampToValueAtTime(
-					baseVol * 0.8,
-					start + duration * 0.6,
-				);
-				gain.gain.linearRampToValueAtTime(0.0001, start + duration);
-				osc.connect(gain);
-				gain.connect(ctx.destination);
-				osc.start(start);
-				osc.stop(start + duration + 0.005);
-				osc.onended = () => {
-					try {
-						osc.disconnect();
-						gain.disconnect();
-					} catch {
-						/* noop */
-					}
-				};
-			};
-
-			const gap = 0.03; // small gap between notes
-			for (const note of sequence) {
-				scheduleTone(note.f, when, note.d);
-				when += note.d + gap;
-			}
-		} catch {
-			// Fallback: subtle toast if audio is blocked
-			toast({
-				title: t("pr.reviewAssignedToYou"),
-				description: t("pr.youAreNextReviewer"),
-			});
-		}
-	}, [t]);
-
-	// When a new assignment is appended, if it targets the signed-in user, play a sound
-	useEffect(() => {
-		if (!convexAssignmentFeed?.items || convexAssignmentFeed.items.length === 0)
-			return;
-		if (!userInfo?.email) return;
-
-		// Feed is stored newest-first in Convex (most recent at index 0).
-		const newest = convexAssignmentFeed.items[0];
-		const key = `${newest.reviewerId}-${newest.timestamp}`;
-
-		// On first render, initialize with the newest item and skip playing
-		if (lastProcessedAssignmentRef.current === null) {
-			lastProcessedAssignmentRef.current = key;
-			return;
-		}
-
-		// Only react to truly new items (a different newest key)
-		if (lastProcessedAssignmentRef.current === key) return;
-		lastProcessedAssignmentRef.current = key;
-
-		// Skip non-assignment events
-		if (newest.skipped || newest.isAbsentSkip) return;
-
-		// Find the assigned reviewer's email
-		const assignedReviewer = (reviewers || []).find(
-			(r) => String(r._id) === String(newest.reviewerId),
-		);
-		const assignedEmail = assignedReviewer?.email?.toLowerCase();
-		const currentEmail = userInfo.email.toLowerCase();
-
-		if (assignedEmail && assignedEmail === currentEmail) {
-			// Optional toast for visibility; mainly play a soft beep
-			void playMelody();
-		}
-		// Only depend on the list to detect new items; reviewers and email are needed for match
-	}, [convexAssignmentFeed?.items, reviewers, userInfo?.email, playMelody]);
 
 	const providerValue = useMemo(
 		() => ({
@@ -581,114 +317,70 @@ export default function PRReviewAssignment({
 		],
 	);
 
-	// Render loading state
-	if (isLoading || !isLoaded || !isUserPreferencesReady || !accessContext) {
-		return (
-			<div className="container mx-auto flex h-[50vh] items-center justify-center px-4 py-6">
-				<div className="calm-section max-w-xl text-center">
-					<p className="calm-kicker">{t("pr.title")}</p>
-					<h2 className="text-xl font-semibold mb-2">{t("common.loading")}</h2>
-					<p className="text-muted-foreground">{t("pr.loadingPleaseWait")}</p>
-				</div>
-			</div>
-		);
-	}
-
-	// Render not authenticated state
-	if (!user) {
-		return (
-			<div className="container mx-auto flex h-[50vh] items-center justify-center px-4 py-6">
-				<div className="calm-section max-w-xl text-center">
-					<p className="calm-kicker">{t("pr.title")}</p>
-					<h2 className="text-xl font-semibold mb-2">
-						{t("you-are-not-authenticated")}
-					</h2>
-					<p className="text-muted-foreground">{t("pr.pleaseSignIn")}</p>
-				</div>
-			</div>
-		);
-	}
-
-	// Render not authorized state for non-company emails
-	if (userInfo && !/^.+@buk\.[a-zA-Z0-9-]+$/.test(userInfo.email)) {
-		return (
-			<div className="container mx-auto flex h-[50vh] items-center justify-center px-4 py-6">
-				<div className="calm-section max-w-xl text-center">
-					<p className="calm-kicker">{t("pr.title")}</p>
-					<h2 className="text-xl font-semibold mb-2">
-						{t("pr.notAuthorizedTitle")}
-					</h2>
-					<p className="text-muted-foreground">
-						{t("pr.notAuthorizedDescription")} {t("pr.unauthorized")}{" "}
-						{userInfo?.email}
-					</p>
-					<form
-						action={async () => {
-							await signOut();
-						}}
-					>
-						<Button type="submit" className="rounded-full px-5">
-							{t("pr.signOut")}
-						</Button>
-					</form>
-				</div>
-			</div>
-		);
-	}
-
 	return (
-		<PRReviewProvider value={providerValue}>
-			<div className="container mx-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
-				<div className="page-enter space-y-5">
-					<PageHeader
-						teamSlug={teamSlug}
-						reviewersDrawerOpen={reviewersDrawerOpen}
-						setReviewersDrawerOpen={setReviewersDrawerOpen}
+		<PRReviewGuard
+			isLoading={isLoading}
+			isLoaded={isLoaded}
+			isUserPreferencesReady={isUserPreferencesReady}
+			hasAccessContext={!!accessContext}
+			isAuthenticated={!!user}
+			userEmail={userInfo?.email}
+			onSignOut={async () => {
+				await signOut();
+			}}
+		>
+			<PRReviewProvider value={providerValue}>
+				<div className="container mx-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+					<div className="page-enter space-y-5">
+						<PageHeader
+							teamSlug={teamSlug}
+							reviewersDrawerOpen={reviewersDrawerOpen}
+							setReviewersDrawerOpen={setReviewersDrawerOpen}
+						/>
+						<AnnouncementBanner />
+					</div>
+					<CompactLayout />
+
+					<input
+						id={IMPORT_INPUT_ID}
+						type="file"
+						accept=".json"
+						title={t("history.import")}
+						aria-label={t("history.import")}
+						onChange={importFileHandler}
+						className="hidden"
 					/>
-					<AnnouncementBanner />
+
+					<SnapshotDialog
+						isOpen={snapshotDialogOpen}
+						onOpenChange={setSnapshotDialogOpen}
+						snapshots={snapshots}
+						isLoading={snapshotsLoading}
+						onRestore={handleRestoreSnapshot}
+					/>
+
+					<ShortcutConfirmationDialog
+						isOpen={shortcutFlow.shortcutDialogOpen}
+						action={shortcutFlow.pendingShortcut}
+						nextReviewerName={nextReviewer?.name}
+						currentReviewerName={nextReviewer?.name}
+						nextAfterSkipName={undefined}
+						lastAssignmentFrom={
+							assignmentFeed.items[0]?.actionByName ||
+							assignmentFeed.items[0]?.actionByEmail ||
+							null
+						}
+						lastAssignmentTo={assignmentFeed.items[0]?.reviewerName || null}
+						onConfirm={() => void shortcutFlow.handleConfirmShortcut()}
+						onCancel={shortcutFlow.handleCancelShortcut}
+						onOpenChange={(open) => {
+							if (!open) shortcutFlow.handleCancelShortcut();
+							else shortcutFlow.setShortcutDialogOpen(true);
+						}}
+						forceSendMessage={alwaysSendGoogleChatMessage}
+					/>
 				</div>
-				<CompactLayout />
-
-				{/* Hidden file input for importing reviewer data. Triggered by header actions via document.getElementById('import-file')?.click() */}
-				<input
-					id={IMPORT_INPUT_ID}
-					type="file"
-					accept=".json"
-					title={t("history.import")}
-					aria-label={t("history.import")}
-					onChange={importFileHandler}
-					className="hidden"
-				/>
-
-				<SnapshotDialog
-					isOpen={snapshotDialogOpen}
-					onOpenChange={setSnapshotDialogOpen}
-					snapshots={snapshots}
-					isLoading={snapshotsLoading}
-					onRestore={handleRestoreSnapshot}
-				/>
-
-				<ShortcutConfirmationDialog
-					isOpen={shortcutDialogOpen}
-					action={pendingShortcut}
-					nextReviewerName={nextReviewer?.name}
-					currentReviewerName={nextReviewer?.name}
-					nextAfterSkipName={undefined}
-					lastAssignmentFrom={
-						assignmentFeed.items[0]?.actionByName ||
-						assignmentFeed.items[0]?.actionByEmail ||
-						null
-					}
-					lastAssignmentTo={assignmentFeed.items[0]?.reviewerName || null}
-					onConfirm={() => handleConfirmShortcut()}
-					onCancel={handleCancelShortcut}
-					onOpenChange={(open) => {
-						if (!open) handleCancelShortcut();
-						else setShortcutDialogOpen(true);
-					}}
-					forceSendMessage={alwaysSendGoogleChatMessage}
-				/>
-			</div>
-		</PRReviewProvider>
+			</PRReviewProvider>
+		</PRReviewGuard>
 	);
 }

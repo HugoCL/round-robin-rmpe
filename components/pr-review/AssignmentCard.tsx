@@ -1,168 +1,33 @@
 "use client";
 
 import { useAction, useMutation, useQuery } from "convex/react";
-import {
-	AlertCircle,
-	AlertTriangle,
-	Globe2,
-	Info,
-	MessageSquare,
-	Sparkles,
-	Undo2,
-	UserCheck,
-	Users,
-} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
-import { TextMorph } from "torph/react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardFooter,
 	CardHeader,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Toggle } from "@/components/ui/toggle";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import type { Reviewer } from "@/lib/types";
+import { AssignmentActionsRow } from "./assignment/AssignmentActionsRow";
+import { AssignmentControlsPanel } from "./assignment/AssignmentControlsPanel";
+import { AssignmentHeroPanel } from "./assignment/AssignmentHeroPanel";
+import type {
+	AssignmentMode,
+	AssignmentResolverReasonMessages,
+} from "./assignment/assignmentCard.types";
 import {
-	type ReviewerSlotConfig,
-	type ReviewerSlotPreview,
-	type ReviewerSlotStrategy,
-	ReviewerSlotsConfigurator,
-} from "./assignment/ReviewerSlotsConfigurator";
-import { ChatMessageCustomizer } from "./ChatMessageCustomizer";
-import { ForceAssignDialog } from "./dialogs/ForceAssignDialog";
+	defaultSlotForMode,
+	findUpcomingAfterCurrent,
+	normalizeSlotForMode,
+} from "./assignment/assignmentCard.utils";
+import type { ReviewerSlotConfig } from "./assignment/ReviewerSlotsConfigurator";
+import { resolveAssignmentPreview } from "./assignment/resolveAssignmentPreview";
 import { usePRReview } from "./PRReviewContext";
-
-type AssignmentMode = "regular" | "tag";
-
-type ResolvedSlot = {
-	slotIndex: number;
-	reviewer: Reviewer;
-	tagId?: Id<"tags">;
-};
-
-type ResolvedPreview = {
-	slots: ReviewerSlotPreview[];
-	resolved: ResolvedSlot[];
-	payloadSlots: Array<{
-		strategy: ReviewerSlotStrategy;
-		reviewerId?: Id<"reviewers">;
-		tagId?: Id<"tags">;
-	}>;
-};
-
-const selectedPrimaryChipStyle = {
-	backgroundColor: "var(--primary)",
-	borderColor: "var(--primary)",
-	color: "var(--primary-foreground)",
-};
-
-const selectedUrgentChipStyle = {
-	backgroundColor: "#dc2626",
-	borderColor: "#dc2626",
-	color: "#ffffff",
-};
-
-const selectedCrossTeamChipStyle = {
-	backgroundColor: "#0284c7",
-	borderColor: "#0284c7",
-	color: "#ffffff",
-};
-
-const createSlotId = () =>
-	`slot-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-const defaultSlotForMode = (mode: AssignmentMode): ReviewerSlotConfig => ({
-	id: createSlotId(),
-	strategy: mode === "regular" ? "random" : "tag_random_selected",
-});
-
-function normalizeSlotForMode(
-	slot: ReviewerSlotConfig,
-	mode: AssignmentMode,
-): ReviewerSlotConfig {
-	const next = { ...slot };
-	if (mode === "regular") {
-		if (next.strategy !== "random" && next.strategy !== "specific") {
-			next.strategy = "random";
-		}
-	} else if (
-		next.strategy !== "tag_random_selected" &&
-		next.strategy !== "tag_random_other" &&
-		next.strategy !== "specific"
-	) {
-		next.strategy = "tag_random_selected";
-	}
-
-	if (next.strategy !== "specific") {
-		next.reviewerId = undefined;
-	}
-	if (next.strategy !== "tag_random_other") {
-		next.tagId = undefined;
-	}
-	return next;
-}
-
-function findUpcomingAfterCurrent(
-	candidates: Reviewer[],
-	currentReviewerId: Id<"reviewers">,
-): Reviewer | null {
-	if (candidates.length <= 1) return null;
-
-	const minCount = Math.min(
-		...candidates.map((reviewer) => reviewer.assignmentCount),
-	);
-	const candidatesWithSameCount = candidates
-		.filter(
-			(reviewer) =>
-				reviewer.assignmentCount === minCount &&
-				reviewer._id !== currentReviewerId,
-		)
-		.sort((a, b) => a.createdAt - b.createdAt);
-
-	if (candidatesWithSameCount.length > 0) {
-		return candidatesWithSameCount[0];
-	}
-
-	const higherCountCandidates = candidates.filter(
-		(reviewer) =>
-			reviewer.assignmentCount > minCount && reviewer._id !== currentReviewerId,
-	);
-
-	if (higherCountCandidates.length === 0) return null;
-
-	const nextMinCount = Math.min(
-		...higherCountCandidates.map((reviewer) => reviewer.assignmentCount),
-	);
-
-	return (
-		higherCountCandidates
-			.filter((reviewer) => reviewer.assignmentCount === nextMinCount)
-			.sort((a, b) => a.createdAt - b.createdAt)[0] || null
-	);
-}
 
 export function AssignmentCard() {
 	const t = useTranslations();
@@ -349,7 +214,6 @@ export function AssignmentCard() {
 	);
 
 	useEffect(() => {
-		// Clear last assignment summary when the user changes current configuration.
 		void configurationHash;
 		setLiveSummary("");
 	}, [configurationHash]);
@@ -390,158 +254,41 @@ export function AssignmentCard() {
 		);
 	}, [activeNextReviewer, availableReviewersForMode]);
 
-	const resolvePreview = useMemo<ResolvedPreview>(() => {
-		const previews: ReviewerSlotPreview[] = [];
-		const resolved: ResolvedSlot[] = [];
-		const payloadSlots: Array<{
-			strategy: ReviewerSlotStrategy;
-			reviewerId?: Id<"reviewers">;
-			tagId?: Id<"tags">;
-		}> = [];
-		const selectedReviewerIds = new Set<string>();
-		const virtualCounts = new Map<string, number>(
-			reviewers.map((reviewer) => [
-				String(reviewer._id),
-				reviewer.assignmentCount,
-			]),
-		);
-		const tagNameMap = new Map(tags.map((tag) => [String(tag._id), tag.name]));
+	const resolverReasonMessages = useMemo<AssignmentResolverReasonMessages>(
+		() => ({
+			missingReviewer: t("pr.slotReasonMissingReviewer"),
+			reviewerNotFound: t("pr.slotReasonReviewerNotFound"),
+			reviewerAbsent: t("pr.slotReasonReviewerAbsent"),
+			duplicateReviewer: t("pr.slotReasonDuplicateReviewer"),
+			invalidStrategy: t("pr.slotReasonInvalidStrategy"),
+			missingSelectedTag: t("pr.slotReasonMissingSelectedTag"),
+			missingTag: t("pr.slotReasonMissingTag"),
+			noCandidates: t("pr.slotReasonNoCandidates"),
+		}),
+		[t],
+	);
 
-		for (const [slotIndex, rawSlot] of effectiveSlotConfigs.entries()) {
-			const slot = normalizeSlotForMode(rawSlot, mode);
-			payloadSlots.push({
-				strategy: slot.strategy,
-				reviewerId: slot.reviewerId,
-				tagId: slot.tagId,
-			});
-
-			const unresolved = (reason: string) => {
-				previews.push({
-					slotIndex,
-					status: "unresolved",
-					reason,
-				});
-			};
-
-			if (slot.strategy === "specific") {
-				if (!slot.reviewerId) {
-					unresolved(t("pr.slotReasonMissingReviewer"));
-					continue;
-				}
-				const target = reviewers.find(
-					(reviewer) => reviewer._id === slot.reviewerId,
-				);
-				if (!target) {
-					unresolved(t("pr.slotReasonReviewerNotFound"));
-					continue;
-				}
-				if (target.effectiveIsAbsent) {
-					unresolved(t("pr.slotReasonReviewerAbsent"));
-					continue;
-				}
-				if (selectedReviewerIds.has(String(target._id))) {
-					unresolved(t("pr.slotReasonDuplicateReviewer"));
-					continue;
-				}
-				selectedReviewerIds.add(String(target._id));
-				virtualCounts.set(String(target._id), target.assignmentCount + 1);
-				resolved.push({
-					slotIndex,
-					reviewer: target,
-					tagId: slot.tagId,
-				});
-				previews.push({
-					slotIndex,
-					status: "resolved",
-					reviewerName: target.name,
-					tagName: slot.tagId ? tagNameMap.get(String(slot.tagId)) : undefined,
-				});
-				continue;
-			}
-
-			let requiredTagId: Id<"tags"> | undefined;
-			if (mode === "regular") {
-				if (slot.strategy !== "random") {
-					unresolved(t("pr.slotReasonInvalidStrategy"));
-					continue;
-				}
-			} else {
-				if (slot.strategy === "tag_random_selected") {
-					requiredTagId = selectedTagId;
-				} else if (slot.strategy === "tag_random_other") {
-					requiredTagId = slot.tagId;
-				} else {
-					unresolved(t("pr.slotReasonInvalidStrategy"));
-					continue;
-				}
-				if (!requiredTagId) {
-					unresolved(
-						slot.strategy === "tag_random_selected"
-							? t("pr.slotReasonMissingSelectedTag")
-							: t("pr.slotReasonMissingTag"),
-					);
-					continue;
-				}
-			}
-
-			const candidates = reviewers.filter((reviewer) => {
-				if (reviewer.effectiveIsAbsent) return false;
-				if (currentUserReviewerId && reviewer._id === currentUserReviewerId) {
-					return false;
-				}
-				if (selectedReviewerIds.has(String(reviewer._id))) return false;
-				if (requiredTagId && !reviewer.tags.includes(requiredTagId))
-					return false;
-				return true;
-			});
-
-			const selected = [...candidates].sort((a, b) => {
-				const aCount = virtualCounts.get(String(a._id)) ?? a.assignmentCount;
-				const bCount = virtualCounts.get(String(b._id)) ?? b.assignmentCount;
-				if (aCount !== bCount) return aCount - bCount;
-				return a.createdAt - b.createdAt;
-			})[0];
-
-			if (!selected) {
-				unresolved(t("pr.slotReasonNoCandidates"));
-				continue;
-			}
-
-			selectedReviewerIds.add(String(selected._id));
-			virtualCounts.set(String(selected._id), selected.assignmentCount + 1);
-			resolved.push({
-				slotIndex,
-				reviewer: selected,
-				tagId: requiredTagId,
-			});
-			previews.push({
-				slotIndex,
-				status: "resolved",
-				reviewerName: selected.name,
-				tagName: requiredTagId
-					? tagNameMap.get(String(requiredTagId))
-					: undefined,
-			});
-		}
-
-		return {
-			slots: previews,
-			resolved,
-			payloadSlots,
-		};
-	}, [
-		currentUserReviewerId,
-		effectiveSlotConfigs,
-		mode,
-		reviewers,
-		selectedTagId,
-		t,
-		tags,
-	]);
-
-	const resolvedNamesForMessage = resolvePreview.resolved
-		.map((item) => item.reviewer.name)
-		.join(", ");
+	const resolvedPreview = useMemo(
+		() =>
+			resolveAssignmentPreview({
+				mode,
+				slotConfigs: effectiveSlotConfigs,
+				reviewers,
+				tags,
+				selectedTagId,
+				currentUserReviewerId,
+				reasonMessages: resolverReasonMessages,
+			}),
+		[
+			mode,
+			effectiveSlotConfigs,
+			reviewers,
+			tags,
+			selectedTagId,
+			currentUserReviewerId,
+			resolverReasonMessages,
+		],
+	);
 
 	const handlePrUrlBlur = async () => {
 		const trimmedUrl = prUrl.trim();
@@ -631,7 +378,7 @@ export function AssignmentCard() {
 				teamSlug,
 				mode,
 				selectedTagId: mode === "tag" ? selectedTagId : undefined,
-				slots: resolvePreview.payloadSlots.slice(0, effectiveReviewerCount),
+				slots: resolvedPreview.payloadSlots.slice(0, effectiveReviewerCount),
 				prUrl: prUrl.trim() || undefined,
 				contextUrl: contextUrl.trim() || undefined,
 				urgent,
@@ -748,617 +495,123 @@ export function AssignmentCard() {
 	const lastAssignedReviewer = assignmentFeed.lastAssigned?.reviewerId
 		? reviewers.find(
 				(reviewer) => reviewer._id === assignmentFeed.lastAssigned?.reviewerId,
-			)
+			) || null
 		: null;
 
 	const isAssignDisabled =
 		isAssigning ||
 		(effectiveSendMessage && !prUrl.trim()) ||
 		(crossTeamReview && selectedCrossTeamSlugs.length === 0) ||
-		resolvePreview.resolved.length === 0;
+		resolvedPreview.resolved.length === 0;
 
 	return (
 		<Card className="calm-shell flex flex-col overflow-hidden border-0 bg-transparent py-0 shadow-none ring-0">
 			<CardHeader className="sr-only flex-shrink-0" />
 			<CardContent className="flex flex-1 items-center justify-center px-5 pt-5 md:px-6 md:pt-6">
-				{activeNextReviewer ? (
-					<div className="w-full overflow-hidden py-6 text-center md:py-8">
-						<div className="space-y-6">
-							{mode === "regular" && lastAssignedReviewer && (
-								<div className="space-y-1">
-									<span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-										{t("pr.lastAssigned")}
-									</span>
-									<h4
-										className={`text-lg font-medium text-muted-foreground opacity-80 transition-opacity duration-300 motion-reduce:transition-none ${
-											isAssigning ? "opacity-0" : "opacity-80"
-										}`}
-									>
-										<TextMorph ease={{ stiffness: 200, damping: 20 }}>
-											{lastAssignedReviewer.name}
-										</TextMorph>
-									</h4>
-								</div>
-							)}
-
-							<div className="space-y-3">
-								<div>
-									<span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 dark:bg-white/12 dark:text-white dark:ring-white/20">
-										<Sparkles className="h-3 w-3" aria-hidden="true" />
-										{mode === "tag"
-											? t("tags.nextReviewer")
-											: t("pr.nextReviewer")}
-									</span>
-								</div>
-								<div className="relative mx-auto max-w-xl overflow-hidden rounded-[2rem] border border-primary/16 bg-gradient-to-br from-primary/14 via-background to-primary/8 p-7 shadow-[0_28px_72px_-44px_rgba(37,99,235,0.55)] ring-1 ring-primary/12 dark:border-primary/18 dark:from-primary/20 dark:via-background dark:to-primary/10 dark:ring-primary/22">
-									<div
-										className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.25),transparent_36%),radial-gradient(circle_at_78%_20%,rgba(59,130,246,0.14),transparent_45%)] dark:bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.08),transparent_36%),radial-gradient(circle_at_78%_20%,rgba(59,130,246,0.22),transparent_45%)]"
-										aria-hidden
-									/>
-									<div className="relative space-y-2">
-										<h3
-											className={`text-4xl font-bold text-primary drop-shadow-lg transition-transform transition-opacity duration-300 motion-reduce:transition-none md:text-5xl dark:text-white ${
-												isAssigning
-													? "translate-y-1 opacity-0"
-													: "translate-y-0 opacity-100"
-											}`}
-										>
-											<TextMorph ease={{ stiffness: 200, damping: 20 }}>
-												{activeNextReviewer.name}
-											</TextMorph>
-										</h3>
-										{mode === "tag" && selectedTag && (
-											<div className="flex justify-center">
-												<Badge
-													variant="secondary"
-													style={{
-														backgroundColor: `${selectedTag.color}20`,
-														color: selectedTag.color,
-														borderColor: selectedTag.color,
-													}}
-												>
-													{selectedTag.name}
-												</Badge>
-											</div>
-										)}
-									</div>
-								</div>
-							</div>
-
-							{/* Auto-skip message when current user is the next reviewer */}
-							{activeNextReviewer &&
-								user?.email &&
-								activeNextReviewer.email.toLowerCase() ===
-									user.email.toLowerCase() && (
-									<Alert className="border-border/60 bg-muted/35">
-										<Info className="h-4 w-4 self-center text-muted-foreground" />
-										<AlertTitle className="text-sm text-foreground">
-											{t("pr.autoSkipTitle")}
-										</AlertTitle>
-										<AlertDescription className="text-sm text-muted-foreground">
-											{upcomingReviewer ? (
-												<>
-													{t("pr.autoSkipDescriptionPrefix")}{" "}
-													<TextMorph ease={{ stiffness: 200, damping: 20 }}>
-														{upcomingReviewer.name}
-													</TextMorph>{" "}
-													{t("pr.autoSkipDescriptionSuffix")}
-												</>
-											) : (
-												t("pr.autoSkipDescriptionNoNext")
-											)}
-										</AlertDescription>
-									</Alert>
-								)}
-
-							{upcomingReviewer && (
-								<div className="space-y-1">
-									<span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-										{t("pr.upNext")}
-									</span>
-									<h4 className="text-lg font-medium text-muted-foreground opacity-80">
-										<TextMorph ease={{ stiffness: 200, damping: 20 }}>
-											{upcomingReviewer.name}
-										</TextMorph>
-									</h4>
-								</div>
-							)}
-						</div>
-					</div>
-				) : (
-					<div className="w-full rounded-[2rem] border border-dashed border-border/70 bg-muted/22 p-8 text-center">
-						{mode === "tag" ? (
-							selectedTagId ? (
-								<p className="text-sm text-muted-foreground">
-									{isLoadingTagReviewer
-										? t("tags.findingNextReviewer")
-										: t("tags.noAvailableReviewers")}
-								</p>
-							) : (
-								<p className="text-sm text-muted-foreground">
-									{t("tags.selectTag")}
-								</p>
-							)
-						) : (
-							<>
-								<h3 className="mb-2 text-xl font-medium text-muted-foreground">
-									{t("pr.noAvailableReviewersTitle")}
-								</h3>
-								<p className="text-sm text-muted-foreground">
-									{t("pr.allReviewersAbsent")}
-								</p>
-							</>
-						)}
-					</div>
-				)}
+				<AssignmentHeroPanel
+					mode={mode}
+					lastAssignedReviewer={lastAssignedReviewer}
+					isAssigning={isAssigning}
+					activeNextReviewer={activeNextReviewer}
+					selectedTag={selectedTag}
+					userEmail={user?.email}
+					upcomingReviewer={upcomingReviewer}
+					selectedTagId={selectedTagId}
+					isLoadingTagReviewer={isLoadingTagReviewer}
+				/>
 			</CardContent>
 			<CardFooter className="flex-shrink-0 space-y-6 border-t border-border/60 px-5 pb-5 pt-5 md:px-6 md:pb-6">
 				<div className="w-full space-y-4">
-					{tags.length > 0 && (
-						<div className="space-y-3 rounded-2xl border border-border/60 bg-muted/18 p-4">
-							<div className="grid grid-cols-2 gap-2">
-								<Button
-									variant={mode === "regular" ? "default" : "outline"}
-									size="sm"
-									onClick={() => {
-										setMode("regular");
-										setSelectedTagId(undefined);
-									}}
-									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-								>
-									{t("pr.assignmentModeRegular")}
-								</Button>
-								<Button
-									variant={mode === "tag" ? "default" : "outline"}
-									size="sm"
-									onClick={() => setMode("tag")}
-									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-								>
-									{t("pr.assignmentModeWithTags")}
-								</Button>
-							</div>
-
-							{mode === "tag" && (
-								<div className="space-y-2">
-									<Label htmlFor="assignment-tag-global">
-										{t("tags.selectTag")}
-									</Label>
-									<Select
-										value={selectedTagId}
-										onValueChange={(value) =>
-											setSelectedTagId(value as Id<"tags">)
-										}
-									>
-										<SelectTrigger
-											id="assignment-tag-global"
-											className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-										>
-											<SelectValue placeholder={t("tags.chooseTag")} />
-										</SelectTrigger>
-										<SelectContent>
-											{tags.map((tag: Doc<"tags">) => {
-												const stats = getTagStats(tag._id as Id<"tags">);
-												return (
-													<SelectItem key={tag._id} value={tag._id}>
-														{tag.name} ({stats.availableReviewers}/
-														{stats.totalReviewers})
-													</SelectItem>
-												);
-											})}
-										</SelectContent>
-									</Select>
-									<p className="text-xs text-muted-foreground">
-										{t("tags.tagBasedDescription")}
-									</p>
-								</div>
-							)}
-						</div>
-					)}
-
-					<div className="flex flex-wrap gap-3">
-						{!hideMultiAssignmentSection && (
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<ToggleGroup
-											type="multiple"
-											variant="outline"
-											size="sm"
-											spacing={2}
-											value={
-												isMultiAssignmentEnabled ? ["multi-assignment"] : []
-											}
-											onValueChange={(value) => {
-												const enabled = value.includes("multi-assignment");
-												setIsMultiAssignmentEnabled(enabled);
-												if (enabled) {
-													if (reviewerCount < 2) {
-														setReviewerCount(2);
-													}
-													return;
-												}
-												setReviewerCount(1);
-												setSlotConfigs([defaultSlotForMode(mode)]);
-											}}
-											className="inline-flex max-w-full"
-										>
-											<ToggleGroupItem
-												value="multi-assignment"
-												aria-label={t("pr.multipleAssignmentToggleLabel")}
-												className="cursor-pointer h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
-												style={
-													isMultiAssignmentEnabled
-														? selectedPrimaryChipStyle
-														: undefined
-												}
-											>
-												<div className="inline-flex items-center gap-2.5">
-													<span className="inline-flex size-4 items-center justify-center">
-														<Users
-															className="h-4 w-4 shrink-0"
-															aria-hidden="true"
-														/>
-													</span>
-													<span className="leading-none">
-														{t("pr.multipleAssignmentToggleLabel")}
-													</span>
-												</div>
-											</ToggleGroupItem>
-										</ToggleGroup>
-									</TooltipTrigger>
-									<TooltipContent className="max-w-64 text-xs">
-										<p>{t("pr.multipleAssignmentToggleDescription")}</p>
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
-						)}
-
-						<section className="max-w-full">
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<div>
-											<ForceAssignDialog
-												trigger={
-													<Button
-														variant="outline"
-														size="sm"
-														className="h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
-													>
-														<div className="inline-flex items-center gap-2.5">
-															<span className="inline-flex size-4 items-center justify-center">
-																<UserCheck
-																	className="h-4 w-4 shrink-0"
-																	aria-hidden="true"
-																/>
-															</span>
-															<span className="leading-none">
-																{t("pr.forceAssign")}
-															</span>
-														</div>
-													</Button>
-												}
-											/>
-										</div>
-									</TooltipTrigger>
-									<TooltipContent className="max-w-64 text-xs">
-										<p>{t("reviewer.forceAssignDescription")}</p>
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
-						</section>
-
-						<section className="max-w-full">
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Toggle
-											id="assignment-send-message-toggle"
-											pressed={effectiveSendMessage}
-											onPressedChange={(pressed) => {
-												if (alwaysSendGoogleChatMessage) return;
-												setSendMessage(pressed);
-												if (!pressed) {
-													resetMessageState();
-												}
-											}}
-											variant="outline"
-											size="sm"
-											disabled={alwaysSendGoogleChatMessage}
-											aria-label={t("googleChat.sendMessageToggle")}
-											className="cursor-pointer disabled:cursor-not-allowed h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
-											style={
-												effectiveSendMessage
-													? selectedPrimaryChipStyle
-													: undefined
-											}
-										>
-											<div className="inline-flex items-center gap-2.5">
-												<span className="inline-flex size-4 items-center justify-center">
-													<MessageSquare
-														className="h-4 w-4 shrink-0"
-														aria-hidden="true"
-													/>
-												</span>
-												<span className="leading-none">
-													{t("googleChat.sendMessageToggle")}
-												</span>
-											</div>
-										</Toggle>
-									</TooltipTrigger>
-									<TooltipContent className="max-w-64 text-xs">
-										<p>{t("pr.sendMessageToggleDescription")}</p>
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
-						</section>
-
-						<section className="max-w-full">
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Toggle
-											id="assignment-urgent-toggle"
-											pressed={urgent}
-											onPressedChange={setUrgent}
-											variant="outline"
-											size="sm"
-											aria-label={t("googleChat.urgentToggle")}
-											className="cursor-pointer h-10 max-w-full rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 dark:border-red-900/50 dark:text-red-300"
-											style={urgent ? selectedUrgentChipStyle : undefined}
-										>
-											<div className="inline-flex items-center gap-2.5">
-												<span className="inline-flex size-4 items-center justify-center">
-													<AlertTriangle
-														className="h-4 w-4 shrink-0"
-														aria-hidden="true"
-													/>
-												</span>
-												<span className="leading-none">
-													{t("googleChat.urgentToggle")}
-												</span>
-											</div>
-										</Toggle>
-									</TooltipTrigger>
-									<TooltipContent className="max-w-64 text-xs">
-										<p>{t("googleChat.urgentToggleDescription")}</p>
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
-						</section>
-
-						<section className="max-w-full">
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Toggle
-											id="assignment-cross-team-toggle"
-											pressed={crossTeamReview}
-											onPressedChange={setCrossTeamReview}
-											variant="outline"
-											size="sm"
-											aria-label={t("googleChat.crossTeamToggle")}
-											className="cursor-pointer h-10 max-w-full rounded-full border-sky-200/80 bg-transparent px-3 text-xs text-sky-700 transition-all duration-150 dark:border-sky-900/50 dark:text-sky-300"
-											style={
-												crossTeamReview ? selectedCrossTeamChipStyle : undefined
-											}
-										>
-											<div className="inline-flex items-center gap-2.5">
-												<span className="inline-flex size-4 items-center justify-center">
-													<Globe2
-														className="h-4 w-4 shrink-0"
-														aria-hidden="true"
-													/>
-												</span>
-												<span className="leading-none">
-													{t("googleChat.crossTeamToggle")}
-												</span>
-											</div>
-										</Toggle>
-									</TooltipTrigger>
-									<TooltipContent className="max-w-64 text-xs">
-										<p>{t("googleChat.crossTeamToggleDescription")}</p>
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
-						</section>
-					</div>
-
-					{crossTeamReview && (
-						<section className="space-y-3 rounded-2xl border border-sky-200/60 bg-sky-50/30 p-4 dark:border-sky-900/40 dark:bg-sky-950/15">
-							<p className="text-xs text-sky-800 dark:text-sky-200">
-								{t("googleChat.crossTeamSharePrompt")}
-							</p>
-							{availableCrossTeamTargets.length > 0 ? (
-								<>
-									<Label>{t("googleChat.crossTeamTargetTeamsLabel")}</Label>
-									<ToggleGroup
-										type="multiple"
-										variant="outline"
-										size="sm"
-										spacing={2}
-										value={selectedCrossTeamSlugs}
-										onValueChange={setSelectedCrossTeamSlugs}
-										className="inline-flex max-w-full flex-wrap justify-start"
-									>
-										{availableCrossTeamTargets.map((teamOption) => {
-											if (!teamOption) {
-												return null;
-											}
-											return (
-												<ToggleGroupItem
-													key={teamOption._id}
-													value={teamOption.slug}
-													aria-label={teamOption.name}
-													className="h-8 rounded-full border-border/70 bg-transparent px-3 text-xs"
-												>
-													{teamOption.name}
-												</ToggleGroupItem>
-											);
-										})}
-									</ToggleGroup>
-									{selectedCrossTeamSlugs.length === 0 && (
-										<p className="text-xs text-muted-foreground">
-											{t("googleChat.crossTeamTargetTeamsRequired")}
-										</p>
-									)}
-									<div className="flex items-start gap-2 rounded-xl border border-sky-200/70 bg-background/70 p-3 dark:border-sky-900/40">
-										<Checkbox
-											id="cross-team-exclude-teammates"
-											checked={excludeTeammates}
-											onCheckedChange={(checked) =>
-												setExcludeTeammates(checked === true)
-											}
-										/>
-										<div className="space-y-1">
-											<Label
-												htmlFor="cross-team-exclude-teammates"
-												className="cursor-pointer text-xs font-medium text-sky-800 dark:text-sky-200"
-											>
-												{t("googleChat.crossTeamExcludeTeammatesToggle")}
-											</Label>
-											<p className="text-xs text-muted-foreground">
-												{t("googleChat.crossTeamExcludeTeammatesDescription")}
-											</p>
-										</div>
-									</div>
-								</>
-							) : (
-								<p className="text-xs text-muted-foreground">
-									{t("googleChat.crossTeamNoTeamsAvailable")}
-								</p>
-							)}
-						</section>
-					)}
-
-					{!hideMultiAssignmentSection && isMultiAssignmentEnabled && (
-						<section className="space-y-3 rounded-2xl border border-border/60 bg-muted/18 p-4">
-							<div className="flex flex-wrap gap-2" aria-live="polite">
-								<Badge variant="secondary" className="max-w-full">
-									{t("pr.multipleAssignmentSummaryEnabled", {
-										count: reviewerCount,
-									})}
-								</Badge>
-							</div>
-							<ReviewerSlotsConfigurator
-								mode={mode}
-								reviewerCount={reviewerCount}
-								minReviewerCount={2}
-								embedded
-								selectedTagId={selectedTagId}
-								slots={slotConfigs.slice(0, reviewerCount)}
-								reviewers={reviewers}
-								tags={tags}
-								previews={resolvePreview.slots}
-								allowReviewerCountChange
-								onReviewerCountChange={setReviewerCount}
-								onSlotChange={(index, patch) => {
-									setSlotConfigs((prev) =>
-										prev.map((slot, slotIndex) =>
-											slotIndex === index
-												? normalizeSlotForMode({ ...slot, ...patch }, mode)
-												: slot,
-										),
-									);
-								}}
-							/>
-						</section>
-					)}
-
-					{effectiveSendMessage && (
-						<section className="space-y-3 rounded-2xl border border-border/60 bg-muted/18 p-4">
-							{alwaysSendGoogleChatMessage && (
-								<p className="text-xs text-muted-foreground">
-									{t("mySettings.messageAlwaysOnHint")}
-								</p>
-							)}
-
-							<ChatMessageCustomizer
-								prUrl={prUrl}
-								onPrUrlChange={(value) => {
-									setPrUrl(value);
-									if (showDuplicateAlert) setShowDuplicateAlert(false);
-								}}
-								onPrUrlBlur={handlePrUrlBlur}
-								contextUrl={contextUrl}
-								onContextUrlChange={setContextUrl}
-								sendMessage={effectiveSendMessage}
-								onSendMessageChange={(value) => {
-									if (alwaysSendGoogleChatMessage) return;
-									setSendMessage(value);
-								}}
-								enabled={enableCustomMessage}
-								onEnabledChange={(value) => {
-									setEnableCustomMessage(value);
-									if (!value) setCustomMessage("");
-								}}
-								message={customMessage}
-								onMessageChange={setCustomMessage}
-								nextReviewerName={
-									resolvedNamesForMessage || activeNextReviewer?.name
+					<AssignmentControlsPanel
+						tags={tags}
+						mode={mode}
+						selectedTagId={selectedTagId}
+						onModeChange={(nextMode) => {
+							if (nextMode === "regular") {
+								setMode("regular");
+								setSelectedTagId(undefined);
+								return;
+							}
+							setMode("tag");
+						}}
+						onTagChange={(tagId) => setSelectedTagId(tagId as Id<"tags">)}
+						getTagStats={getTagStats}
+						hideMultiAssignmentSection={hideMultiAssignmentSection}
+						isMultiAssignmentEnabled={isMultiAssignmentEnabled}
+						reviewerCount={reviewerCount}
+						onMultiAssignmentToggle={(enabled) => {
+							setIsMultiAssignmentEnabled(enabled);
+							if (enabled) {
+								if (reviewerCount < 2) {
+									setReviewerCount(2);
 								}
-								showSendToggle={false}
-								embedded
-							/>
-						</section>
-					)}
+								return;
+							}
+							setReviewerCount(1);
+							setSlotConfigs([defaultSlotForMode(mode)]);
+						}}
+						effectiveSendMessage={effectiveSendMessage}
+						alwaysSendGoogleChatMessage={alwaysSendGoogleChatMessage}
+						onSendMessageToggle={(pressed) => {
+							if (alwaysSendGoogleChatMessage) return;
+							setSendMessage(pressed);
+							if (!pressed) {
+								resetMessageState();
+							}
+						}}
+						urgent={urgent}
+						onUrgentChange={setUrgent}
+						crossTeamReview={crossTeamReview}
+						onCrossTeamReviewChange={setCrossTeamReview}
+						availableCrossTeamTargets={availableCrossTeamTargets}
+						selectedCrossTeamSlugs={selectedCrossTeamSlugs}
+						onSelectedCrossTeamSlugsChange={setSelectedCrossTeamSlugs}
+						excludeTeammates={excludeTeammates}
+						onExcludeTeammatesChange={setExcludeTeammates}
+						showReviewerSlots={
+							!hideMultiAssignmentSection && isMultiAssignmentEnabled
+						}
+						reviewers={reviewers}
+						slotConfigs={slotConfigs}
+						reviewerSlotPreviews={resolvedPreview.slots}
+						onReviewerCountChange={setReviewerCount}
+						onSlotChange={(index, patch) => {
+							setSlotConfigs((prev) =>
+								prev.map((slot, slotIndex) =>
+									slotIndex === index
+										? normalizeSlotForMode({ ...slot, ...patch }, mode)
+										: slot,
+								),
+							);
+						}}
+						prUrl={prUrl}
+						onPrUrlChange={(value) => {
+							setPrUrl(value);
+							if (showDuplicateAlert) setShowDuplicateAlert(false);
+						}}
+						onPrUrlBlur={handlePrUrlBlur}
+						contextUrl={contextUrl}
+						onContextUrlChange={setContextUrl}
+						enableCustomMessage={enableCustomMessage}
+						onEnableCustomMessageChange={(value) => {
+							setEnableCustomMessage(value);
+							if (!value) setCustomMessage("");
+						}}
+						customMessage={customMessage}
+						onCustomMessageChange={setCustomMessage}
+						resolvedPreview={resolvedPreview}
+						activeNextReviewer={activeNextReviewer}
+						showDuplicateAlert={showDuplicateAlert}
+						duplicateAssignment={duplicateAssignment}
+					/>
 
-					{showDuplicateAlert && duplicateAssignment && (
-						<Alert variant="destructive">
-							<AlertCircle className="h-4 w-4" aria-hidden="true" />
-							<AlertDescription>
-								{t("messages.duplicatePRAssigned", {
-									reviewer: duplicateAssignment.reviewerName,
-									date: new Date(
-										duplicateAssignment.timestamp,
-									).toLocaleDateString(),
-								})}
-							</AlertDescription>
-						</Alert>
-					)}
-
-					{liveSummary && (
-						<p className="text-sm text-muted-foreground" aria-live="polite">
-							{liveSummary}
-						</p>
-					)}
-
-					<div className="flex flex-col gap-3">
-						<div className="flex items-center gap-3">
-							<Button
-								onClick={handleAssignPR}
-								disabled={isAssignDisabled}
-								className="h-12 flex-1 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-								size="lg"
-							>
-								<TextMorph ease={{ stiffness: 200, damping: 20 }}>
-									{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
-								</TextMorph>
-							</Button>
-
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											variant="outline"
-											size="icon"
-											className="h-12 w-12 shrink-0"
-											onClick={onUndoAssignment}
-											disabled={isAssigning}
-										>
-											<Undo2 className="h-5 w-5" aria-hidden="true" />
-											<span className="sr-only">
-												{t("pr.undoLastAssignment")}
-											</span>
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>
-										<p>{t("pr.undoLastAssignment")}</p>
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
-						</div>
-					</div>
+					<AssignmentActionsRow
+						isAssigning={isAssigning}
+						isAssignDisabled={isAssignDisabled}
+						liveSummary={liveSummary}
+						onAssign={handleAssignPR}
+						onUndoAssignment={onUndoAssignment}
+					/>
 				</div>
 			</CardFooter>
 		</Card>
