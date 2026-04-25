@@ -762,7 +762,7 @@ export function AssignmentCard() {
 			<CardHeader className="sr-only flex-shrink-0" />
 			<CardContent className="flex flex-1 items-center justify-center px-5 pt-5 md:px-6 md:pt-6">
 				{activeNextReviewer ? (
-					<div className="w-full overflow-hidden py-6 text-center md:py-8">
+					<div className="w-full overflow-hidden py-4 text-center md:py-6">
 						<div className="space-y-6">
 							{mode === "regular" && lastAssignedReviewer && (
 								<div className="space-y-1">

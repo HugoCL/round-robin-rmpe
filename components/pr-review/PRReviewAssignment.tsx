@@ -639,7 +639,7 @@ export default function PRReviewAssignment({
 	return (
 		<PRReviewProvider value={providerValue}>
 			<div className="container mx-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
-				<div className="page-enter space-y-5">
+				<div className="page-enter space-y-3">
 					<PageHeader
 						teamSlug={teamSlug}
 						reviewersDrawerOpen={reviewersDrawerOpen}

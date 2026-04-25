@@ -75,7 +75,9 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 	return (
 		<section className="calm-section">
 			<div className="calm-section-header">
-				<h4 className="text-lg font-semibold">{t("pr.history")}</h4>
+				<h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+					{t("pr.history")}
+				</h4>
 				<div className="flex items-center gap-2">
 					<label
 						htmlFor="history-my-assignments-toggle"
@@ -104,12 +106,12 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 						{filteredAssignmentHistory.slice(0, 6).map((item) => (
 							<div
 								key={item.id}
-								className={`flex items-start justify-between gap-4 px-4 py-4 transition-colors hover:bg-muted/30 first:rounded-t-2xl last:rounded-b-2xl md:px-5 ${
+								className={`flex items-start justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/30 first:rounded-t-2xl last:rounded-b-2xl md:px-5 ${
 									item.urgent ? "urgent-card" : ""
 								}`}
 							>
-								<div className="flex-1">
-									<p className="font-semibold text-lg">
+								<div className="flex-1 min-w-0">
+									<p className="text-sm font-medium leading-tight">
 										{item.reviewerCount === 1
 											? item.reviewers[0]?.reviewerName
 											: t("history.assigneesCount", {
@@ -131,15 +133,22 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 											))}
 										</div>
 									)}
-									<p className="mt-2 text-xs text-muted-foreground">
-										{new Date(item.timestamp).toLocaleString()}
-									</p>
-									{(item.actionByName || item.actionByEmail) && (
-										<p className="text-xs text-muted-foreground mt-1">
-											{t("history.assignedBy")}:{" "}
-											{item.actionByName || item.actionByEmail}
+									<div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+										<p className="text-xs text-muted-foreground">
+											{new Date(item.timestamp).toLocaleString()}
 										</p>
-									)}
+										{(item.actionByName || item.actionByEmail) && (
+											<>
+												<span className="text-xs text-muted-foreground/50">
+													·
+												</span>
+												<p className="text-xs text-muted-foreground">
+													{t("history.assignedBy")}{" "}
+													{item.actionByName || item.actionByEmail}
+												</p>
+											</>
+										)}
+									</div>
 									{item.prUrl && (
 										<p className="text-xs mt-1 flex gap-2 flex-wrap">
 											<Link
@@ -220,15 +229,6 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 											{t("pr.skip")}
 										</Badge>
 									)}
-									{!item.urgent &&
-										!item.crossTeamReview &&
-										!item.forced &&
-										!item.skipped &&
-										!item.isAbsentSkip && (
-											<Badge className="bg-green-50 text-green-700 border-green-200 hover:border-transparent hover:bg-green-100 transition-colors">
-												{t("pr.regular")}
-											</Badge>
-										)}
 								</div>
 							</div>
 						))}

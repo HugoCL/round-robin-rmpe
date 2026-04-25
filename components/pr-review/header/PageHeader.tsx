@@ -216,7 +216,7 @@ export function PageHeader({
 						<div className="min-w-0 space-y-2">
 							<div className="flex flex-wrap items-end gap-x-4 gap-y-2">
 								<div className="min-w-0">
-									<h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+									<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
 										{t("pr.title")}
 									</h1>
 									{isForeignTeamView && (

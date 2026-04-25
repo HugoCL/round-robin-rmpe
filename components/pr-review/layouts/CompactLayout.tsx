@@ -19,10 +19,10 @@ export function CompactLayout() {
 	);
 	const hasActiveEvents = (activeEvents?.length ?? 0) > 0;
 	return (
-		<div className="mt-5 space-y-6">
-			<div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(360px,0.9fr)]">
-				<div className="space-y-6">
-					<section className="page-enter-soft xl:sticky xl:top-5">
+		<div className="mt-8 space-y-6">
+			<div className="grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.9fr)]">
+				<div className="space-y-5">
+					<section className="page-enter-soft lg:sticky lg:top-6">
 						{isForeignTeamView ? (
 							<ForeignTeamAssignmentCard />
 						) : (
@@ -31,10 +31,10 @@ export function CompactLayout() {
 					</section>
 				</div>
 
-				<div className="space-y-6">
+				<div className="space-y-5">
 					{hasActiveEvents ? (
 						<section className="page-enter space-y-3">
-							<h3 className="text-lg font-semibold">
+							<h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
 								{t("events.upcomingEvents")}
 							</h3>
 							<ActiveEventsList />

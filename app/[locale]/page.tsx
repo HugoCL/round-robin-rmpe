@@ -2,7 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
-import { ArrowRight, GitPullRequest, Lightbulb, Plus } from "lucide-react";
+import { ArrowRight, Lightbulb, Plus } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -169,28 +169,21 @@ export default function Page() {
 							</div>
 						</div>
 
-						<div className="page-enter flex justify-center">
-							<div className="calm-subtle-panel flex min-h-40 w-full max-w-2xl items-center justify-center px-4 py-5 md:px-6">
-								<div className="flex items-center justify-center gap-3 md:gap-4">
-									<div className="inline-flex size-10 items-center justify-center rounded-2xl bg-primary/8 text-primary">
-										<GitPullRequest className="h-5 w-5 shrink-0" />
-									</div>
-									<div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-										<span
-											className={`text-4xl font-semibold leading-none tabular-nums text-foreground transition-all duration-300 md:text-5xl ${
-												isCounterAnimating
-													? "scale-105 text-primary"
-													: "scale-100"
-											}`}
-										>
-											{animatedReviewedPRs.toLocaleString(locale)}
-										</span>
-										<span className="pb-1 text-sm text-muted-foreground md:text-base">
-											{t("team.switcher.reviewedSummaryLabel")}
-										</span>
-									</div>
-								</div>
-							</div>
+						<div className="page-enter flex items-center justify-start lg:justify-end">
+							<p
+								className={`inline-flex items-baseline gap-2 text-sm text-muted-foreground transition-colors duration-300 ${
+									isCounterAnimating ? "text-foreground/80" : ""
+								}`}
+							>
+								<span
+									className={`font-semibold tabular-nums text-foreground transition-all duration-300 ${
+										isCounterAnimating ? "text-primary" : ""
+									}`}
+								>
+									{animatedReviewedPRs.toLocaleString(locale)}
+								</span>
+								{t("team.switcher.reviewedSummaryLabel")}
+							</p>
 						</div>
 					</div>
 				</section>
@@ -217,12 +210,10 @@ export default function Page() {
 					</section>
 				) : null}
 
-				<div className="mt-10 mb-4 flex flex-wrap items-end justify-between gap-4 md:mt-12">
-					<div className="space-y-1">
-						<h2 className="text-2xl font-semibold tracking-tight">
-							{t("team.switcher.teamListTitle")}
-						</h2>
-					</div>
+				<div className="mt-8 mb-3 flex flex-wrap items-end justify-between gap-4">
+					<h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+						{t("team.switcher.teamListTitle")}
+					</h2>
 				</div>
 
 				{isLoading ? (

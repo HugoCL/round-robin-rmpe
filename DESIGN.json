@@ -1,0 +1,337 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-25T19:01:00Z",
+  "title": "Design System: La Lista",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Instrument Blue",
+        "canonical": "oklch(0.52 0.19 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.08 258)",
+          "oklch(0.24 0.12 258)",
+          "oklch(0.33 0.15 258)",
+          "oklch(0.42 0.17 258)",
+          "oklch(0.52 0.19 258)",
+          "oklch(0.62 0.17 257)",
+          "oklch(0.72 0.13 256)",
+          "oklch(0.88 0.07 255)"
+        ]
+      },
+      "primary-light": {
+        "role": "primary",
+        "displayName": "Instrument Blue (dark mode)",
+        "canonical": "oklch(0.67 0.16 255)",
+        "tonalRamp": [
+          "oklch(0.18 0.07 255)",
+          "oklch(0.28 0.10 255)",
+          "oklch(0.38 0.13 255)",
+          "oklch(0.48 0.15 255)",
+          "oklch(0.57 0.16 255)",
+          "oklch(0.67 0.16 255)",
+          "oklch(0.77 0.12 255)",
+          "oklch(0.90 0.06 255)"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Cloud Surface",
+        "canonical": "oklch(0.985 0.004 254)",
+        "tonalRamp": [
+          "oklch(0.17 0.01 254)",
+          "oklch(0.30 0.008 254)",
+          "oklch(0.45 0.007 254)",
+          "oklch(0.60 0.006 254)",
+          "oklch(0.72 0.005 254)",
+          "oklch(0.82 0.004 254)",
+          "oklch(0.92 0.004 254)",
+          "oklch(0.985 0.004 254)"
+        ]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Slate Ink",
+        "canonical": "oklch(0.205 0.01 258)",
+        "tonalRamp": [
+          "oklch(0.10 0.01 258)",
+          "oklch(0.205 0.01 258)",
+          "oklch(0.32 0.012 258)",
+          "oklch(0.44 0.012 257)",
+          "oklch(0.56 0.011 257)",
+          "oklch(0.68 0.009 256)",
+          "oklch(0.80 0.007 255)",
+          "oklch(0.92 0.005 255)"
+        ]
+      },
+      "muted-foreground": {
+        "role": "neutral",
+        "displayName": "Steel Mist",
+        "canonical": "oklch(0.48 0.02 256)",
+        "tonalRamp": [
+          "oklch(0.18 0.01 256)",
+          "oklch(0.28 0.014 256)",
+          "oklch(0.38 0.017 256)",
+          "oklch(0.48 0.02 256)",
+          "oklch(0.58 0.018 256)",
+          "oklch(0.68 0.015 256)",
+          "oklch(0.78 0.011 256)",
+          "oklch(0.90 0.006 256)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Ghost Line",
+        "canonical": "oklch(0.9 0.01 255)",
+        "tonalRamp": [
+          "oklch(0.22 0.012 255)",
+          "oklch(0.34 0.012 255)",
+          "oklch(0.50 0.011 255)",
+          "oklch(0.65 0.011 255)",
+          "oklch(0.76 0.011 255)",
+          "oklch(0.84 0.010 255)",
+          "oklch(0.90 0.010 255)",
+          "oklch(0.96 0.006 255)"
+        ]
+      },
+      "destructive": {
+        "role": "semantic",
+        "displayName": "Ember",
+        "canonical": "oklch(0.58 0.22 27)",
+        "tonalRamp": [
+          "oklch(0.20 0.10 27)",
+          "oklch(0.30 0.14 27)",
+          "oklch(0.40 0.18 27)",
+          "oklch(0.50 0.20 27)",
+          "oklch(0.58 0.22 27)",
+          "oklch(0.68 0.18 27)",
+          "oklch(0.78 0.12 27)",
+          "oklch(0.90 0.06 27)"
+        ]
+      },
+      "dark-background": {
+        "role": "neutral",
+        "displayName": "Midnight Void",
+        "canonical": "oklch(0.17 0.01 260)",
+        "tonalRamp": [
+          "oklch(0.10 0.008 260)",
+          "oklch(0.17 0.010 260)",
+          "oklch(0.24 0.012 260)",
+          "oklch(0.32 0.013 260)",
+          "oklch(0.42 0.012 260)",
+          "oklch(0.55 0.011 260)",
+          "oklch(0.70 0.009 260)",
+          "oklch(0.88 0.005 260)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page-level h1. Dashboard title. Used once per page. Never in cards or list items."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings in panels. The reviewer name (text-4xl font-bold) is the intentional maximum — the hero element of the assignment card."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "h3/h4 inside calm-section panels. Rarely needed; most section labels use Label instead."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All prose, descriptions, history item content, badge text, form helper text. System font for native rendering."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "calm-kicker eyebrows, section header labels (HISTORY, AVAILABLE TEAMS). Uppercase + 0.22em tracking only at this size and role."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Team slugs (/rmpe), PR URLs, identifiers, technical data. Never labels or prose."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shell-ambient",
+        "value": "0 24px 80px -48px rgba(15,23,42,0.35)",
+        "purpose": "Top-level page shells: PageHeader, AssignmentCard wrapper. The most elevated atmospheric shadow."
+      },
+      {
+        "name": "section-ambient",
+        "value": "0 20px 72px -52px rgba(15,23,42,0.35)",
+        "purpose": "Major content sections: FeedHistory, Events panel."
+      },
+      {
+        "name": "panel-ambient",
+        "value": "0 18px 60px -42px rgba(15,23,42,0.28)",
+        "purpose": "Tertiary surfaces and secondary panels."
+      },
+      {
+        "name": "reviewer-box",
+        "value": "0 28px 72px -44px rgba(37,99,235,0.55)",
+        "purpose": "The reviewer name display box only. The single shadow tied directly to the primary blue. Never used elsewhere."
+      }
+    ],
+    "motion": [
+      {
+        "name": "page-enter",
+        "value": "page-fade-slide 560ms cubic-bezier(0.22, 1, 0.36, 1) both",
+        "purpose": "Primary page/section entrance animation. translateY 14px → 0 + opacity 0 → 1."
+      },
+      {
+        "name": "page-enter-soft",
+        "value": "page-soft-rise 720ms cubic-bezier(0.22, 1, 0.36, 1) both",
+        "purpose": "Softer entrance for AssignmentCard. translateY 20px → 0 + scale 0.985 → 1 + opacity."
+      },
+      {
+        "name": "state-transition",
+        "value": "150–250ms ease-out",
+        "purpose": "All interactive state changes: hover background fill, color shifts, border color. Never layout properties."
+      },
+      {
+        "name": "ease-expo-out",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "The only easing used for entrances and meaningful motion. No bounce, no elastic, no ease-in-out."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main action trigger. Full-width as Assign PR; auto-width for create/navigation actions.",
+      "html": "<button class=\"ds-btn-primary\">Assign PR</button>",
+      "css": ".ds-btn-primary { background: oklch(0.52 0.19 258); color: oklch(1 0 0); padding: 10px 24px; font-size: 0.875rem; font-weight: 500; border: none; border-radius: 9999px; cursor: pointer; transition: background 150ms ease-out, box-shadow 150ms ease-out; } .ds-btn-primary:hover { background: oklch(0.46 0.19 258); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px oklch(0.985 0.004 254), 0 0 0 4px oklch(0.69 0.12 258 / 0.5); } .ds-btn-primary:active { background: oklch(0.42 0.19 258); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary utility controls: header icon pill buttons, drawer triggers, export actions.",
+      "html": "<button class=\"ds-btn-outline\"><span>Manage Reviewers</span></button>",
+      "css": ".ds-btn-outline { background: oklch(0.985 0.004 254 / 0.7); color: oklch(0.205 0.01 258); padding: 8px 16px; font-size: 0.75rem; font-weight: 400; border: 1px solid oklch(0.9 0.01 255 / 0.7); border-radius: 9999px; cursor: pointer; transition: background 150ms ease-out, border-color 150ms ease-out; } .ds-btn-outline:hover { background: oklch(0.962 0.006 255 / 0.5); border-color: oklch(0.9 0.01 255); } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 2px oklch(0.985 0.004 254), 0 0 0 4px oklch(0.69 0.12 258 / 0.5); }"
+    },
+    {
+      "name": "Action Chip",
+      "kind": "chip",
+      "refersTo": "chip-action",
+      "description": "Footer toggle chips: Multi-assignment, Force Assign, Urgent, Cross-team review. Height 40px, pill-shaped.",
+      "html": "<button class=\"ds-chip-action\" aria-pressed=\"false\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M23 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg><span>Multi-assignment</span></button>",
+      "css": ".ds-chip-action { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; font-size: 0.75rem; font-weight: 400; color: oklch(0.205 0.01 258); background: transparent; border: 1px solid oklch(0.9 0.01 255 / 0.7); border-radius: 9999px; cursor: pointer; transition: background 150ms ease-out, border-color 150ms ease-out; } .ds-chip-action:hover { background: oklch(0.962 0.006 255 / 0.3); } .ds-chip-action[aria-pressed='true'] { background: oklch(0.52 0.19 258); color: oklch(1 0 0); border-color: oklch(0.52 0.19 258); }"
+    },
+    {
+      "name": "Calm Shell",
+      "kind": "card",
+      "refersTo": "calm-shell",
+      "description": "Top-level page panels. PageHeader and AssignmentCard wrapper. Never nest inside another calm-shell.",
+      "html": "<div class=\"ds-calm-shell\"><p>Panel content</p></div>",
+      "css": ".ds-calm-shell { border-radius: 24px; border: 1px solid oklch(0.9 0.01 255 / 0.7); background: oklch(0.985 0.004 254 / 0.82); box-shadow: 0 24px 80px -48px rgba(15,23,42,0.35); backdrop-filter: blur(4px); padding: 16px 24px; }"
+    },
+    {
+      "name": "Calm Section",
+      "kind": "card",
+      "refersTo": "calm-section",
+      "description": "Major content sections: FeedHistory, Events list. Slightly softer shadow than calm-shell.",
+      "html": "<section class=\"ds-calm-section\"><div class=\"ds-calm-section-header\"><h4>History</h4></div><div>Content</div></section>",
+      "css": ".ds-calm-section { border-radius: 24px; border: 1px solid oklch(0.9 0.01 255 / 0.7); background: oklch(0.985 0.004 254 / 0.78); padding: 20px; box-shadow: 0 20px 72px -52px rgba(15,23,42,0.35); backdrop-filter: blur(4px); } .ds-calm-section-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid oklch(0.9 0.01 255 / 0.6); padding-bottom: 16px; margin-bottom: 16px; }"
+    },
+    {
+      "name": "Calm List",
+      "kind": "card",
+      "refersTo": "calm-section",
+      "description": "Feed list container. Rows inside use hover:bg-muted/30 — never individual cards per item.",
+      "html": "<div class=\"ds-calm-list\"><div class=\"ds-calm-list-item\"><p class=\"ds-list-name\">Pedro</p><p class=\"ds-list-meta\">25-04-2026, 2:41 p.m. · Assigned by Juan</p></div><div class=\"ds-calm-list-item\"><p class=\"ds-list-name\">Martin</p><p class=\"ds-list-meta\">25-04-2026, 2:40 p.m. · Assigned by Juan</p></div></div>",
+      "css": ".ds-calm-list { border: 1px solid oklch(0.9 0.01 255 / 0.6); border-radius: 16px; background: oklch(0.985 0.004 254 / 0.6); overflow: hidden; } .ds-calm-list-item { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; border-bottom: 1px solid oklch(0.9 0.01 255 / 0.6); transition: background 150ms ease-out; } .ds-calm-list-item:last-child { border-bottom: none; } .ds-calm-list-item:hover { background: oklch(0.962 0.006 255 / 0.3); } .ds-list-name { font-size: 0.875rem; font-weight: 500; color: oklch(0.205 0.01 258); line-height: 1.3; } .ds-list-meta { font-size: 0.75rem; color: oklch(0.48 0.02 256); }"
+    },
+    {
+      "name": "Section Kicker",
+      "kind": "custom",
+      "refersTo": "calm-section",
+      "description": "Eyebrow label. Used above page h1 (LA LISTA) and as section headers (HISTORY, AVAILABLE TEAMS).",
+      "html": "<p class=\"ds-kicker\">La Lista</p>",
+      "css": ".ds-kicker { font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: oklch(0.52 0.19 258 / 0.85); font-family: 'Space Grotesk', system-ui, sans-serif; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "chip-action",
+      "description": "Exceptional-state-only badges on history items. Urgent (red), Cross-team (sky), Forced (amber), Skipped (blue). Never on regular/default items.",
+      "html": "<span class=\"ds-badge ds-badge-urgent\">Urgent</span><span class=\"ds-badge ds-badge-cross-team\">Cross-team</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; border: 1px solid; } .ds-badge-urgent { background: oklch(0.97 0.03 27); color: oklch(0.40 0.18 27); border-color: oklch(0.88 0.08 27); } .ds-badge-cross-team { background: oklch(0.96 0.04 220); color: oklch(0.44 0.14 220); border-color: oklch(0.86 0.08 220); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Cockpit",
+    "overview": "La Lista is a tool that earns trust by getting out of the way. The design system is built on the conviction that a developer assigning PRs wants to think about the PR, not the interface. Every surface decision — the restrained blue, the tinted neutrals, the calm panel system — follows from that premise. The interface should feel like a well-made instrument: legible at a glance, no friction on the primary action, nothing decorative.\n\nThe palette is restrained OKLCH blue. Not 'developer tool blue' as a category reflex — the hue is a specific mid-blue (258°), used at controlled chroma (0.19), tinted into every neutral surface at near-zero chroma (0.004–0.012). The result is a surface that reads as near-white without being cold. Dark mode flips to a true dark (L 0.17, same hue), not a generic charcoal.\n\nThis system explicitly rejects: gradient text, hero-metric widgets, glassmorphism as decoration, side-stripe border accents, and any pattern that could be recognized as 'AI-generated developer tool' without seeing the product name. The reference is Linear: confident information hierarchy, every pixel purposeful, no ceremony.",
+    "keyCharacteristics": [
+      "Restrained OKLCH blue across surfaces and accents, same hue family throughout",
+      "Space Grotesk for all headings and labels, tight −0.02em tracking",
+      "JetBrains Mono for slugs, code references, and data identifiers",
+      "A named surface system (calm-shell, calm-section, calm-panel) — not ad-hoc cards",
+      "Light and dark themes; system-default, not forced",
+      "Motion limited to state changes: opacity + translateY only, 560–720ms, exponential ease-out"
+    ],
+    "rules": [
+      {
+        "name": "The One Hue Rule",
+        "body": "Every color in the system shares hue 255–260. No secondary accent hues are introduced. Pops of semantic color (red for urgent, amber for forced, sky for cross-team) are confined to status badges and never bleed into surfaces.",
+        "section": "colors"
+      },
+      {
+        "name": "The Opacity Layer Rule",
+        "body": "Surfaces use opacity variants (bg-background/82, bg-muted/28) over a shared hue-tinted background to create depth without explicit shadow stacking. The backdrop is always the same hue; only the opacity shifts.",
+        "section": "colors"
+      },
+      {
+        "name": "The Heading-Only Display Rule",
+        "body": "Space Grotesk is restricted to headings, labels, and the calm-kicker eyebrow. It is never used for body copy, button labels, or data tables.",
+        "section": "typography"
+      },
+      {
+        "name": "The Reviewer Name Exception",
+        "body": "The current reviewer's name (text-4xl font-bold, primary color) is the single largest typographic element in the product. This is intentional — the whole tool exists to answer 'who reviews this?' That name is the answer. Nothing else in the UI competes with it.",
+        "section": "typography"
+      },
+      {
+        "name": "The Atmospheric Shadow Rule",
+        "body": "Shadows are long, spread wide, and heavily blurred — never tight box shadows that create hard-edged depth. If a shadow is visible at 100% opacity in the final render, it is too strong.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "List items, table rows, chips, and badges are flat at rest. No shadow on hover — use bg-muted/30 background fill instead. Elevation is reserved for the page's major structural shells.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use calm-shell, calm-section, calm-panel, calm-subtle-panel, and calm-list for all surface containers.",
+      "Do use OKLCH for all color values. Keep chroma ≤ 0.01 for neutral surfaces.",
+      "Do restrict Space Grotesk to headings and calm-kicker labels.",
+      "Do use JetBrains Mono exclusively for technical identifiers: slugs, PR URLs, repo paths.",
+      "Do apply rounded-full to all buttons and chips, without exception.",
+      "Do animate only opacity and transform. Use cubic-bezier(0.22, 1, 0.36, 1) for page entrances.",
+      "Do mark exceptional history states (Urgent, Forced, Skipped, Cross-team) with badges. Not the default state.",
+      "Do respect prefers-reduced-motion on all animated elements."
+    ],
+    "donts": [
+      "Don't use a border-left or border-right greater than 1px as a colored accent stripe on cards or list items.",
+      "Don't use background-clip: text with a gradient. Gradient text is forbidden.",
+      "Don't use glassmorphism decoratively. backdrop-blur-sm is used only inside named calm-surface utilities.",
+      "Don't build a hero-metric widget: big number + small label + icon in a bordered box.",
+      "Don't build identical card grids. Use calm-list for feeds, inline rows for teams.",
+      "Don't reach for a modal as the first affordance.",
+      "Don't use em dashes in UI copy.",
+      "Don't add a 'Regular' badge to normal history items — its absence is the signal.",
+      "Don't animate CSS layout properties (height, width, padding, margin).",
+      "Don't make the design feel like 'a developer tool' as a category: no dark-mode-by-default, no neon, no productivity-app beige."
+    ]
+  }
+}
