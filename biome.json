@@ -6,7 +6,12 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": [
+			"**",
+			"!!**/.agents/skills/impeccable",
+			"!!**/.claude/skills/impeccable"
+		]
 	},
 	"formatter": {
 		"enabled": true,
@@ -24,10 +29,7 @@
 	},
 	"overrides": [
 		{
-			"includes": [
-				"convex/_generated/**",
-				"components/ui/**"
-			],
+			"includes": ["convex/_generated/**", "components/ui/**"],
 			"linter": {
 				"enabled": false
 			},
