@@ -330,8 +330,8 @@ export default function PRReviewAssignment({
 			}}
 		>
 			<PRReviewProvider value={providerValue}>
-				<div className="container mx-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
-					<div className="page-enter space-y-3">
+				<div className="mx-auto w-full max-w-screen-2xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6 2xl:max-w-[1800px] 2xl:px-10">
+					<div className="page-enter flex flex-col gap-5 lg:gap-6">
 						<PageHeader
 							teamSlug={teamSlug}
 							reviewersDrawerOpen={reviewersDrawerOpen}

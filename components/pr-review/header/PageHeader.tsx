@@ -103,7 +103,7 @@ export function PageHeader({
 	).length;
 
 	const reviewerActions = canManageCurrentTeam ? (
-		<div className="flex flex-wrap gap-2 justify-center">
+		<div className="flex flex-wrap justify-center gap-2">
 			<TagManager />
 			<AddReviewerDialog
 				onAddReviewer={addReviewer}
@@ -213,14 +213,14 @@ export function PageHeader({
 			<Collapsible open={actionsOpen} onOpenChange={setActionsOpen}>
 				<div className="flex flex-col gap-3">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-						<div className="min-w-0 space-y-2">
+						<div className="flex min-w-0 flex-col gap-2">
 							<div className="flex flex-wrap items-end gap-x-4 gap-y-2">
 								<div className="min-w-0">
-									<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+									<h1 className="text-3xl font-semibold tracking-tight md:text-4xl 2xl:text-5xl">
 										{t("pr.title")}
 									</h1>
 									{isForeignTeamView && (
-										<p className="mt-1 text-sm text-muted-foreground">
+										<p className="mt-1 text-sm text-muted-foreground lg:text-base">
 											{t("team.foreignTeamReadonlyBanner")}
 										</p>
 									)}
@@ -317,7 +317,7 @@ export function PageHeader({
 														{t("manage-reviewers-and-their-assignments")}
 													</DrawerDescription>
 												</DrawerHeader>
-												<div className="space-y-3 px-4 pb-4">
+												<div className="flex flex-col gap-3 px-4 pb-4">
 													<div className="flex flex-wrap items-center justify-end gap-2">
 														<Button
 															variant="outline"
@@ -384,7 +384,7 @@ export function PageHeader({
 														</DialogDescription>
 													</DialogHeader>
 												</div>
-												<div className="space-y-3 px-6 pb-4">
+												<div className="flex flex-col gap-3 px-6 pb-4">
 													<div className="flex flex-wrap items-center justify-end gap-2">
 														<Button
 															variant="outline"

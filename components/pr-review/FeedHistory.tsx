@@ -75,13 +75,11 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 	return (
 		<section className="calm-section">
 			<div className="calm-section-header">
-				<h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-					{t("pr.history")}
-				</h4>
+				<h4 className="text-lg font-semibold lg:text-xl">{t("pr.history")}</h4>
 				<div className="flex items-center gap-2">
 					<label
 						htmlFor="history-my-assignments-toggle"
-						className="text-xs text-muted-foreground whitespace-nowrap"
+						className="whitespace-nowrap text-xs text-muted-foreground lg:text-sm"
 					>
 						{t("history.myAssignmentsOnlyLabel")}
 					</label>
@@ -98,7 +96,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 			</div>
 			<div>
 				{filteredAssignmentHistory.length === 0 ? (
-					<div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
+					<div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6 text-center lg:p-8 lg:text-base">
 						<p>{t("pr.noAssignments")}</p>
 					</div>
 				) : (
@@ -106,12 +104,12 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 						{filteredAssignmentHistory.slice(0, 6).map((item) => (
 							<div
 								key={item.id}
-								className={`flex items-start justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/30 first:rounded-t-2xl last:rounded-b-2xl md:px-5 ${
+								className={`flex items-start justify-between gap-4 px-4 py-4 transition-colors hover:bg-muted/30 first:rounded-t-2xl last:rounded-b-2xl md:px-5 lg:px-6 lg:py-5 ${
 									item.urgent ? "urgent-card" : ""
 								}`}
 							>
-								<div className="flex-1 min-w-0">
-									<p className="text-sm font-medium leading-tight">
+								<div className="min-w-0 flex-1">
+									<p className="break-words text-lg font-semibold lg:text-xl">
 										{item.reviewerCount === 1
 											? item.reviewers[0]?.reviewerName
 											: t("history.assigneesCount", {
@@ -133,16 +131,16 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 											))}
 										</div>
 									)}
-									<div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-										<p className="text-xs text-muted-foreground">
+									<div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+										<p className="text-xs text-muted-foreground lg:text-sm">
 											{new Date(item.timestamp).toLocaleString()}
 										</p>
 										{(item.actionByName || item.actionByEmail) && (
 											<>
-												<span className="text-xs text-muted-foreground/50">
+												<span className="text-xs text-muted-foreground/50 lg:text-sm">
 													·
 												</span>
-												<p className="text-xs text-muted-foreground">
+												<p className="text-xs text-muted-foreground lg:text-sm">
 													{t("history.assignedBy")}{" "}
 													{item.actionByName || item.actionByEmail}
 												</p>
@@ -150,7 +148,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 										)}
 									</div>
 									{item.prUrl && (
-										<p className="text-xs mt-1 flex gap-2 flex-wrap">
+										<p className="mt-1 flex flex-wrap gap-2 text-xs lg:text-sm">
 											<Link
 												href={item.prUrl}
 												target="_blank"
@@ -208,7 +206,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 										</div>
 									) : null}
 								</div>
-								<div className="flex flex-col items-end gap-1">
+								<div className="flex shrink-0 flex-col items-end gap-1">
 									{item.urgent && (
 										<Badge className="bg-red-50 text-red-700 border-red-200 hover:border-transparent hover:bg-red-100 transition-colors dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60">
 											{t("pr.urgent")}

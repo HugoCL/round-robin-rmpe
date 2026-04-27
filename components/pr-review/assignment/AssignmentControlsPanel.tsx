@@ -159,9 +159,9 @@ export function AssignmentControlsPanel({
 		.join(", ");
 
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col gap-4 lg:gap-5">
 			{tags.length > 0 && (
-				<div className="space-y-3 rounded-2xl border border-border/60 bg-muted/18 p-4">
+				<div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-4 lg:p-5">
 					<div className="grid grid-cols-2 gap-2">
 						<Button
 							variant={mode === "regular" ? "default" : "outline"}
@@ -182,7 +182,7 @@ export function AssignmentControlsPanel({
 					</div>
 
 					{mode === "tag" && (
-						<div className="space-y-2">
+						<div className="flex flex-col gap-2">
 							<Label htmlFor="assignment-tag-global">
 								{t("tags.selectTag")}
 							</Label>
@@ -205,7 +205,7 @@ export function AssignmentControlsPanel({
 									})}
 								</SelectContent>
 							</Select>
-							<p className="text-xs text-muted-foreground">
+							<p className="text-xs text-muted-foreground lg:text-sm">
 								{t("tags.tagBasedDescription")}
 							</p>
 						</div>
@@ -213,7 +213,7 @@ export function AssignmentControlsPanel({
 				</div>
 			)}
 
-			<div className="flex flex-wrap gap-3">
+			<div className="flex flex-wrap gap-3 lg:gap-4">
 				{!hideMultiAssignmentSection && (
 					<TooltipProvider>
 						<Tooltip>
@@ -232,7 +232,7 @@ export function AssignmentControlsPanel({
 									<ToggleGroupItem
 										value="multi-assignment"
 										aria-label={t("pr.multipleAssignmentToggleLabel")}
-										className="cursor-pointer h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
+										className="h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm"
 										style={
 											isMultiAssignmentEnabled
 												? selectedPrimaryChipStyle
@@ -270,7 +270,7 @@ export function AssignmentControlsPanel({
 											<Button
 												variant="outline"
 												size="sm"
-												className="h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
+												className="h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm"
 											>
 												<div className="inline-flex items-center gap-2.5">
 													<span className="inline-flex size-4 items-center justify-center">
@@ -307,7 +307,7 @@ export function AssignmentControlsPanel({
 									size="sm"
 									disabled={alwaysSendGoogleChatMessage}
 									aria-label={t("googleChat.sendMessageToggle")}
-									className="cursor-pointer disabled:cursor-not-allowed h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
+									className="h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 disabled:cursor-not-allowed lg:h-11 lg:px-4 lg:text-sm"
 									style={
 										effectiveSendMessage ? selectedPrimaryChipStyle : undefined
 									}
@@ -343,7 +343,7 @@ export function AssignmentControlsPanel({
 									variant="outline"
 									size="sm"
 									aria-label={t("googleChat.urgentToggle")}
-									className="cursor-pointer h-10 max-w-full rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 dark:border-red-900/50 dark:text-red-300"
+									className="h-10 max-w-full cursor-pointer rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-red-900/50 dark:text-red-300"
 									style={urgent ? selectedUrgentChipStyle : undefined}
 								>
 									<div className="inline-flex items-center gap-2.5">
@@ -377,7 +377,7 @@ export function AssignmentControlsPanel({
 									variant="outline"
 									size="sm"
 									aria-label={t("googleChat.crossTeamToggle")}
-									className="cursor-pointer h-10 max-w-full rounded-full border-sky-200/80 bg-transparent px-3 text-xs text-sky-700 transition-all duration-150 dark:border-sky-900/50 dark:text-sky-300"
+									className="h-10 max-w-full cursor-pointer rounded-full border-sky-200/80 bg-transparent px-3 text-xs text-sky-700 transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-sky-900/50 dark:text-sky-300"
 									style={
 										crossTeamReview ? selectedCrossTeamChipStyle : undefined
 									}
@@ -401,8 +401,8 @@ export function AssignmentControlsPanel({
 			</div>
 
 			{crossTeamReview && (
-				<section className="space-y-3 rounded-2xl border border-sky-200/60 bg-sky-50/30 p-4 dark:border-sky-900/40 dark:bg-sky-950/15">
-					<p className="text-xs text-sky-800 dark:text-sky-200">
+				<section className="flex flex-col gap-3 rounded-2xl border border-sky-200/60 bg-sky-50/30 p-4 lg:p-5 dark:border-sky-900/40 dark:bg-sky-950/15">
+					<p className="text-xs text-sky-800 lg:text-sm dark:text-sky-200">
 						{t("googleChat.crossTeamSharePrompt")}
 					</p>
 					{availableCrossTeamTargets.length > 0 ? (
@@ -422,14 +422,14 @@ export function AssignmentControlsPanel({
 										key={teamOption._id}
 										value={teamOption.slug}
 										aria-label={teamOption.name}
-										className="h-8 rounded-full border-border/70 bg-transparent px-3 text-xs"
+										className="h-8 rounded-full border-border/70 bg-transparent px-3 text-xs lg:h-9 lg:text-sm"
 									>
 										{teamOption.name}
 									</ToggleGroupItem>
 								))}
 							</ToggleGroup>
 							{selectedCrossTeamSlugs.length === 0 && (
-								<p className="text-xs text-muted-foreground">
+								<p className="text-xs text-muted-foreground lg:text-sm">
 									{t("googleChat.crossTeamTargetTeamsRequired")}
 								</p>
 							)}
@@ -441,21 +441,21 @@ export function AssignmentControlsPanel({
 										onExcludeTeammatesChange(checked === true)
 									}
 								/>
-								<div className="space-y-1">
+								<div className="flex flex-col gap-1">
 									<Label
 										htmlFor="cross-team-exclude-teammates"
-										className="cursor-pointer text-xs font-medium text-sky-800 dark:text-sky-200"
+										className="cursor-pointer text-xs font-medium text-sky-800 lg:text-sm dark:text-sky-200"
 									>
 										{t("googleChat.crossTeamExcludeTeammatesToggle")}
 									</Label>
-									<p className="text-xs text-muted-foreground">
+									<p className="text-xs text-muted-foreground lg:text-sm">
 										{t("googleChat.crossTeamExcludeTeammatesDescription")}
 									</p>
 								</div>
 							</div>
 						</>
 					) : (
-						<p className="text-xs text-muted-foreground">
+						<p className="text-xs text-muted-foreground lg:text-sm">
 							{t("googleChat.crossTeamNoTeamsAvailable")}
 						</p>
 					)}
@@ -463,7 +463,7 @@ export function AssignmentControlsPanel({
 			)}
 
 			{showReviewerSlots && (
-				<section className="space-y-3 rounded-2xl border border-border/60 bg-muted/18 p-4">
+				<section className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-4 lg:p-5">
 					<div className="flex flex-wrap gap-2" aria-live="polite">
 						<Badge variant="secondary" className="max-w-full">
 							{t("pr.multipleAssignmentSummaryEnabled", {
@@ -489,9 +489,9 @@ export function AssignmentControlsPanel({
 			)}
 
 			{effectiveSendMessage && (
-				<section className="space-y-3 rounded-2xl border border-border/60 bg-muted/18 p-4">
+				<section className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-4 lg:p-5">
 					{alwaysSendGoogleChatMessage && (
-						<p className="text-xs text-muted-foreground">
+						<p className="text-xs text-muted-foreground lg:text-sm">
 							{t("mySettings.messageAlwaysOnHint")}
 						</p>
 					)}

@@ -507,7 +507,7 @@ export function AssignmentCard() {
 	return (
 		<Card className="calm-shell flex flex-col overflow-hidden border-0 bg-transparent py-0 shadow-none ring-0">
 			<CardHeader className="sr-only flex-shrink-0" />
-			<CardContent className="flex flex-1 items-center justify-center px-5 pt-5 md:px-6 md:pt-6">
+			<CardContent className="flex flex-1 items-center justify-center px-5 pt-5 md:px-6 md:pt-6 2xl:px-8 2xl:pt-8">
 				<AssignmentHeroPanel
 					mode={mode}
 					lastAssignedReviewer={lastAssignedReviewer}
@@ -520,8 +520,8 @@ export function AssignmentCard() {
 					isLoadingTagReviewer={isLoadingTagReviewer}
 				/>
 			</CardContent>
-			<CardFooter className="flex-shrink-0 space-y-6 border-t border-border/60 px-5 pb-5 pt-5 md:px-6 md:pb-6">
-				<div className="w-full space-y-4">
+			<CardFooter className="flex-shrink-0 border-t border-border/60 px-5 pb-5 pt-5 md:px-6 md:pb-6 2xl:px-8 2xl:pb-8">
+				<div className="flex w-full flex-col gap-4 lg:gap-5">
 					<AssignmentControlsPanel
 						tags={tags}
 						mode={mode}

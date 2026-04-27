@@ -172,7 +172,7 @@ export function ReviewersTable({
 	};
 
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col gap-4">
 			{showViewControls && (
 				<section className="flex justify-end">
 					<div className="flex shrink-0 items-center gap-2">
@@ -237,7 +237,7 @@ export function ReviewersTable({
 				</section>
 			)}
 
-			<Table>
+			<Table className="text-sm lg:text-base">
 				<TableHeader>
 					<TableRow>
 						<TableHead>{t("pr.nameHeader")}</TableHead>
@@ -259,14 +259,16 @@ export function ReviewersTable({
 								reviewer.effectiveIsAbsent ? "opacity-60" : "hover:bg-muted/40",
 							)}
 						>
-							<TableCell className="font-medium">
+							<TableCell className="font-medium lg:text-base">
 								<div className="flex items-center gap-3">
-									<Avatar className="h-8 w-8">
+									<Avatar className="size-8 lg:size-9">
 										<AvatarFallback>
 											{reviewer.name?.slice(0, 2).toUpperCase()}
 										</AvatarFallback>
 									</Avatar>
-									<span className="truncate max-w-[16ch]">{reviewer.name}</span>
+									<span className="max-w-[16ch] truncate lg:max-w-[22ch]">
+										{reviewer.name}
+									</span>
 									{nextReviewer?._id === reviewer._id && (
 										<Badge
 											variant="default"
@@ -287,7 +289,7 @@ export function ReviewersTable({
 								</div>
 							</TableCell>
 							{showEmails && (
-								<TableCell className="text-sm text-muted-foreground">
+								<TableCell className="text-sm text-muted-foreground lg:text-base">
 									{reviewer.email}
 								</TableCell>
 							)}
@@ -297,7 +299,7 @@ export function ReviewersTable({
 										{reviewer.tags && reviewer.tags.length > 0 ? (
 											reviewer.tags.map((tagId: string) => getTagBadge(tagId))
 										) : (
-											<span className="text-sm text-muted-foreground">
+											<span className="text-sm text-muted-foreground lg:text-base">
 												{t("pr.noTags")}
 											</span>
 										)}
@@ -307,7 +309,7 @@ export function ReviewersTable({
 							{showAssignments && (
 								<TableCell>
 									{editingId === reviewer._id ? (
-										<div className="flex items-center space-x-2">
+										<div className="flex items-center gap-2">
 											<Input
 												type="number"
 												value={editValue}
@@ -329,8 +331,10 @@ export function ReviewersTable({
 											</Button>
 										</div>
 									) : (
-										<div className="flex items-center space-x-2">
-											<span>{reviewer.assignmentCount}</span>
+										<div className="flex items-center gap-2">
+											<span className="lg:text-base">
+												{reviewer.assignmentCount}
+											</span>
 											<Button
 												size="icon"
 												variant="ghost"
