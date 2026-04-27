@@ -170,20 +170,34 @@ export default function Page() {
 						</div>
 
 						<div className="page-enter flex items-center justify-start lg:justify-end">
-							<p
-								className={`inline-flex items-baseline gap-2 text-sm text-muted-foreground transition-colors duration-300 ${
-									isCounterAnimating ? "text-foreground/80" : ""
+							<div
+								className={`relative w-full max-w-md overflow-hidden rounded-[2rem] border border-primary/16 bg-background/78 px-6 py-7 shadow-[0_28px_80px_-52px_rgba(37,99,235,0.55)] ring-1 ring-primary/12 backdrop-blur-sm transition-all duration-500 md:px-7 md:py-8 ${
+									isCounterAnimating
+										? "border-primary/28 shadow-[0_34px_96px_-54px_rgba(37,99,235,0.72)]"
+										: ""
 								}`}
 							>
-								<span
-									className={`font-semibold tabular-nums text-foreground transition-all duration-300 ${
-										isCounterAnimating ? "text-primary" : ""
-									}`}
-								>
-									{animatedReviewedPRs.toLocaleString(locale)}
-								</span>
-								{t("team.switcher.reviewedSummaryLabel")}
-							</p>
+								<div
+									aria-hidden
+									className="absolute inset-0 bg-[linear-gradient(135deg,color-mix(in_oklab,var(--primary)_14%,transparent),transparent_42%),radial-gradient(circle_at_82%_18%,color-mix(in_oklab,var(--primary)_18%,transparent),transparent_36%)]"
+								/>
+								<div className="relative flex flex-col gap-4">
+									<div className="flex items-center justify-between gap-4">
+										<p className="calm-kicker">
+											{t("team.switcher.reviewedSummaryLabel")}
+										</p>
+									</div>
+									<div
+										className={`text-6xl font-semibold leading-none tracking-tight text-foreground transition-all duration-300 [font-family:var(--font-display),var(--font-sans),sans-serif] md:text-7xl ${
+											isCounterAnimating
+												? "scale-[1.02] text-primary"
+												: "scale-100"
+										}`}
+									>
+										{animatedReviewedPRs.toLocaleString(locale)}
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 				</section>
