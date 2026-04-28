@@ -349,9 +349,9 @@ export function ReviewersTable({
 									)}
 								</TableCell>
 							)}
-							<TableCell>
-								<div className="flex flex-wrap items-center gap-3">
-									<div className="flex items-center border-r border-border/60 pr-3">
+							<TableCell className="min-w-[17rem]">
+								<div className="flex items-center gap-3 whitespace-nowrap">
+									<div className="flex shrink-0 items-center border-r border-border/60 pr-3">
 										<Switch
 											id={`absence-${reviewer._id}`}
 											aria-label={t("partTime.manualControl")}
@@ -374,19 +374,19 @@ export function ReviewersTable({
 											{t("partTime.manualControl")}
 										</Label>
 									</div>
-									<div className="flex flex-wrap items-center gap-2">
+									<div className="flex min-w-0 items-center gap-2">
 										<Badge
 											variant={
 												reviewer.effectiveIsAbsent ? "secondary" : "default"
 											}
-											className="h-5 px-2 py-0.5 text-xs"
+											className="h-5 shrink-0 px-2 py-0.5 text-xs"
 										>
 											{reviewer.effectiveIsAbsent
 												? t("pr.absent")
 												: t("pr.available")}
 										</Badge>
 										{getStatusDetail(reviewer) && (
-											<span className="whitespace-nowrap text-xs text-muted-foreground">
+											<span className="truncate text-xs text-muted-foreground">
 												{getStatusDetail(reviewer)}
 											</span>
 										)}
