@@ -2631,6 +2631,7 @@ export const cleanupOldRecords = mutation({
 	handler: async (ctx) => {
 		const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 		const cutoffTimestamp = Date.now() - SEVEN_DAYS_MS;
+		const CLEANUP_BATCH_SIZE = 200;
 
 		// Clean up old prAssignments (based on createdAt)
 		const oldPrAssignments = await ctx.db
@@ -2652,9 +2653,37 @@ export const cleanupOldRecords = mutation({
 			await ctx.db.delete(history._id);
 		}
 
+		const oldCompletedEvents = await ctx.db
+			.query("events")
+			.withIndex("by_status_scheduled_at", (q) =>
+				q.eq("status", "completed").lt("scheduledAt", cutoffTimestamp),
+			)
+			.take(CLEANUP_BATCH_SIZE);
+
+		const oldCancelledEvents = await ctx.db
+			.query("events")
+			.withIndex("by_status_scheduled_at", (q) =>
+				q.eq("status", "cancelled").lt("scheduledAt", cutoffTimestamp),
+			)
+			.take(CLEANUP_BATCH_SIZE);
+
+		for (const event of oldCompletedEvents) {
+			await ctx.db.delete(event._id);
+		}
+
+		for (const event of oldCancelledEvents) {
+			await ctx.db.delete(event._id);
+		}
+
 		return {
 			deletedPrAssignments: oldPrAssignments.length,
 			deletedAssignmentHistory: oldAssignmentHistory.length,
+			deletedCompletedEvents: oldCompletedEvents.length,
+			deletedCancelledEvents: oldCancelledEvents.length,
+			remainingOldCompletedEvents:
+				oldCompletedEvents.length === CLEANUP_BATCH_SIZE,
+			remainingOldCancelledEvents:
+				oldCancelledEvents.length === CLEANUP_BATCH_SIZE,
 		};
 	},
 });
@@ -2721,18 +2750,21 @@ export const autoCompleteExpiredEvents = mutation({
 	handler: async (ctx) => {
 		const now = Date.now();
 
-		// Optimized: Use composite index to filter directly in DB instead of fetching all started events
-		// Only fetch events that are started AND have reached their expected end time
+		// Use a bounded composite-index range so Convex only reads already-expired started events.
 		const expiredEvents = await ctx.db
 			.query("events")
-			.withIndex("by_status_end_time", (q) => q.eq("status", "started"))
-			.filter((q) => q.lte(q.field("expectedEndTime"), now))
+			.withIndex("by_status_end_time", (q) =>
+				q.eq("status", "started").lte("expectedEndTime", now),
+			)
 			.collect();
 
-		// Backstop: include stale scheduled/started events (for delayed start jobs or legacy rows)
-		const staleCandidates = await ctx.db
+		// Backstop: catch stale scheduled events that should already be completed.
+		// Query by status+schedule to avoid scanning all historical events every minute.
+		const staleScheduledEvents = await ctx.db
 			.query("events")
-			.withIndex("by_scheduled_at", (q) => q.lte("scheduledAt", now))
+			.withIndex("by_status_scheduled_at", (q) =>
+				q.eq("status", "scheduled").lte("scheduledAt", now),
+			)
 			.collect();
 
 		const expiredEventsById = new Map<Id<"events">, Doc<"events">>();
@@ -2740,11 +2772,7 @@ export const autoCompleteExpiredEvents = mutation({
 			expiredEventsById.set(event._id, event);
 		}
 
-		for (const event of staleCandidates) {
-			if (event.status !== "scheduled" && event.status !== "started") {
-				continue;
-			}
-
+		for (const event of staleScheduledEvents) {
 			if (!hasEventEnded(event, now)) {
 				continue;
 			}

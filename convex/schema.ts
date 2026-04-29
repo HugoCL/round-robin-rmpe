@@ -225,6 +225,7 @@ export default defineSchema({
 		.index("by_team", ["teamId"])
 		.index("by_team_status", ["teamId", "status"])
 		.index("by_scheduled_at", ["scheduledAt"])
+		.index("by_status_scheduled_at", ["status", "scheduledAt"])
 		.index("by_status_notification_scheduled", [
 			"status",
 			"startNotificationSentAt",
