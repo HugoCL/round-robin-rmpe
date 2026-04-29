@@ -4,6 +4,7 @@ import { Edit } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -30,6 +31,7 @@ interface EditReviewerDialogProps {
 		email: string,
 		googleChatUserId?: string,
 		partTimeSchedule?: PartTimeSchedule,
+		excludedFromReviewPool?: boolean,
 	) => Promise<boolean>;
 	trigger?: React.ReactNode;
 }
@@ -52,6 +54,9 @@ export function EditReviewerDialog({
 	}>({});
 	const [partTimeEnabled, setPartTimeEnabled] = useState(
 		Boolean(reviewer.partTimeSchedule),
+	);
+	const [excludedOutOfPool, setExcludedOutOfPool] = useState(
+		reviewer.excludedFromReviewPool === true,
 	);
 	const [workingDays, setWorkingDays] = useState<Weekday[]>(
 		reviewer.partTimeSchedule?.workingDays ?? [],
@@ -87,6 +92,7 @@ export function EditReviewerDialog({
 				reviewerEmail.trim(),
 				googleChatUserId.trim() || undefined,
 				scheduleFromSelection(partTimeEnabled, workingDays),
+				excludedOutOfPool,
 			);
 			if (success) {
 				setIsOpen(false);
@@ -105,10 +111,15 @@ export function EditReviewerDialog({
 
 	const handleOpenChange = (open: boolean) => {
 		setIsOpen(open);
-		if (!open) {
+		if (open) {
+			setExcludedOutOfPool(reviewer.excludedFromReviewPool === true);
+			setPartTimeEnabled(Boolean(reviewer.partTimeSchedule));
+			setWorkingDays(reviewer.partTimeSchedule?.workingDays ?? []);
+		} else {
 			setEdits({}); // Clear edits when closing
 			setPartTimeEnabled(Boolean(reviewer.partTimeSchedule));
 			setWorkingDays(reviewer.partTimeSchedule?.workingDays ?? []);
+			setExcludedOutOfPool(reviewer.excludedFromReviewPool === true);
 		}
 	};
 
@@ -181,6 +192,25 @@ export function EditReviewerDialog({
 							onKeyDown={handleKeyDown}
 							className="col-span-3"
 						/>
+					</div>
+					<div className="col-span-full flex items-start gap-3 rounded-md border border-border/60 bg-muted/30 p-3">
+						<Checkbox
+							id={`${nameId}-out-of-pool`}
+							checked={excludedOutOfPool}
+							onCheckedChange={(v) => setExcludedOutOfPool(v === true)}
+							disabled={isUpdating}
+						/>
+						<div className="grid gap-1.5 leading-none">
+							<label
+								htmlFor={`${nameId}-out-of-pool`}
+								className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+							>
+								{t("reviewer.outOfReviewPoolEditLabel")}
+							</label>
+							<p className="text-xs text-muted-foreground">
+								{t("reviewer.outOfReviewPoolEditHint")}
+							</p>
+						</div>
 					</div>
 					<div className="col-span-full">
 						<PartTimeScheduleFields

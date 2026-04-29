@@ -42,6 +42,14 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-04-29",
+		type: "feature",
+		title:
+			"Recordatorio por ausencia indefinida y opción “fuera de la rotación”",
+		description:
+			"Si estás marcado como ausente sin fecha de regreso, ahora ves un aviso en la vista del equipo con dos acciones: volver a estar disponible o indicar que no participas en la rotación de PRs (sigues en el listado, pero dejas de entrar en la asignación automática y deja de mostrarse el aviso). En “Forzar asignación” ya no aparecen quienes están fuera de la rotación. ",
+	},
+	{
 		date: "2026-03-27",
 		type: "improvement",
 		title: "Diseño unificado en toda la app",

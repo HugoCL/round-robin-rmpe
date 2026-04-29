@@ -14,6 +14,8 @@ export interface Reviewer {
 	assignmentCount: number;
 	isAbsent: boolean;
 	absentUntil?: number;
+	/** When true, never picked by round-robin for this team */
+	excludedFromReviewPool?: boolean;
 	partTimeSchedule?: PartTimeSchedule;
 	createdAt: number;
 	tags: Id<"tags">[];

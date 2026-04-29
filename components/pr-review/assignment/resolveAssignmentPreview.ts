@@ -1,4 +1,5 @@
 import type { Id } from "@/convex/_generated/dataModel";
+import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import type { Reviewer } from "@/lib/types";
 import type {
 	AssignmentCardTag,
@@ -68,7 +69,7 @@ export function resolveAssignmentPreview({
 				unresolved(reasonMessages.reviewerNotFound);
 				continue;
 			}
-			if (target.effectiveIsAbsent) {
+			if (!isEligibleForAssignment(target)) {
 				unresolved(reasonMessages.reviewerAbsent);
 				continue;
 			}
@@ -118,7 +119,7 @@ export function resolveAssignmentPreview({
 		}
 
 		const candidates = reviewers.filter((reviewer) => {
-			if (reviewer.effectiveIsAbsent) return false;
+			if (!isEligibleForAssignment(reviewer)) return false;
 			if (currentUserReviewerId && reviewer._id === currentUserReviewerId) {
 				return false;
 			}

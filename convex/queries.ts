@@ -967,9 +967,10 @@ export const getNextReviewer = query({
 			return null;
 		}
 
-		// Find available reviewers (not absent)
+		// Find available reviewers (not absent, in pool)
 		const availableReviewers = enrichedReviewers.filter(
-			(reviewer) => !reviewer.effectiveIsAbsent,
+			(reviewer) =>
+				reviewer.excludedFromReviewPool !== true && !reviewer.effectiveIsAbsent,
 		);
 
 		if (availableReviewers.length > 0) {
@@ -1009,7 +1010,9 @@ export const getNextReviewerByTag = query({
 		// Filter for available reviewers with the specific tag
 		const availableReviewers = enrichedReviewers.filter(
 			(reviewer) =>
-				!reviewer.effectiveIsAbsent && reviewer.tags.includes(tagId),
+				reviewer.excludedFromReviewPool !== true &&
+				!reviewer.effectiveIsAbsent &&
+				reviewer.tags.includes(tagId),
 		);
 
 		if (availableReviewers.length === 0) {

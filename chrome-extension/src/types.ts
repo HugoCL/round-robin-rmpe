@@ -12,6 +12,7 @@ export interface ReviewerInfo {
 	email: string;
 	assignmentCount: number;
 	isAbsent: boolean;
+	excludedFromReviewPool?: boolean;
 	manualIsAbsent: boolean;
 	effectiveIsAbsent: boolean;
 	absenceReason: "manual" | "part_time_schedule" | null;

@@ -60,6 +60,7 @@ export function ReviewersTable({
 		toggleShowEmails,
 		onMarkAbsent,
 		onMarkAvailable,
+		onSetExcludedFromReviewPool,
 		userInfo,
 		onDataUpdate,
 		updateReviewer,
@@ -247,6 +248,9 @@ export function ReviewersTable({
 							<TableHead>{t("pr.assignmentsHeader")}</TableHead>
 						)}
 						<TableHead>{t("pr.statusHeader")}</TableHead>
+						<TableHead className="min-w-[7.5rem] whitespace-normal text-xs font-medium leading-tight">
+							{t("reviewer.rotationColumn")}
+						</TableHead>
 						<TableHead className="w-16"></TableHead>
 					</TableRow>
 				</TableHeader>
@@ -269,6 +273,14 @@ export function ReviewersTable({
 									<span className="max-w-[16ch] truncate lg:max-w-[22ch]">
 										{reviewer.name}
 									</span>
+									{reviewer.excludedFromReviewPool === true && (
+										<Badge
+											variant="outline"
+											className="h-5 shrink-0 px-2 py-0.5 text-xs"
+										>
+											{t("reviewer.outOfReviewPoolBadge")}
+										</Badge>
+									)}
 									{nextReviewer?._id === reviewer._id && (
 										<Badge
 											variant="default"
@@ -394,6 +406,28 @@ export function ReviewersTable({
 								</div>
 							</TableCell>
 							<TableCell>
+								<div className="flex flex-col gap-1.5 py-0.5">
+									<Switch
+										id={`pool-${reviewer._id}`}
+										checked={reviewer.excludedFromReviewPool !== true}
+										disabled={!canManageCurrentTeam}
+										onCheckedChange={(checked) => {
+											if (!canManageCurrentTeam) return;
+											void onSetExcludedFromReviewPool(
+												reviewer._id,
+												checked !== true,
+											);
+										}}
+									/>
+									<Label
+										htmlFor={`pool-${reviewer._id}`}
+										className="text-xs font-normal text-muted-foreground"
+									>
+										{t("reviewer.inReviewPoolSwitchLabel")}
+									</Label>
+								</div>
+							</TableCell>
+							<TableCell>
 								<EditReviewerDialog
 									reviewer={reviewer}
 									onUpdateReviewer={async (
@@ -402,6 +436,7 @@ export function ReviewersTable({
 										email,
 										googleChatUserId,
 										partTimeSchedule,
+										excludedFromReviewPool,
 									) =>
 										updateReviewer(
 											id,
@@ -409,6 +444,7 @@ export function ReviewersTable({
 											email,
 											googleChatUserId,
 											partTimeSchedule,
+											excludedFromReviewPool,
 										)
 									}
 									trigger={

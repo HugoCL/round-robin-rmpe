@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
 import { toast } from "@/hooks/use-toast";
 import type { PartTimeSchedule } from "@/lib/reviewerAvailability";
+import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -47,6 +48,9 @@ export function useConvexPRReviewData(
 	const markAbsentMutation = useMutation(api.mutations.markReviewerAbsent);
 	const markAvailableMutation = useMutation(
 		api.mutations.markReviewerAvailable,
+	);
+	const setReviewerExcludedFromReviewPoolMutation = useMutation(
+		api.mutations.setReviewerExcludedFromReviewPool,
 	);
 	const resetAllCountsMutation = useMutation(api.mutations.resetAllCounts);
 	const updateAssignmentCountMutation = useMutation(
@@ -175,10 +179,10 @@ export function useConvexPRReviewData(
 	}) => {
 		if (!nextReviewer) return;
 
-		// Filter out absent reviewers and the current next reviewer
+		// Filter out absent / out-of-pool reviewers and the current next reviewer
 		const availableReviewers = reviewers.filter(
 			(reviewer) =>
-				!reviewer.effectiveIsAbsent && reviewer._id !== nextReviewer._id,
+				isEligibleForAssignment(reviewer) && reviewer._id !== nextReviewer._id,
 		);
 
 		if (availableReviewers.length === 0) {
@@ -324,6 +328,7 @@ export function useConvexPRReviewData(
 		email: string,
 		googleChatUserId?: string,
 		partTimeSchedule?: PartTimeSchedule,
+		excludedFromReviewPool?: boolean,
 	) => {
 		if (!name.trim()) {
 			toast({
@@ -350,6 +355,9 @@ export function useConvexPRReviewData(
 				email: email.trim(),
 				googleChatUserId: googleChatUserId?.trim() || undefined,
 				partTimeSchedule,
+				...(excludedFromReviewPool !== undefined
+					? { excludedFromReviewPool }
+					: {}),
 			});
 
 			toast({
@@ -429,6 +437,30 @@ export function useConvexPRReviewData(
 		}
 	};
 
+	const handleSetExcludedFromReviewPool = async (
+		id: string,
+		excluded: boolean,
+	) => {
+		try {
+			await setReviewerExcludedFromReviewPoolMutation({
+				id: id as Id<"reviewers">,
+				excluded,
+			});
+			toast({
+				title: t("common.success"),
+				description: excluded
+					? t("reviewer.excludedFromPoolSuccess")
+					: t("reviewer.includedInPoolSuccess"),
+			});
+		} catch (_error) {
+			toast({
+				title: t("messages.statusUpdateFailedTitle"),
+				description: t("messages.statusUpdateFailedDescription"),
+				variant: "destructive",
+			});
+		}
+	};
+
 	const handleResetCounts = async () => {
 		if (confirm(t("messages.resetCountsConfirmation"))) {
 			try {
@@ -457,6 +489,7 @@ export function useConvexPRReviewData(
 			email: string;
 			assignmentCount: number;
 			isAbsent: boolean;
+			excludedFromReviewPool?: boolean;
 			createdAt: number;
 			tags: string[];
 			googleChatUserId?: string;
@@ -467,6 +500,9 @@ export function useConvexPRReviewData(
 			email: r.email,
 			assignmentCount: r.assignmentCount,
 			isAbsent: r.isAbsent,
+			...(r.excludedFromReviewPool === true
+				? { excludedFromReviewPool: true }
+				: {}),
 			createdAt: r.createdAt,
 			tags: r.tags || [],
 			googleChatUserId: (r as unknown as { googleChatUserId?: string })
@@ -507,6 +543,7 @@ export function useConvexPRReviewData(
 					"email",
 					"assignmentCount",
 					"isAbsent",
+					"excludedFromReviewPool",
 					"createdAt",
 					"tags",
 					"googleChatUserId",
@@ -518,6 +555,7 @@ export function useConvexPRReviewData(
 					email: string;
 					assignmentCount: number;
 					isAbsent: boolean;
+					excludedFromReviewPool?: boolean;
 					createdAt: number;
 					tags?: string[];
 					googleChatUserId?: string;
@@ -676,6 +714,7 @@ export function useConvexPRReviewData(
 		handleToggleAbsence,
 		handleMarkAbsent,
 		handleMarkAvailable,
+		handleSetExcludedFromReviewPool,
 		handleResetCounts,
 		exportData,
 		importData,

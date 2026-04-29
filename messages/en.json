@@ -231,7 +231,15 @@
 		"countUpdated": "The assignment count has been updated successfully",
 		"countUpdateFailed": "Failed to update assignment count. Please try again.",
 		"updateSuccess": "Reviewer updated successfully",
-		"updateFailed": "Failed to update reviewer. Please try again."
+		"updateFailed": "Failed to update reviewer. Please try again.",
+		"notAReviewerCta": "I don't take PRs in this rotation",
+		"outOfReviewPoolBadge": "Out of rotation",
+		"inReviewPoolSwitchLabel": "In review rotation",
+		"outOfReviewPoolEditLabel": "Not in review pool",
+		"outOfReviewPoolEditHint": "Excluded from automatic PR assignment for this team. You can still use the app.",
+		"excludedFromPoolSuccess": "You are no longer in the review rotation for this team.",
+		"includedInPoolSuccess": "You are back in the review rotation for this team.",
+		"rotationColumn": "PR pool"
 	},
 	"messages": {
 		"tagAdded": "Tag added successfully",
@@ -621,7 +629,13 @@
 		"markedAbsentTitle": "Marked as Absent",
 		"markedAbsentDescription": "Status updated successfully",
 		"markedAvailableTitle": "Welcome Back!",
-		"markedAvailableDescription": "Your status has been updated to available"
+		"markedAvailableDescription": "Your status has been updated to available",
+		"indefiniteReminderTitle": "You're still marked absent, with no return date",
+		"indefiniteReminderDescription": "Without a return date, your team can't tell when you're back. Pick the option that matches your situation:",
+		"markAvailableCta": "I'm available again",
+		"markAvailableCtaTooltip": "Clears absence; you stay in the reviewer rotation.",
+		"notAReviewerCta": "I don't take PRs in this rotation",
+		"notAReviewerCtaTooltip": "Leaves automatic PR assignment; this banner stops showing."
 	},
 	"events": {
 		"createEvent": "Create Event",

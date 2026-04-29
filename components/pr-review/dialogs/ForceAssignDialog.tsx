@@ -262,16 +262,18 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 							<SelectValue placeholder={t("reviewer.selectReviewer")} />
 						</SelectTrigger>
 						<SelectContent>
-							{reviewers.map((reviewer) => (
-								<SelectItem key={reviewer._id} value={reviewer._id}>
-									<div className="flex items-center">
-										<span>{reviewer.name}</span>
-										{reviewer.effectiveIsAbsent && (
-											<AlertTriangle className="h-4 w-4 ml-2 text-amber-500" />
-										)}
-									</div>
-								</SelectItem>
-							))}
+							{reviewers
+								.filter((r) => r.excludedFromReviewPool !== true)
+								.map((reviewer) => (
+									<SelectItem key={reviewer._id} value={reviewer._id}>
+										<div className="flex items-center">
+											<span>{reviewer.name}</span>
+											{reviewer.effectiveIsAbsent && (
+												<AlertTriangle className="h-4 w-4 ml-2 text-amber-500" />
+											)}
+										</div>
+									</SelectItem>
+								))}
 						</SelectContent>
 					</Select>
 

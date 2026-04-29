@@ -166,9 +166,10 @@ export function usePRReviewData(user?: UserInfo | null) {
 			return;
 		}
 
-		// Find available reviewers (not absent) first
+		// Find available reviewers (not absent, in pool) first
 		const availableReviewers = reviewers.filter(
-			(reviewer) => !reviewer.effectiveIsAbsent,
+			(reviewer) =>
+				reviewer.excludedFromReviewPool !== true && !reviewer.effectiveIsAbsent,
 		);
 
 		if (availableReviewers.length > 0) {

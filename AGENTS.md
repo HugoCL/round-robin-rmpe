@@ -52,20 +52,20 @@
 * **Development Server:**
 
     ```bash
-    npm run dev
+    pnpm run dev
     # Runs Next.js with Turbopack
     ```
 
 * **Production Build:**
 
     ```bash
-    npm run build
+    pnpm run build
     ```
 
 * **Start Production Server:**
 
     ```bash
-    npm run start
+    pnpm run start
     ```
 
 ### Code Quality
@@ -73,21 +73,21 @@
 * **Linting & Formatting:**
 
     ```bash
-    npm run lint
+    pnpm run lint
     # Uses Biome to lint the project
     ```
 
 * **Fix Lint Issues:**
 
     ```bash
-    npm run biome:fix
+    pnpm run biome:fix
     # Automatically fixes safe linting errors
     ```
 
 ### Convex
 
-* **Run Convex Dev:** (Implicitly run typically, but standard command is `npx convex dev`)
-* **Deploy Convex:** `npx convex deploy`
+* **Run Convex Dev:** (Implicitly run typically, but standard command is `pnpm exec convex dev`)
+* **Deploy Convex:** `pnpm exec convex deploy`
 
 ## Conventions
 

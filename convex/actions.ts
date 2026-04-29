@@ -767,10 +767,12 @@ export const skipToNextReviewer = action({
 			teamSlug,
 		});
 
-		// Filter out absent reviewers and the current next reviewer
+		// Filter out absent / out-of-pool reviewers and the current next reviewer
 		const availableReviewers = reviewers.filter(
 			(reviewer) =>
-				!reviewer.effectiveIsAbsent && reviewer._id !== currentNextId,
+				reviewer.excludedFromReviewPool !== true &&
+				!reviewer.effectiveIsAbsent &&
+				reviewer._id !== currentNextId,
 		);
 
 		if (availableReviewers.length === 0) {

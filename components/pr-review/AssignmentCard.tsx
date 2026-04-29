@@ -12,6 +12,7 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
+import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import type { Reviewer } from "@/lib/types";
 import { AssignmentActionsRow } from "./assignment/AssignmentActionsRow";
 import { AssignmentControlsPanel } from "./assignment/AssignmentControlsPanel";
@@ -237,8 +238,8 @@ export function AssignmentCard() {
 		!!selectedTagId &&
 		typeof nextReviewerByTag === "undefined";
 	const availableReviewersForMode = useMemo(() => {
-		const available = reviewers.filter(
-			(reviewer) => !reviewer.effectiveIsAbsent,
+		const available = reviewers.filter((reviewer) =>
+			isEligibleForAssignment(reviewer),
 		);
 		if (mode !== "tag") return available;
 		if (!selectedTagId) return [];
@@ -483,8 +484,8 @@ export function AssignmentCard() {
 		const tagReviewers = reviewers.filter((reviewer) =>
 			reviewer.tags?.includes(tagId),
 		);
-		const availableReviewers = tagReviewers.filter(
-			(reviewer) => !reviewer.effectiveIsAbsent,
+		const availableReviewers = tagReviewers.filter((reviewer) =>
+			isEligibleForAssignment(reviewer),
 		);
 		return {
 			totalReviewers: tagReviewers.length,

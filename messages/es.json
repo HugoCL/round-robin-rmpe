@@ -278,7 +278,15 @@
 		"countUpdated": "El contador de asignaciones se ha actualizado exitosamente",
 		"countUpdateFailed": "Falló al actualizar el contador de asignaciones. Por favor intenta de nuevo.",
 		"updateSuccess": "Revisor actualizado exitosamente",
-		"updateFailed": "Falló al actualizar el revisor. Por favor intenta de nuevo."
+		"updateFailed": "Falló al actualizar el revisor. Por favor intenta de nuevo.",
+		"notAReviewerCta": "No participo en la rotación de PRs",
+		"outOfReviewPoolBadge": "Fuera de rotación",
+		"inReviewPoolSwitchLabel": "En rotación de revisores",
+		"outOfReviewPoolEditLabel": "Fuera del pool de revisores",
+		"outOfReviewPoolEditHint": "No recibes asignaciones automáticas de PR en este equipo. Sigues pudiendo usar la app.",
+		"excludedFromPoolSuccess": "Ya no estás en la rotación de revisores de este equipo.",
+		"includedInPoolSuccess": "Volviste a la rotación de revisores de este equipo.",
+		"rotationColumn": "Pool PR"
 	},
 	"messages": {
 		"tagAdded": "Tag agregado exitosamente",
@@ -668,7 +676,13 @@
 		"markedAbsentTitle": "Marcado como Ausente",
 		"markedAbsentDescription": "Estado actualizado correctamente",
 		"markedAvailableTitle": "¡Bienvenido de vuelta!",
-		"markedAvailableDescription": "Tu estado ha sido actualizado a disponible"
+		"markedAvailableDescription": "Tu estado ha sido actualizado a disponible",
+		"indefiniteReminderTitle": "Sigues marcado como ausente, sin fecha de regreso",
+		"indefiniteReminderDescription": "Sin fecha de regreso el equipo no sabe cuándo volverás. Elige la opción que coincida con tu situación:",
+		"markAvailableCta": "Volver a estar disponible",
+		"markAvailableCtaTooltip": "Quita el ausente; sigues en la rotación de revisores.",
+		"notAReviewerCta": "No participo en la rotación de PRs",
+		"notAReviewerCtaTooltip": "Sales de la asignación automática de PRs; dejamos de mostrarte este aviso."
 	},
 	"events": {
 		"createEvent": "Crear Evento",

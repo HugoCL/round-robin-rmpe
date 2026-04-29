@@ -14,6 +14,13 @@ import type {
 
 // ── Helpers ──
 
+function isAssignableReviewer(r: {
+	excludedFromReviewPool?: boolean;
+	effectiveIsAbsent: boolean;
+}): boolean {
+	return r.excludedFromReviewPool !== true && !r.effectiveIsAbsent;
+}
+
 const createSlotId = () =>
 	`slot-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -73,9 +80,9 @@ export function useAssignment(teamSlug: string | null) {
 	const sendChatAction = useAction(api.actions.sendGoogleChatMessage);
 	const sendChatGroupAction = useAction(api.actions.sendGoogleChatGroupMessage);
 
-	// Available (non-absent) reviewers
+	// Available (non-absent, in pool) reviewers
 	const availableReviewers = useMemo(
-		() => reviewers.filter((r: any) => !r.effectiveIsAbsent),
+		() => reviewers.filter((r: any) => isAssignableReviewer(r)),
 		[reviewers],
 	);
 
@@ -159,7 +166,7 @@ export function useAssignment(teamSlug: string | null) {
 						unresolved("Revisor no encontrado");
 						continue;
 					}
-					if (target.effectiveIsAbsent) {
+					if (!isAssignableReviewer(target)) {
 						unresolved("Revisor ausente");
 						continue;
 					}
@@ -207,7 +214,7 @@ export function useAssignment(teamSlug: string | null) {
 				}
 
 				const candidates = reviewers.filter((r: any) => {
-					if (r.effectiveIsAbsent) return false;
+					if (!isAssignableReviewer(r)) return false;
 					if (currentUserReviewerId && String(r._id) === currentUserReviewerId)
 						return false;
 					if (selectedIds.has(String(r._id))) return false;

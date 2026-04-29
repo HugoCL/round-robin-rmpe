@@ -58,12 +58,17 @@ export interface PRReviewContextValue {
 	onToggleAbsence: (id: Id<"reviewers">) => Promise<void>;
 	onMarkAbsent: (id: Id<"reviewers">, absentUntil?: number) => Promise<void>;
 	onMarkAvailable: (id: Id<"reviewers">) => Promise<void>;
+	onSetExcludedFromReviewPool: (
+		id: Id<"reviewers">,
+		excluded: boolean,
+	) => Promise<void>;
 	updateReviewer: (
 		id: Id<"reviewers">,
 		name: string,
 		email: string,
 		googleChatUserId?: string,
 		partTimeSchedule?: PartTimeSchedule,
+		excludedFromReviewPool?: boolean,
 	) => Promise<boolean>;
 	addReviewer: (
 		name: string,

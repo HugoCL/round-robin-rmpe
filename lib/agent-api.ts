@@ -9,6 +9,7 @@ import {
 	type AssignmentSlotInput,
 	resolveAssignmentSlots,
 } from "@/lib/assignmentResolver";
+import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 
 const slotSchema = z.object({
 	strategy: z.enum([
@@ -65,6 +66,7 @@ type AgentReviewerSummary = {
 	email: string;
 	assignmentCount: number;
 	effectiveIsAbsent: boolean;
+	excludedFromReviewPool?: boolean;
 	tags: string[];
 };
 
@@ -104,6 +106,7 @@ function summarizeReviewer(reviewer: {
 	email?: string;
 	assignmentCount?: number;
 	effectiveIsAbsent?: boolean;
+	excludedFromReviewPool?: boolean;
 	tags?: string[];
 }): AgentReviewerSummary {
 	return {
@@ -112,6 +115,8 @@ function summarizeReviewer(reviewer: {
 		email: reviewer.email ?? "",
 		assignmentCount: reviewer.assignmentCount ?? 0,
 		effectiveIsAbsent: reviewer.effectiveIsAbsent === true,
+		excludedFromReviewPool:
+			reviewer.excludedFromReviewPool === true ? true : undefined,
 		tags: (reviewer.tags ?? []).map((tagId) => String(tagId)),
 	};
 }
@@ -254,11 +259,12 @@ function selectNextReviewer<
 		assignmentCount: number;
 		createdAt: number;
 		effectiveIsAbsent: boolean;
+		excludedFromReviewPool?: boolean;
 		tags: string[];
 	},
 >(reviewers: T[], tagId?: string) {
 	const candidates = reviewers
-		.filter((reviewer) => !reviewer.effectiveIsAbsent)
+		.filter((reviewer) => isEligibleForAssignment(reviewer))
 		.filter((reviewer) => (tagId ? reviewer.tags.includes(tagId) : true))
 		.sort((a, b) => {
 			if (a.assignmentCount !== b.assignmentCount) {

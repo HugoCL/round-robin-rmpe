@@ -28,6 +28,8 @@ export type AssignmentResolverReviewer<ReviewerId = string, TagId = string> = {
 	assignmentCount: number;
 	createdAt: number;
 	effectiveIsAbsent: boolean;
+	/** When true, treated as unavailable for random/tag strategies (same as absent) */
+	excludedFromReviewPool?: boolean;
 	tags: TagId[];
 };
 
@@ -133,7 +135,10 @@ export function resolveAssignmentSlots<
 				failed.push({ slotIndex, reason: "reviewer_not_found" });
 				continue;
 			}
-			if (reviewer.effectiveIsAbsent) {
+			if (
+				reviewer.effectiveIsAbsent ||
+				reviewer.excludedFromReviewPool === true
+			) {
 				failed.push({ slotIndex, reason: "reviewer_absent" });
 				continue;
 			}
@@ -183,7 +188,12 @@ export function resolveAssignmentSlots<
 		}
 
 		const candidates = reviewers.filter((reviewer) => {
-			if (reviewer.effectiveIsAbsent) return false;
+			if (
+				reviewer.effectiveIsAbsent ||
+				reviewer.excludedFromReviewPool === true
+			) {
+				return false;
+			}
 			if (
 				excludedReviewerId !== undefined &&
 				toKey(reviewer._id) === toKey(excludedReviewerId)

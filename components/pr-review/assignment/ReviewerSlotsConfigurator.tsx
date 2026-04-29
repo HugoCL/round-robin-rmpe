@@ -13,6 +13,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import type { Reviewer } from "@/lib/types";
 
 export const MIN_BATCH_SLOTS = 1;
@@ -69,8 +70,8 @@ export function ReviewerSlotsConfigurator({
 	onSlotChange,
 }: Props) {
 	const t = useTranslations();
-	const availableReviewers = reviewers.filter(
-		(reviewer) => !reviewer.effectiveIsAbsent,
+	const availableReviewers = reviewers.filter((reviewer) =>
+		isEligibleForAssignment(reviewer),
 	);
 	const containerClass = embedded
 		? "space-y-3"

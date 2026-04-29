@@ -17,6 +17,7 @@ import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
 import { useAssignmentNotificationAudio } from "./hooks/useAssignmentNotificationAudio";
 import { useShortcutDialogFlow } from "./hooks/useShortcutDialogFlow";
+import { IndefiniteAbsenceReminderBanner } from "./IndefiniteAbsenceReminderBanner";
 import { CompactLayout } from "./layouts/CompactLayout";
 import { PRReviewProvider } from "./PRReviewContext";
 import { PRReviewGuard } from "./PRReviewGuard";
@@ -88,6 +89,7 @@ export default function PRReviewAssignment({
 		handleToggleAbsence,
 		handleMarkAbsent,
 		handleMarkAvailable,
+		handleSetExcludedFromReviewPool,
 		handleResetCounts,
 		exportData,
 		importData,
@@ -271,6 +273,7 @@ export default function PRReviewAssignment({
 			onToggleAbsence: handleToggleAbsence,
 			onMarkAbsent: handleMarkAbsent,
 			onMarkAvailable: handleMarkAvailable,
+			onSetExcludedFromReviewPool: handleSetExcludedFromReviewPool,
 			updateReviewer,
 			addReviewer,
 			removeReviewer,
@@ -309,6 +312,7 @@ export default function PRReviewAssignment({
 			handleToggleAbsence,
 			handleMarkAbsent,
 			handleMarkAvailable,
+			handleSetExcludedFromReviewPool,
 			updateReviewer,
 			addReviewer,
 			removeReviewer,
@@ -338,6 +342,7 @@ export default function PRReviewAssignment({
 							setReviewersDrawerOpen={setReviewersDrawerOpen}
 						/>
 						<AnnouncementBanner />
+						<IndefiniteAbsenceReminderBanner />
 					</div>
 					<CompactLayout />
 

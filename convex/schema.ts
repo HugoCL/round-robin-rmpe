@@ -52,6 +52,8 @@ export default defineSchema({
 		assignmentCount: v.number(),
 		isAbsent: v.boolean(),
 		absentUntil: v.optional(v.number()), // Timestamp when the reviewer is expected to return
+		/** When true, never picked by round-robin / batch assignment for this team */
+		excludedFromReviewPool: v.optional(v.boolean()),
 		partTimeSchedule: v.optional(
 			v.object({
 				workingDays: v.array(
@@ -173,6 +175,7 @@ export default defineSchema({
 				googleChatUserId: v.optional(v.string()),
 				assignmentCount: v.number(),
 				isAbsent: v.boolean(),
+				excludedFromReviewPool: v.optional(v.boolean()),
 				partTimeSchedule: v.optional(
 					v.object({
 						workingDays: v.array(
