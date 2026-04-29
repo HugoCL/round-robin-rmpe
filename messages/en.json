@@ -235,6 +235,7 @@
 		"notAReviewerCta": "I don't take PRs in this rotation",
 		"outOfReviewPoolBadge": "Out of rotation",
 		"inReviewPoolSwitchLabel": "In review rotation",
+		"inReviewPoolSwitchLabelShort": "In rotation",
 		"outOfReviewPoolEditLabel": "Not in review pool",
 		"outOfReviewPoolEditHint": "Excluded from automatic PR assignment for this team. You can still use the app.",
 		"excludedFromPoolSuccess": "You are no longer in the review rotation for this team.",

@@ -375,7 +375,7 @@ export function PageHeader({
 													<span>{t("pr.manageReviewers")}</span>
 												</Button>
 											</DialogTrigger>
-											<DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-4xl">
+											<DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-5xl">
 												<div className="px-6 pt-4">
 													<DialogHeader>
 														<DialogTitle>{t("pr.reviewers")}</DialogTitle>

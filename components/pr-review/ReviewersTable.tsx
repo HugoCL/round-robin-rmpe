@@ -241,17 +241,29 @@ export function ReviewersTable({
 			<Table className="text-sm lg:text-base">
 				<TableHeader>
 					<TableRow>
-						<TableHead>{t("pr.nameHeader")}</TableHead>
-						{showEmails && <TableHead>{t("common.email")}</TableHead>}
-						{showTags && <TableHead>{t("pr.tagsHeader")}</TableHead>}
-						{showAssignments && (
-							<TableHead>{t("pr.assignmentsHeader")}</TableHead>
+						<TableHead className="min-w-0">{t("pr.nameHeader")}</TableHead>
+						{showEmails && (
+							<TableHead className="min-w-0 max-w-[14rem]">
+								{t("common.email")}
+							</TableHead>
 						)}
-						<TableHead>{t("pr.statusHeader")}</TableHead>
-						<TableHead className="min-w-[7.5rem] whitespace-normal text-xs font-medium leading-tight">
+						{showTags && (
+							<TableHead className="min-w-0 max-w-[10rem]">
+								{t("pr.tagsHeader")}
+							</TableHead>
+						)}
+						{showAssignments && (
+							<TableHead className="w-[1%] whitespace-nowrap">
+								{t("pr.assignmentsHeader")}
+							</TableHead>
+						)}
+						<TableHead className="min-w-0 whitespace-normal">
+							{t("pr.statusHeader")}
+						</TableHead>
+						<TableHead className="w-[1%] min-w-[5.5rem] max-w-[6.5rem] whitespace-normal text-center text-xs font-medium leading-tight">
 							{t("reviewer.rotationColumn")}
 						</TableHead>
-						<TableHead className="w-16"></TableHead>
+						<TableHead className="w-10 p-2" />
 					</TableRow>
 				</TableHeader>
 				<TableBody>
@@ -301,7 +313,7 @@ export function ReviewersTable({
 								</div>
 							</TableCell>
 							{showEmails && (
-								<TableCell className="text-sm text-muted-foreground lg:text-base">
+								<TableCell className="max-w-[14rem] truncate text-sm text-muted-foreground lg:text-base">
 									{reviewer.email}
 								</TableCell>
 							)}
@@ -361,8 +373,8 @@ export function ReviewersTable({
 									)}
 								</TableCell>
 							)}
-							<TableCell className="min-w-[17rem]">
-								<div className="flex items-center gap-3 whitespace-nowrap">
+							<TableCell className="min-w-0 max-w-[18rem] whitespace-normal">
+								<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
 									<div className="flex shrink-0 items-center border-r border-border/60 pr-3">
 										<Switch
 											id={`absence-${reviewer._id}`}
@@ -386,7 +398,7 @@ export function ReviewersTable({
 											{t("partTime.manualControl")}
 										</Label>
 									</div>
-									<div className="flex min-w-0 items-center gap-2">
+									<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
 										<Badge
 											variant={
 												reviewer.effectiveIsAbsent ? "secondary" : "default"
@@ -398,15 +410,15 @@ export function ReviewersTable({
 												: t("pr.available")}
 										</Badge>
 										{getStatusDetail(reviewer) && (
-											<span className="truncate text-xs text-muted-foreground">
+											<span className="min-w-0 text-balance text-xs text-muted-foreground">
 												{getStatusDetail(reviewer)}
 											</span>
 										)}
 									</div>
 								</div>
 							</TableCell>
-							<TableCell>
-								<div className="flex flex-col gap-1.5 py-0.5">
+							<TableCell className="w-[1%] min-w-[5.5rem] max-w-[6.5rem] whitespace-normal align-top">
+								<div className="flex flex-col items-center gap-1.5 py-0.5 text-center">
 									<Switch
 										id={`pool-${reviewer._id}`}
 										checked={reviewer.excludedFromReviewPool !== true}
@@ -421,13 +433,13 @@ export function ReviewersTable({
 									/>
 									<Label
 										htmlFor={`pool-${reviewer._id}`}
-										className="text-xs font-normal text-muted-foreground"
+										className="block text-pretty text-[11px] font-normal leading-snug text-muted-foreground"
 									>
-										{t("reviewer.inReviewPoolSwitchLabel")}
+										{t("reviewer.inReviewPoolSwitchLabelShort")}
 									</Label>
 								</div>
 							</TableCell>
-							<TableCell>
+							<TableCell className="w-10 p-2">
 								<EditReviewerDialog
 									reviewer={reviewer}
 									onUpdateReviewer={async (
@@ -463,23 +475,22 @@ export function ReviewersTable({
 						</TableRow>
 					))}
 				</TableBody>
-
-				{/* Mark Absent Dialog */}
-				{selectedReviewer && (
-					<MarkAbsentDialog
-						isOpen={absentDialogOpen}
-						onOpenChange={(open) => {
-							setAbsentDialogOpen(open);
-							if (!open) setSelectedReviewer(null);
-						}}
-						reviewer={selectedReviewer}
-						currentUser={userInfo}
-						onMarkAbsent={async (absentUntil) => {
-							await onMarkAbsent(selectedReviewer._id, absentUntil);
-						}}
-					/>
-				)}
 			</Table>
+
+			{selectedReviewer && (
+				<MarkAbsentDialog
+					isOpen={absentDialogOpen}
+					onOpenChange={(open) => {
+						setAbsentDialogOpen(open);
+						if (!open) setSelectedReviewer(null);
+					}}
+					reviewer={selectedReviewer}
+					currentUser={userInfo}
+					onMarkAbsent={async (absentUntil) => {
+						await onMarkAbsent(selectedReviewer._id, absentUntil);
+					}}
+				/>
+			)}
 		</div>
 	);
 }

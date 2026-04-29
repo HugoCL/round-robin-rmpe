@@ -282,6 +282,7 @@
 		"notAReviewerCta": "No participo en la rotación de PRs",
 		"outOfReviewPoolBadge": "Fuera de rotación",
 		"inReviewPoolSwitchLabel": "En rotación de revisores",
+		"inReviewPoolSwitchLabelShort": "En rotación",
 		"outOfReviewPoolEditLabel": "Fuera del pool de revisores",
 		"outOfReviewPoolEditHint": "No recibes asignaciones automáticas de PR en este equipo. Sigues pudiendo usar la app.",
 		"excludedFromPoolSuccess": "Ya no estás en la rotación de revisores de este equipo.",
