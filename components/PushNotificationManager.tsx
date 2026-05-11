@@ -46,7 +46,6 @@ export function PushNotificationManager({
 	};
 
 	const isEnabled = status === "subscribed";
-	const canEnable = status === "prompt" || status === "unsubscribed";
 	const isDenied = status === "denied";
 
 	if (iconOnly) {

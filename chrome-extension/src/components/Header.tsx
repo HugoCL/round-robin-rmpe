@@ -2,7 +2,7 @@ import { UserButton, useUser } from "@clerk/chrome-extension";
 import { Button } from "@/ui/button";
 
 export function Header() {
-	const { user, isSignedIn } = useUser();
+	const { isSignedIn } = useUser();
 
 	return (
 		<header className="flex items-center justify-between px-4 py-3 border-b border-border">

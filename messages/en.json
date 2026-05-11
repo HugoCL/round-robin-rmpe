@@ -638,6 +638,24 @@
 		"notAReviewerCta": "I don't take PRs in this rotation",
 		"notAReviewerCtaTooltip": "Leaves automatic PR assignment; this banner stops showing."
 	},
+	"birthday": {
+		"setupTitle": "When is your birthday?",
+		"setupDescription": "Just the day and month — that way we can surprise you in the app and give the team a heads-up to send you good vibes that day.",
+		"monthLabel": "Month",
+		"dayLabel": "Day",
+		"placeholderMonth": "Month",
+		"placeholderDay": "Day",
+		"save": "Save",
+		"saving": "Saving…",
+		"saveSuccessDescription": "All set. Something nice will be waiting for you here that day, and the team can celebrate with you.",
+		"saveFailedDescription": "Couldn’t save that. Double-check the day exists in that month and try again.",
+		"teamNoticeTitle": "Time to celebrate",
+		"teamNoticeDescription": "Let’s celebrate {names} today — a quick note or a virtual coffee goes a long way ;)",
+		"and": "and",
+		"celebrationTitle": "Happy birthday, {name}!",
+		"celebrationSubtitle": "¡Hope you have an amazing day! Big hug from your team :)",
+		"dismissCelebrate": "Thanks, continue"
+	},
 	"events": {
 		"createEvent": "Create Event",
 		"createDescription": "Schedule a new event and invite your team to participate.",

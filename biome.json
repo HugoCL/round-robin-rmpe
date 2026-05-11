@@ -36,6 +36,15 @@
 			"formatter": {
 				"enabled": false
 			}
+		},
+		{
+			"includes": ["chrome-extension/**"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			}
 		}
 	],
 	"css": {

@@ -1,18 +1,17 @@
 // Builds and packages the extension into a .zip ready for distribution.
 // Usage: node scripts/pack.mjs
 
-import { execSync } from "child_process";
+import { execSync } from "node:child_process";
 import {
-  createWriteStream,
   readdirSync,
   readFileSync,
   statSync,
   existsSync,
   mkdirSync,
-} from "fs";
-import { join, relative, dirname } from "path";
-import { fileURLToPath } from "url";
-import { createDeflateRaw } from "zlib";
+} from "node:fs";
+import { dirname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
+import { deflateRawSync } from "node:zlib";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
@@ -62,13 +61,7 @@ function crc32(buf) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-function deflateSync(buf) {
-  const { deflateRawSync } = await_import();
-  return deflateRawSync(buf);
-}
-
 // Use synchronous zlib
-import { deflateRawSync } from "zlib";
 
 function dosDateTime(date) {
   const time =
@@ -164,7 +157,7 @@ eocd.writeUInt16LE(0, 20); // comment length
 
 const zipBuffer = Buffer.concat([...parts, ...centralDir, eocd]);
 
-const { writeFileSync } = await import("fs");
+const { writeFileSync } = await import("node:fs");
 writeFileSync(zipPath, zipBuffer);
 
 const sizeMB = (zipBuffer.length / 1024 / 1024).toFixed(2);

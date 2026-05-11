@@ -70,6 +70,11 @@ export interface PRReviewContextValue {
 		partTimeSchedule?: PartTimeSchedule,
 		excludedFromReviewPool?: boolean,
 	) => Promise<boolean>;
+	setReviewerBirthday: (
+		reviewerId: Id<"reviewers">,
+		month: number,
+		day: number,
+	) => Promise<boolean>;
 	addReviewer: (
 		name: string,
 		email: string,

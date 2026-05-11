@@ -1,5 +1,4 @@
 import { Button } from "@/ui/button";
-import { Card, CardContent } from "@/ui/card";
 
 export function SignInView() {
 	const handleSignIn = () => {

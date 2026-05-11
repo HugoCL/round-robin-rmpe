@@ -17,6 +17,9 @@ export interface Reviewer {
 	/** When true, never picked by round-robin for this team */
 	excludedFromReviewPool?: boolean;
 	partTimeSchedule?: PartTimeSchedule;
+	birthdayMonth?: number;
+	birthdayDay?: number;
+	lastBirthdayNotifiedLocalDateKey?: string;
 	createdAt: number;
 	tags: Id<"tags">[];
 	manualIsAbsent: boolean;

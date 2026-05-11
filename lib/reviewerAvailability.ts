@@ -129,3 +129,85 @@ export function getReviewerAvailability(
 		absenceReason,
 	};
 }
+
+/** Calendar month (1–12) and day (1–31) in IANA `timeZone` at `nowMs`. */
+export function getMonthDayInTimeZone(
+	nowMs: number,
+	timeZone: string,
+): { month: number; day: number } {
+	const d = new Date(nowMs);
+	const parts = new Intl.DateTimeFormat("en-US", {
+		timeZone,
+		month: "numeric",
+		day: "numeric",
+	}).formatToParts(d);
+	const month = Number(parts.find((p) => p.type === "month")?.value);
+	const day = Number(parts.find((p) => p.type === "day")?.value);
+	if (!Number.isFinite(month) || !Number.isFinite(day)) {
+		throw new Error(`Unable to resolve month/day in ${timeZone}`);
+	}
+	return { month, day };
+}
+
+/** Local calendar date as `YYYY-MM-DD` in IANA `timeZone` at `nowMs`. */
+export function getLocalDateKeyYYYYMMDD(
+	nowMs: number,
+	timeZone: string,
+): string {
+	const d = new Date(nowMs);
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).formatToParts(d);
+	const y = parts.find((p) => p.type === "year")?.value;
+	const m = parts.find((p) => p.type === "month")?.value;
+	const day = parts.find((p) => p.type === "day")?.value;
+	if (!y || !m || !day) {
+		throw new Error(`Unable to resolve local date in ${timeZone}`);
+	}
+	return `${y}-${m}-${day}`;
+}
+
+/** Local hour (0–23) in IANA `timeZone` at `nowMs`. */
+export function getLocalHourInTimeZone(
+	nowMs: number,
+	timeZone: string,
+): number {
+	const d = new Date(nowMs);
+	const parts = new Intl.DateTimeFormat("en-GB", {
+		timeZone,
+		hour: "2-digit",
+		hour12: false,
+	}).formatToParts(d);
+	const h = parts.find((p) => p.type === "hour")?.value;
+	return h ? Number.parseInt(h, 10) : 0;
+}
+
+/** Whether `month`/`day` is a real calendar date (uses 2024 so Feb 29 is valid). */
+export function isValidCalendarBirthday(month: number, day: number): boolean {
+	if (!Number.isInteger(month) || !Number.isInteger(day)) return false;
+	if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+	const d = new Date(2024, month - 1, day);
+	return (
+		d.getFullYear() === 2024 &&
+		d.getMonth() === month - 1 &&
+		d.getDate() === day
+	);
+}
+
+export function reviewerHasBirthdayToday(
+	reviewer: { birthdayMonth?: number; birthdayDay?: number },
+	teamTimeZone: string,
+	nowMs: number = Date.now(),
+): boolean {
+	if (
+		reviewer.birthdayMonth === undefined ||
+		reviewer.birthdayDay === undefined
+	) {
+		return false;
+	}
+	const { month, day } = getMonthDayInTimeZone(nowMs, teamTimeZone);
+	return reviewer.birthdayMonth === month && reviewer.birthdayDay === day;
+}

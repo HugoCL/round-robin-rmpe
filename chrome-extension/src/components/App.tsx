@@ -64,7 +64,7 @@ function MainView({ userEmail }: { userEmail: string }) {
 		userEmail ? { email: userEmail } : "skip",
 	);
 	const userTeamSlugs = useMemo(
-		() => (userTeams ?? []).map((t: any) => t.slug),
+		() => (userTeams ?? []).map((t) => t.slug),
 		[userTeams],
 	);
 
@@ -119,7 +119,7 @@ function MainView({ userEmail }: { userEmail: string }) {
 	const maxReviewerCount = Math.max(
 		2,
 		availableReviewers.filter(
-			(r: any) =>
+			(r) =>
 				!currentUserReviewer ||
 				String(r._id) !== String(currentUserReviewer._id),
 		).length,
@@ -184,7 +184,7 @@ function MainView({ userEmail }: { userEmail: string }) {
 	const handleAssign = useCallback(
 		(reviewerId?: string, forced = false) => {
 			const targetReviewer = reviewerId
-				? reviewers.find((r: any) => r._id === reviewerId)
+				? reviewers.find((r) => r._id === reviewerId)
 				: displayedReviewer;
 
 			if (!targetReviewer || !prData?.url) return;
@@ -198,10 +198,10 @@ function MainView({ userEmail }: { userEmail: string }) {
 				sendChat,
 				reviewerName: targetReviewer.name,
 				reviewerEmail: targetReviewer.email,
-				reviewerChatId: (targetReviewer as any).googleChatUserId,
+				reviewerChatId: targetReviewer.googleChatUserId,
 				assignerName: currentUserReviewer?.name,
 				assignerEmail: currentUserReviewer?.email,
-				assignerChatId: (currentUserReviewer as any)?.googleChatUserId,
+				assignerChatId: currentUserReviewer?.googleChatUserId,
 			});
 		},
 		[
@@ -227,7 +227,7 @@ function MainView({ userEmail }: { userEmail: string }) {
 			sendChat,
 			assignerName: currentUserReviewer?.name,
 			assignerEmail: currentUserReviewer?.email,
-			assignerChatId: (currentUserReviewer as any)?.googleChatUserId,
+			assignerChatId: currentUserReviewer?.googleChatUserId,
 		});
 	}, [
 		prData,

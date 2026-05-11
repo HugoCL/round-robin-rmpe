@@ -3,6 +3,7 @@ import { resolveAssignmentSlots } from "../lib/assignmentResolver";
 import {
 	DEFAULT_TEAM_TIMEZONE,
 	getReviewerAvailability,
+	isValidCalendarBirthday,
 	isValidTimezone,
 	normalizePartTimeSchedule,
 	resolveTeamTimezone,
@@ -695,6 +696,47 @@ export const updateReviewer = mutation({
 		);
 
 		return id;
+	},
+});
+
+export const setReviewerBirthday = mutation({
+	args: {
+		reviewerId: v.id("reviewers"),
+		month: v.number(),
+		day: v.number(),
+	},
+	handler: async (ctx, { reviewerId, month, day }) => {
+		const reviewer = await ctx.db.get(reviewerId);
+		if (!reviewer) {
+			throw new Error("Reviewer not found");
+		}
+		if (!reviewer.teamId) {
+			throw new Error("Reviewer is missing team assignment");
+		}
+		const { isAdmin, normalizedEmail } = await assertCanMutateTeamById(
+			ctx,
+			reviewer.teamId,
+		);
+		const reviewerEmail = normalizeEmail(reviewer.email);
+		if (!isAdmin && (!normalizedEmail || normalizedEmail !== reviewerEmail)) {
+			throw new Error("Unauthorized");
+		}
+		if (!isValidCalendarBirthday(month, day)) {
+			throw new Error("Invalid birthday date");
+		}
+		const changed =
+			reviewer.birthdayMonth !== month || reviewer.birthdayDay !== day;
+		await ctx.db.patch(reviewerId, {
+			birthdayMonth: month,
+			birthdayDay: day,
+			...(changed ? { lastBirthdayNotifiedLocalDateKey: undefined } : {}),
+		});
+		await createSnapshot(
+			ctx,
+			reviewer.teamId,
+			`Set birthday for ${reviewer.name} (${reviewer.email}): ${month}/${day}`,
+		);
+		return { success: true as const };
 	},
 });
 
@@ -2128,6 +2170,9 @@ export const importReviewersData = mutation({
 				tags: v.optional(v.array(v.string())),
 				googleChatUserId: v.optional(v.string()),
 				partTimeSchedule: partTimeScheduleValidator,
+				birthdayMonth: v.optional(v.number()),
+				birthdayDay: v.optional(v.number()),
+				lastBirthdayNotifiedLocalDateKey: v.optional(v.string()),
 			}),
 		),
 	},
@@ -2144,6 +2189,17 @@ export const importReviewersData = mutation({
 
 		// Insert new reviewers
 		for (const reviewerData of reviewersData) {
+			const bm = reviewerData.birthdayMonth;
+			const bd = reviewerData.birthdayDay;
+			const birthdayPatch =
+				bm !== undefined && bd !== undefined && isValidCalendarBirthday(bm, bd)
+					? {
+							birthdayMonth: bm,
+							birthdayDay: bd,
+							lastBirthdayNotifiedLocalDateKey:
+								reviewerData.lastBirthdayNotifiedLocalDateKey,
+						}
+					: {};
 			await ctx.db.insert("reviewers", {
 				teamId: team._id,
 				name: reviewerData.name,
@@ -2157,6 +2213,7 @@ export const importReviewersData = mutation({
 				),
 				createdAt: reviewerData.createdAt || Date.now(),
 				tags: [], // We'll handle tag migration separately
+				...birthdayPatch,
 			});
 		}
 
@@ -2339,6 +2396,9 @@ async function createSnapshot(
 		isAbsent: reviewer.isAbsent,
 		excludedFromReviewPool: reviewer.excludedFromReviewPool,
 		partTimeSchedule: normalizePartTimeSchedule(reviewer.partTimeSchedule),
+		birthdayMonth: reviewer.birthdayMonth,
+		birthdayDay: reviewer.birthdayDay,
+		lastBirthdayNotifiedLocalDateKey: reviewer.lastBirthdayNotifiedLocalDateKey,
 		createdAt: reviewer.createdAt,
 		tags: reviewer.tags,
 	}));
@@ -2514,6 +2574,10 @@ export const restoreFromBackup = mutation({
 					partTimeSchedule: normalizePartTimeSchedule(
 						reviewerData.partTimeSchedule,
 					),
+					birthdayMonth: reviewerData.birthdayMonth,
+					birthdayDay: reviewerData.birthdayDay,
+					lastBirthdayNotifiedLocalDateKey:
+						reviewerData.lastBirthdayNotifiedLocalDateKey,
 					createdAt: reviewerData.createdAt,
 					tags: reviewerData.tags,
 				});

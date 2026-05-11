@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import createMiddleware from "next-intl/middleware";
+import { NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
 
 // Create the internationalization middleware
@@ -36,6 +37,8 @@ export default clerkMiddleware(async (auth, req) => {
 	) {
 		return intlMiddleware(req);
 	}
+
+	return NextResponse.next();
 });
 
 export const config = {
@@ -51,3 +54,6 @@ export const config = {
 		"/api/:path*",
 	],
 };
+
+// Next.js 16: named export `middleware` is deprecated.
+// Rename it to `proxy` only if/when we stop using Clerk's `clerkMiddleware` wrapper.

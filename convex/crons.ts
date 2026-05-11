@@ -1,5 +1,5 @@
 import { cronJobs } from "convex/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 const crons = cronJobs();
 
@@ -29,6 +29,13 @@ crons.daily(
 	"cleanup-old-records",
 	{ hourUTC: 0, minuteUTC: 0 },
 	api.mutations.cleanupOldRecords,
+);
+
+// Birthday notifications (Google Chat + push), once local hour reached per team TZ
+crons.interval(
+	"process-birthday-notifications",
+	{ minutes: 45 },
+	internal.birthdays.processBirthdayNotifications,
 );
 
 export default crons;

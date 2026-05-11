@@ -25,7 +25,7 @@
   * `schema.ts` defines the data model (Teams, Reviewers, Assignments, Events).
   * Server-side logic resides in queries, mutations, and actions within the `convex/` folder.
 * **Authentication:**
-  * `middleware.ts` combines Clerk authentication with `next-intl` routing middleware.
+  * `proxy.ts` combines Clerk authentication with `next-intl` routing middleware.
   * Most routes are protected, with exceptions for public pages (landing, sign-in/up).
 
 ## Directory Structure
@@ -104,3 +104,14 @@
 Before any Next.js work, find and read the relevant doc in `node_modules/next/dist/docs/`. Your training data is outdated — the docs are the source of truth.
 
 <!-- END:nextjs-agent-rules -->
+
+## Learned User Preferences
+
+- Do not add `Made-with: Cursor` or similar commit-message trailers when creating commits for this user.
+- Use pnpm for installs and package scripts in this repository, not npm.
+- When the user writes in Spanish, reply in Latin American / neutral Spanish (not Spain-centric) unless they switch to English.
+- Prefers warm, personal product microcopy over generic phrasing when tuning user-facing messages.
+
+## Learned Workspace Facts
+
+- The repository includes a `chrome-extension/` package alongside the Next.js web app.

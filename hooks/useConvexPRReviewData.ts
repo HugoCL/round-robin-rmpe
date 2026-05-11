@@ -19,6 +19,7 @@ export function useConvexPRReviewData(
 	teamSlug?: string,
 ) {
 	const t = useTranslations();
+	const tBirthday = useTranslations("birthday");
 
 	// Queries - these are automatically reactive and cached
 	const reviewers =
@@ -37,6 +38,9 @@ export function useConvexPRReviewData(
 	// Mutations
 	const addReviewerMutation = useMutation(api.mutations.addReviewer);
 	const updateReviewerMutation = useMutation(api.mutations.updateReviewer);
+	const setReviewerBirthdayMutation = useMutation(
+		api.mutations.setReviewerBirthday,
+	);
 	const removeReviewerMutation = useMutation(api.mutations.removeReviewer);
 	const assignPRMutation = useMutation(api.mutations.assignPR);
 	const undoLastAssignmentMutation = useMutation(
@@ -376,6 +380,35 @@ export function useConvexPRReviewData(
 		}
 	};
 
+	const setReviewerBirthday = async (
+		reviewerId: string,
+		month: number,
+		day: number,
+	): Promise<boolean> => {
+		try {
+			await setReviewerBirthdayMutation({
+				reviewerId: reviewerId as Id<"reviewers">,
+				month,
+				day,
+			});
+			toast({
+				title: t("common.success"),
+				description: tBirthday("saveSuccessDescription"),
+			});
+			return true;
+		} catch (error) {
+			toast({
+				title: t("common.error"),
+				description:
+					error instanceof Error
+						? error.message
+						: tBirthday("saveFailedDescription"),
+				variant: "destructive",
+			});
+			return false;
+		}
+	};
+
 	const removeReviewer = async (id: string) => {
 		try {
 			await removeReviewerMutation({ id: id as Id<"reviewers"> });
@@ -494,6 +527,9 @@ export function useConvexPRReviewData(
 			tags: string[];
 			googleChatUserId?: string;
 			partTimeSchedule?: PartTimeSchedule;
+			birthdayMonth?: number;
+			birthdayDay?: number;
+			lastBirthdayNotifiedLocalDateKey?: string;
 		}
 		const exportable: ExportReviewerShape[] = reviewers.map((r) => ({
 			name: r.name,
@@ -508,6 +544,18 @@ export function useConvexPRReviewData(
 			googleChatUserId: (r as unknown as { googleChatUserId?: string })
 				.googleChatUserId,
 			partTimeSchedule: r.partTimeSchedule,
+			...(r.birthdayMonth !== undefined && r.birthdayDay !== undefined
+				? {
+						birthdayMonth: r.birthdayMonth,
+						birthdayDay: r.birthdayDay,
+						...(r.lastBirthdayNotifiedLocalDateKey
+							? {
+									lastBirthdayNotifiedLocalDateKey:
+										r.lastBirthdayNotifiedLocalDateKey,
+								}
+							: {}),
+					}
+				: {}),
 		}));
 		const dataStr = JSON.stringify(exportable, null, 2);
 		const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
@@ -548,6 +596,9 @@ export function useConvexPRReviewData(
 					"tags",
 					"googleChatUserId",
 					"partTimeSchedule",
+					"birthdayMonth",
+					"birthdayDay",
+					"lastBirthdayNotifiedLocalDateKey",
 				]);
 
 				interface ImportReviewerDraft {
@@ -560,6 +611,9 @@ export function useConvexPRReviewData(
 					tags?: string[];
 					googleChatUserId?: string;
 					partTimeSchedule?: PartTimeSchedule;
+					birthdayMonth?: number;
+					birthdayDay?: number;
+					lastBirthdayNotifiedLocalDateKey?: string;
 				}
 				const sanitized: ImportReviewerDraft[] = [];
 				let skipped = 0;
@@ -602,6 +656,24 @@ export function useConvexPRReviewData(
 							!Array.isArray(obj.partTimeSchedule.workingDays))
 					) {
 						delete obj.partTimeSchedule;
+					}
+					if (
+						obj.birthdayMonth !== undefined &&
+						typeof obj.birthdayMonth !== "number"
+					) {
+						delete obj.birthdayMonth;
+					}
+					if (
+						obj.birthdayDay !== undefined &&
+						typeof obj.birthdayDay !== "number"
+					) {
+						delete obj.birthdayDay;
+					}
+					if (
+						obj.lastBirthdayNotifiedLocalDateKey !== undefined &&
+						typeof obj.lastBirthdayNotifiedLocalDateKey !== "string"
+					) {
+						delete obj.lastBirthdayNotifiedLocalDateKey;
 					}
 					// Final cast for mutation
 					sanitized.push(obj as ImportReviewerDraft);
@@ -710,6 +782,7 @@ export function useConvexPRReviewData(
 		undoAssignment,
 		addReviewer,
 		updateReviewer,
+		setReviewerBirthday,
 		removeReviewer,
 		handleToggleAbsence,
 		handleMarkAbsent,

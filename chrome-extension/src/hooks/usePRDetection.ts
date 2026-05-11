@@ -68,7 +68,7 @@ export function usePRDetection() {
 					prNumber: prMatch[2],
 				});
 			}
-		} catch (err) {
+		} catch {
 			setError("Could not detect PR data");
 			setPrData(null);
 		} finally {

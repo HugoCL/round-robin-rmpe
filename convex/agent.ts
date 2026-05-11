@@ -14,6 +14,8 @@ import {
 	query,
 } from "./_generated/server";
 
+import { getMemberTeamIdsForEmail, normalizeEmail } from "./authz";
+
 function selectLatestUserPreference(
 	rows: Doc<"userPreferences">[],
 ): Doc<"userPreferences"> | null {
@@ -22,21 +24,10 @@ function selectLatestUserPreference(
 }
 
 async function getAccessibleTeamsByEmail(ctx: QueryCtx, email?: string | null) {
-	const normalizedEmail = email?.toLowerCase().trim();
+	const normalizedEmail = normalizeEmail(email);
 	if (!normalizedEmail) return [];
 
-	const reviewers = await ctx.db.query("reviewers").collect();
-	const teamIds = [
-		...new Set(
-			reviewers
-				.filter(
-					(reviewer) =>
-						reviewer.teamId && reviewer.email.toLowerCase() === normalizedEmail,
-				)
-				.map((reviewer) => reviewer.teamId)
-				.filter(Boolean),
-		),
-	];
+	const teamIds = await getMemberTeamIdsForEmail(ctx, normalizedEmail);
 
 	const teams = await Promise.all(
 		teamIds.map((teamId) => (teamId ? ctx.db.get(teamId) : null)),

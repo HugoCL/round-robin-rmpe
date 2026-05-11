@@ -47,13 +47,14 @@ async function isMemberOfTeamByEmail(
 	teamId: Id<"teams">,
 	normalizedEmail: string,
 ): Promise<boolean> {
-	const teamReviewers = await ctx.db
+	// Avoid scanning the whole team: use the compound index.
+	const match = await ctx.db
 		.query("reviewers")
-		.withIndex("by_team", (q) => q.eq("teamId", teamId))
-		.collect();
-	return teamReviewers.some(
-		(reviewer) => normalizeEmail(reviewer.email) === normalizedEmail,
-	);
+		.withIndex("by_team_email", (q) =>
+			q.eq("teamId", teamId).eq("email", normalizedEmail),
+		)
+		.first();
+	return match !== null;
 }
 
 export async function assertCanMutateTeamById(
@@ -90,12 +91,15 @@ export async function getMemberTeamIdsForEmail(
 	ctx: AuthCtx,
 	normalizedEmail: string,
 ): Promise<Id<"teams">[]> {
-	const reviewers = await ctx.db.query("reviewers").collect();
-	const ids = reviewers
-		.filter((reviewer) => normalizeEmail(reviewer.email) === normalizedEmail)
+	// Avoid full table scan: reviewers has an index on email.
+	const reviewers = await ctx.db
+		.query("reviewers")
+		.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+		.collect();
+	const teamIds = reviewers
 		.map((reviewer) => reviewer.teamId)
 		.filter((teamId): teamId is Id<"teams"> => teamId !== undefined);
-	return [...new Set(ids)];
+	return [...new Set(teamIds)];
 }
 
 export async function getMemberTeamsForEmail(

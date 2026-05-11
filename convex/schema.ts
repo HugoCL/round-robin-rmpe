@@ -69,6 +69,12 @@ export default defineSchema({
 				),
 			}),
 		),
+		/** 1–12, optional with birthdayDay */
+		birthdayMonth: v.optional(v.number()),
+		/** 1–31, optional with birthdayMonth */
+		birthdayDay: v.optional(v.number()),
+		/** YYYY-MM-DD in team local date when birthday notifications were last sent */
+		lastBirthdayNotifiedLocalDateKey: v.optional(v.string()),
 		createdAt: v.number(),
 		tags: v.array(v.id("tags")),
 	})
@@ -191,6 +197,9 @@ export default defineSchema({
 						),
 					}),
 				),
+				birthdayMonth: v.optional(v.number()),
+				birthdayDay: v.optional(v.number()),
+				lastBirthdayNotifiedLocalDateKey: v.optional(v.string()),
 				createdAt: v.number(),
 				tags: v.array(v.id("tags")),
 			}),

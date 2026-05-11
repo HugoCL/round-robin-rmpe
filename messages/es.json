@@ -685,6 +685,24 @@
 		"notAReviewerCta": "No participo en la rotación de PRs",
 		"notAReviewerCtaTooltip": "Sales de la asignación automática de PRs; dejamos de mostrarte este aviso."
 	},
+	"birthday": {
+		"setupTitle": "¿Cuándo cumples años?",
+		"setupDescription": "Solo día y mes: así podemos sorprenderte en la app y avisar al equipo para que celebre contigo (con buena onda y memes, si aplica).",
+		"monthLabel": "Mes",
+		"dayLabel": "Día",
+		"placeholderMonth": "Mes",
+		"placeholderDay": "Día",
+		"save": "Guardar",
+		"saving": "Guardando…",
+		"saveSuccessDescription": "Listo. Ese día tendrás un detalle en la app y el equipo podrá celebrar contigo! ;)",
+		"saveFailedDescription": "No se pudo guardar. Verifica que la fecha sea válida para ese mes e inténtalo de nuevo.",
+		"teamNoticeTitle": "Cumpleaños en el equipo",
+		"teamNoticeDescription": "Hoy cumple años: {names}. Mándenle un mensaje o un café virtual, seguro le encanta ;)",
+		"and": "y",
+		"celebrationTitle": "¡Felicidades, {name}!",
+		"celebrationSubtitle": "¡Que la pases genial hoy!. Un abrazo del equipo :)",
+		"dismissCelebrate": "Continuar"
+	},
 	"events": {
 		"createEvent": "Crear Evento",
 		"createDescription": "Programa un nuevo evento e invita a tu equipo a participar.",

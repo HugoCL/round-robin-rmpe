@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
@@ -21,6 +22,7 @@ import { IndefiniteAbsenceReminderBanner } from "./IndefiniteAbsenceReminderBann
 import { CompactLayout } from "./layouts/CompactLayout";
 import { PRReviewProvider } from "./PRReviewContext";
 import { PRReviewGuard } from "./PRReviewGuard";
+import { TeamBirthdaySection } from "./TeamBirthdaySection";
 
 interface BackupEntry {
 	key: string;
@@ -85,6 +87,7 @@ export default function PRReviewAssignment({
 		undoAssignment,
 		addReviewer,
 		updateReviewer,
+		setReviewerBirthday: saveReviewerBirthday,
 		removeReviewer,
 		handleToggleAbsence,
 		handleMarkAbsent,
@@ -275,6 +278,11 @@ export default function PRReviewAssignment({
 			onMarkAvailable: handleMarkAvailable,
 			onSetExcludedFromReviewPool: handleSetExcludedFromReviewPool,
 			updateReviewer,
+			setReviewerBirthday: (
+				reviewerId: Id<"reviewers">,
+				month: number,
+				day: number,
+			) => saveReviewerBirthday(reviewerId, month, day),
 			addReviewer,
 			removeReviewer,
 			handleResetCounts,
@@ -314,6 +322,7 @@ export default function PRReviewAssignment({
 			handleMarkAvailable,
 			handleSetExcludedFromReviewPool,
 			updateReviewer,
+			saveReviewerBirthday,
 			addReviewer,
 			removeReviewer,
 			handleResetCounts,
@@ -342,6 +351,7 @@ export default function PRReviewAssignment({
 							setReviewersDrawerOpen={setReviewersDrawerOpen}
 						/>
 						<AnnouncementBanner />
+						<TeamBirthdaySection teamSlug={teamSlug} />
 						<IndefiniteAbsenceReminderBanner />
 					</div>
 					<CompactLayout />
