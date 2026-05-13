@@ -4,7 +4,6 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import {
 	Check,
 	Copy,
-	Download,
 	KeyRound,
 	Link as LinkIcon,
 	Shield,
@@ -31,11 +30,6 @@ import {
 import { api } from "@/convex/_generated/api";
 import { toast } from "@/hooks/use-toast";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
-import {
-	renderClaudeInstallCommand,
-	renderClaudeSettingsJsonSnippet,
-	renderShellEnvSnippet,
-} from "@/lib/agent-skill-spec";
 
 function CodeSnippet({
 	title,
@@ -93,31 +87,28 @@ export function AgentSetupSection() {
 	}, []);
 
 	const defaultTeamSlug = preferences.defaultAgentTeamSlug;
-	const shellSnippet = useMemo(
+	const baseUrl = origin || "https://la-lista.example.com";
+	const tokenPlaceholder = revealedToken || "paste-your-personal-token-here";
+	const mcpUrl = `${baseUrl}/api/mcp`;
+	const mcpHeaderSnippet = `Authorization: Bearer ${tokenPlaceholder}`;
+	const claudeCodeMcpSnippet = useMemo(
 		() =>
-			renderShellEnvSnippet({
-				baseUrl: origin || "https://la-lista.example.com",
-				defaultTeamSlug,
-				tokenPlaceholder: revealedToken || "paste-your-personal-token-here",
-			}),
-		[defaultTeamSlug, origin, revealedToken],
-	);
-	const settingsSnippet = useMemo(
-		() =>
-			renderClaudeSettingsJsonSnippet({
-				baseUrl: origin || "https://la-lista.example.com",
-				defaultTeamSlug,
-				tokenPlaceholder: revealedToken || "paste-your-personal-token-here",
-			}),
-		[defaultTeamSlug, origin, revealedToken],
-	);
-	const installCommand = useMemo(
-		() =>
-			renderClaudeInstallCommand({
-				baseUrl: origin || "https://la-lista.example.com",
-				defaultTeamSlug,
-			}),
-		[defaultTeamSlug, origin],
+			JSON.stringify(
+				{
+					mcpServers: {
+						"la-lista": {
+							type: "http",
+							url: mcpUrl,
+							headers: {
+								Authorization: `Bearer ${tokenPlaceholder}`,
+							},
+						},
+					},
+				},
+				null,
+				2,
+			),
+		[mcpUrl, tokenPlaceholder],
 	);
 
 	const formatDate = (value?: number) => {
@@ -416,64 +407,40 @@ export function AgentSetupSection() {
 									{t("agentSetup.installDescription")}
 								</p>
 								<CodeSnippet
-									title={t("agentSetup.installCommandTitle")}
-									code={installCommand}
+									title={t("agentSetup.mcpUrlTitle")}
+									code={mcpUrl}
+									onCopy={() => void copyText("mcp-url", mcpUrl)}
+									copied={copiedSnippet === "mcp-url"}
+									copyLabel={t("agentSetup.copySnippet")}
+									copiedLabel={t("agentSetup.copiedSnippet")}
+								/>
+								<CodeSnippet
+									title={t("agentSetup.mcpHeaderTitle")}
+									code={mcpHeaderSnippet}
+									onCopy={() => void copyText("mcp-header", mcpHeaderSnippet)}
+									copied={copiedSnippet === "mcp-header"}
+									copyLabel={t("agentSetup.copySnippet")}
+									copiedLabel={t("agentSetup.copiedSnippet")}
+								/>
+								<CodeSnippet
+									title={t("agentSetup.claudeCodeJsonTitle")}
+									code={claudeCodeMcpSnippet}
 									onCopy={() =>
-										void copyText("install-command", installCommand)
+										void copyText("claude-code-mcp", claudeCodeMcpSnippet)
 									}
-									copied={copiedSnippet === "install-command"}
+									copied={copiedSnippet === "claude-code-mcp"}
 									copyLabel={t("agentSetup.copySnippet")}
 									copiedLabel={t("agentSetup.copiedSnippet")}
 								/>
 								<p className="text-xs text-muted-foreground">
-									{t("agentSetup.installCommandDescription")}
+									{t("agentSetup.mcpDescription")}
 								</p>
 								<ul className="space-y-2 text-sm text-muted-foreground">
-									<li>{t("agentSetup.installStepOne")}</li>
-									<li>{t("agentSetup.installStepTwo")}</li>
-									<li>{t("agentSetup.installStepThree")}</li>
+									<li>{t("agentSetup.mcpStepOne")}</li>
+									<li>{t("agentSetup.mcpStepTwo")}</li>
+									<li>{t("agentSetup.mcpStepThree")}</li>
+									<li>{t("agentSetup.mcpStepFour")}</li>
 								</ul>
-								<div className="flex flex-wrap gap-3 pt-2">
-									<Button asChild>
-										<a
-											href={`/api/settings/agent/claude-subagent?defaultTeamSlug=${encodeURIComponent(
-												defaultTeamSlug || "",
-											)}`}
-										>
-											<Download className="mr-2 h-4 w-4" />
-											{t("agentSetup.downloadClaude")}
-										</a>
-									</Button>
-									<Button asChild variant="outline">
-										<a
-											href={`/api/settings/agent/universal-spec?defaultTeamSlug=${encodeURIComponent(
-												defaultTeamSlug || "",
-											)}`}
-										>
-											<Download className="mr-2 h-4 w-4" />
-											{t("agentSetup.downloadSpec")}
-										</a>
-									</Button>
-								</div>
-							</div>
-
-							<div className="space-y-4">
-								<CodeSnippet
-									title={t("agentSetup.shellSnippetTitle")}
-									code={shellSnippet}
-									onCopy={() => void copyText("shell", shellSnippet)}
-									copied={copiedSnippet === "shell"}
-									copyLabel={t("agentSetup.copySnippet")}
-									copiedLabel={t("agentSetup.copiedSnippet")}
-								/>
-								<CodeSnippet
-									title={t("agentSetup.settingsSnippetTitle")}
-									code={settingsSnippet}
-									onCopy={() => void copyText("settings", settingsSnippet)}
-									copied={copiedSnippet === "settings"}
-									copyLabel={t("agentSetup.copySnippet")}
-									copiedLabel={t("agentSetup.copiedSnippet")}
-								/>
 							</div>
 						</div>
 					</AccordionContent>

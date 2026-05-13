@@ -10,7 +10,7 @@ const intlMiddleware = createMiddleware(routing);
 const isPublicRoute = createRouteMatcher([
 	"/",
 	"/api/agent(.*)",
-	"/api/settings/agent(.*)",
+	"/api/mcp(.*)",
 	"/api/updates",
 	"/sign-in(.*)",
 	"/sign-up(.*)",

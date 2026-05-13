@@ -36,7 +36,7 @@ export const agentAssignmentRequestSchema = z.object({
 
 type AgentAssignmentRequest = z.infer<typeof agentAssignmentRequestSchema>;
 
-type AuthenticatedAgent = {
+export type AuthenticatedAgent = {
 	tokenId: Id<"agentTokens">;
 	userTokenIdentifier: string;
 	email?: string;

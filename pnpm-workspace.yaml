@@ -1,8 +1,23 @@
 packages:
   - "chrome-extension"
 
+allowBuilds:
+  '@clerk/shared': true
+  '@parcel/watcher': true
+  '@swc/core': true
+  browser-tabs-lock: false
+  bufferutil: false
+  core-js: false
+  esbuild: true
+  lefthook: true
+  msw: false
+  sharp: true
+  utf-8-validate: false
+
 onlyBuiltDependencies:
   - '@clerk/shared'
+  - '@parcel/watcher'
+  - '@swc/core'
   - esbuild
   - lefthook
   - sharp
