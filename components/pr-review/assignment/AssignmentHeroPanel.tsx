@@ -1,10 +1,14 @@
+import { useQuery } from "convex/react";
 import { Info, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { TextMorph } from "torph/react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { reviewerHasBirthdayToday } from "@/lib/reviewerAvailability";
 import type { Reviewer } from "@/lib/types";
+import { usePRReview } from "../PRReviewContext";
 import type { AssignmentCardTag, AssignmentMode } from "./assignmentCard.types";
 
 type AssignmentHeroPanelProps = {
@@ -31,6 +35,20 @@ export function AssignmentHeroPanel({
 	isLoadingTagReviewer,
 }: AssignmentHeroPanelProps) {
 	const t = useTranslations();
+	const { teamSlug } = usePRReview();
+
+	const team = useQuery(api.queries.getTeam, teamSlug ? { teamSlug } : "skip");
+	const teamTimezone = team?.timezone ?? "UTC";
+
+	const activeHasBirthday =
+		activeNextReviewer &&
+		reviewerHasBirthdayToday(activeNextReviewer, teamTimezone);
+	const lastHasBirthday =
+		lastAssignedReviewer &&
+		reviewerHasBirthdayToday(lastAssignedReviewer, teamTimezone);
+	const upcomingHasBirthday =
+		upcomingReviewer &&
+		reviewerHasBirthdayToday(upcomingReviewer, teamTimezone);
 
 	if (!activeNextReviewer) {
 		return (
@@ -70,13 +88,21 @@ export function AssignmentHeroPanel({
 							{t("pr.lastAssigned")}
 						</span>
 						<h4
-							className={`text-lg font-medium text-muted-foreground opacity-80 transition-opacity duration-300 motion-reduce:transition-none lg:text-xl ${
+							className={`inline-flex items-center justify-center gap-1.5 text-lg font-medium text-muted-foreground opacity-80 transition-opacity duration-300 motion-reduce:transition-none lg:text-xl ${
 								isAssigning ? "opacity-0" : "opacity-80"
 							}`}
 						>
 							<TextMorph ease={{ stiffness: 200, damping: 20 }}>
 								{lastAssignedReviewer.name}
 							</TextMorph>
+							{lastHasBirthday && (
+								<span
+									className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-800 dark:text-amber-300 border border-amber-500/20 shrink-0"
+									title="¡Hoy es su cumpleaños! 🎂"
+								>
+									🎂 HBD
+								</span>
+							)}
 						</h4>
 					</div>
 				)}
@@ -95,7 +121,7 @@ export function AssignmentHeroPanel({
 						/>
 						<div className="relative flex flex-col gap-2">
 							<h3
-								className={`break-words text-4xl font-bold text-primary drop-shadow-lg transition-transform transition-opacity duration-300 motion-reduce:transition-none md:text-5xl 2xl:text-6xl dark:text-white ${
+								className={`inline-flex items-center justify-center gap-2.5 break-words text-4xl font-bold text-primary drop-shadow-lg transition-transform transition-opacity duration-300 motion-reduce:transition-none md:text-5xl 2xl:text-6xl dark:text-white ${
 									isAssigning
 										? "translate-y-1 opacity-0"
 										: "translate-y-0 opacity-100"
@@ -104,6 +130,14 @@ export function AssignmentHeroPanel({
 								<TextMorph ease={{ stiffness: 200, damping: 20 }}>
 									{activeNextReviewer.name}
 								</TextMorph>
+								{activeHasBirthday && (
+									<span
+										className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-300 border border-amber-500/25 shadow-md shadow-amber-500/5 animate-pulse shrink-0"
+										title="¡Feliz Cumpleaños! 🎂"
+									>
+										🎂 HBD!
+									</span>
+								)}
 							</h3>
 							{mode === "tag" && selectedTag && (
 								<div className="flex justify-center">
@@ -152,10 +186,18 @@ export function AssignmentHeroPanel({
 						<span className="text-xs font-medium uppercase tracking-wide text-muted-foreground lg:text-sm">
 							{t("pr.upNext")}
 						</span>
-						<h4 className="text-lg font-medium text-muted-foreground opacity-80 lg:text-xl">
+						<h4 className="inline-flex items-center justify-center gap-1.5 text-lg font-medium text-muted-foreground opacity-80 lg:text-xl">
 							<TextMorph ease={{ stiffness: 200, damping: 20 }}>
 								{upcomingReviewer.name}
 							</TextMorph>
+							{upcomingHasBirthday && (
+								<span
+									className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-800 dark:text-amber-300 border border-amber-500/20 shrink-0"
+									title="¡Hoy es su cumpleaños! 🎂"
+								>
+									🎂 HBD
+								</span>
+							)}
 						</h4>
 					</div>
 				)}

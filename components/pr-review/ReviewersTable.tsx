@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { Check, Edit, SlidersHorizontal, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
@@ -30,6 +30,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { useConvexTags } from "@/hooks/useConvexTags";
+import { reviewerHasBirthdayToday } from "@/lib/reviewerAvailability";
 import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
@@ -38,6 +39,7 @@ import { MarkAbsentDialog } from "./dialogs/MarkAbsentDialog";
 interface ReviewersTableProps {
 	teamSlug?: string;
 	showViewControls?: boolean;
+	readOnly?: boolean;
 }
 
 import { usePRReview } from "./PRReviewContext";
@@ -45,6 +47,7 @@ import { usePRReview } from "./PRReviewContext";
 export function ReviewersTable({
 	teamSlug,
 	showViewControls = true,
+	readOnly = false,
 }: ReviewersTableProps) {
 	const t = useTranslations();
 	const locale = useLocale();
@@ -75,6 +78,11 @@ export function ReviewersTable({
 	const visibleColumnsCount = [showAssignments, showTags, showEmails].filter(
 		Boolean,
 	).length;
+
+	const actualShowViewControls = showViewControls && !readOnly;
+
+	const team = useQuery(api.queries.getTeam, teamSlug ? { teamSlug } : "skip");
+	const teamTimezone = team?.timezone ?? "UTC";
 
 	// Use Convex for real-time tags
 	const { tags } = useConvexTags(teamSlug);
@@ -174,7 +182,7 @@ export function ReviewersTable({
 
 	return (
 		<div className="flex flex-col gap-4">
-			{showViewControls && (
+			{actualShowViewControls && (
 				<section className="flex justify-end">
 					<div className="flex shrink-0 items-center gap-2">
 						<Badge variant="secondary" className="h-5 px-2 py-0.5 text-xs">
@@ -242,7 +250,7 @@ export function ReviewersTable({
 				<TableHeader>
 					<TableRow>
 						<TableHead className="min-w-0">{t("pr.nameHeader")}</TableHead>
-						{showEmails && (
+						{showEmails && !readOnly && (
 							<TableHead className="min-w-0 max-w-[14rem]">
 								{t("common.email")}
 							</TableHead>
@@ -260,220 +268,259 @@ export function ReviewersTable({
 						<TableHead className="min-w-0 whitespace-normal">
 							{t("pr.statusHeader")}
 						</TableHead>
-						<TableHead className="w-[1%] min-w-[5.5rem] max-w-[6.5rem] whitespace-normal text-center text-xs font-medium leading-tight">
-							{t("reviewer.rotationColumn")}
-						</TableHead>
-						<TableHead className="w-10 p-2" />
+						{!readOnly && (
+							<>
+								<TableHead className="w-[1%] min-w-[5.5rem] max-w-[6.5rem] whitespace-normal text-center text-xs font-medium leading-tight">
+									{t("reviewer.rotationColumn")}
+								</TableHead>
+								<TableHead className="w-10 p-2" />
+							</>
+						)}
 					</TableRow>
 				</TableHeader>
 				<TableBody>
-					{reviewers.map((reviewer) => (
-						<TableRow
-							key={reviewer._id}
-							className={cn(
-								"group transition-colors",
-								reviewer.effectiveIsAbsent ? "opacity-60" : "hover:bg-muted/40",
-							)}
-						>
-							<TableCell className="font-medium lg:text-base">
-								<div className="flex items-center gap-3">
-									<Avatar className="size-8 lg:size-9">
-										<AvatarFallback>
-											{reviewer.name?.slice(0, 2).toUpperCase()}
-										</AvatarFallback>
-									</Avatar>
-									<span className="max-w-[16ch] truncate lg:max-w-[22ch]">
-										{reviewer.name}
-									</span>
-									{reviewer.excludedFromReviewPool === true && (
-										<Badge
-											variant="outline"
-											className="h-5 shrink-0 px-2 py-0.5 text-xs"
-										>
-											{t("reviewer.outOfReviewPoolBadge")}
-										</Badge>
-									)}
-									{nextReviewer?._id === reviewer._id && (
-										<Badge
-											variant="default"
-											className="h-5 px-2 py-0.5 text-xs"
-										>
-											{t("pr.next")}
-										</Badge>
-									)}
-									{assignmentFeed.lastAssigned &&
-										assignmentFeed.lastAssigned.reviewerId === reviewer._id && (
-											<Badge
-												variant="secondary"
-												className="h-5 px-2 py-0.5 text-xs"
+					{reviewers.map((reviewer) => {
+						const isBirthdayToday = reviewerHasBirthdayToday(
+							reviewer,
+							teamTimezone,
+						);
+						return (
+							<TableRow
+								key={reviewer._id}
+								className={cn(
+									"group transition-colors",
+									reviewer.effectiveIsAbsent
+										? "opacity-60"
+										: "hover:bg-muted/40",
+								)}
+							>
+								<TableCell className="font-medium lg:text-base">
+									<div className="flex items-center gap-3">
+										<Avatar className="size-8 lg:size-9">
+											<AvatarFallback>
+												{reviewer.name?.slice(0, 2).toUpperCase()}
+											</AvatarFallback>
+										</Avatar>
+										<span className="max-w-[16ch] truncate lg:max-w-[22ch]">
+											{reviewer.name}
+										</span>
+										{isBirthdayToday && (
+											<span
+												className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-300 border border-amber-500/20 shrink-0"
+												title="¡Hoy es su cumpleaños! 🎂"
 											>
-												{t("pr.lastAssigned")}
+												🎂 HBD
+											</span>
+										)}
+										{reviewer.excludedFromReviewPool === true && (
+											<Badge
+												variant="outline"
+												className="h-5 shrink-0 px-2 py-0.5 text-xs"
+											>
+												{t("reviewer.outOfReviewPoolBadge")}
 											</Badge>
 										)}
-								</div>
-							</TableCell>
-							{showEmails && (
-								<TableCell className="max-w-[14rem] truncate text-sm text-muted-foreground lg:text-base">
-									{reviewer.email}
+										{!readOnly && nextReviewer?._id === reviewer._id && (
+											<Badge
+												variant="default"
+												className="h-5 px-2 py-0.5 text-xs"
+											>
+												{t("pr.next")}
+											</Badge>
+										)}
+										{!readOnly &&
+											assignmentFeed.lastAssigned &&
+											assignmentFeed.lastAssigned.reviewerId ===
+												reviewer._id && (
+												<Badge
+													variant="secondary"
+													className="h-5 px-2 py-0.5 text-xs"
+												>
+													{t("pr.lastAssigned")}
+												</Badge>
+											)}
+									</div>
 								</TableCell>
-							)}
-							{showTags && (
-								<TableCell>
-									<div className="flex flex-wrap gap-1">
-										{reviewer.tags && reviewer.tags.length > 0 ? (
-											reviewer.tags.map((tagId: string) => getTagBadge(tagId))
+								{showEmails && !readOnly && (
+									<TableCell className="max-w-[14rem] truncate text-sm text-muted-foreground lg:text-base">
+										{reviewer.email}
+									</TableCell>
+								)}
+								{showTags && (
+									<TableCell>
+										<div className="flex flex-wrap gap-1">
+											{reviewer.tags && reviewer.tags.length > 0 ? (
+												reviewer.tags.map((tagId: string) => getTagBadge(tagId))
+											) : (
+												<span className="text-sm text-muted-foreground lg:text-base">
+													{t("pr.noTags")}
+												</span>
+											)}
+										</div>
+									</TableCell>
+								)}
+								{showAssignments && (
+									<TableCell>
+										{editingId === reviewer._id && !readOnly ? (
+											<div className="flex items-center gap-2">
+												<Input
+													type="number"
+													value={editValue}
+													onChange={(e) =>
+														setEditValue(
+															Number.parseInt(e.target.value, 10) || 0,
+														)
+													}
+													className="w-20"
+													min={0}
+												/>
+												<Button
+													size="icon"
+													variant="ghost"
+													onClick={saveEditing}
+												>
+													<Check className="h-4 w-4 text-green-500" />
+												</Button>
+												<Button
+													size="icon"
+													variant="ghost"
+													onClick={cancelEditing}
+												>
+													<X className="h-4 w-4 text-red-500" />
+												</Button>
+											</div>
 										) : (
-											<span className="text-sm text-muted-foreground lg:text-base">
-												{t("pr.noTags")}
-											</span>
+											<div className="flex items-center gap-2">
+												<span className="lg:text-base">
+													{reviewer.assignmentCount}
+												</span>
+												{!readOnly && (
+													<Button
+														size="icon"
+														variant="ghost"
+														disabled={!canManageCurrentTeam}
+														onClick={() =>
+															startEditing(
+																reviewer._id,
+																reviewer.assignmentCount,
+															)
+														}
+													>
+														<Edit className="h-3 w-3 text-muted-foreground" />
+													</Button>
+												)}
+											</div>
 										)}
+									</TableCell>
+								)}
+								<TableCell className="min-w-0 max-w-[18rem] whitespace-normal">
+									<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+										{!readOnly && (
+											<div className="flex shrink-0 items-center border-r border-border/60 pr-3">
+												<Switch
+													id={`absence-${reviewer._id}`}
+													aria-label={t("partTime.manualControl")}
+													checked={!reviewer.manualIsAbsent}
+													disabled={!canManageCurrentTeam}
+													onCheckedChange={(checked) => {
+														if (!canManageCurrentTeam) return;
+														if (!checked) {
+															setSelectedReviewer(reviewer);
+															setAbsentDialogOpen(true);
+														} else {
+															onMarkAvailable(reviewer._id);
+														}
+													}}
+												/>
+												<Label
+													htmlFor={`absence-${reviewer._id}`}
+													className="sr-only"
+												>
+													{t("partTime.manualControl")}
+												</Label>
+											</div>
+										)}
+										<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+											<Badge
+												variant={
+													reviewer.effectiveIsAbsent ? "secondary" : "default"
+												}
+												className="h-5 shrink-0 px-2 py-0.5 text-xs"
+											>
+												{reviewer.effectiveIsAbsent
+													? t("pr.absent")
+													: t("pr.available")}
+											</Badge>
+											{getStatusDetail(reviewer) && (
+												<span className="min-w-0 text-balance text-xs text-muted-foreground">
+													{getStatusDetail(reviewer)}
+												</span>
+											)}
+										</div>
 									</div>
 								</TableCell>
-							)}
-							{showAssignments && (
-								<TableCell>
-									{editingId === reviewer._id ? (
-										<div className="flex items-center gap-2">
-											<Input
-												type="number"
-												value={editValue}
-												onChange={(e) =>
-													setEditValue(Number.parseInt(e.target.value, 10) || 0)
+								{!readOnly && (
+									<>
+										<TableCell className="w-[1%] min-w-[5.5rem] max-w-[6.5rem] whitespace-normal align-top">
+											<div className="flex flex-col items-center gap-1.5 py-0.5 text-center">
+												<Switch
+													id={`pool-${reviewer._id}`}
+													checked={reviewer.excludedFromReviewPool !== true}
+													disabled={!canManageCurrentTeam}
+													onCheckedChange={(checked) => {
+														if (!canManageCurrentTeam) return;
+														void onSetExcludedFromReviewPool(
+															reviewer._id,
+															checked !== true,
+														);
+													}}
+												/>
+												<Label
+													htmlFor={`pool-${reviewer._id}`}
+													className="block text-pretty text-[11px] font-normal leading-snug text-muted-foreground"
+												>
+													{t("reviewer.inReviewPoolSwitchLabelShort")}
+												</Label>
+											</div>
+										</TableCell>
+										<TableCell className="w-10 p-2">
+											<EditReviewerDialog
+												reviewer={reviewer}
+												onUpdateReviewer={async (
+													id,
+													name,
+													email,
+													googleChatUserId,
+													partTimeSchedule,
+													excludedFromReviewPool,
+												) =>
+													updateReviewer(
+														id,
+														name,
+														email,
+														googleChatUserId,
+														partTimeSchedule,
+														excludedFromReviewPool,
+													)
 												}
-												className="w-20"
-												min={0}
+												trigger={
+													<Button
+														size="icon"
+														variant="ghost"
+														disabled={!canManageCurrentTeam}
+														className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+														aria-label={t("common.edit")}
+													>
+														<Edit className="h-4 w-4 text-muted-foreground" />
+													</Button>
+												}
 											/>
-											<Button size="icon" variant="ghost" onClick={saveEditing}>
-												<Check className="h-4 w-4 text-green-500" />
-											</Button>
-											<Button
-												size="icon"
-												variant="ghost"
-												onClick={cancelEditing}
-											>
-												<X className="h-4 w-4 text-red-500" />
-											</Button>
-										</div>
-									) : (
-										<div className="flex items-center gap-2">
-											<span className="lg:text-base">
-												{reviewer.assignmentCount}
-											</span>
-											<Button
-												size="icon"
-												variant="ghost"
-												disabled={!canManageCurrentTeam}
-												onClick={() =>
-													startEditing(reviewer._id, reviewer.assignmentCount)
-												}
-											>
-												<Edit className="h-3 w-3 text-muted-foreground" />
-											</Button>
-										</div>
-									)}
-								</TableCell>
-							)}
-							<TableCell className="min-w-0 max-w-[18rem] whitespace-normal">
-								<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-									<div className="flex shrink-0 items-center border-r border-border/60 pr-3">
-										<Switch
-											id={`absence-${reviewer._id}`}
-											aria-label={t("partTime.manualControl")}
-											checked={!reviewer.manualIsAbsent}
-											disabled={!canManageCurrentTeam}
-											onCheckedChange={(checked) => {
-												if (!canManageCurrentTeam) return;
-												if (!checked) {
-													setSelectedReviewer(reviewer);
-													setAbsentDialogOpen(true);
-												} else {
-													onMarkAvailable(reviewer._id);
-												}
-											}}
-										/>
-										<Label
-											htmlFor={`absence-${reviewer._id}`}
-											className="sr-only"
-										>
-											{t("partTime.manualControl")}
-										</Label>
-									</div>
-									<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-										<Badge
-											variant={
-												reviewer.effectiveIsAbsent ? "secondary" : "default"
-											}
-											className="h-5 shrink-0 px-2 py-0.5 text-xs"
-										>
-											{reviewer.effectiveIsAbsent
-												? t("pr.absent")
-												: t("pr.available")}
-										</Badge>
-										{getStatusDetail(reviewer) && (
-											<span className="min-w-0 text-balance text-xs text-muted-foreground">
-												{getStatusDetail(reviewer)}
-											</span>
-										)}
-									</div>
-								</div>
-							</TableCell>
-							<TableCell className="w-[1%] min-w-[5.5rem] max-w-[6.5rem] whitespace-normal align-top">
-								<div className="flex flex-col items-center gap-1.5 py-0.5 text-center">
-									<Switch
-										id={`pool-${reviewer._id}`}
-										checked={reviewer.excludedFromReviewPool !== true}
-										disabled={!canManageCurrentTeam}
-										onCheckedChange={(checked) => {
-											if (!canManageCurrentTeam) return;
-											void onSetExcludedFromReviewPool(
-												reviewer._id,
-												checked !== true,
-											);
-										}}
-									/>
-									<Label
-										htmlFor={`pool-${reviewer._id}`}
-										className="block text-pretty text-[11px] font-normal leading-snug text-muted-foreground"
-									>
-										{t("reviewer.inReviewPoolSwitchLabelShort")}
-									</Label>
-								</div>
-							</TableCell>
-							<TableCell className="w-10 p-2">
-								<EditReviewerDialog
-									reviewer={reviewer}
-									onUpdateReviewer={async (
-										id,
-										name,
-										email,
-										googleChatUserId,
-										partTimeSchedule,
-										excludedFromReviewPool,
-									) =>
-										updateReviewer(
-											id,
-											name,
-											email,
-											googleChatUserId,
-											partTimeSchedule,
-											excludedFromReviewPool,
-										)
-									}
-									trigger={
-										<Button
-											size="icon"
-											variant="ghost"
-											disabled={!canManageCurrentTeam}
-											className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-											aria-label={t("common.edit")}
-										>
-											<Edit className="h-4 w-4 text-muted-foreground" />
-										</Button>
-									}
-								/>
-							</TableCell>
-						</TableRow>
-					))}
+										</TableCell>
+									</>
+								)}
+							</TableRow>
+						);
+					})}
 				</TableBody>
 			</Table>
 

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import type { Reviewer } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
 import { ForceAssignDialog } from "../dialogs/ForceAssignDialog";
 import type {
@@ -41,24 +42,6 @@ import type {
 	ReviewerSlotPreview,
 } from "./ReviewerSlotsConfigurator";
 import { ReviewerSlotsConfigurator } from "./ReviewerSlotsConfigurator";
-
-const selectedPrimaryChipStyle = {
-	backgroundColor: "var(--primary)",
-	borderColor: "var(--primary)",
-	color: "var(--primary-foreground)",
-};
-
-const selectedUrgentChipStyle = {
-	backgroundColor: "#dc2626",
-	borderColor: "#dc2626",
-	color: "#ffffff",
-};
-
-const selectedCrossTeamChipStyle = {
-	backgroundColor: "#0284c7",
-	borderColor: "#0284c7",
-	color: "#ffffff",
-};
 
 type AssignmentControlsPanelProps = {
 	tags: AssignmentCardTag[];
@@ -232,12 +215,11 @@ export function AssignmentControlsPanel({
 									<ToggleGroupItem
 										value="multi-assignment"
 										aria-label={t("pr.multipleAssignmentToggleLabel")}
-										className="h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm"
-										style={
-											isMultiAssignmentEnabled
-												? selectedPrimaryChipStyle
-												: undefined
-										}
+										className={cn(
+											"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm",
+											isMultiAssignmentEnabled &&
+												"bg-primary border-primary text-primary-foreground hover:bg-primary/95",
+										)}
 									>
 										<div className="inline-flex items-center gap-2.5">
 											<span className="inline-flex size-4 items-center justify-center">
@@ -307,10 +289,11 @@ export function AssignmentControlsPanel({
 									size="sm"
 									disabled={alwaysSendGoogleChatMessage}
 									aria-label={t("googleChat.sendMessageToggle")}
-									className="h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 disabled:cursor-not-allowed lg:h-11 lg:px-4 lg:text-sm"
-									style={
-										effectiveSendMessage ? selectedPrimaryChipStyle : undefined
-									}
+									className={cn(
+										"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 disabled:cursor-not-allowed lg:h-11 lg:px-4 lg:text-sm",
+										effectiveSendMessage &&
+											"bg-primary border-primary text-primary-foreground hover:bg-primary/95",
+									)}
 								>
 									<div className="inline-flex items-center gap-2.5">
 										<span className="inline-flex size-4 items-center justify-center">
@@ -343,8 +326,11 @@ export function AssignmentControlsPanel({
 									variant="outline"
 									size="sm"
 									aria-label={t("googleChat.urgentToggle")}
-									className="h-10 max-w-full cursor-pointer rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-red-900/50 dark:text-red-300"
-									style={urgent ? selectedUrgentChipStyle : undefined}
+									className={cn(
+										"h-10 max-w-full cursor-pointer rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-red-900/50 dark:text-red-300",
+										urgent &&
+											"bg-red-600 border-red-600 text-white hover:bg-red-600/90 dark:bg-red-700 dark:border-red-700",
+									)}
 								>
 									<div className="inline-flex items-center gap-2.5">
 										<span className="inline-flex size-4 items-center justify-center">
@@ -377,10 +363,11 @@ export function AssignmentControlsPanel({
 									variant="outline"
 									size="sm"
 									aria-label={t("googleChat.crossTeamToggle")}
-									className="h-10 max-w-full cursor-pointer rounded-full border-sky-200/80 bg-transparent px-3 text-xs text-sky-700 transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-sky-900/50 dark:text-sky-300"
-									style={
-										crossTeamReview ? selectedCrossTeamChipStyle : undefined
-									}
+									className={cn(
+										"h-10 max-w-full cursor-pointer rounded-full border-sky-200/80 bg-transparent px-3 text-xs text-sky-700 transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-sky-900/50 dark:text-sky-300",
+										crossTeamReview &&
+											"bg-sky-600 border-sky-600 text-white hover:bg-sky-600/90 dark:bg-sky-700 dark:border-sky-700",
+									)}
 								>
 									<div className="inline-flex items-center gap-2.5">
 										<span className="inline-flex size-4 items-center justify-center">

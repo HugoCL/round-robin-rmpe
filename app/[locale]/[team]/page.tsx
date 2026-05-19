@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { useEffect } from "react";
 import PRReviewAssignment from "@/components/pr-review/PRReviewAssignment";
 import { api } from "@/convex/_generated/api";
 
@@ -16,6 +17,16 @@ export default function TeamPage() {
 	const accessContext = useQuery(api.queries.getMyTeamAccess, {
 		teamSlug: teamSlug ?? undefined,
 	});
+
+	useEffect(() => {
+		if (teamSlug) {
+			try {
+				window.localStorage.setItem("la-lista-last-team", teamSlug);
+			} catch (e) {
+				console.warn("Failed to store last team to localStorage:", e);
+			}
+		}
+	}, [teamSlug]);
 
 	if (team === undefined || accessContext === undefined) {
 		return (

@@ -4,8 +4,9 @@ import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { ArrowRight, Lightbulb, Plus } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { LandingAssignmentTicker } from "@/components/LandingAssignmentTicker";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
@@ -22,18 +23,15 @@ function getTeamInitials(name: string) {
 export default function Page() {
 	const t = useTranslations();
 	const locale = useLocale();
-	const { user } = useUser();
+	const router = useRouter();
+	const { user, isLoaded: userLoaded } = useUser();
 	const teams = useQuery(api.queries.getTeams);
 	const onboardingState = useQuery(api.queries.getMyOnboardingState);
 	const reviewedPRsCount = useQuery(api.queries.getGlobalReviewedPRCount);
-	const [animatedReviewedPRs, setAnimatedReviewedPRs] = useState(0);
-	const [isCounterAnimating, setIsCounterAnimating] = useState(false);
-	const hasAnimatedOnOpenRef = useRef(false);
-	const currentValueRef = useRef(0);
-	const rafIdRef = useRef<number | null>(null);
-	const settleTimeoutRef = useRef<number | null>(null);
+	const [redirecting, setRedirecting] = useState(false);
 
-	const isLoading = teams === undefined || reviewedPRsCount === undefined;
+	const isLoading =
+		!userLoaded || teams === undefined || reviewedPRsCount === undefined;
 	const teamsList = teams ?? [];
 	const shouldShowOnboardingPrompt =
 		!!user &&
@@ -42,83 +40,31 @@ export default function Page() {
 		!onboardingState.hasTeams;
 
 	useEffect(() => {
-		if (reviewedPRsCount === undefined) {
-			return;
-		}
-
-		const animateCount = (startValue: number, endValue: number) => {
-			if (rafIdRef.current !== null) {
-				cancelAnimationFrame(rafIdRef.current);
-				rafIdRef.current = null;
-			}
-			if (settleTimeoutRef.current !== null) {
-				clearTimeout(settleTimeoutRef.current);
-				settleTimeoutRef.current = null;
-			}
-
-			if (startValue === endValue) {
-				currentValueRef.current = endValue;
-				setAnimatedReviewedPRs(endValue);
-				setIsCounterAnimating(false);
-				return;
-			}
-
-			setIsCounterAnimating(true);
-			const durationMs = 1400;
-			const startTime = performance.now();
-
-			const step = (now: number) => {
-				const elapsed = now - startTime;
-				const progress = Math.min(elapsed / durationMs, 1);
-				const easedProgress =
-					progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
-				const nextValue = Math.round(
-					startValue + (endValue - startValue) * easedProgress,
-				);
-				currentValueRef.current = nextValue;
-				setAnimatedReviewedPRs(nextValue);
-
-				if (progress < 1) {
-					rafIdRef.current = requestAnimationFrame(step);
-					return;
+		if (userLoaded && user && teams && teams.length > 0 && !redirecting) {
+			try {
+				const lastTeam = window.localStorage.getItem("la-lista-last-team");
+				const targetTeam = teams.find((t) => t.slug === lastTeam) || teams[0];
+				if (targetTeam) {
+					setRedirecting(true);
+					router.push(`/${locale}/${targetTeam.slug}`);
 				}
-
-				currentValueRef.current = endValue;
-				setAnimatedReviewedPRs(endValue);
-				settleTimeoutRef.current = window.setTimeout(() => {
-					setIsCounterAnimating(false);
-					settleTimeoutRef.current = null;
-				}, 180);
-				rafIdRef.current = null;
-			};
-
-			rafIdRef.current = requestAnimationFrame(step);
-		};
-
-		if (!hasAnimatedOnOpenRef.current) {
-			hasAnimatedOnOpenRef.current = true;
-			currentValueRef.current = 0;
-			setAnimatedReviewedPRs(0);
-			animateCount(0, reviewedPRsCount);
-			return;
-		}
-
-		const fromValue = currentValueRef.current;
-		if (fromValue !== reviewedPRsCount) {
-			animateCount(fromValue, reviewedPRsCount);
-		}
-	}, [reviewedPRsCount]);
-
-	useEffect(() => {
-		return () => {
-			if (rafIdRef.current !== null) {
-				cancelAnimationFrame(rafIdRef.current);
+			} catch (e) {
+				console.warn("Failed to retrieve or redirect to last visited team:", e);
 			}
-			if (settleTimeoutRef.current !== null) {
-				clearTimeout(settleTimeoutRef.current);
-			}
-		};
-	}, []);
+		}
+	}, [userLoaded, user, teams, locale, router, redirecting]);
+
+	const isRedirecting = userLoaded && user && teams && teams.length > 0;
+	if (isLoading || isRedirecting || redirecting) {
+		return (
+			<div className="flex min-h-screen items-center justify-center bg-background">
+				<div className="flex flex-col items-center gap-2">
+					<div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+					<p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="relative overflow-hidden">
@@ -136,7 +82,7 @@ export default function Page() {
 						aria-hidden
 						className="absolute inset-y-0 right-0 hidden w-1/2 bg-[radial-gradient(circle_at_top_right,color-mix(in_oklab,var(--primary)_12%,transparent),transparent_65%)] md:block"
 					/>
-					<div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:items-center">
+					<div className="relative flex flex-col gap-6 md:max-w-3xl">
 						<div className="space-y-6">
 							<div className="space-y-3">
 								<p className="calm-kicker">La Lista</p>
@@ -146,6 +92,15 @@ export default function Page() {
 								<p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
 									{t("team.switcher.description")}
 								</p>
+								{reviewedPRsCount !== undefined && (
+									<div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-3.5 py-1.5 text-xs text-muted-foreground md:text-sm">
+										<span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+										<span>
+											{t("team.switcher.reviewedSummaryLabel")}{" "}
+											<strong>{reviewedPRsCount.toLocaleString(locale)}</strong>
+										</span>
+									</div>
+								)}
 							</div>
 
 							<div className="flex flex-wrap items-center gap-3">
@@ -166,37 +121,6 @@ export default function Page() {
 										{t("suggestions.openBoard")}
 									</Link>
 								</Button>
-							</div>
-						</div>
-
-						<div className="page-enter flex items-center justify-start lg:justify-end">
-							<div
-								className={`relative w-full max-w-md overflow-hidden rounded-[2rem] border border-primary/16 bg-background/78 px-6 py-7 shadow-[0_28px_80px_-52px_rgba(37,99,235,0.55)] ring-1 ring-primary/12 backdrop-blur-sm transition-all duration-500 md:px-7 md:py-8 ${
-									isCounterAnimating
-										? "border-primary/28 shadow-[0_34px_96px_-54px_rgba(37,99,235,0.72)]"
-										: ""
-								}`}
-							>
-								<div
-									aria-hidden
-									className="absolute inset-0 bg-[linear-gradient(135deg,color-mix(in_oklab,var(--primary)_14%,transparent),transparent_42%),radial-gradient(circle_at_82%_18%,color-mix(in_oklab,var(--primary)_18%,transparent),transparent_36%)]"
-								/>
-								<div className="relative flex flex-col gap-4">
-									<div className="flex items-center justify-between gap-4">
-										<p className="calm-kicker">
-											{t("team.switcher.reviewedSummaryLabel")}
-										</p>
-									</div>
-									<div
-										className={`text-6xl font-semibold leading-none tracking-tight text-foreground transition-all duration-300 [font-family:var(--font-display),var(--font-sans),sans-serif] md:text-7xl ${
-											isCounterAnimating
-												? "scale-[1.02] text-primary"
-												: "scale-100"
-										}`}
-									>
-										{animatedReviewedPRs.toLocaleString(locale)}
-									</div>
-								</div>
 							</div>
 						</div>
 					</div>
