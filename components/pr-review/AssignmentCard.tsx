@@ -20,6 +20,7 @@ import { AssignmentHeroPanel } from "./assignment/AssignmentHeroPanel";
 import type {
 	AssignmentMode,
 	AssignmentResolverReasonMessages,
+	AssignPRBatchAssignedItem,
 } from "./assignment/assignmentCard.types";
 import {
 	defaultSlotForMode,
@@ -405,16 +406,18 @@ export function AssignmentCard() {
 			if (effectiveSendMessage && prUrl.trim() && teamSlug) {
 				if (result.assignedCount > 1) {
 					const groupResult = await sendGoogleChatGroupAction({
-						reviewers: result.assigned.map((item) => {
-							const reviewer = reviewers.find(
-								(r) => String(r._id) === String(item.reviewer.id),
-							);
-							return {
-								name: item.reviewer.name,
-								email: item.reviewer.email,
-								reviewerChatId: reviewer?.googleChatUserId,
-							};
-						}),
+						reviewers: result.assigned.map(
+							(item: AssignPRBatchAssignedItem) => {
+								const reviewer = reviewers.find(
+									(r) => String(r._id) === String(item.reviewer.id),
+								);
+								return {
+									name: item.reviewer.name,
+									email: item.reviewer.email,
+									reviewerChatId: reviewer?.googleChatUserId,
+								};
+							},
+						),
 						prUrl: prUrl.trim(),
 						contextUrl: contextUrl.trim() || undefined,
 						locale: "es",

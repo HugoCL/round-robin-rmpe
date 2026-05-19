@@ -1269,7 +1269,7 @@ async function updateAssignmentFeedAfterUndo(
 	});
 }
 
-const assignPRBatchArgs = {
+const assignPRBatchInternalArgs = {
 	teamSlug: v.string(),
 	additionalTeamSlugs: v.optional(v.array(v.string())),
 	mode: v.string(), // "regular" | "tag"
@@ -1290,349 +1290,373 @@ const assignPRBatchArgs = {
 	source: assignmentSourceValidator,
 };
 
+const assignPRBatchArgs = {
+	agentTokenHash: v.optional(v.string()),
+	teamSlug: assignPRBatchInternalArgs.teamSlug,
+	additionalTeamSlugs: assignPRBatchInternalArgs.additionalTeamSlugs,
+	mode: assignPRBatchInternalArgs.mode,
+	selectedTagId: assignPRBatchInternalArgs.selectedTagId,
+	slots: assignPRBatchInternalArgs.slots,
+	prUrl: assignPRBatchInternalArgs.prUrl,
+	contextUrl: assignPRBatchInternalArgs.contextUrl,
+	urgent: assignPRBatchInternalArgs.urgent,
+	crossTeamReview: assignPRBatchInternalArgs.crossTeamReview,
+	excludeTeammates: assignPRBatchInternalArgs.excludeTeammates,
+	actionByReviewerId: assignPRBatchInternalArgs.actionByReviewerId,
+	source: assignPRBatchInternalArgs.source,
+};
+
 // Assignment mutations
 export const assignPRBatchInternal = internalMutation({
-	args: assignPRBatchArgs,
-	handler: async (
-		ctx,
-		{
-			teamSlug,
-			additionalTeamSlugs = [],
-			mode,
-			selectedTagId,
-			slots,
-			prUrl,
-			contextUrl,
-			urgent = false,
-			crossTeamReview = false,
-			excludeTeammates = false,
-			actionByReviewerId,
-			source = "ui",
-		},
-	) => {
-		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
-		const normalizedAdditionalTeamSlugs = [
-			...new Set(
-				additionalTeamSlugs
-					.map((slug) => slug.trim())
-					.filter((slug) => slug.length > 0 && slug !== teamSlug),
-			),
-		];
-		const selectedAdditionalTeams = crossTeamReview
-			? await Promise.all(
-					normalizedAdditionalTeamSlugs.map((slug) =>
-						getTeamBySlugOrThrow(ctx, slug),
-					),
-				)
-			: [];
-		const reviewerPoolTeams =
-			crossTeamReview && excludeTeammates
-				? selectedAdditionalTeams
-				: [team, ...selectedAdditionalTeams];
-		const reviewerPoolTeamIds =
-			reviewerPoolTeams.length > 0
-				? reviewerPoolTeams.map((item) => item._id)
-				: undefined;
-		const availabilityNow = Date.now();
-		const assignmentSource: AssignmentSource =
-			source === "agent" ? "agent" : "ui";
-		if (slots.length === 0) {
-			return {
-				success: false,
-				assigned: [],
-				failed: [{ slotIndex: 0, reason: "no_candidates" as const }],
-				assignedCount: 0,
-				failedCount: 1,
-				totalRequested: 0,
-			};
-		}
+	args: assignPRBatchInternalArgs,
+	handler: executeAssignPRBatch,
+});
 
-		const reviewersByTeam = await Promise.all(
-			reviewerPoolTeams.map(async (reviewerPoolTeam) => {
-				const reviewersForTeam = await ctx.db
-					.query("reviewers")
-					.withIndex("by_team", (q) => q.eq("teamId", reviewerPoolTeam._id))
-					.collect();
-				return { reviewerPoolTeam, reviewersForTeam };
-			}),
-		);
-
-		const reviewers = reviewersByTeam.flatMap(
-			(entry) => entry.reviewersForTeam,
-		);
-		const reviewerTeamById = new Map<Id<"reviewers">, Id<"teams">>();
-		const reviewerTimezoneTeamById = new Map<
-			Id<"reviewers">,
-			Pick<Doc<"teams">, "timezone"> | null
-		>();
-		for (const entry of reviewersByTeam) {
-			for (const reviewer of entry.reviewersForTeam) {
-				reviewerTeamById.set(reviewer._id, entry.reviewerPoolTeam._id);
-				reviewerTimezoneTeamById.set(reviewer._id, entry.reviewerPoolTeam);
-			}
-		}
-
-		const availabilityByReviewerId = new Map<
-			Id<"reviewers">,
-			{ effectiveIsAbsent: boolean; isPartTime: boolean }
-		>();
-		for (const reviewer of reviewers) {
-			const reviewerTimezoneTeam =
-				reviewerTimezoneTeamById.get(reviewer._id) ?? team;
-			const availability = getReviewerAvailabilityForTeam(
-				reviewer,
-				reviewerTimezoneTeam,
-				availabilityNow,
-			);
-			const poolExcluded = isExcludedFromReviewPool(reviewer);
-			availabilityByReviewerId.set(reviewer._id, {
-				effectiveIsAbsent: poolExcluded || availability.effectiveIsAbsent,
-				isPartTime: availability.partTimeSchedule !== undefined,
-			});
-		}
-
-		const partTimeCatchUpBaseline =
-			crossTeamReview && selectedAdditionalTeams.length > 0
-				? 0
-				: getMinAssignmentCountAmongNonPartTimeReviewers(reviewers);
-		const partTimeCatchUpCountsById = new Map<Id<"reviewers">, number>();
-		for (const reviewer of reviewers) {
-			if (crossTeamReview && selectedAdditionalTeams.length > 0) {
-				continue;
-			}
-			if (isExcludedFromReviewPool(reviewer)) {
-				continue;
-			}
-			const availability = availabilityByReviewerId.get(reviewer._id);
-			if (!availability) {
-				continue;
-			}
-			if (!availability.isPartTime || availability.effectiveIsAbsent) {
-				continue;
-			}
-
-			if (reviewer.assignmentCount < partTimeCatchUpBaseline) {
-				await ctx.db.patch(reviewer._id, {
-					assignmentCount: partTimeCatchUpBaseline,
-				});
-				partTimeCatchUpCountsById.set(reviewer._id, partTimeCatchUpBaseline);
-			}
-		}
-
-		const reviewersForAssignment = reviewers.map((reviewer) => {
-			const syncedCount = partTimeCatchUpCountsById.get(reviewer._id);
-			if (syncedCount === undefined) {
-				return reviewer;
-			}
-			return {
-				...reviewer,
-				assignmentCount: syncedCount,
-			};
-		});
-
-		if (reviewers.length === 0) {
-			return {
-				success: false,
-				assigned: [],
-				failed: slots.map((_, slotIndex) => ({
-					slotIndex,
-					reason: "no_candidates" as const,
-				})),
-				assignedCount: 0,
-				failedCount: slots.length,
-				totalRequested: slots.length,
-			};
-		}
-
-		const byId = new Map<Id<"reviewers">, Doc<"reviewers">>();
-		for (const reviewer of reviewersForAssignment) {
-			byId.set(reviewer._id, reviewer);
-		}
-
-		const resolution = resolveAssignmentSlots({
-			mode: mode === "tag" ? "tag" : "regular",
-			selectedTagId,
-			slots,
-			reviewers: reviewersForAssignment.map((reviewer) => ({
-				...reviewer,
-				effectiveIsAbsent:
-					availabilityByReviewerId.get(reviewer._id)?.effectiveIsAbsent ??
-					(isReviewerEffectivelyAbsentForTeam(
-						reviewer,
-						reviewerTimezoneTeamById.get(reviewer._id) ?? team,
-						availabilityNow,
-					) ||
-						isExcludedFromReviewPool(reviewer)),
-			})),
-			excludedReviewerId: actionByReviewerId,
-		});
-
-		if (resolution.resolved.length === 0) {
-			return {
-				success: false,
-				assigned: [],
-				failed: resolution.failed,
-				assignedCount: 0,
-				failedCount: resolution.failed.length,
-				totalRequested: slots.length,
-			};
-		}
-
-		const now = availabilityNow;
-		const batchId = `batch_${now}_${Math.random().toString(36).slice(2, 10)}`;
-		const assigner = actionByReviewerId
-			? byId.get(actionByReviewerId)
+async function executeAssignPRBatch(
+	ctx: MutationCtx,
+	{
+		teamSlug,
+		additionalTeamSlugs = [],
+		mode,
+		selectedTagId,
+		slots,
+		prUrl,
+		contextUrl,
+		urgent = false,
+		crossTeamReview = false,
+		excludeTeammates = false,
+		actionByReviewerId,
+		source = "ui",
+	}: {
+		teamSlug: string;
+		additionalTeamSlugs?: string[];
+		mode: string;
+		selectedTagId?: Id<"tags">;
+		slots: Array<{
+			strategy: string;
+			reviewerId?: Id<"reviewers">;
+			tagId?: Id<"tags">;
+		}>;
+		prUrl?: string;
+		contextUrl?: string;
+		urgent?: boolean;
+		crossTeamReview?: boolean;
+		excludeTeammates?: boolean;
+		actionByReviewerId?: Id<"reviewers">;
+		source?: "ui" | "agent";
+	},
+) {
+	const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+	const normalizedAdditionalTeamSlugs = [
+		...new Set(
+			additionalTeamSlugs
+				.map((slug) => slug.trim())
+				.filter((slug) => slug.length > 0 && slug !== teamSlug),
+		),
+	];
+	const selectedAdditionalTeams = crossTeamReview
+		? await Promise.all(
+				normalizedAdditionalTeamSlugs.map((slug) =>
+					getTeamBySlugOrThrow(ctx, slug),
+				),
+			)
+		: [];
+	const reviewerPoolTeams =
+		crossTeamReview && excludeTeammates
+			? selectedAdditionalTeams
+			: [team, ...selectedAdditionalTeams];
+	const reviewerPoolTeamIds =
+		reviewerPoolTeams.length > 0
+			? reviewerPoolTeams.map((item) => item._id)
 			: undefined;
-		const feedEntries: Array<{
-			reviewerId: string;
-			reviewerName?: string;
-			timestamp: number;
-			batchId: string;
-			forced: boolean;
-			skipped: boolean;
-			isAbsentSkip: boolean;
-			urgent?: boolean;
-			crossTeamReview?: boolean;
-			source?: AssignmentSource;
-			prUrl?: string;
-			contextUrl?: string;
-			tagId?: string;
-			actionByReviewerId?: Id<"reviewers">;
-			actionByName?: string;
-		}> = [];
+	const availabilityNow = Date.now();
+	const assignmentSource: AssignmentSource =
+		source === "agent" ? "agent" : "ui";
+	if (slots.length === 0) {
+		return {
+			success: false,
+			assigned: [],
+			failed: [{ slotIndex: 0, reason: "no_candidates" as const }],
+			assignedCount: 0,
+			failedCount: 1,
+			totalRequested: 0,
+		};
+	}
 
-		const assigned = [];
-		for (const [index, item] of resolution.resolved.entries()) {
-			const timestamp = now + index;
-			const reviewer = byId.get(item.reviewer._id);
-			if (!reviewer) continue;
-			const nextCount = reviewer.assignmentCount + 1;
+	const reviewersByTeam = await Promise.all(
+		reviewerPoolTeams.map(async (reviewerPoolTeam) => {
+			const reviewersForTeam = await ctx.db
+				.query("reviewers")
+				.withIndex("by_team", (q) => q.eq("teamId", reviewerPoolTeam._id))
+				.collect();
+			return { reviewerPoolTeam, reviewersForTeam };
+		}),
+	);
 
-			await ctx.db.patch(reviewer._id, {
-				assignmentCount: nextCount,
-			});
+	const reviewers = reviewersByTeam.flatMap((entry) => entry.reviewersForTeam);
+	const reviewerTeamById = new Map<Id<"reviewers">, Id<"teams">>();
+	const reviewerTimezoneTeamById = new Map<
+		Id<"reviewers">,
+		Pick<Doc<"teams">, "timezone"> | null
+	>();
+	for (const entry of reviewersByTeam) {
+		for (const reviewer of entry.reviewersForTeam) {
+			reviewerTeamById.set(reviewer._id, entry.reviewerPoolTeam._id);
+			reviewerTimezoneTeamById.set(reviewer._id, entry.reviewerPoolTeam);
+		}
+	}
 
-			await ctx.db.insert("assignmentHistory", {
-				teamId: team._id,
-				reviewerId: reviewer._id,
-				reviewerTeamId: reviewerTeamById.get(reviewer._id),
-				reviewerPoolTeamIds,
-				reviewerName: reviewer.name,
-				timestamp,
-				batchId,
-				forced: false,
-				skipped: false,
-				isAbsentSkip: false,
-				urgent,
-				crossTeamReview,
-				source: assignmentSource,
-				prUrl,
-				contextUrl,
-				tagId: item.tagId ? String(item.tagId) : undefined,
-				actionByReviewerId,
-				actionByName: assigner?.name,
-			});
+	const availabilityByReviewerId = new Map<
+		Id<"reviewers">,
+		{ effectiveIsAbsent: boolean; isPartTime: boolean }
+	>();
+	for (const reviewer of reviewers) {
+		const reviewerTimezoneTeam =
+			reviewerTimezoneTeamById.get(reviewer._id) ?? team;
+		const availability = getReviewerAvailabilityForTeam(
+			reviewer,
+			reviewerTimezoneTeam,
+			availabilityNow,
+		);
+		const poolExcluded = isExcludedFromReviewPool(reviewer);
+		availabilityByReviewerId.set(reviewer._id, {
+			effectiveIsAbsent: poolExcluded || availability.effectiveIsAbsent,
+			isPartTime: availability.partTimeSchedule !== undefined,
+		});
+	}
 
-			if (assigner) {
-				await ctx.db.insert("prAssignments", {
-					teamId: team._id,
-					reviewerTeamId: reviewerTeamById.get(reviewer._id),
-					reviewerPoolTeamIds,
-					prUrl: prUrl?.trim(),
-					batchId,
-					urgent,
-					crossTeamReview,
-					assigneeId: reviewer._id,
-					assignerId: assigner._id,
-					createdAt: timestamp,
-					updatedAt: timestamp,
-				});
-			}
-
-			feedEntries.push({
-				reviewerId: reviewer._id,
-				reviewerName: reviewer.name,
-				timestamp,
-				batchId,
-				forced: false,
-				skipped: false,
-				isAbsentSkip: false,
-				urgent,
-				crossTeamReview,
-				source: assignmentSource,
-				prUrl,
-				contextUrl,
-				tagId: item.tagId ? String(item.tagId) : undefined,
-				actionByReviewerId,
-				actionByName: assigner?.name,
-			});
-
-			assigned.push({
-				slotIndex: item.slotIndex,
-				reviewer: {
-					id: reviewer._id,
-					name: reviewer.name,
-					email: reviewer.email,
-					assignmentCount: nextCount,
-					isAbsent: reviewer.isAbsent,
-					effectiveIsAbsent: item.reviewer.effectiveIsAbsent,
-					createdAt: reviewer.createdAt,
-					tags: reviewer.tags,
-				},
-				tagId: item.tagId ? String(item.tagId) : undefined,
-			});
+	const partTimeCatchUpBaseline =
+		crossTeamReview && selectedAdditionalTeams.length > 0
+			? 0
+			: getMinAssignmentCountAmongNonPartTimeReviewers(reviewers);
+	const partTimeCatchUpCountsById = new Map<Id<"reviewers">, number>();
+	for (const reviewer of reviewers) {
+		if (crossTeamReview && selectedAdditionalTeams.length > 0) {
+			continue;
+		}
+		if (isExcludedFromReviewPool(reviewer)) {
+			continue;
+		}
+		const availability = availabilityByReviewerId.get(reviewer._id);
+		if (!availability) {
+			continue;
+		}
+		if (!availability.isPartTime || availability.effectiveIsAbsent) {
+			continue;
 		}
 
-		await incrementGlobalReviewedPRCounter(ctx);
-		await updateAssignmentFeedBatch(ctx, feedEntries, team._id);
+		if (reviewer.assignmentCount < partTimeCatchUpBaseline) {
+			await ctx.db.patch(reviewer._id, {
+				assignmentCount: partTimeCatchUpBaseline,
+			});
+			partTimeCatchUpCountsById.set(reviewer._id, partTimeCatchUpBaseline);
+		}
+	}
 
-		await createSnapshot(
-			ctx,
-			team._id,
-			`Assigned batch (${assigned.length}/${slots.length}): ${assigned
-				.map((a) => a.reviewer.name)
-				.join(", ")}`,
-		);
-
+	const reviewersForAssignment = reviewers.map((reviewer) => {
+		const syncedCount = partTimeCatchUpCountsById.get(reviewer._id);
+		if (syncedCount === undefined) {
+			return reviewer;
+		}
 		return {
-			success: true,
-			batchId,
-			assigned,
+			...reviewer,
+			assignmentCount: syncedCount,
+		};
+	});
+
+	if (reviewers.length === 0) {
+		return {
+			success: false,
+			assigned: [],
+			failed: slots.map((_, slotIndex) => ({
+				slotIndex,
+				reason: "no_candidates" as const,
+			})),
+			assignedCount: 0,
+			failedCount: slots.length,
+			totalRequested: slots.length,
+		};
+	}
+
+	const byId = new Map<Id<"reviewers">, Doc<"reviewers">>();
+	for (const reviewer of reviewersForAssignment) {
+		byId.set(reviewer._id, reviewer);
+	}
+
+	const resolution = resolveAssignmentSlots({
+		mode: mode === "tag" ? "tag" : "regular",
+		selectedTagId,
+		slots,
+		reviewers: reviewersForAssignment.map((reviewer) => ({
+			...reviewer,
+			effectiveIsAbsent:
+				availabilityByReviewerId.get(reviewer._id)?.effectiveIsAbsent ??
+				(isReviewerEffectivelyAbsentForTeam(
+					reviewer,
+					reviewerTimezoneTeamById.get(reviewer._id) ?? team,
+					availabilityNow,
+				) ||
+					isExcludedFromReviewPool(reviewer)),
+		})),
+		excludedReviewerId: actionByReviewerId,
+	});
+
+	if (resolution.resolved.length === 0) {
+		return {
+			success: false,
+			assigned: [],
 			failed: resolution.failed,
-			assignedCount: assigned.length,
+			assignedCount: 0,
 			failedCount: resolution.failed.length,
 			totalRequested: slots.length,
 		};
-	},
-});
+	}
+
+	const now = availabilityNow;
+	const batchId = `batch_${now}_${Math.random().toString(36).slice(2, 10)}`;
+	const assigner = actionByReviewerId
+		? byId.get(actionByReviewerId)
+		: undefined;
+	const feedEntries: Array<{
+		reviewerId: string;
+		reviewerName?: string;
+		timestamp: number;
+		batchId: string;
+		forced: boolean;
+		skipped: boolean;
+		isAbsentSkip: boolean;
+		urgent?: boolean;
+		crossTeamReview?: boolean;
+		source?: AssignmentSource;
+		prUrl?: string;
+		contextUrl?: string;
+		tagId?: string;
+		actionByReviewerId?: Id<"reviewers">;
+		actionByName?: string;
+	}> = [];
+
+	const assigned = [];
+	for (const [index, item] of resolution.resolved.entries()) {
+		const timestamp = now + index;
+		const reviewer = byId.get(item.reviewer._id);
+		if (!reviewer) continue;
+		const nextCount = reviewer.assignmentCount + 1;
+
+		await ctx.db.patch(reviewer._id, {
+			assignmentCount: nextCount,
+		});
+
+		await ctx.db.insert("assignmentHistory", {
+			teamId: team._id,
+			reviewerId: reviewer._id,
+			reviewerTeamId: reviewerTeamById.get(reviewer._id),
+			reviewerPoolTeamIds,
+			reviewerName: reviewer.name,
+			timestamp,
+			batchId,
+			forced: false,
+			skipped: false,
+			isAbsentSkip: false,
+			urgent,
+			crossTeamReview,
+			source: assignmentSource,
+			prUrl,
+			contextUrl,
+			tagId: item.tagId ? String(item.tagId) : undefined,
+			actionByReviewerId,
+			actionByName: assigner?.name,
+		});
+
+		if (assigner) {
+			await ctx.db.insert("prAssignments", {
+				teamId: team._id,
+				reviewerTeamId: reviewerTeamById.get(reviewer._id),
+				reviewerPoolTeamIds,
+				prUrl: prUrl?.trim(),
+				batchId,
+				urgent,
+				crossTeamReview,
+				assigneeId: reviewer._id,
+				assignerId: assigner._id,
+				createdAt: timestamp,
+				updatedAt: timestamp,
+			});
+		}
+
+		feedEntries.push({
+			reviewerId: reviewer._id,
+			reviewerName: reviewer.name,
+			timestamp,
+			batchId,
+			forced: false,
+			skipped: false,
+			isAbsentSkip: false,
+			urgent,
+			crossTeamReview,
+			source: assignmentSource,
+			prUrl,
+			contextUrl,
+			tagId: item.tagId ? String(item.tagId) : undefined,
+			actionByReviewerId,
+			actionByName: assigner?.name,
+		});
+
+		assigned.push({
+			slotIndex: item.slotIndex,
+			reviewer: {
+				id: reviewer._id,
+				name: reviewer.name,
+				email: reviewer.email,
+				assignmentCount: nextCount,
+				isAbsent: reviewer.isAbsent,
+				effectiveIsAbsent: item.reviewer.effectiveIsAbsent,
+				createdAt: reviewer.createdAt,
+				tags: reviewer.tags,
+			},
+			tagId: item.tagId ? String(item.tagId) : undefined,
+		});
+	}
+
+	await incrementGlobalReviewedPRCounter(ctx);
+	await updateAssignmentFeedBatch(ctx, feedEntries, team._id);
+
+	await createSnapshot(
+		ctx,
+		team._id,
+		`Assigned batch (${assigned.length}/${slots.length}): ${assigned
+			.map((a) => a.reviewer.name)
+			.join(", ")}`,
+	);
+
+	return {
+		success: true,
+		batchId,
+		assigned,
+		failed: resolution.failed,
+		assignedCount: assigned.length,
+		failedCount: resolution.failed.length,
+		totalRequested: slots.length,
+	};
+}
 
 export const assignPRBatch = mutation({
 	args: assignPRBatchArgs,
 	handler: async (ctx, args) => {
-		await assertCanAssignFromAnyTeam(ctx);
-		return await ctx.runMutation(
-			internal.mutations.assignPRBatchInternal,
-			args,
-		);
-	},
-});
-
-export const assignPRBatchAsAgent = mutation({
-	args: {
-		tokenHash: v.string(),
-		...assignPRBatchArgs,
-	},
-	handler: async (ctx, { tokenHash, teamSlug, ...args }) => {
+		const { agentTokenHash, teamSlug, ...internalArgs } = args;
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
-		await assertAgentTokenCanAccessTeamId(ctx, tokenHash, team._id);
-		return await ctx.runMutation(internal.mutations.assignPRBatchInternal, {
+		if (agentTokenHash) {
+			await assertAgentTokenCanAccessTeamId(ctx, agentTokenHash, team._id);
+		} else {
+			await assertCanAssignFromAnyTeam(ctx);
+		}
+		return await executeAssignPRBatch(ctx, {
 			teamSlug,
-			...args,
+			...internalArgs,
 		});
 	},
 });
 
-const assignPRArgs = {
+const assignPRInternalArgs = {
 	reviewerId: v.id("reviewers"),
 	forced: v.optional(v.boolean()),
 	skipped: v.optional(v.boolean()),
@@ -1646,151 +1670,181 @@ const assignPRArgs = {
 	actionByReviewerId: v.optional(v.id("reviewers")),
 };
 
+const assignPRArgs = {
+	agentTokenHash: v.optional(v.string()),
+	reviewerId: assignPRInternalArgs.reviewerId,
+	forced: assignPRInternalArgs.forced,
+	skipped: assignPRInternalArgs.skipped,
+	isAbsentSkip: assignPRInternalArgs.isAbsentSkip,
+	urgent: assignPRInternalArgs.urgent,
+	crossTeamReview: assignPRInternalArgs.crossTeamReview,
+	source: assignPRInternalArgs.source,
+	prUrl: assignPRInternalArgs.prUrl,
+	contextUrl: assignPRInternalArgs.contextUrl,
+	tagId: assignPRInternalArgs.tagId,
+	actionByReviewerId: assignPRInternalArgs.actionByReviewerId,
+};
+
 // Assignment mutations
 export const assignPRInternal = internalMutation({
-	args: assignPRArgs,
-	handler: async (
-		ctx,
-		{
-			reviewerId,
-			forced = false,
-			skipped = false,
-			isAbsentSkip = false,
-			urgent = false,
-			crossTeamReview = false,
-			source = "ui",
-			prUrl,
-			contextUrl,
-			tagId,
-			actionByReviewerId,
-		},
-	) => {
-		const reviewer = await ctx.db.get(reviewerId);
-		if (!reviewer) {
-			throw new Error("Reviewer not found");
-		}
-		if (!forced && isExcludedFromReviewPool(reviewer)) {
-			throw new Error("Reviewer is not in the review pool");
-		}
-
-		// Increment assignment count
-		await ctx.db.patch(reviewerId, {
-			assignmentCount: reviewer.assignmentCount + 1,
-		});
-		const assignmentSource: AssignmentSource =
-			source === "agent" ? "agent" : "ui";
-
-		const timestamp = Date.now();
-
-		// Add to assignment history
-		await ctx.db.insert("assignmentHistory", {
-			teamId: reviewer.teamId,
-			reviewerId,
-			reviewerTeamId: reviewer.teamId,
-			reviewerName: reviewer.name,
-			timestamp,
-			forced,
-			skipped,
-			isAbsentSkip,
-			urgent,
-			crossTeamReview,
-			source: assignmentSource,
-			prUrl,
-			contextUrl,
-			tagId,
-			actionByReviewerId,
-			actionByName: actionByReviewerId
-				? (await ctx.db.get(actionByReviewerId))?.name
-				: undefined,
-		});
-
-		// Increment global PR counter only for real assignments (exclude skips)
-		if (!skipped && !isAbsentSkip) {
-			await incrementGlobalReviewedPRCounter(ctx);
-		}
-
-		// Update assignment feed - only if it's not an absent reviewer being auto-skipped
-		if (!isAbsentSkip) {
-			await updateAssignmentFeed(
-				ctx,
-				{
-					reviewerId,
-					reviewerName: reviewer.name,
-					timestamp,
-					forced,
-					skipped,
-					isAbsentSkip,
-					urgent,
-					crossTeamReview,
-					source: assignmentSource,
-					prUrl,
-					contextUrl,
-					tagId,
-					actionByReviewerId,
-					actionByName: actionByReviewerId
-						? (await ctx.db.get(actionByReviewerId))?.name
-						: undefined,
-				},
-				reviewer.teamId,
-			);
-		}
-
-		// Create backup snapshot
-		let action = "Assigned PR to";
-		if (skipped) action = "Skipped";
-		if (isAbsentSkip) action = "Auto-skipped absent reviewer";
-
-		const tagName = tagId ? (await ctx.db.get(tagId))?.name : undefined;
-		const tagMessage = tagName ? ` (${tagName} track)` : "";
-
-		await createSnapshot(
-			ctx,
-			reviewer.teamId,
-			`${action}: ${reviewer.name}${tagMessage}`,
-		);
-		const team =
-			reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
-
-		return {
-			success: true,
-			reviewer: {
-				id: reviewer._id,
-				name: reviewer.name,
-				email: reviewer.email,
-				assignmentCount: reviewer.assignmentCount + 1,
-				isAbsent: reviewer.isAbsent,
-				effectiveIsAbsent: isReviewerEffectivelyAbsentForTeam(
-					reviewer,
-					team,
-					timestamp,
-				),
-				createdAt: reviewer.createdAt,
-				tags: reviewer.tags,
-			},
-		};
-	},
+	args: assignPRInternalArgs,
+	handler: executeAssignPR,
 });
+
+async function executeAssignPR(
+	ctx: MutationCtx,
+	{
+		reviewerId,
+		forced = false,
+		skipped = false,
+		isAbsentSkip = false,
+		urgent = false,
+		crossTeamReview = false,
+		source = "ui",
+		prUrl,
+		contextUrl,
+		tagId,
+		actionByReviewerId,
+	}: {
+		reviewerId: Id<"reviewers">;
+		forced?: boolean;
+		skipped?: boolean;
+		isAbsentSkip?: boolean;
+		urgent?: boolean;
+		crossTeamReview?: boolean;
+		source?: "ui" | "agent";
+		prUrl?: string;
+		contextUrl?: string;
+		tagId?: Id<"tags">;
+		actionByReviewerId?: Id<"reviewers">;
+	},
+) {
+	const reviewer = await ctx.db.get(reviewerId);
+	if (!reviewer) {
+		throw new Error("Reviewer not found");
+	}
+	if (!forced && isExcludedFromReviewPool(reviewer)) {
+		throw new Error("Reviewer is not in the review pool");
+	}
+
+	// Increment assignment count
+	await ctx.db.patch(reviewerId, {
+		assignmentCount: reviewer.assignmentCount + 1,
+	});
+	const assignmentSource: AssignmentSource =
+		source === "agent" ? "agent" : "ui";
+
+	const timestamp = Date.now();
+
+	// Add to assignment history
+	await ctx.db.insert("assignmentHistory", {
+		teamId: reviewer.teamId,
+		reviewerId,
+		reviewerTeamId: reviewer.teamId,
+		reviewerName: reviewer.name,
+		timestamp,
+		forced,
+		skipped,
+		isAbsentSkip,
+		urgent,
+		crossTeamReview,
+		source: assignmentSource,
+		prUrl,
+		contextUrl,
+		tagId,
+		actionByReviewerId,
+		actionByName: actionByReviewerId
+			? (await ctx.db.get(actionByReviewerId))?.name
+			: undefined,
+	});
+
+	// Increment global PR counter only for real assignments (exclude skips)
+	if (!skipped && !isAbsentSkip) {
+		await incrementGlobalReviewedPRCounter(ctx);
+	}
+
+	// Update assignment feed - only if it's not an absent reviewer being auto-skipped
+	if (!isAbsentSkip) {
+		await updateAssignmentFeed(
+			ctx,
+			{
+				reviewerId,
+				reviewerName: reviewer.name,
+				timestamp,
+				forced,
+				skipped,
+				isAbsentSkip,
+				urgent,
+				crossTeamReview,
+				source: assignmentSource,
+				prUrl,
+				contextUrl,
+				tagId,
+				actionByReviewerId,
+				actionByName: actionByReviewerId
+					? (await ctx.db.get(actionByReviewerId))?.name
+					: undefined,
+			},
+			reviewer.teamId,
+		);
+	}
+
+	// Create backup snapshot
+	let action = "Assigned PR to";
+	if (skipped) action = "Skipped";
+	if (isAbsentSkip) action = "Auto-skipped absent reviewer";
+
+	const tagName = tagId ? (await ctx.db.get(tagId))?.name : undefined;
+	const tagMessage = tagName ? ` (${tagName} track)` : "";
+
+	await createSnapshot(
+		ctx,
+		reviewer.teamId,
+		`${action}: ${reviewer.name}${tagMessage}`,
+	);
+	const team =
+		reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
+
+	return {
+		success: true,
+		reviewer: {
+			id: reviewer._id,
+			name: reviewer.name,
+			email: reviewer.email,
+			assignmentCount: reviewer.assignmentCount + 1,
+			isAbsent: reviewer.isAbsent,
+			effectiveIsAbsent: isReviewerEffectivelyAbsentForTeam(
+				reviewer,
+				team,
+				timestamp,
+			),
+			createdAt: reviewer.createdAt,
+			tags: reviewer.tags,
+		},
+	};
+}
 
 export const assignPR = mutation({
 	args: assignPRArgs,
 	handler: async (ctx, args) => {
-		await assertCanAssignFromAnyTeam(ctx);
-		return await ctx.runMutation(internal.mutations.assignPRInternal, args);
-	},
-});
-
-export const assignPRAsAgent = mutation({
-	args: {
-		tokenHash: v.string(),
-		...assignPRArgs,
-	},
-	handler: async (ctx, { tokenHash, ...args }) => {
-		const reviewer = await ctx.db.get(args.reviewerId);
-		if (!reviewer) {
-			throw new Error("Reviewer not found");
+		const { agentTokenHash, ...internalArgs } = args;
+		if (agentTokenHash) {
+			const reviewer = await ctx.db.get(internalArgs.reviewerId);
+			if (!reviewer) {
+				throw new Error("Reviewer not found");
+			}
+			if (!reviewer.teamId) {
+				throw new Error("Reviewer team not found");
+			}
+			await assertAgentTokenCanAccessTeamId(
+				ctx,
+				agentTokenHash,
+				reviewer.teamId,
+			);
+		} else {
+			await assertCanAssignFromAnyTeam(ctx);
 		}
-		await assertAgentTokenCanAccessTeamId(ctx, tokenHash, reviewer.teamId);
-		return await ctx.runMutation(internal.mutations.assignPRInternal, args);
+		return await executeAssignPR(ctx, internalArgs);
 	},
 });
 

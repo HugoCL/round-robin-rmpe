@@ -37,3 +37,18 @@ export type AssignmentResolverReasonMessages = {
 };
 
 export type AssignmentCardTag = Doc<"tags">;
+
+export type AssignPRBatchAssignedItem = {
+	slotIndex: number;
+	reviewer: {
+		id: Id<"reviewers">;
+		name: string;
+		email: string;
+		assignmentCount: number;
+		isAbsent: boolean;
+		effectiveIsAbsent: boolean;
+		createdAt: number;
+		tags: Id<"tags">[];
+	};
+	tagId?: string;
+};
