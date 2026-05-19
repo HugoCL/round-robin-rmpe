@@ -66,8 +66,8 @@ function ChangelogContent({ entries }: { entries: ChangelogEntry[] }) {
 				<div className="absolute left-0 top-1 bottom-0 w-0.5 bg-primary/20" />
 
 				<div className="space-y-6">
-					{entries.map((entry, index) => (
-						<div key={`${entry.date}-${index}`} className="relative pl-6">
+					{entries.map((entry) => (
+						<div key={`${entry.date}-${entry.title}`} className="relative pl-6">
 							{/* Timeline dot */}
 							<div className="absolute left-[-3px] top-1 h-2 w-2  bg-primary" />
 

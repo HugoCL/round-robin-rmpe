@@ -3,11 +3,11 @@
 
 import { execSync } from "node:child_process";
 import {
+  existsSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
   statSync,
-  existsSync,
-  mkdirSync,
 } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";

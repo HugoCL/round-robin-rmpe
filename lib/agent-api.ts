@@ -49,6 +49,27 @@ export type AuthenticatedAgent = {
 	}>;
 };
 
+async function resolveAgentAssignerName(
+	auth: AuthenticatedAgent,
+	teamSlug: string,
+	actionByReviewerId?: Id<"reviewers">,
+) {
+	const reviewers = await fetchQuery(api.queries.getReviewers, { teamSlug });
+	if (actionByReviewerId) {
+		const byId = reviewers.find(
+			(reviewer) => reviewer._id === actionByReviewerId,
+		);
+		if (byId?.name?.trim()) return byId.name.trim();
+	}
+	if (auth.email) {
+		const byEmail = reviewers.find(
+			(reviewer) => reviewer.email.toLowerCase() === auth.email?.toLowerCase(),
+		);
+		if (byEmail?.name?.trim()) return byEmail.name.trim();
+	}
+	return undefined;
+}
+
 type AgentWarning = {
 	code: string;
 	message: string;
@@ -812,6 +833,11 @@ export async function executeAgentAssignment(
 
 	if (normalizedRequest.notify && normalizedRequest.prUrl) {
 		try {
+			const assignerName = await resolveAgentAssignerName(
+				auth,
+				body.selectedTeam.slug,
+				body.actionByReviewerId,
+			);
 			const notifyPayload = assignedReviewers.map((item) => ({
 				name: item.reviewer.name,
 				email: item.reviewer.email,
@@ -832,7 +858,7 @@ export async function executeAgentAssignment(
 					contextUrl: normalizedRequest.contextUrl,
 					locale: "es",
 					assignerEmail: auth.email || undefined,
-					assignerName: auth.email || undefined,
+					assignerName,
 					teamSlug: body.selectedTeam.slug,
 					urgent: normalizedRequest.urgent,
 				});
@@ -845,7 +871,7 @@ export async function executeAgentAssignment(
 					contextUrl: normalizedRequest.contextUrl,
 					locale: "es",
 					assignerEmail: auth.email || undefined,
-					assignerName: auth.email || undefined,
+					assignerName,
 					teamSlug: body.selectedTeam.slug,
 					urgent: normalizedRequest.urgent,
 				});

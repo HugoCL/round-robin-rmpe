@@ -58,6 +58,7 @@ export default function PRReviewAssignment({
 				email: user.emailAddresses[0]?.emailAddress || "",
 				firstName: user.firstName || undefined,
 				lastName: user.lastName || undefined,
+				fullName: user.fullName || undefined,
 			}
 		: null;
 	const {

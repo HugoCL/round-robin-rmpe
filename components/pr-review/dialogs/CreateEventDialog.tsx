@@ -306,7 +306,7 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 									mode="single"
 									selected={date}
 									onSelect={setDate}
-									initialFocus
+									autoFocus
 								/>
 							</PopoverContent>
 						</Popover>

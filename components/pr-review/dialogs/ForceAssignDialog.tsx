@@ -31,6 +31,7 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
+import { resolveAssignerDisplayName } from "@/lib/assignerDisplayName";
 import { getDefaultPRChatMessageTemplate } from "@/lib/googleChatMessageTemplate";
 import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
 
@@ -129,10 +130,19 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 				const forcedReviewer = reviewers.find(
 					(r) => r._id === selectedReviewerId,
 				);
-				const assignerName =
-					user?.firstName && user?.lastName
-						? `${user.firstName} ${user.lastName}`
-						: user?.firstName || user?.lastName || "Unknown";
+				const selfReviewer = user?.email
+					? reviewers.find(
+							(reviewer) =>
+								reviewer.email.toLowerCase() === user.email.toLowerCase(),
+						)
+					: undefined;
+				const assignerName = resolveAssignerDisplayName({
+					email: user?.email,
+					firstName: user?.firstName,
+					lastName: user?.lastName,
+					fullName: user?.fullName,
+					reviewerName: selfReviewer?.name,
+				});
 				// Create active assignment row (force)
 				try {
 					const assigner = reviewers.find(

@@ -119,7 +119,7 @@ export async function restoreFromSnapshot(key: string): Promise<boolean> {
 	try {
 		const snapshot = await getSnapshotData(key);
 
-		if (!snapshot || !snapshot.data) {
+		if (!snapshot?.data) {
 			return false;
 		}
 

@@ -32,6 +32,7 @@ export interface UserInfo {
 	email: string;
 	firstName?: string;
 	lastName?: string;
+	fullName?: string;
 	googleChatUserId?: string; // optional chat user id for tagging assigner
 }
 

@@ -3,6 +3,7 @@
 import { useAction } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
+import { resolveAssignerDisplayName } from "@/lib/assignerDisplayName";
 import type { Assignment, Reviewer, UserInfo } from "@/lib/types";
 import type { ShortcutAction } from "../dialogs/ShortcutConfirmationDialog";
 
@@ -88,7 +89,19 @@ export function useShortcutDialogFlow({
 							contextUrl: lastMessageState.current.contextUrl,
 							customMessage: lastMessageState.current.message,
 							assignerEmail: userInfo?.email,
-							assignerName: userInfo?.firstName || userInfo?.email,
+							assignerName: resolveAssignerDisplayName({
+								email: userInfo?.email,
+								firstName: userInfo?.firstName,
+								lastName: userInfo?.lastName,
+								fullName: userInfo?.fullName,
+								reviewerName: userInfo?.email
+									? reviewers.find(
+											(reviewer) =>
+												reviewer.email.toLowerCase() ===
+												userInfo.email.toLowerCase(),
+										)?.name
+									: undefined,
+							}),
 							locale,
 							teamSlug,
 							urgent: lastMessageState.current.urgent,
@@ -111,6 +124,8 @@ export function useShortcutDialogFlow({
 		teamSlug,
 		userInfo?.email,
 		userInfo?.firstName,
+		userInfo?.lastName,
+		userInfo?.fullName,
 	]);
 
 	useEffect(() => {

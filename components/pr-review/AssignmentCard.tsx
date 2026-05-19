@@ -12,6 +12,7 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
+import { resolveAssignerDisplayName } from "@/lib/assignerDisplayName";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import type { Reviewer } from "@/lib/types";
 import { AssignmentActionsRow } from "./assignment/AssignmentActionsRow";
@@ -326,10 +327,21 @@ export function AssignmentCard() {
 		)?._id;
 	};
 
-	const getAssignerName = () =>
-		user?.firstName && user?.lastName
-			? `${user.firstName} ${user.lastName}`
-			: user?.firstName || user?.lastName || "Unknown";
+	const getAssignerName = () => {
+		const selfReviewer = user?.email
+			? reviewers.find(
+					(reviewer) =>
+						reviewer.email.toLowerCase() === user.email.toLowerCase(),
+				)
+			: undefined;
+		return resolveAssignerDisplayName({
+			email: user?.email,
+			firstName: user?.firstName,
+			lastName: user?.lastName,
+			fullName: user?.fullName,
+			reviewerName: selfReviewer?.name,
+		});
+	};
 
 	const resetMessageState = () => {
 		setEnableCustomMessage(false);

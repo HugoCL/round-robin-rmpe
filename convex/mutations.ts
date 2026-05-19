@@ -9,7 +9,6 @@ import {
 	resolveTeamTimezone,
 } from "../lib/reviewerAvailability";
 import { isExcludedFromReviewPool } from "../lib/reviewerEligibility";
-import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
 	internalMutation,

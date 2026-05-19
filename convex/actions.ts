@@ -113,6 +113,44 @@ async function resolveWebhookTargets(
 	return Array.from(targetByWebhook.values());
 }
 
+async function resolveAssignerDisplayNameForChat(
+	ctx: ActionCtx,
+	options: {
+		assignerName?: string;
+		assignerEmail?: string;
+		teamSlug: string;
+	},
+): Promise<string | undefined> {
+	const { assignerName, assignerEmail, teamSlug } = options;
+
+	if (assignerEmail?.trim()) {
+		try {
+			const reviewers = await ctx.runQuery(api.queries.getReviewers, {
+				teamSlug,
+			});
+			const assigner = reviewers.find(
+				(reviewer) =>
+					reviewer.email.toLowerCase() === assignerEmail.trim().toLowerCase(),
+			);
+			if (assigner?.name?.trim()) {
+				return assigner.name.trim();
+			}
+		} catch (error) {
+			console.warn(
+				"Failed to resolve assigner name from team reviewers",
+				error,
+			);
+		}
+	}
+
+	const trimmedName = assignerName?.trim();
+	if (trimmedName && !trimmedName.includes("@") && trimmedName !== "Unknown") {
+		return trimmedName;
+	}
+
+	return undefined;
+}
+
 // Google Chat integration action
 export const sendGoogleChatMessage = action({
 	args: {
@@ -187,6 +225,14 @@ export const sendGoogleChatMessage = action({
 					console.warn("Failed to lookup assignerChatId server-side", e);
 				}
 			}
+			const resolvedAssignerName = await resolveAssignerDisplayNameForChat(
+				ctx,
+				{
+					assignerName,
+					assignerEmail,
+					teamSlug,
+				},
+			);
 			let builtMessage = ""; // init to satisfy TS definite assignment
 
 			// Build composite display: Name (@<users/ID>) so Google Chat shows both
@@ -219,7 +265,7 @@ export const sendGoogleChatMessage = action({
 					reviewerName || "Reviewer",
 				);
 				const assignerComposite = buildComposite(
-					assignerName?.trim() || assignerEmail?.trim(),
+					resolvedAssignerName,
 					assignerChatId,
 					"Someone",
 				);
@@ -254,10 +300,12 @@ export const sendGoogleChatMessage = action({
 					reviewerChatId,
 					reviewerName || "Reviewer",
 				);
-				const assignerFallback =
-					assignerName?.trim() || assignerEmail?.trim() || undefined;
-				const assignerComposite = assignerFallback
-					? buildComposite(assignerFallback, assignerChatId, assignerFallback)
+				const assignerComposite = resolvedAssignerName
+					? buildComposite(
+							resolvedAssignerName,
+							assignerChatId,
+							resolvedAssignerName,
+						)
 					: null;
 
 				// Build the message with proper mentions using i18n
@@ -500,6 +548,14 @@ export const sendGoogleChatGroupMessage = action({
 					console.warn("Failed to lookup assignerChatId server-side", e);
 				}
 			}
+			const resolvedAssignerName = await resolveAssignerDisplayNameForChat(
+				ctx,
+				{
+					assignerName,
+					assignerEmail,
+					teamSlug,
+				},
+			);
 
 			const buildComposite = (
 				name: string | undefined,
@@ -522,11 +578,13 @@ export const sendGoogleChatGroupMessage = action({
 					),
 				)
 				.join(", ");
-			const assignerComposite = buildComposite(
-				assignerName?.trim() || assignerEmail?.trim(),
-				assignerChatId,
-				"Someone",
-			);
+			const assignerComposite = resolvedAssignerName
+				? buildComposite(
+						resolvedAssignerName,
+						assignerChatId,
+						resolvedAssignerName,
+					)
+				: "Someone";
 
 			const prLinked = `<${prUrl}|PR>`;
 			const isSpanish = locale.startsWith("es");

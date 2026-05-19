@@ -179,7 +179,7 @@ export function MarkAbsentDialog({
 										date < new Date(new Date().setHours(0, 0, 0, 0))
 									}
 									locale={dateLocale}
-									initialFocus
+									autoFocus
 								/>
 							</PopoverContent>
 						</Popover>

@@ -8,6 +8,12 @@
  * @module
  */
 
+
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
 import type * as actions from "../actions.js";
 import type * as agent from "../agent.js";
 import type * as authz from "../authz.js";
@@ -20,12 +26,6 @@ import type * as mutations from "../mutations.js";
 import type * as pushActions from "../pushActions.js";
 import type * as queries from "../queries.js";
 import type * as suggestions from "../suggestions.js";
-
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
 
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;

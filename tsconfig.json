@@ -30,5 +30,11 @@
 		".next/types/**/*.ts",
 		".next/dev/types/**/*.ts"
 	],
-	"exclude": ["node_modules", ".next/**", "**/.next/**", ".next/types/**", "chrome-extension/**"]
+	"exclude": [
+		"node_modules",
+		".next/**",
+		"**/.next/**",
+		".next/types/**",
+		"chrome-extension/**"
+	]
 }
