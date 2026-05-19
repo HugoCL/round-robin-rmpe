@@ -9,9 +9,16 @@ import {
 	resolveTeamTimezone,
 } from "../lib/reviewerAvailability";
 import { isExcludedFromReviewPool } from "../lib/reviewerEligibility";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type MutationCtx, mutation, type QueryCtx } from "./_generated/server";
 import {
+	internalMutation,
+	type MutationCtx,
+	mutation,
+	type QueryCtx,
+} from "./_generated/server";
+import {
+	assertAgentTokenCanAccessTeamId,
 	assertCanMutateTeamById,
 	getMemberTeamsForEmail,
 	isAdminEmail,
@@ -1262,28 +1269,30 @@ async function updateAssignmentFeedAfterUndo(
 	});
 }
 
+const assignPRBatchArgs = {
+	teamSlug: v.string(),
+	additionalTeamSlugs: v.optional(v.array(v.string())),
+	mode: v.string(), // "regular" | "tag"
+	selectedTagId: v.optional(v.id("tags")),
+	slots: v.array(
+		v.object({
+			strategy: v.string(), // "random" | "specific" | "tag_random_selected" | "tag_random_other"
+			reviewerId: v.optional(v.id("reviewers")),
+			tagId: v.optional(v.id("tags")),
+		}),
+	),
+	prUrl: v.optional(v.string()),
+	contextUrl: v.optional(v.string()),
+	urgent: v.optional(v.boolean()),
+	crossTeamReview: v.optional(v.boolean()),
+	excludeTeammates: v.optional(v.boolean()),
+	actionByReviewerId: v.optional(v.id("reviewers")),
+	source: assignmentSourceValidator,
+};
+
 // Assignment mutations
-export const assignPRBatch = mutation({
-	args: {
-		teamSlug: v.string(),
-		additionalTeamSlugs: v.optional(v.array(v.string())),
-		mode: v.string(), // "regular" | "tag"
-		selectedTagId: v.optional(v.id("tags")),
-		slots: v.array(
-			v.object({
-				strategy: v.string(), // "random" | "specific" | "tag_random_selected" | "tag_random_other"
-				reviewerId: v.optional(v.id("reviewers")),
-				tagId: v.optional(v.id("tags")),
-			}),
-		),
-		prUrl: v.optional(v.string()),
-		contextUrl: v.optional(v.string()),
-		urgent: v.optional(v.boolean()),
-		crossTeamReview: v.optional(v.boolean()),
-		excludeTeammates: v.optional(v.boolean()),
-		actionByReviewerId: v.optional(v.id("reviewers")),
-		source: assignmentSourceValidator,
-	},
+export const assignPRBatchInternal = internalMutation({
+	args: assignPRBatchArgs,
 	handler: async (
 		ctx,
 		{
@@ -1301,7 +1310,6 @@ export const assignPRBatch = mutation({
 			source = "ui",
 		},
 	) => {
-		await assertCanAssignFromAnyTeam(ctx);
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 		const normalizedAdditionalTeamSlugs = [
 			...new Set(
@@ -1598,21 +1606,49 @@ export const assignPRBatch = mutation({
 	},
 });
 
-// Assignment mutations
-export const assignPR = mutation({
-	args: {
-		reviewerId: v.id("reviewers"),
-		forced: v.optional(v.boolean()),
-		skipped: v.optional(v.boolean()),
-		isAbsentSkip: v.optional(v.boolean()),
-		urgent: v.optional(v.boolean()),
-		crossTeamReview: v.optional(v.boolean()),
-		source: assignmentSourceValidator,
-		prUrl: v.optional(v.string()),
-		contextUrl: v.optional(v.string()),
-		tagId: v.optional(v.id("tags")),
-		actionByReviewerId: v.optional(v.id("reviewers")),
+export const assignPRBatch = mutation({
+	args: assignPRBatchArgs,
+	handler: async (ctx, args) => {
+		await assertCanAssignFromAnyTeam(ctx);
+		return await ctx.runMutation(
+			internal.mutations.assignPRBatchInternal,
+			args,
+		);
 	},
+});
+
+export const assignPRBatchAsAgent = mutation({
+	args: {
+		tokenHash: v.string(),
+		...assignPRBatchArgs,
+	},
+	handler: async (ctx, { tokenHash, teamSlug, ...args }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		await assertAgentTokenCanAccessTeamId(ctx, tokenHash, team._id);
+		return await ctx.runMutation(internal.mutations.assignPRBatchInternal, {
+			teamSlug,
+			...args,
+		});
+	},
+});
+
+const assignPRArgs = {
+	reviewerId: v.id("reviewers"),
+	forced: v.optional(v.boolean()),
+	skipped: v.optional(v.boolean()),
+	isAbsentSkip: v.optional(v.boolean()),
+	urgent: v.optional(v.boolean()),
+	crossTeamReview: v.optional(v.boolean()),
+	source: assignmentSourceValidator,
+	prUrl: v.optional(v.string()),
+	contextUrl: v.optional(v.string()),
+	tagId: v.optional(v.id("tags")),
+	actionByReviewerId: v.optional(v.id("reviewers")),
+};
+
+// Assignment mutations
+export const assignPRInternal = internalMutation({
+	args: assignPRArgs,
 	handler: async (
 		ctx,
 		{
@@ -1629,7 +1665,6 @@ export const assignPR = mutation({
 			actionByReviewerId,
 		},
 	) => {
-		await assertCanAssignFromAnyTeam(ctx);
 		const reviewer = await ctx.db.get(reviewerId);
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
@@ -1733,6 +1768,29 @@ export const assignPR = mutation({
 				tags: reviewer.tags,
 			},
 		};
+	},
+});
+
+export const assignPR = mutation({
+	args: assignPRArgs,
+	handler: async (ctx, args) => {
+		await assertCanAssignFromAnyTeam(ctx);
+		return await ctx.runMutation(internal.mutations.assignPRInternal, args);
+	},
+});
+
+export const assignPRAsAgent = mutation({
+	args: {
+		tokenHash: v.string(),
+		...assignPRArgs,
+	},
+	handler: async (ctx, { tokenHash, ...args }) => {
+		const reviewer = await ctx.db.get(args.reviewerId);
+		if (!reviewer) {
+			throw new Error("Reviewer not found");
+		}
+		await assertAgentTokenCanAccessTeamId(ctx, tokenHash, reviewer.teamId);
+		return await ctx.runMutation(internal.mutations.assignPRInternal, args);
 	},
 });
 

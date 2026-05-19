@@ -31,6 +31,14 @@ import { api } from "@/convex/_generated/api";
 import { toast } from "@/hooks/use-toast";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 
+const DEFAULT_MCP_ORIGIN = "https://la-lista.vercel.app";
+const MCP_TOKEN_PLACEHOLDER = "paste-your-personal-token-here";
+
+function buildClaudeMcpInstallCommand(origin: string, token: string) {
+	const mcpUrl = `${origin}/api/mcp`;
+	return `claude mcp add --transport http la-lista ${mcpUrl} --header "Authorization: Bearer ${token}"`;
+}
+
 function CodeSnippet({
 	title,
 	code,
@@ -87,28 +95,11 @@ export function AgentSetupSection() {
 	}, []);
 
 	const defaultTeamSlug = preferences.defaultAgentTeamSlug;
-	const baseUrl = origin || "https://la-lista.example.com";
-	const tokenPlaceholder = revealedToken || "paste-your-personal-token-here";
-	const mcpUrl = `${baseUrl}/api/mcp`;
-	const mcpHeaderSnippet = `Authorization: Bearer ${tokenPlaceholder}`;
-	const claudeCodeMcpSnippet = useMemo(
-		() =>
-			JSON.stringify(
-				{
-					mcpServers: {
-						"la-lista": {
-							type: "http",
-							url: mcpUrl,
-							headers: {
-								Authorization: `Bearer ${tokenPlaceholder}`,
-							},
-						},
-					},
-				},
-				null,
-				2,
-			),
-		[mcpUrl, tokenPlaceholder],
+	const mcpOrigin = origin || DEFAULT_MCP_ORIGIN;
+	const mcpToken = revealedToken || MCP_TOKEN_PLACEHOLDER;
+	const claudeMcpInstallCommand = useMemo(
+		() => buildClaudeMcpInstallCommand(mcpOrigin, mcpToken),
+		[mcpOrigin, mcpToken],
 	);
 
 	const formatDate = (value?: number) => {
@@ -282,26 +273,41 @@ export function AgentSetupSection() {
 										</p>
 									</div>
 									{revealedToken && (
-										<div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
-											<p className="text-xs font-medium text-primary">
-												{t("agentSetup.tokenRevealTitle")}
-											</p>
-											<pre className="overflow-x-auto text-xs leading-6 text-foreground">
-												<code>{revealedToken}</code>
-											</pre>
-											<div className="flex flex-wrap gap-2">
-												<Button
-													type="button"
-													variant="outline"
-													size="sm"
-													onClick={() =>
-														void copyText("raw-token", revealedToken)
-													}
-												>
-													<Copy className="mr-2 h-4 w-4" />
-													{t("agentSetup.copyToken")}
-												</Button>
+										<div className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-3">
+											<div className="space-y-2">
+												<p className="text-xs font-medium text-primary">
+													{t("agentSetup.tokenRevealTitle")}
+												</p>
+												<pre className="overflow-x-auto text-xs leading-6 text-foreground">
+													<code>{revealedToken}</code>
+												</pre>
+												<div className="flex flex-wrap gap-2">
+													<Button
+														type="button"
+														variant="outline"
+														size="sm"
+														onClick={() =>
+															void copyText("raw-token", revealedToken)
+														}
+													>
+														<Copy className="mr-2 h-4 w-4" />
+														{t("agentSetup.copyToken")}
+													</Button>
+												</div>
 											</div>
+											<CodeSnippet
+												title={t("agentSetup.mcpInstallCommandTitle")}
+												code={claudeMcpInstallCommand}
+												onCopy={() =>
+													void copyText(
+														"mcp-install-command-reveal",
+														claudeMcpInstallCommand,
+													)
+												}
+												copied={copiedSnippet === "mcp-install-command-reveal"}
+												copyLabel={t("agentSetup.copySnippet")}
+												copiedLabel={t("agentSetup.copiedSnippet")}
+											/>
 										</div>
 									)}
 								</div>
@@ -407,39 +413,22 @@ export function AgentSetupSection() {
 									{t("agentSetup.installDescription")}
 								</p>
 								<CodeSnippet
-									title={t("agentSetup.mcpUrlTitle")}
-									code={mcpUrl}
-									onCopy={() => void copyText("mcp-url", mcpUrl)}
-									copied={copiedSnippet === "mcp-url"}
-									copyLabel={t("agentSetup.copySnippet")}
-									copiedLabel={t("agentSetup.copiedSnippet")}
-								/>
-								<CodeSnippet
-									title={t("agentSetup.mcpHeaderTitle")}
-									code={mcpHeaderSnippet}
-									onCopy={() => void copyText("mcp-header", mcpHeaderSnippet)}
-									copied={copiedSnippet === "mcp-header"}
-									copyLabel={t("agentSetup.copySnippet")}
-									copiedLabel={t("agentSetup.copiedSnippet")}
-								/>
-								<CodeSnippet
-									title={t("agentSetup.claudeCodeJsonTitle")}
-									code={claudeCodeMcpSnippet}
+									title={t("agentSetup.mcpInstallCommandTitle")}
+									code={claudeMcpInstallCommand}
 									onCopy={() =>
-										void copyText("claude-code-mcp", claudeCodeMcpSnippet)
+										void copyText(
+											"mcp-install-command",
+											claudeMcpInstallCommand,
+										)
 									}
-									copied={copiedSnippet === "claude-code-mcp"}
+									copied={copiedSnippet === "mcp-install-command"}
 									copyLabel={t("agentSetup.copySnippet")}
 									copiedLabel={t("agentSetup.copiedSnippet")}
 								/>
-								<p className="text-xs text-muted-foreground">
-									{t("agentSetup.mcpDescription")}
-								</p>
 								<ul className="space-y-2 text-sm text-muted-foreground">
-									<li>{t("agentSetup.mcpStepOne")}</li>
-									<li>{t("agentSetup.mcpStepTwo")}</li>
-									<li>{t("agentSetup.mcpStepThree")}</li>
-									<li>{t("agentSetup.mcpStepFour")}</li>
+									<li>{t("agentSetup.mcpInstallStepOne")}</li>
+									<li>{t("agentSetup.mcpInstallStepTwo")}</li>
+									<li>{t("agentSetup.mcpInstallStepThree")}</li>
 								</ul>
 							</div>
 						</div>

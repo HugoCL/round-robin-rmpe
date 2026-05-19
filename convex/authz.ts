@@ -112,3 +112,32 @@ export async function getMemberTeamsForEmail(
 	const teams = await Promise.all(teamIds.map((teamId) => ctx.db.get(teamId)));
 	return teams.filter((team): team is Doc<"teams"> => team !== null);
 }
+
+export async function assertAgentTokenCanAccessTeamId(
+	ctx: AuthCtx,
+	tokenHash: string,
+	teamId: Id<"teams">,
+) {
+	const token = await ctx.db
+		.query("agentTokens")
+		.withIndex("by_token_hash", (q) => q.eq("tokenHash", tokenHash))
+		.first();
+
+	if (!token || token.revokedAt) {
+		throw new Error("Unauthorized");
+	}
+
+	const normalizedEmail = normalizeEmail(token.email);
+	if (!normalizedEmail) {
+		throw new Error("Unauthorized");
+	}
+
+	if (isAdminEmail(normalizedEmail)) {
+		return;
+	}
+
+	const memberTeamIds = await getMemberTeamIdsForEmail(ctx, normalizedEmail);
+	if (!memberTeamIds.includes(teamId)) {
+		throw new Error("Unauthorized");
+	}
+}

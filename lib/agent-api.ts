@@ -38,6 +38,7 @@ type AgentAssignmentRequest = z.infer<typeof agentAssignmentRequestSchema>;
 
 export type AuthenticatedAgent = {
 	tokenId: Id<"agentTokens">;
+	tokenHash: string;
 	userTokenIdentifier: string;
 	email?: string;
 	defaultAgentTeamSlug?: string;
@@ -324,7 +325,12 @@ export async function authenticateAgentRequest(request: Request) {
 		};
 	}
 
-	return { auth };
+	return {
+		auth: {
+			...auth,
+			tokenHash,
+		},
+	};
 }
 
 function resolveSelectedTeam(
@@ -724,7 +730,8 @@ export async function executeAgentAssignment(
 		const [resolved] = body.resolved;
 		const [slot] = normalizedRequest.slots;
 		forced = slot?.strategy === "specific";
-		const result = await fetchMutation(api.mutations.assignPR, {
+		const result = await fetchMutation(api.mutations.assignPRAsAgent, {
+			tokenHash: auth.tokenHash,
 			reviewerId: resolved.reviewer._id,
 			forced,
 			urgent: normalizedRequest.urgent,
@@ -769,21 +776,27 @@ export async function executeAgentAssignment(
 			}
 		}
 	} else {
-		const batchResult = await fetchMutation(api.mutations.assignPRBatch, {
-			teamSlug: body.selectedTeam.slug,
-			mode: body.mode,
-			selectedTagId: normalizedRequest.selectedTagId as Id<"tags"> | undefined,
-			slots: normalizedRequest.slots.map((slot) => ({
-				strategy: slot.strategy,
-				reviewerId: slot.reviewerId,
-				tagId: slot.tagId,
-			})),
-			prUrl: normalizedRequest.prUrl,
-			contextUrl: normalizedRequest.contextUrl,
-			urgent: normalizedRequest.urgent,
-			actionByReviewerId: body.actionByReviewerId,
-			source: "agent",
-		});
+		const batchResult = await fetchMutation(
+			api.mutations.assignPRBatchAsAgent,
+			{
+				tokenHash: auth.tokenHash,
+				teamSlug: body.selectedTeam.slug,
+				mode: body.mode,
+				selectedTagId: normalizedRequest.selectedTagId as
+					| Id<"tags">
+					| undefined,
+				slots: normalizedRequest.slots.map((slot) => ({
+					strategy: slot.strategy,
+					reviewerId: slot.reviewerId,
+					tagId: slot.tagId,
+				})),
+				prUrl: normalizedRequest.prUrl,
+				contextUrl: normalizedRequest.contextUrl,
+				urgent: normalizedRequest.urgent,
+				actionByReviewerId: body.actionByReviewerId,
+				source: "agent",
+			},
+		);
 
 		batchId = batchResult.batchId;
 		assignedReviewers = batchResult.assigned.map((item) => ({
