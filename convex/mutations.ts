@@ -2810,6 +2810,55 @@ export const createEvent = mutation({
 	},
 });
 
+// Update when a scheduled event starts (and optionally its duration)
+export const updateEventSchedule = mutation({
+	args: {
+		eventId: v.id("events"),
+		scheduledAt: v.number(),
+		durationMinutes: v.optional(v.number()),
+	},
+	handler: async (ctx, { eventId, scheduledAt, durationMinutes }) => {
+		const event = await ctx.db.get(eventId);
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+		await assertCanMutateTeamById(ctx, event.teamId);
+
+		if (event.status !== "scheduled") {
+			return {
+				success: false,
+				error: "Only scheduled events can be rescheduled",
+			};
+		}
+
+		if (!Number.isFinite(scheduledAt) || scheduledAt <= 0) {
+			return { success: false, error: "Invalid scheduled time" };
+		}
+
+		if (
+			durationMinutes !== undefined &&
+			(!Number.isFinite(durationMinutes) ||
+				durationMinutes <= 0 ||
+				!Number.isInteger(durationMinutes))
+		) {
+			return { success: false, error: "Invalid duration" };
+		}
+
+		const patch: {
+			scheduledAt: number;
+			durationMinutes?: number;
+		} = { scheduledAt };
+
+		if (durationMinutes !== undefined) {
+			patch.durationMinutes = durationMinutes;
+		}
+
+		await ctx.db.patch(eventId, patch);
+
+		return { success: true };
+	},
+});
+
 // Join an event as a participant
 export const joinEvent = mutation({
 	args: {

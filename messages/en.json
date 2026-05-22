@@ -713,7 +713,14 @@
 		"completeEvent": "Complete Event",
 		"completed": "Event Completed",
 		"completedDescription": "The event has been marked as completed",
-		"completeFailed": "Failed to complete event. Please try again."
+		"completeFailed": "Failed to complete event. Please try again.",
+		"editSchedule": "Edit Schedule",
+		"editScheduleDescription": "Change the date and time for \"{title}\".",
+		"saveSchedule": "Save Schedule",
+		"scheduleUpdated": "Schedule Updated",
+		"scheduleUpdatedDescription": "The event time has been updated",
+		"scheduleUpdateFailed": "Failed to update the event schedule. Please try again.",
+		"scheduleNotEditable": "Only scheduled events can be rescheduled"
 	},
 	"notifications": {
 		"title": "Push Notifications",

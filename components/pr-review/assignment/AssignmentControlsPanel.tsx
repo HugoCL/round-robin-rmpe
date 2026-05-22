@@ -43,6 +43,20 @@ import type {
 } from "./ReviewerSlotsConfigurator";
 import { ReviewerSlotsConfigurator } from "./ReviewerSlotsConfigurator";
 
+/** Overrides Toggle `aria-pressed:bg-muted` so active chips keep readable primary colors. */
+const assignmentChipActivePrimary =
+	"aria-pressed:bg-primary aria-pressed:border-primary aria-pressed:text-primary-foreground hover:aria-pressed:bg-primary/95";
+
+/** Overrides ToggleGroupItem `data-[state=on]:bg-muted` for the same reason. */
+const assignmentGroupItemActivePrimary =
+	"data-[state=on]:bg-primary data-[state=on]:border-primary data-[state=on]:text-primary-foreground hover:data-[state=on]:bg-primary/95";
+
+const assignmentChipActiveUrgent =
+	"aria-pressed:bg-red-600 aria-pressed:border-red-600 aria-pressed:text-white hover:aria-pressed:bg-red-600/90 dark:aria-pressed:bg-red-700 dark:aria-pressed:border-red-700";
+
+const assignmentChipActiveCrossTeam =
+	"aria-pressed:bg-sky-600 aria-pressed:border-sky-600 aria-pressed:text-white hover:aria-pressed:bg-sky-600/90 dark:aria-pressed:bg-sky-700 dark:aria-pressed:border-sky-700";
+
 type AssignmentControlsPanelProps = {
 	tags: AssignmentCardTag[];
 	mode: AssignmentMode;
@@ -218,7 +232,7 @@ export function AssignmentControlsPanel({
 										className={cn(
 											"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm",
 											isMultiAssignmentEnabled &&
-												"bg-primary border-primary text-primary-foreground hover:bg-primary/95",
+												assignmentGroupItemActivePrimary,
 										)}
 									>
 										<div className="inline-flex items-center gap-2.5">
@@ -291,8 +305,7 @@ export function AssignmentControlsPanel({
 									aria-label={t("googleChat.sendMessageToggle")}
 									className={cn(
 										"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 disabled:cursor-not-allowed lg:h-11 lg:px-4 lg:text-sm",
-										effectiveSendMessage &&
-											"bg-primary border-primary text-primary-foreground hover:bg-primary/95",
+										effectiveSendMessage && assignmentChipActivePrimary,
 									)}
 								>
 									<div className="inline-flex items-center gap-2.5">
@@ -328,8 +341,7 @@ export function AssignmentControlsPanel({
 									aria-label={t("googleChat.urgentToggle")}
 									className={cn(
 										"h-10 max-w-full cursor-pointer rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-red-900/50 dark:text-red-300",
-										urgent &&
-											"bg-red-600 border-red-600 text-white hover:bg-red-600/90 dark:bg-red-700 dark:border-red-700",
+										urgent && assignmentChipActiveUrgent,
 									)}
 								>
 									<div className="inline-flex items-center gap-2.5">
@@ -365,8 +377,7 @@ export function AssignmentControlsPanel({
 									aria-label={t("googleChat.crossTeamToggle")}
 									className={cn(
 										"h-10 max-w-full cursor-pointer rounded-full border-sky-200/80 bg-transparent px-3 text-xs text-sky-700 transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-sky-900/50 dark:text-sky-300",
-										crossTeamReview &&
-											"bg-sky-600 border-sky-600 text-white hover:bg-sky-600/90 dark:bg-sky-700 dark:border-sky-700",
+										crossTeamReview && assignmentChipActiveCrossTeam,
 									)}
 								>
 									<div className="inline-flex items-center gap-2.5">

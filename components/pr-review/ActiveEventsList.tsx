@@ -30,6 +30,7 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
+import { EditEventScheduleDialog } from "./dialogs/EditEventScheduleDialog";
 import { usePRReview } from "./PRReviewContext";
 
 const SECOND_IN_MS = 1000;
@@ -56,7 +57,7 @@ function formatCountdown(milliseconds: number) {
 export function ActiveEventsList() {
 	const t = useTranslations();
 	const locale = useLocale();
-	const { teamSlug, userInfo, reviewers } = usePRReview();
+	const { teamSlug, userInfo, reviewers, canManageCurrentTeam } = usePRReview();
 	const [now, setNow] = useState(() => Date.now());
 
 	const events = useQuery(
@@ -445,6 +446,17 @@ export function ActiveEventsList() {
 										</Tooltip>
 									</TooltipProvider>
 								)}
+
+								{/* Reschedule - creator on scheduled events */}
+								{creator &&
+									canManageCurrentTeam &&
+									event.status === "scheduled" && (
+										<EditEventScheduleDialog
+											eventId={event._id}
+											eventTitle={event.title}
+											scheduledAt={event.scheduledAt}
+										/>
+									)}
 
 								{/* Cancel button - visible to creator when scheduled */}
 								{creator && event.status === "scheduled" && (
