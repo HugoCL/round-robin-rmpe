@@ -115,3 +115,6 @@ Before any Next.js work, find and read the relevant doc in `node_modules/next/di
 ## Learned Workspace Facts
 
 - The repository includes a `chrome-extension/` package alongside the Next.js web app.
+- Team-scoped FF Repository (`featureFlags` in Convex, route `/{locale}/{team}/feature-flags`) registers flags and tracks age; agent MCP exposes feature-flag tools.
+- Agent MCP is served at `/api/mcp` with personal Bearer tokens; settings documents install via a single copyable `claude mcp add --transport http` one-liner (not manual `settings.json` JSON).
+- Daily `cleanupOldRecords` cron deletes completed/cancelled events and other old assignment records after 7 days.

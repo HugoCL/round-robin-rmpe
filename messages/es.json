@@ -462,7 +462,7 @@
 		"mcpInstallCommandTitle": "Comando de instalación (Claude Code)",
 		"mcpInstallStepOne": "1. Genera un token personal arriba (el comando lo incluirá al instante).",
 		"mcpInstallStepTwo": "2. Copia y ejecuta el comando en tu terminal. Necesitas tener Claude Code instalado.",
-		"mcpInstallStepThree": "3. Reinicia Claude Code y pídele que asigne un PR con La Lista.",
+		"mcpInstallStepThree": "3. Reinicia Claude Code. Puede asignar PRs, listar/registrar feature flags en el Repositorio de FF y marcarlos eliminados después de la limpieza.",
 		"copySnippet": "Copiar",
 		"copiedSnippet": "Copiado",
 		"copied": "Snippet copiado al portapapeles.",
@@ -848,6 +848,82 @@
 			"commentDeletedDescription": "El comentario fue eliminado.",
 			"commentDeleteFailedTitle": "No se pudo eliminar",
 			"commentDeleteFailedDescription": "No fue posible eliminar este comentario."
+		}
+	},
+	"featureFlags": {
+		"title": "Repositorio de FF",
+		"heading": "Registro de Feature Flags",
+		"description": "Registra los feature flags cuando los agregues en código para que el equipo lleve la antigüedad y sepa cuándo conviene eliminarlos.",
+		"shortcut": "Feature flags",
+		"backToTeam": "Volver al equipo",
+		"backHome": "Volver al inicio",
+		"notFoundTitle": "Equipo no encontrado",
+		"notFoundDescription": "Este equipo no existe o no tienes acceso.",
+		"composeTitle": "Registrar un flag",
+		"composeHeading": "Nuevo feature flag",
+		"composeDescription": "Agrega la clave tal como aparece en el código. Puedes anotar el contexto del rollout en la descripción.",
+		"keyLabel": "Clave del flag",
+		"keyPlaceholder": "ej. enable_new_checkout",
+		"descriptionLabel": "Descripción",
+		"descriptionPlaceholder": "¿Qué controla este flag? ¿Cuándo deberíamos quitarlo?",
+		"submit": "Registrar flag",
+		"submitting": "Registrando…",
+		"remove": "Marcar eliminado",
+		"confirmRemoveTitle": "¿Marcar este flag como eliminado?",
+		"confirmRemoveDescription": "Mantendremos {key} en el historial para que el equipo sepa que ya se limpió del código.",
+		"confirmRemoveAction": "Marcar eliminado",
+		"status": {
+			"removed": "Eliminado"
+		},
+		"staleness": {
+			"fresh": "{days, plural, one {# día} other {# días}}",
+			"aging": "{days, plural, one {# día} other {# días}} · envejeciendo",
+			"stale": "{days, plural, one {# día} other {# días}} · conviene eliminar"
+		},
+		"staleHint": "Este flag lleva bastante tiempo — buen candidato para limpieza.",
+		"createdBy": "Registrado por {name} el {date}",
+		"removedBy": "Registrado por {name} el {createdDate} · eliminado {removedDate}",
+		"filters": {
+			"active": "Activos",
+			"removed": "Eliminados",
+			"all": "Todos"
+		},
+		"sort": {
+			"oldest": "Más antiguos",
+			"newest": "Más recientes",
+			"key": "Por clave"
+		},
+		"summary": {
+			"active": "{count, plural, one {# flag activo} other {# flags activos}}",
+			"stale": "{count, plural, one {# obsoleto (≥{days}d)} other {# obsoletos (≥{days}d)}}"
+		},
+		"empty": {
+			"active": {
+				"title": "Aún no hay flags activos",
+				"description": "Cuando agregues un feature flag nuevo, regístralo aquí para que el equipo lleve su antigüedad."
+			},
+			"removed": {
+				"title": "Aún no hay flags eliminados",
+				"description": "Los flags que marques como eliminados aparecerán aquí como referencia."
+			},
+			"all": {
+				"title": "Aún no hay flags registrados",
+				"description": "Empieza registrando el próximo feature flag que cree tu equipo."
+			}
+		},
+		"readOnlyHint": "Estás viendo este equipo en modo solo lectura. Únete al equipo para registrar o eliminar flags.",
+		"validation": {
+			"key": "La clave debe tener al menos 2 caracteres.",
+			"description": "La descripción debe tener entre 1 y 500 caracteres."
+		},
+		"messages": {
+			"createdTitle": "Flag registrado",
+			"createdDescription": "El equipo ya puede llevar la antigüedad de este flag.",
+			"createFailed": "No se pudo registrar el flag.",
+			"removedTitle": "Flag marcado como eliminado",
+			"removedDescription": "Queda en el historial para el equipo.",
+			"removeFailedTitle": "No se pudo actualizar",
+			"removeFailedDescription": "Intenta de nuevo."
 		}
 	},
 	"announcements": {

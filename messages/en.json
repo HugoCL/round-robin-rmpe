@@ -415,7 +415,7 @@
 		"mcpInstallCommandTitle": "Install command (Claude Code)",
 		"mcpInstallStepOne": "1. Generate a personal token above (the command will include it right away).",
 		"mcpInstallStepTwo": "2. Copy and run the command in your terminal. You need Claude Code installed.",
-		"mcpInstallStepThree": "3. Restart Claude Code and ask it to assign a PR with La Lista.",
+		"mcpInstallStepThree": "3. Restart Claude Code. It can assign PRs, list/register feature flags in the FF Repository, and mark flags removed after cleanup.",
 		"copySnippet": "Copy",
 		"copiedSnippet": "Copied",
 		"copied": "Snippet copied to the clipboard.",
@@ -801,6 +801,82 @@
 			"commentDeletedDescription": "The comment was removed.",
 			"commentDeleteFailedTitle": "Delete failed",
 			"commentDeleteFailedDescription": "Could not delete this comment."
+		}
+	},
+	"featureFlags": {
+		"title": "FF Repository",
+		"heading": "Feature Flag Registry",
+		"description": "Register feature flags when you add them in code so the team can track their age and know when it's time to clean them up.",
+		"shortcut": "Feature flags",
+		"backToTeam": "Back to team",
+		"backHome": "Back home",
+		"notFoundTitle": "Team not found",
+		"notFoundDescription": "This team doesn't exist or you don't have access.",
+		"composeTitle": "Register a flag",
+		"composeHeading": "New feature flag",
+		"composeDescription": "Add the flag key as it appears in your codebase. You can note rollout context in the description.",
+		"keyLabel": "Flag key",
+		"keyPlaceholder": "e.g. enable_new_checkout",
+		"descriptionLabel": "Description",
+		"descriptionPlaceholder": "What does this flag control? When should we remove it?",
+		"submit": "Register flag",
+		"submitting": "Registering…",
+		"remove": "Mark removed",
+		"confirmRemoveTitle": "Mark this flag as removed?",
+		"confirmRemoveDescription": "We'll keep {key} in the history so the team knows it was cleaned up from the codebase.",
+		"confirmRemoveAction": "Mark removed",
+		"status": {
+			"removed": "Removed"
+		},
+		"staleness": {
+			"fresh": "{days, plural, one {# day} other {# days}}",
+			"aging": "{days, plural, one {# day} other {# days}} · aging",
+			"stale": "{days, plural, one {# day} other {# days}} · consider removing"
+		},
+		"staleHint": "This flag has been around a while — good candidate for cleanup.",
+		"createdBy": "Registered by {name} on {date}",
+		"removedBy": "Registered by {name} on {createdDate} · removed {removedDate}",
+		"filters": {
+			"active": "Active",
+			"removed": "Removed",
+			"all": "All"
+		},
+		"sort": {
+			"oldest": "Oldest first",
+			"newest": "Newest first",
+			"key": "By key"
+		},
+		"summary": {
+			"active": "{count, plural, one {# active flag} other {# active flags}}",
+			"stale": "{count, plural, one {# stale (≥{days}d)} other {# stale (≥{days}d)}}"
+		},
+		"empty": {
+			"active": {
+				"title": "No active flags yet",
+				"description": "When you ship a new feature flag, register it here so the team can track its age."
+			},
+			"removed": {
+				"title": "No removed flags yet",
+				"description": "Flags you mark as removed will show up here for reference."
+			},
+			"all": {
+				"title": "No flags registered yet",
+				"description": "Start by registering the next feature flag your team creates."
+			}
+		},
+		"readOnlyHint": "You're viewing this team in read-only mode. Join the team to register or remove flags.",
+		"validation": {
+			"key": "Key must be at least 2 characters.",
+			"description": "Description must be between 1 and 500 characters."
+		},
+		"messages": {
+			"createdTitle": "Flag registered",
+			"createdDescription": "The team can now track this flag's age.",
+			"createFailed": "Could not register the flag.",
+			"removedTitle": "Flag marked removed",
+			"removedDescription": "It stays in history for the team.",
+			"removeFailedTitle": "Could not update flag",
+			"removeFailedDescription": "Please try again."
 		}
 	},
 	"announcements": {

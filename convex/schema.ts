@@ -258,6 +258,23 @@ export default defineSchema({
 		.index("by_email", ["email"])
 		.index("by_endpoint", ["endpoint"]),
 
+	featureFlags: defineTable({
+		teamId: v.id("teams"),
+		key: v.string(),
+		description: v.optional(v.string()),
+		status: v.union(v.literal("active"), v.literal("removed")),
+		createdAt: v.number(),
+		removedAt: v.optional(v.number()),
+		createdBy: v.object({
+			authorTokenIdentifier: v.string(),
+			authorName: v.string(),
+			authorEmail: v.optional(v.string()),
+		}),
+		updatedAt: v.number(),
+	})
+		.index("by_team_status_created_at", ["teamId", "status", "createdAt"])
+		.index("by_team_key", ["teamId", "key"]),
+
 	suggestions: defineTable({
 		title: v.string(),
 		description: v.string(),

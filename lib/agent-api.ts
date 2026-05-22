@@ -354,7 +354,7 @@ export async function authenticateAgentRequest(request: Request) {
 	};
 }
 
-function resolveSelectedTeam(
+export function resolveAgentTeam(
 	auth: AuthenticatedAgent,
 	explicitTeamSlug?: string,
 	options?: { requireSelection?: boolean },
@@ -444,7 +444,7 @@ export async function buildAgentContextResponse(
 		warnings: AgentWarning[];
 	}>
 > {
-	const teamResolution = resolveSelectedTeam(auth, query.teamSlug);
+	const teamResolution = resolveAgentTeam(auth, query.teamSlug);
 	if (teamResolution.error) {
 		return { error: teamResolution.error };
 	}
@@ -554,7 +554,7 @@ export async function previewAgentAssignment(
 		selectedTeam?: AuthenticatedAgent["teams"][number];
 	}>
 > {
-	const teamResolution = resolveSelectedTeam(auth, input.teamSlug, {
+	const teamResolution = resolveAgentTeam(auth, input.teamSlug, {
 		requireSelection: true,
 	});
 	if (teamResolution.error) {

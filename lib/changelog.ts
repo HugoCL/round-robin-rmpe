@@ -42,6 +42,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-05-22",
+		type: "feature",
+		title: "Repositorio de Feature Flags (FF Repository)",
+		description:
+			"Agregamos un registro por equipo para feature flags nuevos: puedes registrar la clave al crearla en código, ver su antigüedad y señales de limpieza (≥90 días), y marcarla como eliminada cuando la saques del código. Acceso rápido con el ícono de bandera en el header del equipo. También quedó disponible en el agente MCP con herramientas para listar, registrar y marcar flags eliminados.",
+	},
+	{
 		date: "2026-04-29",
 		type: "feature",
 		title:

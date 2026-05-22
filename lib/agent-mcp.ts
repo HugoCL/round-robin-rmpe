@@ -10,6 +10,14 @@ import {
 	executeAgentAssignment,
 	previewAgentAssignment,
 } from "@/lib/agent-api";
+import {
+	agentListFeatureFlagsSchema,
+	agentRegisterFeatureFlagSchema,
+	agentRemoveFeatureFlagSchema,
+	listAgentFeatureFlags,
+	registerAgentFeatureFlag,
+	removeAgentFeatureFlag,
+} from "@/lib/agent-feature-flags";
 
 const slotInputSchema = z.object({
 	strategy: z
@@ -129,8 +137,8 @@ async function errorResult(response: Response): Promise<CallToolResult> {
 
 export function createLaListaMcpServer(auth: AuthenticatedAgent) {
 	const server = new McpServer({
-		name: "la-lista-pr-assignments",
-		version: "1.0.0",
+		name: "la-lista",
+		version: "1.1.0",
 	});
 
 	server.registerTool(
@@ -180,6 +188,95 @@ export function createLaListaMcpServer(auth: AuthenticatedAgent) {
 				...publicBody,
 				selectedTeam,
 			});
+		},
+	);
+
+	server.registerTool(
+		"la_lista_list_feature_flags",
+		{
+			title: "List La Lista feature flags",
+			description:
+				"List team feature flags from the FF Repository with age, staleness (≥90 days), and active/removed status.",
+			inputSchema: {
+				teamSlug: agentListFeatureFlagsSchema.shape.teamSlug,
+				status: agentListFeatureFlagsSchema.shape.status,
+				sort: agentListFeatureFlagsSchema.shape.sort,
+				limit: agentListFeatureFlagsSchema.shape.limit,
+			},
+			annotations: {
+				readOnlyHint: true,
+			},
+		},
+		async (input) => {
+			const payload = agentListFeatureFlagsSchema.parse(input);
+			const result = await listAgentFeatureFlags(auth, payload);
+			if ("error" in result) return errorResult(result.error);
+
+			await fetchMutation(api.agent.markAgentTokenUsed, {
+				tokenId: result.tokenId,
+			});
+
+			return toolResult(result.body);
+		},
+	);
+
+	server.registerTool(
+		"la_lista_register_feature_flag",
+		{
+			title: "Register a La Lista feature flag",
+			description:
+				"Register a newly created feature flag in the team's FF Repository so age can be tracked.",
+			inputSchema: {
+				teamSlug: agentRegisterFeatureFlagSchema.shape.teamSlug,
+				key: agentRegisterFeatureFlagSchema.shape.key,
+				description: agentRegisterFeatureFlagSchema.shape.description,
+			},
+			annotations: {
+				destructiveHint: false,
+				idempotentHint: false,
+				openWorldHint: false,
+				readOnlyHint: false,
+			},
+		},
+		async (input) => {
+			const payload = agentRegisterFeatureFlagSchema.parse(input);
+			const result = await registerAgentFeatureFlag(auth, payload);
+			if ("error" in result) return errorResult(result.error);
+
+			await fetchMutation(api.agent.markAgentTokenUsed, {
+				tokenId: result.tokenId,
+			});
+
+			return toolResult(result.body);
+		},
+	);
+
+	server.registerTool(
+		"la_lista_remove_feature_flag",
+		{
+			title: "Mark a La Lista feature flag as removed",
+			description:
+				"Mark a feature flag as removed in the FF Repository after it has been deleted from the codebase.",
+			inputSchema: {
+				featureFlagId: agentRemoveFeatureFlagSchema.shape.featureFlagId,
+			},
+			annotations: {
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: false,
+				readOnlyHint: false,
+			},
+		},
+		async (input) => {
+			const payload = agentRemoveFeatureFlagSchema.parse(input);
+			const result = await removeAgentFeatureFlag(auth, payload);
+			if ("error" in result) return errorResult(result.error);
+
+			await fetchMutation(api.agent.markAgentTokenUsed, {
+				tokenId: result.tokenId,
+			});
+
+			return toolResult(result.body);
 		},
 	);
 

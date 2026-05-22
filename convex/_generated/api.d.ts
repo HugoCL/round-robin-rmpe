@@ -19,6 +19,7 @@ import type * as agent from "../agent.js";
 import type * as authz from "../authz.js";
 import type * as birthdays from "../birthdays.js";
 import type * as crons from "../crons.js";
+import type * as featureFlags from "../featureFlags.js";
 import type * as http from "../http.js";
 import type * as migration from "../migration.js";
 import type * as migrations from "../migrations.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   authz: typeof authz;
   birthdays: typeof birthdays;
   crons: typeof crons;
+  featureFlags: typeof featureFlags;
   http: typeof http;
   migration: typeof migration;
   migrations: typeof migrations;

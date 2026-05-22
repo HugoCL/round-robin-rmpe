@@ -2,6 +2,7 @@ import {
 	Calendar,
 	ChevronDown,
 	Download,
+	Flag,
 	Lightbulb,
 	Menu,
 	RotateCw,
@@ -242,6 +243,25 @@ export function PageHeader({
 								<ThemeToggle />
 								<ChangelogDialog iconOnly />
 								<TooltipProvider>
+									{teamSlug ? (
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													asChild
+													variant="ghost"
+													size="icon"
+													aria-label={t("featureFlags.shortcut")}
+												>
+													<Link href={`/${locale}/${teamSlug}/feature-flags`}>
+														<Flag className="h-4 w-4" />
+													</Link>
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>
+												<p>{t("featureFlags.shortcut")}</p>
+											</TooltipContent>
+										</Tooltip>
+									) : null}
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<Button
