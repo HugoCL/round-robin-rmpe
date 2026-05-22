@@ -187,7 +187,7 @@ type TeamResolution =
 			warnings: AgentWarning[];
 	  };
 
-type AgentResult<T> =
+export type AgentResult<T> =
 	| {
 			error: Response;
 	  }

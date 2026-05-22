@@ -9,6 +9,7 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
+	type AgentResult,
 	type AuthenticatedAgent,
 	jsonError,
 	resolveAgentTeam,
@@ -102,7 +103,7 @@ function summarizeFlag(flag: {
 export async function listAgentFeatureFlags(
 	auth: AuthenticatedAgent,
 	input: z.infer<typeof agentListFeatureFlagsSchema>,
-) {
+): Promise<AgentResult<Record<string, unknown>>> {
 	const teamResolution = resolveAgentTeam(auth, input.teamSlug, {
 		requireSelection: true,
 	});
@@ -153,7 +154,7 @@ export async function listAgentFeatureFlags(
 export async function registerAgentFeatureFlag(
 	auth: AuthenticatedAgent,
 	input: z.infer<typeof agentRegisterFeatureFlagSchema>,
-) {
+): Promise<AgentResult<Record<string, unknown>>> {
 	const teamResolution = resolveAgentTeam(auth, input.teamSlug, {
 		requireSelection: true,
 	});
@@ -207,7 +208,7 @@ export async function registerAgentFeatureFlag(
 export async function removeAgentFeatureFlag(
 	auth: AuthenticatedAgent,
 	input: z.infer<typeof agentRemoveFeatureFlagSchema>,
-) {
+): Promise<AgentResult<Record<string, unknown>>> {
 	try {
 		const result = await fetchMutation(
 			api.featureFlags.removeFeatureFlagForAgent,
