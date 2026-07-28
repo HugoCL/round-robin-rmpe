@@ -43,7 +43,9 @@
 		"viewChatThread": "View Chat Thread",
 		"signIn": "Sign In",
 		"creating": "Creating…",
-		"info": "Info"
+		"info": "Info",
+		"show": "Show",
+		"hide": "Hide"
 	},
 	"hints": {
 		"reviewConfirm": "Review and confirm before sending"

@@ -7,6 +7,9 @@ const nextConfig = {
 	// Vercel's injected Next adapter currently crashes before compilation when
 	// the build is wrapped by `convex deploy --cmd`.
 	adapterPath: process.env.VERCEL ? "" : process.env.NEXT_ADAPTER_PATH,
+	turbopack: {
+		root: process.cwd(),
+	},
 	typescript: {
 		ignoreBuildErrors: false,
 	},

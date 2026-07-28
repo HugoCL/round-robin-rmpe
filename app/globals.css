@@ -346,6 +346,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.page-enter,
+	.page-enter-soft,
+	.landing-ticker-track,
+	.landing-ticker-surface-wave,
+	.landing-ticker-surface-flash {
+		animation: none;
+	}
 	.urgent-card {
 		animation: none;
 	}

@@ -476,6 +476,7 @@ export function AssignmentCard() {
 				const message = t("messages.batchAssignSingleSuccess", {
 					reviewer: result.assigned[0].reviewer.name,
 				});
+				setLiveSummary(message);
 				toast({
 					title: t("common.success"),
 					description: message,
@@ -484,6 +485,7 @@ export function AssignmentCard() {
 				const message = t("messages.batchAssignSuccess", {
 					count: result.assignedCount,
 				});
+				setLiveSummary(message);
 				toast({
 					title: t("common.success"),
 					description: message,
@@ -491,7 +493,7 @@ export function AssignmentCard() {
 			}
 			resetMessageState();
 		} finally {
-			setTimeout(() => setIsAssigning(false), 600);
+			setIsAssigning(false);
 		}
 	};
 

@@ -89,6 +89,13 @@
 * **Run Convex Dev:** (Implicitly run typically, but standard command is `pnpm exec convex dev`)
 * **Deploy Convex:** `pnpm exec convex deploy`
 
+### Local Authentication and E2E
+
+* Use `http://localhost:3000` for local app and browser tests. If port 3000 is occupied, choose another explicit `localhost` port (for example, `E2E_PORT=3100 pnpm run test:e2e`). Never use `127.0.0.1`.
+* Set `NEXT_PUBLIC_ALLOW_CLERK_TEST_EMAILS=true` in `.env.local` for local testing only. Never enable it in production.
+* Sign in with a unique address ending in `+clerk_test@example.com`, choose the email-code option, and enter `424242`.
+* The Clerk development instance must have email verification codes enabled for the email-code option to appear.
+
 ## Conventions
 
 * **Styling:** Use Tailwind CSS utility classes. Avoid custom CSS files when possible. Use `cn()` helper for class merging.

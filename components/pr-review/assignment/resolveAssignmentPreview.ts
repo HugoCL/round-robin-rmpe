@@ -1,5 +1,8 @@
 import type { Id } from "@/convex/_generated/dataModel";
-import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
+import {
+	type AssignmentFailureReason,
+	resolveAssignmentSlots,
+} from "@/lib/assignmentResolver";
 import type { Reviewer } from "@/lib/types";
 import type {
 	AssignmentCardTag,
@@ -29,137 +32,78 @@ export function resolveAssignmentPreview({
 	currentUserReviewerId,
 	reasonMessages,
 }: ResolveAssignmentPreviewInput): ResolvedPreview {
-	const previews: ResolvedPreview["slots"] = [];
-	const resolved: ResolvedPreview["resolved"] = [];
-	const payloadSlots: ResolvedPreview["payloadSlots"] = [];
-	const selectedReviewerIds = new Set<string>();
-	const virtualCounts = new Map<string, number>(
-		reviewers.map((reviewer) => [
-			String(reviewer._id),
-			reviewer.assignmentCount,
-		]),
-	);
-	const tagNameMap = new Map(tags.map((tag) => [String(tag._id), tag.name]));
-
-	for (const [slotIndex, rawSlot] of slotConfigs.entries()) {
+	const payloadSlots = slotConfigs.map((rawSlot) => {
 		const slot = normalizeSlotForMode(rawSlot, mode);
-		payloadSlots.push({
+		return {
 			strategy: slot.strategy,
 			reviewerId: slot.reviewerId,
 			tagId: slot.tagId,
-		});
-
-		const unresolved = (reason: string) => {
-			previews.push({
-				slotIndex,
-				status: "unresolved",
-				reason,
-			});
 		};
-
-		if (slot.strategy === "specific") {
-			if (!slot.reviewerId) {
-				unresolved(reasonMessages.missingReviewer);
-				continue;
-			}
-			const target = reviewers.find(
-				(reviewer) => reviewer._id === slot.reviewerId,
-			);
-			if (!target) {
-				unresolved(reasonMessages.reviewerNotFound);
-				continue;
-			}
-			if (!isEligibleForAssignment(target)) {
-				unresolved(reasonMessages.reviewerAbsent);
-				continue;
-			}
-			if (selectedReviewerIds.has(String(target._id))) {
-				unresolved(reasonMessages.duplicateReviewer);
-				continue;
-			}
-			selectedReviewerIds.add(String(target._id));
-			virtualCounts.set(String(target._id), target.assignmentCount + 1);
-			resolved.push({
+	});
+	const resolution = resolveAssignmentSlots<
+		Id<"reviewers">,
+		Id<"tags">,
+		Reviewer
+	>({
+		mode,
+		selectedTagId,
+		slots: payloadSlots,
+		reviewers,
+		excludedReviewerId: currentUserReviewerId,
+	});
+	const resolvedBySlot = new Map(
+		resolution.resolved.map((item) => [item.slotIndex, item]),
+	);
+	const tagNameMap = new Map(tags.map((tag) => [String(tag._id), tag.name]));
+	const failureBySlot = new Map(
+		resolution.failed.map((item) => [item.slotIndex, item.reason]),
+	);
+	const messageForFailure = (
+		reason: AssignmentFailureReason,
+		slotIndex: number,
+	) => {
+		switch (reason) {
+			case "missing_reviewer":
+				return reasonMessages.missingReviewer;
+			case "reviewer_not_found":
+				return reasonMessages.reviewerNotFound;
+			case "reviewer_absent":
+				return reasonMessages.reviewerAbsent;
+			case "duplicate_reviewer":
+				return reasonMessages.duplicateReviewer;
+			case "invalid_strategy":
+				return reasonMessages.invalidStrategy;
+			case "missing_tag":
+				return payloadSlots[slotIndex]?.strategy === "tag_random_selected"
+					? reasonMessages.missingSelectedTag
+					: reasonMessages.missingTag;
+			case "no_candidates":
+				return reasonMessages.noCandidates;
+		}
+	};
+	const previews = payloadSlots.map((_, slotIndex) => {
+		const resolved = resolvedBySlot.get(slotIndex);
+		if (resolved) {
+			return {
 				slotIndex,
-				reviewer: target,
-				tagId: slot.tagId,
-			});
-			previews.push({
-				slotIndex,
-				status: "resolved",
-				reviewerName: target.name,
-				tagName: slot.tagId ? tagNameMap.get(String(slot.tagId)) : undefined,
-			});
-			continue;
+				status: "resolved" as const,
+				reviewerName: resolved.reviewer.name,
+				tagName: resolved.tagId
+					? tagNameMap.get(String(resolved.tagId))
+					: undefined,
+			};
 		}
-
-		let requiredTagId: Id<"tags"> | undefined;
-		if (mode === "regular") {
-			if (slot.strategy !== "random") {
-				unresolved(reasonMessages.invalidStrategy);
-				continue;
-			}
-		} else {
-			if (slot.strategy === "tag_random_selected") {
-				requiredTagId = selectedTagId;
-			} else if (slot.strategy === "tag_random_other") {
-				requiredTagId = slot.tagId;
-			} else {
-				unresolved(reasonMessages.invalidStrategy);
-				continue;
-			}
-			if (!requiredTagId) {
-				unresolved(
-					slot.strategy === "tag_random_selected"
-						? reasonMessages.missingSelectedTag
-						: reasonMessages.missingTag,
-				);
-				continue;
-			}
-		}
-
-		const candidates = reviewers.filter((reviewer) => {
-			if (!isEligibleForAssignment(reviewer)) return false;
-			if (currentUserReviewerId && reviewer._id === currentUserReviewerId) {
-				return false;
-			}
-			if (selectedReviewerIds.has(String(reviewer._id))) return false;
-			if (requiredTagId && !reviewer.tags.includes(requiredTagId)) return false;
-			return true;
-		});
-
-		const selected = [...candidates].sort((a, b) => {
-			const aCount = virtualCounts.get(String(a._id)) ?? a.assignmentCount;
-			const bCount = virtualCounts.get(String(b._id)) ?? b.assignmentCount;
-			if (aCount !== bCount) return aCount - bCount;
-			return a.createdAt - b.createdAt;
-		})[0];
-
-		if (!selected) {
-			unresolved(reasonMessages.noCandidates);
-			continue;
-		}
-
-		selectedReviewerIds.add(String(selected._id));
-		virtualCounts.set(String(selected._id), selected.assignmentCount + 1);
-		resolved.push({
+		const reason = failureBySlot.get(slotIndex) ?? "no_candidates";
+		return {
 			slotIndex,
-			reviewer: selected,
-			tagId: requiredTagId,
-		});
-		previews.push({
-			slotIndex,
-			status: "resolved",
-			reviewerName: selected.name,
-			tagName: requiredTagId
-				? tagNameMap.get(String(requiredTagId))
-				: undefined,
-		});
-	}
+			status: "unresolved" as const,
+			reason: messageForFailure(reason, slotIndex),
+		};
+	});
 
 	return {
 		slots: previews,
-		resolved,
+		resolved: resolution.resolved,
 		payloadSlots,
 	};
 }

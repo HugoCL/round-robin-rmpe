@@ -67,7 +67,7 @@ export default function Page() {
 	}
 
 	return (
-		<div className="relative overflow-hidden">
+		<main className="relative overflow-hidden">
 			<div
 				aria-hidden
 				className="pointer-events-none absolute -top-24 left-0 h-72 w-72 rounded-full bg-primary/12 blur-3xl"
@@ -86,7 +86,7 @@ export default function Page() {
 						<div className="space-y-6">
 							<div className="space-y-3">
 								<p className="calm-kicker">La Lista</p>
-								<h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-foreground md:text-6xl">
+								<h1 className="max-w-3xl text-pretty text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
 									{t("team.switcher.title")}
 								</h1>
 								<p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
@@ -180,7 +180,7 @@ export default function Page() {
 							<Link
 								key={team._id}
 								href={`/${locale}/${team.slug}`}
-								className="group relative flex items-center justify-between gap-4 px-4 py-4 transition-colors duration-200 hover:bg-muted/30 md:px-5"
+								className="group relative flex items-center justify-between gap-4 px-4 py-4 transition-colors duration-200 hover:bg-muted/30 focus-visible:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:px-5"
 							>
 								<div className="flex min-w-0 items-center gap-4">
 									<div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/8 text-xs font-semibold tracking-[0.18em] text-primary">
@@ -195,7 +195,10 @@ export default function Page() {
 										</p>
 									</div>
 								</div>
-								<div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/75 text-muted-foreground transition-all duration-200 group-hover:border-primary/30 group-hover:text-primary">
+								<div
+									className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/75 text-muted-foreground transition-colors duration-200 group-hover:border-primary/30 group-hover:text-primary"
+									aria-hidden="true"
+								>
 									<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
 								</div>
 							</Link>
@@ -203,6 +206,6 @@ export default function Page() {
 					</div>
 				)}
 			</div>
-		</div>
+		</main>
 	);
 }

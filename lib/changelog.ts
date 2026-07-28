@@ -42,6 +42,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-07-25",
+		type: "improvement",
+		title: "Una experiencia más clara y confiable",
+		description:
+			"Pulimos la experiencia de equipos y el feedback al asignar PRs. También mejoramos la accesibilidad para zoom y movimiento reducido, y corregimos la detección de PRs duplicados para revisar todo el historial del equipo.",
+	},
+	{
 		date: "2026-05-22",
 		type: "feature",
 		title: "Repositorio de Feature Flags (FF Repository)",

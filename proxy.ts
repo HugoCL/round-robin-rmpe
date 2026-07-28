@@ -9,6 +9,7 @@ const intlMiddleware = createMiddleware(routing);
 // Define public routes (include both with and without locale prefixes)
 const isPublicRoute = createRouteMatcher([
 	"/",
+	"/(es|en)",
 	"/api/agent(.*)",
 	"/api/mcp(.*)",
 	"/api/updates",

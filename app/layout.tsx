@@ -9,14 +9,19 @@ import { Toaster } from "@/components/ui/toaster";
 import { routing } from "@/i18n/routing";
 
 export const viewport: Viewport = {
-	themeColor: "#3b82f6",
+	themeColor: [
+		{ media: "(prefers-color-scheme: light)", color: "#f7f8fb" },
+		{ media: "(prefers-color-scheme: dark)", color: "#17181d" },
+	],
 	width: "device-width",
 	initialScale: 1,
-	maximumScale: 1,
 };
 
 export const metadata: Metadata = {
 	manifest: "/manifest.webmanifest",
+	icons: {
+		apple: "/icon-192x192.png",
+	},
 	appleWebApp: {
 		capable: true,
 		statusBarStyle: "default",
@@ -49,14 +54,6 @@ export default function RootLayout({
 			suppressHydrationWarning
 			className={`${jetbrainsMono.variable} ${spaceGrotesk.variable}`}
 		>
-			<head>
-				<link rel="manifest" href="/manifest.webmanifest" />
-				<meta name="theme-color" content="#3b82f6" />
-				<meta name="apple-mobile-web-app-capable" content="yes" />
-				<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-				<meta name="apple-mobile-web-app-title" content="La Lista" />
-				<link rel="apple-touch-icon" href="/icon-192x192.png" />
-			</head>
 			<body className="min-h-screen antialiased">
 				<ClerkProvider>
 					<ConvexClientProvider>

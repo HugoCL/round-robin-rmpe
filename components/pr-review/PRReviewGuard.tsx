@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { isAllowedAppEmail } from "@/lib/emailAccess";
 
 type PRReviewGuardProps = {
 	isLoading: boolean;
@@ -53,7 +54,13 @@ export function PRReviewGuard({
 		);
 	}
 
-	if (userEmail && !/^.+@buk\.[a-zA-Z0-9-]+$/.test(userEmail)) {
+	if (
+		userEmail &&
+		!isAllowedAppEmail(
+			userEmail,
+			process.env.NEXT_PUBLIC_ALLOW_CLERK_TEST_EMAILS === "true",
+		)
+	) {
 		return (
 			<div className="container mx-auto flex h-[50vh] items-center justify-center px-4 py-6">
 				<div className="calm-section max-w-xl text-center">

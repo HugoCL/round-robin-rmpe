@@ -924,16 +924,14 @@ export const checkPRAlreadyAssigned = query({
 		if (!prUrl.trim()) return null;
 
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
-		const feed = await ctx.db
-			.query("assignmentFeed")
-			.withIndex("by_team", (q) => q.eq("teamId", team._id))
-			.first();
-
-		if (!feed) return null;
-
-		// Search for matching prUrl in the feed items
 		const normalizedPrUrl = prUrl.trim().toLowerCase();
-		const existingAssignment = feed.items.find(
+		// ponytail: scans one team's full history; add a normalized URL index if histories make this query slow.
+		const history = await ctx.db
+			.query("assignmentHistory")
+			.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
+			.order("desc")
+			.collect();
+		const existingAssignment = history.find(
 			(item) => item.prUrl?.trim().toLowerCase() === normalizedPrUrl,
 		);
 
@@ -946,7 +944,11 @@ export const checkPRAlreadyAssigned = query({
 		const { byId } = buildReviewerMaps(reviewers);
 
 		return {
-			reviewerName: resolveReviewerName(existingAssignment.reviewerId, byId),
+			reviewerName: resolveReviewerName(
+				existingAssignment.reviewerId,
+				byId,
+				existingAssignment.reviewerName,
+			),
 			timestamp: existingAssignment.timestamp,
 		};
 	},

@@ -1,6 +1,10 @@
 packages:
   - "chrome-extension"
 
+overrides:
+  '@types/react': 19.2.15
+  '@types/react-dom': 19.2.3
+
 allowBuilds:
   '@clerk/shared': true
   '@parcel/watcher': true
