@@ -6,6 +6,22 @@
 		"about": "Acerca de",
 		"settings": "Configuración"
 	},
+	"metrics": {
+		"title": "Métricas del producto",
+		"headline": "La Lista ha coordinado <count></count> revisiones de PR.",
+		"overview": "Totales actuales",
+		"teams": "Equipos",
+		"reviewers": "Revisores registrados",
+		"activeAssignments": "Asignaciones activas",
+		"lastSevenDays": "Últimos 7 días",
+		"recentActivity": "{count} PRs asignados",
+		"dailyActivity": "Asignaciones de PR por día",
+		"daySummary": "{day}: {count} asignaciones",
+		"viaAgent": "Asignados vía agente",
+		"urgent": "Urgentes",
+		"crossTeam": "Entre equipos",
+		"scopeNote": "El total histórico viene de appMetrics. La actividad reciente usa los 7 días de historial de asignaciones que conserva La Lista."
+	},
 	"common": {
 		"save": "Guardar",
 		"cancel": "Cancelar",

@@ -6,6 +6,22 @@
 		"about": "About",
 		"settings": "Settings"
 	},
+	"metrics": {
+		"title": "Product metrics",
+		"headline": "La Lista has coordinated <count></count> PR reviews.",
+		"overview": "Current totals",
+		"teams": "Teams",
+		"reviewers": "Registered reviewers",
+		"activeAssignments": "Active assignments",
+		"lastSevenDays": "Last 7 days",
+		"recentActivity": "{count} PRs assigned",
+		"dailyActivity": "PR assignments by day",
+		"daySummary": "{day}: {count} assignments",
+		"viaAgent": "Assigned via agent",
+		"urgent": "Urgent",
+		"crossTeam": "Cross-team",
+		"scopeNote": "The historical total comes from appMetrics. Recent activity uses the 7 days of assignment history retained by La Lista."
+	},
 	"common": {
 		"save": "Save",
 		"cancel": "Cancel",

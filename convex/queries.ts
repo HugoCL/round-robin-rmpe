@@ -5,7 +5,13 @@ import {
 	resolveTeamTimezone,
 	type Weekday,
 } from "../lib/reviewerAvailability";
-import { getMemberTeamsForEmail, isAdminEmail, normalizeEmail } from "./authz";
+import { summarizeRecentAssignments } from "../lib/websiteMetrics";
+import {
+	getMemberTeamsForEmail,
+	isAdminEmail,
+	normalizeEmail,
+	requireIdentity,
+} from "./authz";
 
 type EnrichedAssignment = {
 	_id: Id<"prAssignments">;
@@ -585,6 +591,44 @@ export const getGlobalReviewedPRCount = query({
 			.collect();
 
 		return metrics.reduce((total, metric) => total + metric.value, 0);
+	},
+});
+
+export const getWebsiteMetrics = query({
+	args: {},
+	handler: async (ctx) => {
+		await requireIdentity(ctx);
+
+		const now = Date.now();
+		const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+		const [storedTotals, teams, reviewers, activeAssignments, recentHistory] =
+			await Promise.all([
+				ctx.db
+					.query("appMetrics")
+					.withIndex("by_key", (q) => q.eq("key", "reviewed_pr_total"))
+					.collect(),
+				ctx.db.query("teams").collect(),
+				ctx.db.query("reviewers").collect(),
+				ctx.db.query("prAssignments").collect(),
+				ctx.db
+					.query("assignmentHistory")
+					.withIndex("by_timestamp", (q) => q.gte("timestamp", sevenDaysAgo))
+					.collect(),
+			]);
+
+		return {
+			reviewedPRs: storedTotals.reduce(
+				(total, metric) => total + metric.value,
+				0,
+			),
+			teams: teams.length,
+			reviewers: reviewers.length,
+			activeAssignments: activeAssignments.length,
+			recent: summarizeRecentAssignments(
+				recentHistory.map((row) => ({ ...row, id: String(row._id) })),
+				now,
+			),
+		};
 	},
 });
 
