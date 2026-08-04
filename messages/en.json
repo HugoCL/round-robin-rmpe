@@ -918,6 +918,8 @@
 		"shortcut": "Surveys",
 		"bannerTitle": "We’d love your feedback",
 		"bannerDescription": "A few quick questions help us learn whether La Lista is ready to share with more teams. This stays up until you finish or the deadline passes.",
+		"openSurvey": "Answer survey",
+		"closeSurvey": "Later",
 		"submit": "Send my answers",
 		"submitting": "Sending…",
 		"requiredMark": "Required",

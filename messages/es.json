@@ -963,6 +963,8 @@
 		"shortcut": "Encuestas",
 		"bannerTitle": "Nos encantaría tu feedback",
 		"bannerDescription": "Unas preguntas rápidas nos ayudan a saber si La Lista está lista para compartir con más equipos. Esto se queda hasta que respondas o pase la fecha límite.",
+		"openSurvey": "Responder encuesta",
+		"closeSurvey": "Más tarde",
 		"submit": "Enviar mis respuestas",
 		"submitting": "Enviando…",
 		"requiredMark": "Obligatoria",
