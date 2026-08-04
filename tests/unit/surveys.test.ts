@@ -6,6 +6,7 @@ import {
 	getPmfTemplateQuestions,
 	getPmfVeryDisappointedPercent,
 	isSurveyVisibleToRespondent,
+	normalizeSurveyOption,
 	partitionActiveSurveysForActivation,
 	pickWinningCompletionId,
 	validateSurveyAnswers,
@@ -189,4 +190,22 @@ test("pickWinningCompletionId keeps the oldest completion", () => {
 		"a",
 	);
 	assert.equal(pickWinningCompletionId([]), null);
+});
+
+test("normalizeSurveyOption prefers Spanish labels from bilingual leftovers", () => {
+	assert.deepEqual(
+		normalizeSurveyOption({
+			value: "very_disappointed",
+			labelEn: "Very disappointed",
+			labelEs: "Muy decepcionado/a",
+		}),
+		{ value: "very_disappointed", label: "Muy decepcionado/a" },
+	);
+	assert.deepEqual(
+		normalizeSurveyOption({
+			value: "1",
+			label: "1 — Muy en desacuerdo",
+		}),
+		{ value: "1", label: "1 — Muy en desacuerdo" },
+	);
 });

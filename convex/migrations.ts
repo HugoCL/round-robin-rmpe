@@ -1,4 +1,5 @@
 import { Migrations } from "@convex-dev/migrations";
+import { normalizeSurveyOption, pickSurveyLocaleText } from "../lib/surveys";
 import { components, internal } from "./_generated/api";
 import type { DataModel, Id } from "./_generated/dataModel";
 
@@ -80,13 +81,104 @@ export const backfillReviewerTeamId = migrations.define({
 	},
 });
 
+export const migrateSurveysToSpanishOnly = migrations.define({
+	table: "surveys",
+	migrateOne: async (ctx, survey) => {
+		const legacy = survey as typeof survey & {
+			titleEn?: string;
+			titleEs?: string;
+			descriptionEn?: string;
+			descriptionEs?: string;
+		};
+		const title =
+			pickSurveyLocaleText(legacy.title, legacy.titleEs, legacy.titleEn) ||
+			"Encuesta";
+		const description =
+			pickSurveyLocaleText(
+				legacy.description,
+				legacy.descriptionEs,
+				legacy.descriptionEn,
+			) || undefined;
+
+		const alreadyMigrated =
+			legacy.title === title &&
+			legacy.description === description &&
+			legacy.titleEn === undefined &&
+			legacy.titleEs === undefined &&
+			legacy.descriptionEn === undefined &&
+			legacy.descriptionEs === undefined;
+		if (alreadyMigrated) {
+			return;
+		}
+
+		await ctx.db.replace(survey._id, {
+			title,
+			description,
+			status: survey.status,
+			deadlineAt: survey.deadlineAt,
+			createdByTokenIdentifier: survey.createdByTokenIdentifier,
+			createdAt: survey.createdAt,
+			updatedAt: Date.now(),
+		});
+	},
+});
+
+export const migrateSurveyQuestionsToSpanishOnly = migrations.define({
+	table: "surveyQuestions",
+	migrateOne: async (ctx, question) => {
+		const legacy = question as typeof question & {
+			promptEn?: string;
+			promptEs?: string;
+			options: Array<{
+				value: string;
+				label?: string;
+				labelEn?: string;
+				labelEs?: string;
+			}>;
+		};
+		const prompt =
+			pickSurveyLocaleText(legacy.prompt, legacy.promptEs, legacy.promptEn) ||
+			"Pregunta";
+		const options = legacy.options.map(normalizeSurveyOption);
+		const alreadyMigrated =
+			legacy.prompt === prompt &&
+			legacy.promptEn === undefined &&
+			legacy.promptEs === undefined &&
+			legacy.options.every(
+				(option, index) =>
+					option.label === options[index]?.label &&
+					option.labelEn === undefined &&
+					option.labelEs === undefined,
+			);
+		if (alreadyMigrated) {
+			return;
+		}
+
+		await ctx.db.replace(question._id, {
+			surveyId: question.surveyId,
+			order: question.order,
+			type: question.type,
+			prompt,
+			options,
+			required: question.required,
+		});
+	},
+});
+
 export const run = migrations.runner();
 
 export const runBackfillUserPreferenceDefaultTeamSlug = migrations.runner(
 	internal.migrations.backfillUserPreferenceDefaultTeamSlug,
 );
 
+export const runMigrateSurveysToSpanishOnly = migrations.runner([
+	internal.migrations.migrateSurveysToSpanishOnly,
+	internal.migrations.migrateSurveyQuestionsToSpanishOnly,
+]);
+
 export const runAll = migrations.runner([
 	internal.migrations.backfillReviewerTeamId,
 	internal.migrations.backfillUserPreferenceDefaultTeamSlug,
+	internal.migrations.migrateSurveysToSpanishOnly,
+	internal.migrations.migrateSurveyQuestionsToSpanishOnly,
 ]);

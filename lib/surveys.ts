@@ -200,6 +200,34 @@ const LIKERT_OPTIONS: SurveyOption[] = [
 	{ value: "5", label: "5 — Muy de acuerdo" },
 ];
 
+/** Prefer Spanish content, then English leftovers, then an already-migrated value. */
+export function pickSurveyLocaleText(
+	primary: string | undefined,
+	spanish: string | undefined,
+	english: string | undefined,
+): string {
+	const candidates = [primary, spanish, english];
+	for (const candidate of candidates) {
+		const trimmed = candidate?.trim();
+		if (trimmed) return trimmed;
+	}
+	return "";
+}
+
+export function normalizeSurveyOption(option: {
+	value: string;
+	label?: string;
+	labelEn?: string;
+	labelEs?: string;
+}): SurveyOption {
+	return {
+		value: option.value,
+		label:
+			pickSurveyLocaleText(option.label, option.labelEs, option.labelEn) ||
+			option.value,
+	};
+}
+
 export function getPmfTemplateQuestions(): SurveyQuestionInput[] {
 	return [
 		{

@@ -5,6 +5,7 @@ import {
 	getPmfTemplateQuestions,
 	getPmfVeryDisappointedPercent,
 	isSurveyVisibleToRespondent,
+	normalizeSurveyOption,
 	partitionActiveSurveysForActivation,
 	pickWinningCompletionId,
 	type SurveyQuestionInput,
@@ -185,7 +186,7 @@ function serializeQuestion(question: Doc<"surveyQuestions">) {
 		order: question.order,
 		type: question.type,
 		prompt: question.prompt,
-		options: question.options,
+		options: question.options.map(normalizeSurveyOption),
 		required: question.required,
 	};
 }
@@ -226,14 +227,15 @@ function buildQuestionResults(
 			};
 		}
 
-		const aggregates = aggregateChoiceAnswers(question.options, values);
+		const options = question.options.map(normalizeSurveyOption);
+		const aggregates = aggregateChoiceAnswers(options, values);
 		return {
 			question: serializeQuestion(question),
 			kind: "choice" as const,
 			aggregates,
 			pmfVeryDisappointedPercent:
 				question.type === "single_choice" &&
-				question.options.some((option) => option.value === "very_disappointed")
+				options.some((option) => option.value === "very_disappointed")
 					? getPmfVeryDisappointedPercent(aggregates)
 					: undefined,
 		};
@@ -328,7 +330,7 @@ export const submitSurveyResponse = mutation({
 			questions.map((question) => ({
 				id: question._id,
 				type: question.type,
-				options: question.options,
+				options: question.options.map(normalizeSurveyOption),
 				required: question.required,
 			})),
 			answers.map((answer) => ({
