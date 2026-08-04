@@ -4,12 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { MessageSquareHeart } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import {
-	Alert,
-	AlertAction,
-	AlertDescription,
-	AlertTitle,
-} from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -94,17 +89,24 @@ export function SurveyBanner() {
 
 	return (
 		<>
-			<Alert className="border-sky-500/35 bg-sky-500/5 text-sky-950 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-50">
+			<Alert className="grid-cols-[auto_minmax(0,1fr)] border-sky-500/35 bg-sky-500/5 text-sky-950 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-50 *:data-[slot=alert-title]:col-start-auto [&>svg]:row-span-1">
 				<MessageSquareHeart className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-				<AlertTitle>{title}</AlertTitle>
-				<AlertDescription className="text-sky-950/90 dark:text-sky-50/90">
-					{description}
-				</AlertDescription>
-				<AlertAction>
-					<Button type="button" size="sm" onClick={() => setOpen(true)}>
+				<div className="col-start-2 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+					<div className="min-w-0 space-y-1">
+						<AlertTitle>{title}</AlertTitle>
+						<AlertDescription className="text-sky-950/90 dark:text-sky-50/90">
+							{description}
+						</AlertDescription>
+					</div>
+					<Button
+						type="button"
+						size="sm"
+						onClick={() => setOpen(true)}
+						className="w-full shrink-0 sm:w-auto"
+					>
 						{t("openSurvey")}
 					</Button>
-				</AlertAction>
+				</div>
 			</Alert>
 
 			<Dialog open={open} onOpenChange={setOpen}>
