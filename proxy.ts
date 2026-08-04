@@ -17,6 +17,8 @@ const isPublicRoute = createRouteMatcher([
 	"/sign-up(.*)",
 	"/(es|en)/sign-in(.*)",
 	"/(es|en)/sign-up(.*)",
+	"/surveys/(.*)/results",
+	"/(es|en)/surveys/(.*)/results",
 	// App Router icon routes and common static files should be public and not localized
 	"/icon(.*)",
 	"/apple-icon(.*)",

@@ -952,23 +952,21 @@
 			"activating": "Activating…",
 			"close": "Close survey",
 			"closing": "Closing…",
-			"titleEn": "Title (English)",
-			"titleEs": "Title (Spanish)",
-			"descriptionEn": "Description (English)",
-			"descriptionEs": "Description (Spanish)",
+			"copyPublicLink": "Copy public link",
+			"openPublicResults": "Open public results",
+			"surveyTitle": "Title",
+			"surveyDescription": "Description",
 			"questions": "Questions",
 			"addQuestion": "Add question",
 			"questionType": "Type",
 			"typeSingleChoice": "Single choice",
 			"typeLikert": "Likert scale",
 			"typeFreeText": "Free text",
-			"promptEn": "Prompt (English)",
-			"promptEs": "Prompt (Spanish)",
+			"prompt": "Question",
 			"required": "Required",
 			"options": "Options",
 			"optionValue": "Value",
-			"optionLabelEn": "Label (EN)",
-			"optionLabelEs": "Label (ES)",
+			"optionLabel": "Label",
 			"addOption": "Add option",
 			"removeQuestion": "Remove question",
 			"removeOption": "Remove option",
@@ -995,8 +993,16 @@
 				"activateFailed": "Could not activate. Check that no other survey is active and questions exist.",
 				"closedTitle": "Survey closed",
 				"closedDescription": "The banner will no longer appear.",
-				"closeFailed": "Could not close the survey."
+				"closeFailed": "Could not close the survey.",
+				"linkCopiedTitle": "Link copied",
+				"linkCopiedDescription": "Anyone with the link can see aggregates and anonymous comments — not who responded.",
+				"linkCopyFailed": "Could not copy the link."
 			}
+		},
+		"public": {
+			"unavailableTitle": "Results unavailable",
+			"unavailableDescription": "This survey isn’t published yet, or the link is invalid.",
+			"privacyNote": "Comments are anonymous. Individual identities are not shown on this page."
 		}
 	}
 }

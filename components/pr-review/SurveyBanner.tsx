@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { MessageSquareHeart } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import { useToast } from "@/hooks/use-toast";
 
 export function SurveyBanner() {
 	const t = useTranslations("survey");
-	const locale = useLocale();
 	const { toast } = useToast();
 	const [now, setNow] = useState(() => Date.now());
 	useEffect(() => {
@@ -34,9 +33,8 @@ export function SurveyBanner() {
 	}
 
 	const { survey, questions } = active;
-	const title = locale === "es" ? survey.titleEs : survey.titleEn;
-	const description =
-		locale === "es" ? survey.descriptionEs : survey.descriptionEn;
+	const title = survey.title;
+	const description = survey.description;
 
 	const setAnswer = (questionId: string, value: string) => {
 		setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -91,14 +89,12 @@ export function SurveyBanner() {
 
 				<div className="space-y-4">
 					{questions.map((question) => {
-						const prompt =
-							locale === "es" ? question.promptEs : question.promptEn;
 						const fieldId = `survey-q-${question._id}`;
 						return (
 							<div key={question._id} className="space-y-2">
 								<div className="flex flex-wrap items-baseline gap-2">
 									<Label htmlFor={fieldId} className="text-sm font-medium">
-										{prompt}
+										{question.prompt}
 									</Label>
 									<span className="text-xs text-muted-foreground">
 										{question.required ? t("requiredMark") : t("optionalMark")}
@@ -124,8 +120,6 @@ export function SurveyBanner() {
 									>
 										{question.options.map((option) => {
 											const optionId = `${fieldId}-${option.value}`;
-											const label =
-												locale === "es" ? option.labelEs : option.labelEn;
 											return (
 												<div
 													key={option.value}
@@ -136,7 +130,7 @@ export function SurveyBanner() {
 														htmlFor={optionId}
 														className="font-normal text-sm"
 													>
-														{label}
+														{option.label}
 													</Label>
 												</div>
 											);

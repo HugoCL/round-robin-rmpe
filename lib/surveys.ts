@@ -4,15 +4,13 @@ export type SurveyQuestionType = "single_choice" | "likert" | "free_text";
 
 export type SurveyOption = {
 	value: string;
-	labelEn: string;
-	labelEs: string;
+	label: string;
 };
 
 export type SurveyQuestionInput = {
 	order: number;
 	type: SurveyQuestionType;
-	promptEn: string;
-	promptEs: string;
+	prompt: string;
 	options: SurveyOption[];
 	required: boolean;
 };
@@ -93,9 +91,10 @@ export function pickWinningCompletionId<
 	T extends { _id: string; _creationTime: number },
 >(completions: T[]): string | null {
 	if (completions.length === 0) return null;
-	let winner = completions[0]!;
-	for (let i = 1; i < completions.length; i++) {
-		const candidate = completions[i]!;
+	const [first, ...rest] = completions;
+	if (!first) return null;
+	let winner = first;
+	for (const candidate of rest) {
 		if (candidate._creationTime < winner._creationTime) {
 			winner = candidate;
 		}
@@ -155,8 +154,7 @@ export function validateSurveyAnswers(
 
 export type ChoiceAggregate = {
 	value: string;
-	labelEn: string;
-	labelEs: string;
+	label: string;
 	count: number;
 	percent: number;
 };
@@ -180,8 +178,7 @@ export function aggregateChoiceAnswers(
 		const count = counts.get(option.value) ?? 0;
 		return {
 			value: option.value,
-			labelEn: option.labelEn,
-			labelEs: option.labelEs,
+			label: option.label,
 			count,
 			percent: total === 0 ? 0 : Math.round((count / total) * 1000) / 10,
 		};
@@ -196,15 +193,11 @@ export function getPmfVeryDisappointedPercent(
 }
 
 const LIKERT_OPTIONS: SurveyOption[] = [
-	{
-		value: "1",
-		labelEn: "1 — Strongly disagree",
-		labelEs: "1 — Muy en desacuerdo",
-	},
-	{ value: "2", labelEn: "2 — Disagree", labelEs: "2 — En desacuerdo" },
-	{ value: "3", labelEn: "3 — Neutral", labelEs: "3 — Neutral" },
-	{ value: "4", labelEn: "4 — Agree", labelEs: "4 — De acuerdo" },
-	{ value: "5", labelEn: "5 — Strongly agree", labelEs: "5 — Muy de acuerdo" },
+	{ value: "1", label: "1 — Muy en desacuerdo" },
+	{ value: "2", label: "2 — En desacuerdo" },
+	{ value: "3", label: "3 — Neutral" },
+	{ value: "4", label: "4 — De acuerdo" },
+	{ value: "5", label: "5 — Muy de acuerdo" },
 ];
 
 export function getPmfTemplateQuestions(): SurveyQuestionInput[] {
@@ -212,32 +205,18 @@ export function getPmfTemplateQuestions(): SurveyQuestionInput[] {
 		{
 			order: 0,
 			type: "single_choice",
-			promptEn: "How would you feel if you could no longer use La Lista?",
-			promptEs: "¿Cómo te sentirías si ya no pudieras usar La Lista?",
+			prompt: "¿Cómo te sentirías si ya no pudieras usar La Lista?",
 			options: [
-				{
-					value: "very_disappointed",
-					labelEn: "Very disappointed",
-					labelEs: "Muy decepcionado/a",
-				},
-				{
-					value: "somewhat_disappointed",
-					labelEn: "Somewhat disappointed",
-					labelEs: "Algo decepcionado/a",
-				},
-				{
-					value: "not_disappointed",
-					labelEn: "Not disappointed",
-					labelEs: "No me decepcionaría",
-				},
+				{ value: "very_disappointed", label: "Muy decepcionado/a" },
+				{ value: "somewhat_disappointed", label: "Algo decepcionado/a" },
+				{ value: "not_disappointed", label: "No me decepcionaría" },
 			],
 			required: true,
 		},
 		{
 			order: 1,
 			type: "likert",
-			promptEn: "La Lista helps me be more productive in the review process.",
-			promptEs:
+			prompt:
 				"La Lista me ayuda a ser más productivo/a en el proceso de review.",
 			options: LIKERT_OPTIONS,
 			required: true,
@@ -245,25 +224,21 @@ export function getPmfTemplateQuestions(): SurveyQuestionInput[] {
 		{
 			order: 2,
 			type: "likert",
-			promptEn: "La Lista reduces the time it takes to get a PR into review.",
-			promptEs: "La Lista reduce el tiempo que toma poner un PR en review.",
+			prompt: "La Lista reduce el tiempo que toma poner un PR en review.",
 			options: LIKERT_OPTIONS,
 			required: true,
 		},
 		{
 			order: 3,
 			type: "likert",
-			promptEn: "La Lista reduces “who should review this?” friction.",
-			promptEs:
-				"La Lista reduce la fricción de “¿quién debería revisar esto?”.",
+			prompt: "La Lista reduce la fricción de “¿quién debería revisar esto?”.",
 			options: LIKERT_OPTIONS,
 			required: true,
 		},
 		{
 			order: 4,
 			type: "free_text",
-			promptEn: "Anything else you’d like to share? (optional)",
-			promptEs: "¿Algo más que quieras compartir? (opcional)",
+			prompt: "¿Algo más que quieras compartir? (opcional)",
 			options: [],
 			required: false,
 		},

@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { SurveyResultsSummary } from "@/components/surveys/SurveyResultsSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,8 +41,7 @@ function fromDatetimeLocalValue(value: string): number {
 type EditableOption = {
 	clientKey: string;
 	value: string;
-	labelEn: string;
-	labelEs: string;
+	label: string;
 };
 
 type EditableQuestion = Omit<SurveyQuestionInput, "options"> & {
@@ -54,14 +54,12 @@ function blankOptions(): EditableOption[] {
 		{
 			clientKey: `opt-a-${Date.now()}`,
 			value: "option_a",
-			labelEn: "Option A",
-			labelEs: "Opción A",
+			label: "Opción A",
 		},
 		{
 			clientKey: `opt-b-${Date.now()}`,
 			value: "option_b",
-			labelEn: "Option B",
-			labelEs: "Opción B",
+			label: "Opción B",
 		},
 	];
 }
@@ -71,8 +69,7 @@ function blankQuestion(order: number): EditableQuestion {
 		clientKey: `q-${Date.now()}-${order}`,
 		order,
 		type: "single_choice",
-		promptEn: "",
-		promptEs: "",
+		prompt: "",
 		options: blankOptions(),
 		required: true,
 	};
@@ -97,10 +94,8 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 	const activateSurvey = useMutation(api.surveys.activateSurvey);
 	const closeSurvey = useMutation(api.surveys.closeSurvey);
 
-	const [titleEn, setTitleEn] = useState("");
-	const [titleEs, setTitleEs] = useState("");
-	const [descriptionEn, setDescriptionEn] = useState("");
-	const [descriptionEs, setDescriptionEs] = useState("");
+	const [title, setTitle] = useState("");
+	const [description, setDescription] = useState("");
 	const [deadlineLocal, setDeadlineLocal] = useState("");
 	const [questions, setQuestions] = useState<EditableQuestion[]>([]);
 	const [hydrated, setHydrated] = useState(false);
@@ -110,18 +105,15 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 
 	useEffect(() => {
 		if (!detail || hydrated) return;
-		setTitleEn(detail.survey.titleEn);
-		setTitleEs(detail.survey.titleEs);
-		setDescriptionEn(detail.survey.descriptionEn ?? "");
-		setDescriptionEs(detail.survey.descriptionEs ?? "");
+		setTitle(detail.survey.title);
+		setDescription(detail.survey.description ?? "");
 		setDeadlineLocal(toDatetimeLocalValue(detail.survey.deadlineAt));
 		setQuestions(
 			detail.questions.map((question, index) => ({
 				clientKey: question._id,
 				order: index,
 				type: question.type,
-				promptEn: question.promptEn,
-				promptEs: question.promptEs,
+				prompt: question.prompt,
 				options: question.options.map((option) => ({
 					clientKey: `${question._id}-${option.value}`,
 					...option,
@@ -174,14 +166,29 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 
 	const isDraft = detail.survey.status === "draft";
 	const isActive = detail.survey.status === "active";
+	const publicResultsPath = `/${locale}/surveys/${surveyId}/results`;
+
+	const copyPublicLink = async () => {
+		const url = `${window.location.origin}${publicResultsPath}`;
+		try {
+			await navigator.clipboard.writeText(url);
+			toast({
+				title: t("admin.messages.linkCopiedTitle"),
+				description: t("admin.messages.linkCopiedDescription"),
+			});
+		} catch {
+			toast({
+				title: t("admin.messages.linkCopyFailed"),
+				variant: "destructive",
+			});
+		}
+	};
 
 	const persistDraft = async () => {
 		await updateSurvey({
 			surveyId,
-			titleEn,
-			titleEs,
-			descriptionEn: descriptionEn || undefined,
-			descriptionEs: descriptionEs || undefined,
+			title,
+			description: description || undefined,
 			deadlineAt: fromDatetimeLocalValue(deadlineLocal),
 		});
 		await setSurveyQuestions({
@@ -189,15 +196,13 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 			questions: questions.map((question, index) => ({
 				order: index,
 				type: question.type,
-				promptEn: question.promptEn,
-				promptEs: question.promptEs,
+				prompt: question.prompt,
 				options:
 					question.type === "free_text"
 						? []
-						: question.options.map(({ value, labelEn, labelEs }) => ({
+						: question.options.map(({ value, label }) => ({
 								value,
-								labelEn,
-								labelEs,
+								label,
 							})),
 				required: question.required,
 			})),
@@ -296,6 +301,15 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 							</Button>
 						</>
 					) : null}
+					{!isDraft ? (
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => void copyPublicLink()}
+						>
+							{t("admin.copyPublicLink")}
+						</Button>
+					) : null}
 					{isActive ? (
 						<Button
 							type="button"
@@ -316,37 +330,22 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 					</h1>
 
 					<div className="grid gap-4 md:grid-cols-2">
-						<div className="space-y-2">
-							<Label htmlFor="titleEn">{t("admin.titleEn")}</Label>
+						<div className="space-y-2 md:col-span-2">
+							<Label htmlFor="title">{t("admin.surveyTitle")}</Label>
 							<Input
-								id="titleEn"
-								value={titleEn}
-								onChange={(event) => setTitleEn(event.target.value)}
+								id="title"
+								value={title}
+								onChange={(event) => setTitle(event.target.value)}
 							/>
 						</div>
-						<div className="space-y-2">
-							<Label htmlFor="titleEs">{t("admin.titleEs")}</Label>
-							<Input
-								id="titleEs"
-								value={titleEs}
-								onChange={(event) => setTitleEs(event.target.value)}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="descriptionEn">{t("admin.descriptionEn")}</Label>
+						<div className="space-y-2 md:col-span-2">
+							<Label htmlFor="description">
+								{t("admin.surveyDescription")}
+							</Label>
 							<Textarea
-								id="descriptionEn"
-								value={descriptionEn}
-								onChange={(event) => setDescriptionEn(event.target.value)}
-								rows={3}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="descriptionEs">{t("admin.descriptionEs")}</Label>
-							<Textarea
-								id="descriptionEs"
-								value={descriptionEs}
-								onChange={(event) => setDescriptionEs(event.target.value)}
+								id="description"
+								value={description}
+								onChange={(event) => setDescription(event.target.value)}
 								rows={3}
 							/>
 						</div>
@@ -506,25 +505,13 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 											}
 										/>
 									</div>
-									<div className="space-y-2">
-										<Label>{t("admin.promptEn")}</Label>
+									<div className="space-y-2 md:col-span-2">
+										<Label>{t("admin.prompt")}</Label>
 										<Textarea
-											value={question.promptEn}
+											value={question.prompt}
 											onChange={(event) =>
 												updateQuestion(question.clientKey, {
-													promptEn: event.target.value,
-												})
-											}
-											rows={2}
-										/>
-									</div>
-									<div className="space-y-2">
-										<Label>{t("admin.promptEs")}</Label>
-										<Textarea
-											value={question.promptEs}
-											onChange={(event) =>
-												updateQuestion(question.clientKey, {
-													promptEs: event.target.value,
+													prompt: event.target.value,
 												})
 											}
 											rows={2}
@@ -547,8 +534,7 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 															{
 																clientKey: `opt-${Date.now()}`,
 																value: `option_${question.options.length + 1}`,
-																labelEn: "New option",
-																labelEs: "Nueva opción",
+																label: "Nueva opción",
 															},
 														],
 													})
@@ -560,7 +546,7 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 										{question.options.map((option) => (
 											<div
 												key={option.clientKey}
-												className="grid gap-2 md:grid-cols-[1fr_1fr_1fr_auto]"
+												className="grid gap-2 md:grid-cols-[1fr_1fr_auto]"
 											>
 												<Input
 													aria-label={t("admin.optionValue")}
@@ -575,24 +561,12 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 													}}
 												/>
 												<Input
-													aria-label={t("admin.optionLabelEn")}
-													value={option.labelEn}
+													aria-label={t("admin.optionLabel")}
+													value={option.label}
 													onChange={(event) => {
 														const options = question.options.map((row) =>
 															row.clientKey === option.clientKey
-																? { ...row, labelEn: event.target.value }
-																: row,
-														);
-														updateQuestion(question.clientKey, { options });
-													}}
-												/>
-												<Input
-													aria-label={t("admin.optionLabelEs")}
-													value={option.labelEs}
-													onChange={(event) => {
-														const options = question.options.map((row) =>
-															row.clientKey === option.clientKey
-																? { ...row, labelEs: event.target.value }
+																? { ...row, label: event.target.value }
 																: row,
 														);
 														updateQuestion(question.clientKey, { options });
@@ -623,7 +597,7 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 			) : (
 				<header className="space-y-2">
 					<h1 className="text-2xl font-semibold tracking-tight">
-						{locale === "es" ? detail.survey.titleEs : detail.survey.titleEn}
+						{detail.survey.title}
 					</h1>
 					<p className="text-muted-foreground">
 						{detail.survey.status} · {t("admin.deadline")}:{" "}
@@ -633,88 +607,26 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 			)}
 
 			<section className="space-y-4">
-				<h2 className="text-xl font-semibold">{t("admin.resultsTitle")}</h2>
+				<div className="flex flex-wrap items-center justify-between gap-2">
+					<h2 className="text-xl font-semibold">{t("admin.resultsTitle")}</h2>
+					{!isDraft ? (
+						<Button asChild variant="ghost" size="sm">
+							<Link href={publicResultsPath} target="_blank">
+								{t("admin.openPublicResults")}
+							</Link>
+						</Button>
+					) : null}
+				</div>
 				{results === undefined ? (
 					<Skeleton className="h-40 w-full" />
-				) : results === null || results.responseCount === 0 ? (
+				) : results === null ? (
 					<p className="text-muted-foreground">{t("admin.noResultsYet")}</p>
 				) : (
 					<div className="space-y-6">
-						<p className="text-sm text-muted-foreground">
-							{t("admin.responses", { count: results.responseCount })}
-						</p>
-						{results.questionResults.map((result) => {
-							const prompt =
-								locale === "es"
-									? result.question.promptEs
-									: result.question.promptEn;
-							return (
-								<div
-									key={result.question._id}
-									className="space-y-3 rounded-xl border border-border/70 p-4"
-								>
-									<h3 className="font-medium">{prompt}</h3>
-									{result.kind === "free_text" ? (
-										result.comments.length === 0 ? (
-											<p className="text-sm text-muted-foreground">
-												{t("admin.commentsEmpty")}
-											</p>
-										) : (
-											<ul className="space-y-2">
-												{(() => {
-													const seen = new Map<string, number>();
-													return result.comments.map((comment) => {
-														const occurrence = (seen.get(comment) ?? 0) + 1;
-														seen.set(comment, occurrence);
-														return (
-															<li
-																key={`${result.question._id}:${occurrence}:${comment}`}
-																className="rounded-lg bg-muted/40 px-3 py-2 text-sm"
-															>
-																{comment}
-															</li>
-														);
-													});
-												})()}
-											</ul>
-										)
-									) : (
-										<div className="space-y-2">
-											{typeof result.pmfVeryDisappointedPercent === "number" ? (
-												<p className="text-sm font-medium text-primary">
-													{t("admin.pmfHighlight", {
-														percent: result.pmfVeryDisappointedPercent,
-													})}
-												</p>
-											) : null}
-											{result.aggregates.map((row) => {
-												const label =
-													locale === "es" ? row.labelEs : row.labelEn;
-												return (
-													<div key={row.value} className="space-y-1">
-														<div className="flex justify-between text-sm">
-															<span>{label}</span>
-															<span className="text-muted-foreground">
-																{t("admin.choiceCount", {
-																	count: row.count,
-																	percent: row.percent,
-																})}
-															</span>
-														</div>
-														<div className="h-2 overflow-hidden rounded-full bg-muted">
-															<div
-																className="h-full bg-primary/80"
-																style={{ width: `${row.percent}%` }}
-															/>
-														</div>
-													</div>
-												);
-											})}
-										</div>
-									)}
-								</div>
-							);
-						})}
+						<SurveyResultsSummary
+							responseCount={results.responseCount}
+							questionResults={results.questionResults}
+						/>
 
 						<div className="space-y-2 rounded-xl border border-border/70 p-4">
 							<h3 className="font-medium">{t("admin.rosterTitle")}</h3>

@@ -96,16 +96,8 @@ test("validateSurveyAnswers enforces required options and skips empty optional f
 			type: "single_choice" as const,
 			required: true,
 			options: [
-				{
-					value: "very_disappointed",
-					labelEn: "Very disappointed",
-					labelEs: "Muy",
-				},
-				{
-					value: "not_disappointed",
-					labelEn: "Not disappointed",
-					labelEs: "No",
-				},
+				{ value: "very_disappointed", label: "Muy" },
+				{ value: "not_disappointed", label: "No" },
 			],
 		},
 		{
@@ -138,21 +130,9 @@ test("validateSurveyAnswers enforces required options and skips empty optional f
 
 test("aggregateChoiceAnswers computes counts and PMF very-disappointed percent", () => {
 	const options = [
-		{
-			value: "very_disappointed",
-			labelEn: "Very disappointed",
-			labelEs: "Muy",
-		},
-		{
-			value: "somewhat_disappointed",
-			labelEn: "Somewhat disappointed",
-			labelEs: "Algo",
-		},
-		{
-			value: "not_disappointed",
-			labelEn: "Not disappointed",
-			labelEs: "No",
-		},
+		{ value: "very_disappointed", label: "Muy" },
+		{ value: "somewhat_disappointed", label: "Algo" },
+		{ value: "not_disappointed", label: "No" },
 	];
 	const aggregates = aggregateChoiceAnswers(options, [
 		"very_disappointed",

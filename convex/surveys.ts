@@ -27,15 +27,13 @@ const questionTypeValidator = v.union(
 
 const optionValidator = v.object({
 	value: v.string(),
-	labelEn: v.string(),
-	labelEs: v.string(),
+	label: v.string(),
 });
 
 const questionInputValidator = v.object({
 	order: v.number(),
 	type: questionTypeValidator,
-	promptEn: v.string(),
-	promptEs: v.string(),
+	prompt: v.string(),
 	options: v.array(optionValidator),
 	required: v.boolean(),
 });
@@ -99,15 +97,10 @@ function validateQuestionInputs(questions: SurveyQuestionInput[]) {
 		}
 		orders.add(question.order);
 
-		normalizeText(question.promptEn, {
+		normalizeText(question.prompt, {
 			min: 1,
 			max: 500,
-			field: "promptEn",
-		});
-		normalizeText(question.promptEs, {
-			min: 1,
-			max: 500,
-			field: "promptEs",
+			field: "prompt",
 		});
 
 		if (question.type === "free_text") {
@@ -132,15 +125,10 @@ function validateQuestionInputs(questions: SurveyQuestionInput[]) {
 				throw new Error("Duplicate option value");
 			}
 			values.add(value);
-			normalizeText(option.labelEn, {
+			normalizeText(option.label, {
 				min: 1,
 				max: 200,
-				field: "option labelEn",
-			});
-			normalizeText(option.labelEs, {
-				min: 1,
-				max: 200,
-				field: "option labelEs",
+				field: "option label",
 			});
 		}
 	}
@@ -173,12 +161,10 @@ async function replaceSurveyQuestions(
 			surveyId,
 			order: index,
 			type: question.type,
-			promptEn: question.promptEn.trim(),
-			promptEs: question.promptEs.trim(),
+			prompt: question.prompt.trim(),
 			options: question.options.map((option) => ({
 				value: option.value.trim(),
-				labelEn: option.labelEn.trim(),
-				labelEs: option.labelEs.trim(),
+				label: option.label.trim(),
 			})),
 			required: question.required,
 		});
@@ -198,8 +184,7 @@ function serializeQuestion(question: Doc<"surveyQuestions">) {
 		_id: question._id,
 		order: question.order,
 		type: question.type,
-		promptEn: question.promptEn,
-		promptEs: question.promptEs,
+		prompt: question.prompt,
 		options: question.options,
 		required: question.required,
 	};
@@ -208,15 +193,51 @@ function serializeQuestion(question: Doc<"surveyQuestions">) {
 function serializeSurvey(survey: Doc<"surveys">) {
 	return {
 		_id: survey._id,
-		titleEn: survey.titleEn,
-		titleEs: survey.titleEs,
-		descriptionEn: survey.descriptionEn,
-		descriptionEs: survey.descriptionEs,
+		title: survey.title,
+		description: survey.description,
 		status: survey.status,
 		deadlineAt: survey.deadlineAt,
 		createdAt: survey.createdAt,
 		updatedAt: survey.updatedAt,
 	};
+}
+
+function buildQuestionResults(
+	questions: Doc<"surveyQuestions">[],
+	responses: Doc<"surveyResponses">[],
+) {
+	const sortedQuestions = questions.toSorted((a, b) => a.order - b.order);
+	return sortedQuestions.map((question) => {
+		const values = responses
+			.map(
+				(response) =>
+					response.answers.find((answer) => answer.questionId === question._id)
+						?.value,
+			)
+			.filter((value): value is string => typeof value === "string");
+
+		if (question.type === "free_text") {
+			return {
+				question: serializeQuestion(question),
+				kind: "free_text" as const,
+				comments: values
+					.map((value) => value.trim())
+					.filter((value) => value.length > 0),
+			};
+		}
+
+		const aggregates = aggregateChoiceAnswers(question.options, values);
+		return {
+			question: serializeQuestion(question),
+			kind: "choice" as const,
+			aggregates,
+			pmfVeryDisappointedPercent:
+				question.type === "single_choice" &&
+				question.options.some((option) => option.value === "very_disappointed")
+					? getPmfVeryDisappointedPercent(aggregates)
+					: undefined,
+		};
+	});
 }
 
 export const getActiveSurveyForMe = query({
@@ -429,46 +450,10 @@ export const getSurveyResults = query({
 				.collect(),
 		]);
 
-		const sortedQuestions = questions.toSorted((a, b) => a.order - b.order);
-		const questionResults = sortedQuestions.map((question) => {
-			const values = responses
-				.map(
-					(response) =>
-						response.answers.find(
-							(answer) => answer.questionId === question._id,
-						)?.value,
-				)
-				.filter((value): value is string => typeof value === "string");
-
-			if (question.type === "free_text") {
-				return {
-					question: serializeQuestion(question),
-					kind: "free_text" as const,
-					comments: values
-						.map((value) => value.trim())
-						.filter((value) => value.length > 0),
-				};
-			}
-
-			const aggregates = aggregateChoiceAnswers(question.options, values);
-			return {
-				question: serializeQuestion(question),
-				kind: "choice" as const,
-				aggregates,
-				pmfVeryDisappointedPercent:
-					question.type === "single_choice" &&
-					question.options.some(
-						(option) => option.value === "very_disappointed",
-					)
-						? getPmfVeryDisappointedPercent(aggregates)
-						: undefined,
-			};
-		});
-
 		return {
 			survey: serializeSurvey(survey),
 			responseCount: responses.length,
-			questionResults,
+			questionResults: buildQuestionResults(questions, responses),
 			roster: completions
 				.toSorted((a, b) => a.createdAt - b.createdAt)
 				.map((completion) => ({
@@ -480,26 +465,41 @@ export const getSurveyResults = query({
 	},
 });
 
+/** Public summary: aggregates + anonymous comments only. Drafts stay private. */
+export const getPublicSurveyResults = query({
+	args: {
+		surveyId: v.id("surveys"),
+	},
+	handler: async (ctx, { surveyId }) => {
+		const survey = await ctx.db.get(surveyId);
+		if (!survey || survey.status === "draft") {
+			return null;
+		}
+
+		const [questions, responses] = await Promise.all([
+			listQuestionsForSurvey(ctx, surveyId),
+			ctx.db
+				.query("surveyResponses")
+				.withIndex("by_survey", (q) => q.eq("surveyId", surveyId))
+				.collect(),
+		]);
+
+		return {
+			survey: serializeSurvey(survey),
+			responseCount: responses.length,
+			questionResults: buildQuestionResults(questions, responses),
+		};
+	},
+});
+
 export const createSurvey = mutation({
 	args: {
-		titleEn: v.string(),
-		titleEs: v.string(),
-		descriptionEn: v.optional(v.string()),
-		descriptionEs: v.optional(v.string()),
+		title: v.string(),
+		description: v.optional(v.string()),
 		deadlineAt: v.number(),
 		usePmfTemplate: v.optional(v.boolean()),
 	},
-	handler: async (
-		ctx,
-		{
-			titleEn,
-			titleEs,
-			descriptionEn,
-			descriptionEs,
-			deadlineAt,
-			usePmfTemplate,
-		},
-	) => {
+	handler: async (ctx, { title, description, deadlineAt, usePmfTemplate }) => {
 		const identity = await requireIdentity(ctx);
 		assertAdmin(identity.email);
 
@@ -509,15 +509,10 @@ export const createSurvey = mutation({
 
 		const now = Date.now();
 		const surveyId = await ctx.db.insert("surveys", {
-			titleEn: normalizeText(titleEn, { min: 1, max: 200, field: "titleEn" }),
-			titleEs: normalizeText(titleEs, { min: 1, max: 200, field: "titleEs" }),
-			descriptionEn: normalizeOptionalText(descriptionEn, {
+			title: normalizeText(title, { min: 1, max: 200, field: "title" }),
+			description: normalizeOptionalText(description, {
 				max: 1000,
-				field: "descriptionEn",
-			}),
-			descriptionEs: normalizeOptionalText(descriptionEs, {
-				max: 1000,
-				field: "descriptionEs",
+				field: "description",
 			}),
 			status: "draft",
 			deadlineAt,
@@ -537,16 +532,11 @@ export const createSurvey = mutation({
 export const updateSurvey = mutation({
 	args: {
 		surveyId: v.id("surveys"),
-		titleEn: v.string(),
-		titleEs: v.string(),
-		descriptionEn: v.optional(v.string()),
-		descriptionEs: v.optional(v.string()),
+		title: v.string(),
+		description: v.optional(v.string()),
 		deadlineAt: v.number(),
 	},
-	handler: async (
-		ctx,
-		{ surveyId, titleEn, titleEs, descriptionEn, descriptionEs, deadlineAt },
-	) => {
+	handler: async (ctx, { surveyId, title, description, deadlineAt }) => {
 		const identity = await requireIdentity(ctx);
 		assertAdmin(identity.email);
 
@@ -562,15 +552,10 @@ export const updateSurvey = mutation({
 		}
 
 		await ctx.db.patch(surveyId, {
-			titleEn: normalizeText(titleEn, { min: 1, max: 200, field: "titleEn" }),
-			titleEs: normalizeText(titleEs, { min: 1, max: 200, field: "titleEs" }),
-			descriptionEn: normalizeOptionalText(descriptionEn, {
+			title: normalizeText(title, { min: 1, max: 200, field: "title" }),
+			description: normalizeOptionalText(description, {
 				max: 1000,
-				field: "descriptionEn",
-			}),
-			descriptionEs: normalizeOptionalText(descriptionEs, {
-				max: 1000,
-				field: "descriptionEs",
+				field: "description",
 			}),
 			deadlineAt,
 			updatedAt: Date.now(),

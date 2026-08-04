@@ -69,14 +69,10 @@ export function SurveysAdminPage() {
 		try {
 			const deadlineAt = Date.now() + 14 * 24 * 60 * 60 * 1000;
 			const surveyId = await createSurvey({
-				titleEn: usePmfTemplate ? "Product–market fit check" : "New survey",
-				titleEs: usePmfTemplate
+				title: usePmfTemplate
 					? "Chequeo de product–market fit"
 					: "Nueva encuesta",
-				descriptionEn: usePmfTemplate
-					? "Help us understand if La Lista is ready for more teams."
-					: undefined,
-				descriptionEs: usePmfTemplate
+				description: usePmfTemplate
 					? "Ayúdanos a entender si La Lista está lista para más equipos."
 					: undefined,
 				deadlineAt,
@@ -139,7 +135,6 @@ export function SurveysAdminPage() {
 				) : (
 					<ul className="divide-y divide-border/60 rounded-xl border border-border/70">
 						{surveys.map((survey) => {
-							const title = locale === "es" ? survey.titleEs : survey.titleEn;
 							return (
 								<li key={survey._id}>
 									<Link
@@ -147,7 +142,7 @@ export function SurveysAdminPage() {
 										className="flex flex-col gap-1 px-4 py-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
 									>
 										<div className="space-y-1">
-											<p className="font-medium">{title}</p>
+											<p className="font-medium">{survey.title}</p>
 											<p className="text-sm text-muted-foreground">
 												{statusLabel(t, survey.status)} ·{" "}
 												{t("admin.responses", {

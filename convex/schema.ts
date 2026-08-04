@@ -317,10 +317,8 @@ export default defineSchema({
 		.index("by_author", ["authorTokenIdentifier", "createdAt"]),
 
 	surveys: defineTable({
-		titleEn: v.string(),
-		titleEs: v.string(),
-		descriptionEn: v.optional(v.string()),
-		descriptionEs: v.optional(v.string()),
+		title: v.string(),
+		description: v.optional(v.string()),
 		status: v.union(
 			v.literal("draft"),
 			v.literal("active"),
@@ -342,13 +340,11 @@ export default defineSchema({
 			v.literal("likert"),
 			v.literal("free_text"),
 		),
-		promptEn: v.string(),
-		promptEs: v.string(),
+		prompt: v.string(),
 		options: v.array(
 			v.object({
 				value: v.string(),
-				labelEn: v.string(),
-				labelEs: v.string(),
+				label: v.string(),
 			}),
 		),
 		required: v.boolean(),

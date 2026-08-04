@@ -997,23 +997,21 @@
 			"activating": "Activando…",
 			"close": "Cerrar encuesta",
 			"closing": "Cerrando…",
-			"titleEn": "Título (inglés)",
-			"titleEs": "Título (español)",
-			"descriptionEn": "Descripción (inglés)",
-			"descriptionEs": "Descripción (español)",
+			"copyPublicLink": "Copiar link público",
+			"openPublicResults": "Abrir resultados públicos",
+			"surveyTitle": "Título",
+			"surveyDescription": "Descripción",
 			"questions": "Preguntas",
 			"addQuestion": "Agregar pregunta",
 			"questionType": "Tipo",
 			"typeSingleChoice": "Opción única",
 			"typeLikert": "Escala Likert",
 			"typeFreeText": "Texto libre",
-			"promptEn": "Pregunta (inglés)",
-			"promptEs": "Pregunta (español)",
+			"prompt": "Pregunta",
 			"required": "Obligatoria",
 			"options": "Opciones",
 			"optionValue": "Valor",
-			"optionLabelEn": "Etiqueta (EN)",
-			"optionLabelEs": "Etiqueta (ES)",
+			"optionLabel": "Etiqueta",
 			"addOption": "Agregar opción",
 			"removeQuestion": "Quitar pregunta",
 			"removeOption": "Quitar opción",
@@ -1040,8 +1038,16 @@
 				"activateFailed": "No se pudo activar. Revisa que no haya otra encuesta activa y que existan preguntas.",
 				"closedTitle": "Encuesta cerrada",
 				"closedDescription": "El banner ya no aparecerá.",
-				"closeFailed": "No se pudo cerrar la encuesta."
+				"closeFailed": "No se pudo cerrar la encuesta.",
+				"linkCopiedTitle": "Link copiado",
+				"linkCopiedDescription": "Cualquiera con el link puede ver agregados y comentarios anónimos — no quién respondió.",
+				"linkCopyFailed": "No se pudo copiar el link."
 			}
+		},
+		"public": {
+			"unavailableTitle": "Resultados no disponibles",
+			"unavailableDescription": "Esta encuesta aún no está publicada, o el link no es válido.",
+			"privacyNote": "Los comentarios son anónimos. En esta página no se muestran identidades."
 		}
 	}
 }
