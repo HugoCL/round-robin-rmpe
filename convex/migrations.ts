@@ -126,15 +126,17 @@ export const migrateSurveysToSpanishOnly = migrations.define({
 export const migrateSurveyQuestionsToSpanishOnly = migrations.define({
 	table: "surveyQuestions",
 	migrateOne: async (ctx, question) => {
-		const legacy = question as typeof question & {
+		type LegacyOption = {
+			value: string;
+			label?: string;
+			labelEn?: string;
+			labelEs?: string;
+		};
+		const legacy = question as Omit<typeof question, "prompt" | "options"> & {
+			prompt?: string;
 			promptEn?: string;
 			promptEs?: string;
-			options: Array<{
-				value: string;
-				label?: string;
-				labelEn?: string;
-				labelEs?: string;
-			}>;
+			options: LegacyOption[];
 		};
 		const prompt =
 			pickSurveyLocaleText(legacy.prompt, legacy.promptEs, legacy.promptEn) ||
