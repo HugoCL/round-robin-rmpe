@@ -27,6 +27,7 @@ import type * as mutations from "../mutations.js";
 import type * as pushActions from "../pushActions.js";
 import type * as queries from "../queries.js";
 import type * as suggestions from "../suggestions.js";
+import type * as surveys from "../surveys.js";
 
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   pushActions: typeof pushActions;
   queries: typeof queries;
   suggestions: typeof suggestions;
+  surveys: typeof surveys;
 }>;
 
 /**

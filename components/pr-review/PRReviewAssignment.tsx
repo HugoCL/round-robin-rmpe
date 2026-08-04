@@ -22,6 +22,7 @@ import { IndefiniteAbsenceReminderBanner } from "./IndefiniteAbsenceReminderBann
 import { CompactLayout } from "./layouts/CompactLayout";
 import { PRReviewProvider } from "./PRReviewContext";
 import { PRReviewGuard } from "./PRReviewGuard";
+import { SurveyBanner } from "./SurveyBanner";
 import { TeamBirthdaySection } from "./TeamBirthdaySection";
 
 interface BackupEntry {
@@ -352,6 +353,7 @@ export default function PRReviewAssignment({
 							setReviewersDrawerOpen={setReviewersDrawerOpen}
 						/>
 						<AnnouncementBanner />
+						<SurveyBanner />
 						<TeamBirthdaySection teamSlug={teamSlug} />
 						<IndefiniteAbsenceReminderBanner />
 					</div>

@@ -315,4 +315,63 @@ export default defineSchema({
 	})
 		.index("by_suggestion_created_at", ["suggestionId", "createdAt"])
 		.index("by_author", ["authorTokenIdentifier", "createdAt"]),
+
+	surveys: defineTable({
+		titleEn: v.string(),
+		titleEs: v.string(),
+		descriptionEn: v.optional(v.string()),
+		descriptionEs: v.optional(v.string()),
+		status: v.union(
+			v.literal("draft"),
+			v.literal("active"),
+			v.literal("closed"),
+		),
+		deadlineAt: v.number(),
+		createdByTokenIdentifier: v.string(),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_status", ["status"])
+		.index("by_status_deadline", ["status", "deadlineAt"]),
+
+	surveyQuestions: defineTable({
+		surveyId: v.id("surveys"),
+		order: v.number(),
+		type: v.union(
+			v.literal("single_choice"),
+			v.literal("likert"),
+			v.literal("free_text"),
+		),
+		promptEn: v.string(),
+		promptEs: v.string(),
+		options: v.array(
+			v.object({
+				value: v.string(),
+				labelEn: v.string(),
+				labelEs: v.string(),
+			}),
+		),
+		required: v.boolean(),
+	}).index("by_survey_order", ["surveyId", "order"]),
+
+	surveyResponses: defineTable({
+		surveyId: v.id("surveys"),
+		answers: v.array(
+			v.object({
+				questionId: v.id("surveyQuestions"),
+				value: v.string(),
+			}),
+		),
+		createdAt: v.number(),
+	}).index("by_survey", ["surveyId"]),
+
+	surveyCompletions: defineTable({
+		surveyId: v.id("surveys"),
+		userTokenIdentifier: v.string(),
+		email: v.optional(v.string()),
+		name: v.optional(v.string()),
+		createdAt: v.number(),
+	})
+		.index("by_survey_user", ["surveyId", "userTokenIdentifier"])
+		.index("by_survey", ["surveyId"]),
 });

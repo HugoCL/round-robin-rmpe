@@ -1,6 +1,7 @@
 import {
 	Calendar,
 	ChevronDown,
+	ClipboardList,
 	Download,
 	Flag,
 	Lightbulb,
@@ -279,6 +280,25 @@ export function PageHeader({
 											<p>{t("suggestions.shortcut")}</p>
 										</TooltipContent>
 									</Tooltip>
+									{isAdmin ? (
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													asChild
+													variant="ghost"
+													size="icon"
+													aria-label={t("survey.shortcut")}
+												>
+													<Link href={`/${locale}/surveys`}>
+														<ClipboardList className="h-4 w-4" />
+													</Link>
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>
+												<p>{t("survey.shortcut")}</p>
+											</TooltipContent>
+										</Tooltip>
+									) : null}
 								</TooltipProvider>
 								<HeaderOptionsDrawer />
 							</div>
