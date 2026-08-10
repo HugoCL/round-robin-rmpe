@@ -135,14 +135,14 @@ export function EditReviewerDialog({
 					</Button>
 				)}
 			</DialogTrigger>
-			<DialogContent className="sm:max-w[425px]">
+			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
 					<DialogTitle>{t("reviewer.editReviewer")}</DialogTitle>
 					<DialogDescription>{t("reviewer.editDescription")}</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
-					<div className="grid grid-cols-4 items-center gap-4">
-						<Label htmlFor={nameId} className="text-right">
+					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+						<Label htmlFor={nameId} className="sm:text-right">
 							{t("common.name")}
 						</Label>
 						<Input
@@ -153,12 +153,12 @@ export function EditReviewerDialog({
 								setEdits((prev) => ({ ...prev, name: e.target.value }))
 							}
 							onKeyDown={handleKeyDown}
-							className="col-span-3"
+							className="sm:col-span-3"
 							autoFocus
 						/>
 					</div>
-					<div className="grid grid-cols-4 items-center gap-4">
-						<Label htmlFor={chatId} className="text-right">
+					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+						<Label htmlFor={chatId} className="sm:text-right">
 							{t("reviewer.googleChatUserIdLabel", { default: "Chat User ID" })}
 						</Label>
 						<Input
@@ -174,11 +174,11 @@ export function EditReviewerDialog({
 								}))
 							}
 							onKeyDown={handleKeyDown}
-							className="col-span-3"
+							className="sm:col-span-3"
 						/>
 					</div>
-					<div className="grid grid-cols-4 items-center gap-4">
-						<Label htmlFor={emailId} className="text-right">
+					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+						<Label htmlFor={emailId} className="sm:text-right">
 							{t("common.email")}
 						</Label>
 						<Input
@@ -190,7 +190,7 @@ export function EditReviewerDialog({
 								setEdits((prev) => ({ ...prev, email: e.target.value }))
 							}
 							onKeyDown={handleKeyDown}
-							className="col-span-3"
+							className="sm:col-span-3"
 						/>
 					</div>
 					<div className="col-span-full flex items-start gap-3 rounded-md border border-border/60 bg-muted/30 p-3">

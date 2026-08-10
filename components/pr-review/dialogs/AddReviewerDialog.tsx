@@ -115,8 +115,8 @@ export function AddReviewerDialog({
 					<DialogDescription>{t("reviewer.addDescription")}</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
-					<div className="grid grid-cols-4 items-center gap-4">
-						<Label htmlFor={reviewerNameId} className="text-right">
+					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+						<Label htmlFor={reviewerNameId} className="sm:text-right">
 							{t("common.name")}
 						</Label>
 						<Input
@@ -125,12 +125,12 @@ export function AddReviewerDialog({
 							value={newReviewerName}
 							onChange={(e) => setNewReviewerName(e.target.value)}
 							onKeyDown={handleKeyDown}
-							className="col-span-3"
+							className="sm:col-span-3"
 							autoFocus
 						/>
 					</div>
-					<div className="grid grid-cols-4 items-center gap-4">
-						<Label htmlFor={reviewerEmailId} className="text-right">
+					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+						<Label htmlFor={reviewerEmailId} className="sm:text-right">
 							{t("common.email")}
 						</Label>
 						<Input
@@ -140,11 +140,11 @@ export function AddReviewerDialog({
 							value={newReviewerEmail}
 							onChange={(e) => setNewReviewerEmail(e.target.value)}
 							onKeyDown={handleKeyDown}
-							className="col-span-3"
+							className="sm:col-span-3"
 						/>
 					</div>
-					<div className="grid grid-cols-4 items-center gap-4">
-						<Label htmlFor={reviewerChatId} className="text-right">
+					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+						<Label htmlFor={reviewerChatId} className="sm:text-right">
 							{t("reviewer.googleChatUserIdLabel", { default: "Chat User ID" })}
 						</Label>
 						<Input
@@ -155,7 +155,7 @@ export function AddReviewerDialog({
 							value={googleChatUserId}
 							onChange={(e) => setGoogleChatUserId(e.target.value)}
 							onKeyDown={handleKeyDown}
-							className="col-span-3"
+							className="sm:col-span-3"
 						/>
 					</div>
 					<div className="col-span-full">

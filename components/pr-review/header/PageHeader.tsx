@@ -105,12 +105,12 @@ export function PageHeader({
 	).length;
 
 	const reviewerActions = canManageCurrentTeam ? (
-		<div className="flex flex-wrap justify-center gap-2">
+		<div className="flex flex-wrap justify-start gap-2 sm:justify-center">
 			<TagManager />
 			<AddReviewerDialog
 				onAddReviewer={addReviewer}
 				trigger={
-					<Button variant="outline" size="sm">
+					<Button variant="outline" size="sm" className="min-h-11 sm:min-h-8">
 						<UserPlus className="h-4 w-4 mr-2" />
 						{t("pr.addReviewer")}
 					</Button>
@@ -118,7 +118,7 @@ export function PageHeader({
 			/>
 			<CreateEventDialog
 				trigger={
-					<Button variant="outline" size="sm">
+					<Button variant="outline" size="sm" className="min-h-11 sm:min-h-8">
 						<Calendar className="h-4 w-4 mr-2" />
 						{t("events.createEvent")}
 					</Button>
@@ -135,7 +135,7 @@ export function PageHeader({
 				<Button
 					variant="outline"
 					size="sm"
-					className="rounded-full border-border/70 bg-background/70"
+					className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
 				>
 					<UserMinus className="h-4 w-4" />
 					<span>{t("pr.deleteReviewer")}</span>
@@ -154,7 +154,7 @@ export function PageHeader({
 					<Button
 						variant="outline"
 						size="sm"
-						className="rounded-full border-border/70 bg-background/70"
+						className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
 					>
 						<SlidersHorizontal className="h-4 w-4 mr-2" />
 						{t("pr.viewColumns")}
@@ -324,7 +324,7 @@ export function PageHeader({
 						</div>
 					</div>
 					<CollapsibleContent className="overflow-hidden border-t border-border/60 pt-3 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
-						<div className="flex flex-wrap items-center justify-end gap-2">
+						<div className="flex w-full flex-wrap items-center justify-start gap-2 sm:justify-end">
 							{!canManageCurrentTeam ? (
 								<div className="rounded-full border border-border/70 bg-background/70 px-4 py-2 text-sm text-muted-foreground">
 									{isAdmin
@@ -332,9 +332,9 @@ export function PageHeader({
 										: t("team.foreignTeamReadonlyBanner")}
 								</div>
 							) : (
-								<div className="flex items-center gap-2">
+								<div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
 									{reviewerActions}
-									<div className="mx-1 h-6 w-px bg-border/70" />
+									<div className="mx-1 hidden h-6 w-px bg-border/70 sm:block" />
 									{isMobile ? (
 										<Drawer
 											open={reviewersDrawerOpen}
@@ -344,25 +344,25 @@ export function PageHeader({
 												<Button
 													variant="outline"
 													size="sm"
-													className="rounded-full border-border/70 bg-background/70"
+													className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
 												>
 													<Menu className="h-4 w-4" />
 													<span>{t("pr.manageReviewers")}</span>
 												</Button>
 											</DrawerTrigger>
-											<DrawerContent>
+											<DrawerContent className="max-h-[92dvh]">
 												<DrawerHeader>
 													<DrawerTitle>{t("pr.reviewers")}</DrawerTitle>
 													<DrawerDescription>
 														{t("manage-reviewers-and-their-assignments")}
 													</DrawerDescription>
 												</DrawerHeader>
-												<div className="flex flex-col gap-3 px-4 pb-4">
-													<div className="flex flex-wrap items-center justify-end gap-2">
+												<div className="flex min-h-0 flex-col gap-3 overflow-hidden px-4 pb-4">
+													<div className="grid grid-cols-2 gap-2">
 														<Button
 															variant="outline"
 															size="sm"
-															className="rounded-full border-border/70 bg-background/70"
+															className="col-span-2 min-h-11 rounded-full border-border/70 bg-background/70"
 															onClick={handleResetCounts}
 														>
 															<RotateCw className="h-4 w-4 mr-2" />
@@ -371,7 +371,7 @@ export function PageHeader({
 														<Button
 															variant="outline"
 															size="sm"
-															className="rounded-full border-border/70 bg-background/70"
+															className="min-h-11 rounded-full border-border/70 bg-background/70"
 															onClick={exportData}
 														>
 															<Save className="h-4 w-4 mr-2" />
@@ -380,7 +380,7 @@ export function PageHeader({
 														<Button
 															variant="outline"
 															size="sm"
-															className="rounded-full border-border/70 bg-background/70"
+															className="min-h-11 rounded-full border-border/70 bg-background/70"
 															onClick={() =>
 																document.getElementById("import-file")?.click()
 															}
@@ -391,7 +391,7 @@ export function PageHeader({
 														{deleteReviewerButton}
 														{reviewerColumnsButton}
 													</div>
-													<div className="max-h-[60vh] overflow-y-auto">
+													<div className="min-h-0 overflow-y-auto overscroll-contain pb-2">
 														<ReviewersTable
 															teamSlug={teamSlug}
 															showViewControls={false}

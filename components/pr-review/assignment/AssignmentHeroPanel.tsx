@@ -132,7 +132,7 @@ export function AssignmentHeroPanel({
 								</TextMorph>
 								{activeHasBirthday && (
 									<span
-										className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-300 border border-amber-500/25 shadow-md shadow-amber-500/5 animate-pulse shrink-0"
+										className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-800 shadow-md shadow-amber-500/5 motion-safe:animate-pulse dark:text-amber-300"
 										title="¡Feliz Cumpleaños! 🎂"
 									>
 										🎂 HBD!

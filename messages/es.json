@@ -117,7 +117,7 @@
 		"nameHeader": "Nombre",
 		"tagsHeader": "Tags",
 		"assignmentsHeader": "Asignaciones",
-		"statusHeader": "Estado",
+		"statusHeader": "Disponibilidad",
 		"title": "Revisión PR",
 		"assignReviewer": "Asignar Revisor",
 		"assignmentEyebrow": "Próximo turno",
@@ -297,13 +297,16 @@
 		"updateFailed": "Falló al actualizar el revisor. Por favor intenta de nuevo.",
 		"notAReviewerCta": "No participo en la rotación de PRs",
 		"outOfReviewPoolBadge": "Fuera de rotación",
-		"inReviewPoolSwitchLabel": "En rotación de revisores",
-		"inReviewPoolSwitchLabelShort": "En rotación",
+		"inReviewPoolSwitchLabel": "Participa en la asignación automática",
+		"inReviewPoolSwitchLabelShort": "Asignación automática",
+		"availabilitySwitchLabel": "Disponible hoy",
+		"availabilityHelp": "Indica si esta persona puede recibir PRs hoy. Puede cambiar por una ausencia o un horario parcial.",
+		"automaticAssignmentHelp": "Define si esta persona participa en el round robin y recibe asignaciones automáticas.",
 		"outOfReviewPoolEditLabel": "Fuera del pool de revisores",
 		"outOfReviewPoolEditHint": "No recibes asignaciones automáticas de PR en este equipo. Sigues pudiendo usar la app.",
 		"excludedFromPoolSuccess": "Ya no estás en la rotación de revisores de este equipo.",
 		"includedInPoolSuccess": "Volviste a la rotación de revisores de este equipo.",
-		"rotationColumn": "Pool PR"
+		"rotationColumn": "Asignación automática"
 	},
 	"messages": {
 		"tagAdded": "Tag agregado exitosamente",
@@ -632,7 +635,7 @@
 	"updates-automatically-every-minute-when-tab-is-active": "• Actualizado cada minuto cuando la pestaña está activa",
 	"you-are-not-authenticated": "No estás autenticado",
 	"change-history": "Historial de Cambios",
-	"manage-reviewers-and-their-assignments": "Administrar revisores y sus tareas",
+	"manage-reviewers-and-their-assignments": "Disponibilidad indica si puede recibir PRs hoy. Asignación automática define si participa en el round robin.",
 	"reset-counts": "Restablecer recuentos",
 	"pagination": {
 		"previous": "Anterior",

@@ -42,10 +42,10 @@ export function CompactLayout() {
 						</section>
 					) : null}
 
-					<section className="page-enter rounded-3xl border border-border bg-card p-5 shadow-sm">
+					<section className="page-enter calm-section">
 						<button
 							onClick={() => setShowAvailability(!showAvailability)}
-							className="flex w-full items-center justify-between text-left focus:outline-none"
+							className="flex min-h-11 w-full items-center justify-between rounded-2xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
 							aria-expanded={showAvailability}
 							type="button"
 						>
@@ -62,7 +62,7 @@ export function CompactLayout() {
 							)}
 						</button>
 						{showAvailability && (
-							<div className="mt-4 pt-4 border-t border-border/60">
+							<div className="border-t border-border/60 pt-4">
 								<ReviewersTable teamSlug={teamSlug} readOnly={true} />
 							</div>
 						)}

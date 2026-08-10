@@ -72,7 +72,7 @@
 		"nameHeader": "Name",
 		"tagsHeader": "Tags",
 		"assignmentsHeader": "Assignments",
-		"statusHeader": "Status",
+		"statusHeader": "Availability",
 		"title": "PR Review",
 		"assignReviewer": "Assign Reviewer",
 		"assignmentEyebrow": "Next up",
@@ -252,13 +252,16 @@
 		"updateFailed": "Failed to update reviewer. Please try again.",
 		"notAReviewerCta": "I don't take PRs in this rotation",
 		"outOfReviewPoolBadge": "Out of rotation",
-		"inReviewPoolSwitchLabel": "In review rotation",
-		"inReviewPoolSwitchLabelShort": "In rotation",
+		"inReviewPoolSwitchLabel": "Included in automatic assignment",
+		"inReviewPoolSwitchLabelShort": "Automatic assignment",
+		"availabilitySwitchLabel": "Available today",
+		"availabilityHelp": "Shows whether this person can receive PRs today. It can change because of an absence or part-time schedule.",
+		"automaticAssignmentHelp": "Controls whether this person takes part in the round robin and receives automatic assignments.",
 		"outOfReviewPoolEditLabel": "Not in review pool",
 		"outOfReviewPoolEditHint": "Excluded from automatic PR assignment for this team. You can still use the app.",
 		"excludedFromPoolSuccess": "You are no longer in the review rotation for this team.",
 		"includedInPoolSuccess": "You are back in the review rotation for this team.",
-		"rotationColumn": "PR pool"
+		"rotationColumn": "Automatic assignment"
 	},
 	"messages": {
 		"tagAdded": "Tag added successfully",
@@ -588,7 +591,7 @@
 	"updates-automatically-every-minute-when-tab-is-active": "• Updates automatically every minute when tab is active",
 	"reset-counts": "Reset Counts",
 	"change-history": "Change History",
-	"manage-reviewers-and-their-assignments": "Manage reviewers and their assignments",
+	"manage-reviewers-and-their-assignments": "Availability shows whether someone can receive PRs today. Automatic assignment controls whether they take part in the round robin.",
 	"pagination": {
 		"previous": "Previous",
 		"next": "Next",

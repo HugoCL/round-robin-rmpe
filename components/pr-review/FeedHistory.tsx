@@ -104,7 +104,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 						{filteredAssignmentHistory.slice(0, 6).map((item) => (
 							<div
 								key={item.id}
-								className={`flex items-start justify-between gap-4 px-4 py-4 transition-colors hover:bg-muted/30 first:rounded-t-2xl last:rounded-b-2xl md:px-5 lg:px-6 lg:py-5 ${
+								className={`flex flex-col items-start gap-3 px-4 py-4 transition-colors hover:bg-muted/30 first:rounded-t-2xl last:rounded-b-2xl sm:flex-row sm:justify-between sm:gap-4 md:px-5 lg:px-6 lg:py-5 ${
 									item.urgent ? "urgent-card" : ""
 								}`}
 							>
@@ -206,7 +206,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 										</div>
 									) : null}
 								</div>
-								<div className="flex shrink-0 flex-col items-end gap-1">
+								<div className="flex shrink-0 flex-wrap items-center gap-1 sm:flex-col sm:items-end">
 									{item.urgent && (
 										<Badge className="bg-red-50 text-red-700 border-red-200 hover:border-transparent hover:bg-red-100 transition-colors dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60">
 											{t("pr.urgent")}

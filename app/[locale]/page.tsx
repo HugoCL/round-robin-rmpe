@@ -94,7 +94,7 @@ export default function Page() {
 								</p>
 								{reviewedPRsCount !== undefined && (
 									<div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-3.5 py-1.5 text-xs text-muted-foreground md:text-sm">
-										<span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+										<span className="inline-block h-2 w-2 rounded-full bg-green-500 motion-safe:animate-pulse" />
 										<span>
 											{t("team.switcher.reviewedSummaryLabel")}{" "}
 											<strong>{reviewedPRsCount.toLocaleString(locale)}</strong>
@@ -104,7 +104,11 @@ export default function Page() {
 							</div>
 
 							<div className="flex flex-wrap items-center gap-3">
-								<Button asChild size="lg" className="rounded-full px-5">
+								<Button
+									asChild
+									size="lg"
+									className="min-h-11 rounded-full px-5"
+								>
 									<Link href={`/${locale}/create-team`}>
 										<Plus className="h-4 w-4" />
 										{t("team.createButton")}
@@ -114,7 +118,7 @@ export default function Page() {
 									asChild
 									variant="outline"
 									size="lg"
-									className="rounded-full border-border/70 bg-background/70 px-5"
+									className="min-h-11 rounded-full border-border/70 bg-background/70 px-5"
 								>
 									<Link href={`/${locale}/suggestions`}>
 										<Lightbulb className="h-4 w-4" />

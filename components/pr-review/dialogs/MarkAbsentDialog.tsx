@@ -148,14 +148,14 @@ export function MarkAbsentDialog({
 
 				<div className="grid gap-4 py-4">
 					{/* Date Picker */}
-					<div className="grid grid-cols-4 items-center gap-4">
-						<Label className="text-right">{t("absent.returnDate")}</Label>
+					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+						<Label className="sm:text-right">{t("absent.returnDate")}</Label>
 						<Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
 							<PopoverTrigger asChild>
 								<Button
 									variant="outline"
 									className={cn(
-										"col-span-3 justify-start text-left font-normal",
+										"justify-start text-left font-normal sm:col-span-3",
 										!selectedDate && "text-muted-foreground",
 									)}
 								>
@@ -186,11 +186,11 @@ export function MarkAbsentDialog({
 					</div>
 
 					{/* Time Picker */}
-					<div className="grid grid-cols-4 items-center gap-4">
-						<Label htmlFor={timeId} className="text-right">
+					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+						<Label htmlFor={timeId} className="sm:text-right">
 							{t("absent.returnTime")}
 						</Label>
-						<div className="col-span-3 flex items-center gap-2">
+						<div className="flex items-center gap-2 sm:col-span-3">
 							<Clock className="h-4 w-4 text-muted-foreground" />
 							<Input
 								id={timeId}

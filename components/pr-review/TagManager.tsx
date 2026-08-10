@@ -65,7 +65,7 @@ export function TagManager() {
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
 			<DialogTrigger asChild>
-				<Button variant="outline" size="sm">
+				<Button variant="outline" size="sm" className="min-h-11 sm:min-h-8">
 					<Palette className="h-4 w-4 mr-2" />
 					{t("common.manage")} {t("pr.tags")}
 				</Button>
