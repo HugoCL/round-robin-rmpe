@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -49,8 +49,6 @@ import { toast } from "@/hooks/use-toast";
 import type { GroupedAssignmentHistoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { usePRReview } from "./PRReviewContext";
-
-const INITIAL_VISIBLE_ENTRIES = 4;
 
 function getInitials(name?: string) {
 	return (
@@ -87,7 +85,9 @@ export function FeedHistory({
 		canManageCurrentTeam,
 	} = usePRReview();
 	const [showAll, setShowAll] = useState(false);
+	const [hasHiddenHistory, setHasHiddenHistory] = useState(false);
 	const [undoingId, setUndoingId] = useState<string | null>(null);
+	const historyViewportRef = useRef<HTMLDivElement>(null);
 	const undoAssignment = useMutation(api.mutations.undoAssignmentFromHistory);
 
 	const tags =
@@ -125,9 +125,22 @@ export function FeedHistory({
 		});
 	}, [assignmentHistory, myAssignmentsOnly, reviewers, userInfo?.email]);
 
-	const visibleHistory = showAll
-		? filteredAssignmentHistory
-		: filteredAssignmentHistory.slice(0, INITIAL_VISIBLE_ENTRIES);
+	const visibleHistory = filteredAssignmentHistory;
+
+	useEffect(() => {
+		if (filteredAssignmentHistory.length === 0) {
+			setHasHiddenHistory(false);
+			return;
+		}
+		if (showAll || !historyViewportRef.current) return;
+		const viewport = historyViewportRef.current;
+		const updateOverflow = () =>
+			setHasHiddenHistory(viewport.scrollHeight > viewport.clientHeight + 1);
+		const observer = new ResizeObserver(updateOverflow);
+		observer.observe(viewport);
+		updateOverflow();
+		return () => observer.disconnect();
+	}, [filteredAssignmentHistory.length, showAll]);
 
 	const getTagBadge = (tagId: string) => {
 		const tag = tags.find((item: Doc<"tags">) => item._id === tagId);
@@ -213,7 +226,7 @@ export function FeedHistory({
 			>
 				<section
 					className={cn(
-						"calm-section h-full lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto lg:overscroll-contain",
+						"calm-section flex h-full flex-col lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-hidden",
 						!open && "p-3 lg:items-center lg:overflow-hidden lg:p-2! 2xl:p-2!",
 					)}
 				>
@@ -279,7 +292,12 @@ export function FeedHistory({
 						role="region"
 						aria-label={t("pr.history")}
 						tabIndex={0}
-						className="animation-duration-300 ease-in-out lg:min-h-0 lg:flex-1 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain lg:data-closed:animate-none! lg:data-open:animate-none!"
+						className={cn(
+							"animation-duration-300 min-h-0 flex-1 ease-in-out lg:overflow-x-hidden lg:overscroll-contain lg:data-closed:animate-none! lg:data-open:animate-none!",
+							showAll
+								? "lg:overflow-y-auto"
+								: "flex max-h-[calc(100dvh-12rem)] flex-col overflow-hidden lg:max-h-none",
+						)}
 					>
 						{filteredAssignmentHistory.length === 0 ? (
 							<Empty className="m-4 border border-border/70 bg-muted/20 p-6 lg:p-8">
@@ -289,7 +307,13 @@ export function FeedHistory({
 							</Empty>
 						) : (
 							<>
-								<div className="relative">
+								<div
+									ref={historyViewportRef}
+									className={cn(
+										"relative",
+										!showAll && "min-h-0 flex-1 overflow-hidden",
+									)}
+								>
 									<div
 										aria-hidden="true"
 										className="absolute top-9 bottom-9 left-11 w-px bg-border/80 lg:left-12"
@@ -510,7 +534,7 @@ export function FeedHistory({
 										);
 									})}
 								</div>
-								{filteredAssignmentHistory.length > INITIAL_VISIBLE_ENTRIES ? (
+								{showAll || hasHiddenHistory ? (
 									<div className="border-t border-border/70 p-2 text-center">
 										<Button
 											variant="ghost"
