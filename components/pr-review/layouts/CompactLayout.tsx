@@ -81,7 +81,11 @@ export function CompactLayout() {
 									/>
 								</button>
 							</CollapsibleTrigger>
-							<CollapsibleContent className="animation-duration-300 mt-2 border-t border-border/60 pt-3 ease-in-out lg:animation-duration-500">
+							<CollapsibleContent
+								className="animation-duration-300 mt-2 max-h-[min(32rem,60dvh)] overflow-y-auto overscroll-contain border-t border-border/60 pb-2 pr-1 pt-3 ease-in-out [scrollbar-gutter:stable] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 lg:animation-duration-500"
+								tabIndex={0}
+								aria-label={t("pr.reviewers")}
+							>
 								<ReviewersTable teamSlug={teamSlug} readOnly={true} />
 							</CollapsibleContent>
 						</section>
