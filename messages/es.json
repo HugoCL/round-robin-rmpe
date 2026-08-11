@@ -973,7 +973,7 @@
 		}
 	},
 	"announcements": {
-		"suggestionsBoardInvite": "¿Tienes ideas para que La Lista te permita hacer las cosas más rápido? Te invitamos a compartirlas en el tablero de sugerencias (ícono 💡 en el header).",
+		"automaticAssignmentMessages": "Asignar un PR ahora es más simple: el mensaje siempre se envía. Usa «Personalizar mensaje» solo si quieres cambiar el texto antes de asignar.",
 		"dismiss": "Descartar"
 	},
 	"changelog": {

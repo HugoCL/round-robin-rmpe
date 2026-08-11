@@ -928,7 +928,7 @@
 		}
 	},
 	"announcements": {
-		"suggestionsBoardInvite": "Do you have ideas to help La Lista let you work faster? We invite you to share them in the suggestions board (💡 icon in the header).",
+		"automaticAssignmentMessages": "Assigning a PR is simpler now: the message is always sent. Use “Customize message” only when you want to change the text before assigning.",
 		"dismiss": "Dismiss"
 	},
 	"changelog": {

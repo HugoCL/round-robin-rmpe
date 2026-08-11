@@ -19,8 +19,8 @@ interface Announcement {
 
 const ANNOUNCEMENTS: Announcement[] = [
 	{
-		id: "suggestions-board-invite-v1",
-		translationKey: "announcements.suggestionsBoardInvite",
+		id: "automatic-assignment-messages-v1",
+		translationKey: "announcements.automaticAssignmentMessages",
 		variant: "default",
 	},
 ];

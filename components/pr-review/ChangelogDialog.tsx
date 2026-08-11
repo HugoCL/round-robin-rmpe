@@ -1,6 +1,6 @@
 "use client";
 
-import { History } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -125,10 +125,11 @@ export function ChangelogDialog({ iconOnly = false }: { iconOnly?: boolean }) {
 					<Button
 						variant="ghost"
 						size="icon"
+						className="bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
 						aria-label={title}
 						onClick={() => setOpen(true)}
 					>
-						<History className="h-4 w-4" />
+						<Sparkles className="h-4 w-4" />
 					</Button>
 				</TooltipTrigger>
 				<TooltipContent>
@@ -145,7 +146,7 @@ export function ChangelogDialog({ iconOnly = false }: { iconOnly?: boolean }) {
 			className="flex items-center gap-1"
 			onClick={() => setOpen(true)}
 		>
-			<History className="h-4 w-4" />
+			<Sparkles className="h-4 w-4" />
 			<span className="hidden sm:inline">{title}</span>
 		</Button>
 	);
