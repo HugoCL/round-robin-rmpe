@@ -332,23 +332,25 @@ export default function PRReviewAssignment({
 			}}
 		>
 			<PRReviewProvider value={providerValue}>
-				<div className="mx-auto flex min-h-dvh w-full max-w-screen-2xl flex-col px-4 py-4 sm:px-6 lg:px-8 lg:py-6 2xl:max-w-[1800px] 2xl:px-10">
+				<div className="flex min-h-dvh flex-col">
 					<PageHeader
 						teamSlug={teamSlug}
 						reviewersDrawerOpen={reviewersDrawerOpen}
 						setReviewersDrawerOpen={setReviewersDrawerOpen}
 					/>
-					<div
-						className="notice-stack page-enter mt-5 lg:mt-6"
-						role="region"
-						aria-label={t("common.notices")}
-					>
-						<AnnouncementBanner />
-						<SurveyBanner />
-						<TeamBirthdaySection teamSlug={teamSlug} />
-						<IndefiniteAbsenceReminderBanner />
-					</div>
-					<CompactLayout />
+					<main className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col px-4 pb-4 sm:px-6 lg:px-8 lg:pb-6">
+						<div
+							className="notice-stack page-enter mt-5 lg:mt-6"
+							role="region"
+							aria-label={t("common.notices")}
+						>
+							<AnnouncementBanner />
+							<SurveyBanner />
+							<TeamBirthdaySection teamSlug={teamSlug} />
+							<IndefiniteAbsenceReminderBanner />
+						</div>
+						<CompactLayout />
+					</main>
 
 					<input
 						id={IMPORT_INPUT_ID}

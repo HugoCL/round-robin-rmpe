@@ -212,8 +212,12 @@ export function PageHeader({
 	);
 
 	return (
-		<header className="sticky top-0 z-40 -mx-4 -mt-4 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:-mt-6 lg:px-8 2xl:-mx-10 2xl:px-10">
-			<Collapsible open={actionsOpen} onOpenChange={setActionsOpen}>
+		<header className="sticky top-0 z-40 border-b border-border/70 bg-background/95 py-3 backdrop-blur-sm">
+			<Collapsible
+				className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8"
+				open={actionsOpen}
+				onOpenChange={setActionsOpen}
+			>
 				<div className="flex flex-col gap-2">
 					<div className="flex flex-wrap items-center gap-2 sm:gap-3">
 						<div className="mr-auto flex min-w-0 items-center gap-2 sm:gap-3">

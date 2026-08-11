@@ -366,24 +366,33 @@ export function AssignmentControlsPanel({
 					</TooltipProvider>
 				</section>
 
-				<Toggle
-					id="assignment-custom-message-toggle"
-					pressed={enableCustomMessage}
-					onPressedChange={(pressed) => {
-						onEnableCustomMessageChange(pressed);
-						if (!pressed) onCustomMessageChange("");
-					}}
-					variant="outline"
-					size="sm"
-					aria-label={t("googleChat.customizeToggle")}
-					className={cn(
-						"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm",
-						enableCustomMessage && assignmentChipActivePrimary,
-					)}
-				>
-					<MessageSquare data-icon="inline-start" />
-					{t("googleChat.customizeToggle")}
-				</Toggle>
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Toggle
+								id="assignment-custom-message-toggle"
+								pressed={enableCustomMessage}
+								onPressedChange={(pressed) => {
+									onEnableCustomMessageChange(pressed);
+									if (!pressed) onCustomMessageChange("");
+								}}
+								variant="outline"
+								size="sm"
+								aria-label={t("googleChat.customizeToggle")}
+								className={cn(
+									"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm",
+									enableCustomMessage && assignmentChipActivePrimary,
+								)}
+							>
+								<MessageSquare data-icon="inline-start" />
+								{t("googleChat.customizeToggle")}
+							</Toggle>
+						</TooltipTrigger>
+						<TooltipContent className="max-w-64 text-xs">
+							<p>{t("googleChat.customizeToggleDescription")}</p>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 
 				<section className="max-w-full">
 					<TooltipProvider>

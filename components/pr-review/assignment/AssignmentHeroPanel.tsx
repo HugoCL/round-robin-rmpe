@@ -83,7 +83,7 @@ export function AssignmentHeroPanel({
 		<div className="w-full overflow-hidden py-3 text-center md:py-4 2xl:py-5">
 			<div className="flex flex-col gap-3 2xl:gap-4">
 				{mode === "regular" && lastAssignedReviewer && (
-					<div className="flex flex-wrap items-center justify-start gap-2 px-1 text-left">
+					<div className="flex flex-wrap items-center justify-center gap-2 text-center">
 						<Clock3
 							className="h-4 w-4 text-muted-foreground"
 							aria-hidden="true"

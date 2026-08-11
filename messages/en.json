@@ -506,6 +506,7 @@
 		"contextUrlLabel": "Context URL (optional)",
 		"contextUrlHint": "Will be shown as 'View Context' button in the message",
 		"customizeToggle": "Customize message",
+		"customizeToggleDescription": "Edit the Google Chat message before assigning the PR.",
 		"urgentToggle": "Urgent",
 		"urgentToggleDescription": "Use this for PRs that need review as soon as possible.",
 		"crossTeamToggle": "Cross-team review",
