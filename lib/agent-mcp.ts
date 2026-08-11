@@ -22,7 +22,9 @@ import {
 const slotInputSchema = z.object({
 	strategy: z
 		.enum(["random", "specific", "tag_random_selected", "tag_random_other"])
-		.describe("How this reviewer slot should be resolved."),
+		.describe(
+			"How this reviewer slot should be resolved. Use random by default to follow round-robin. Use specific only when the user explicitly requests a reviewer; it is recorded as a forced assignment.",
+		),
 	reviewerId: z
 		.string()
 		.optional()
@@ -82,7 +84,9 @@ const assignmentInputSchema = {
 	slots: z
 		.array(slotInputSchema)
 		.min(1)
-		.describe("Reviewer slots to resolve and assign."),
+		.describe(
+			"Reviewer slots to resolve and assign. For a normal assignment with no reviewer preference, send one random slot.",
+		),
 };
 
 const contextInputSchema = {
