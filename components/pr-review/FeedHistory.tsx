@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -85,7 +85,7 @@ export function FeedHistory({
 		canManageCurrentTeam,
 	} = usePRReview();
 	const [showAll, setShowAll] = useState(false);
-	const [hasHiddenHistory, setHasHiddenHistory] = useState(false);
+	const [visibleHistoryCount, setVisibleHistoryCount] = useState(0);
 	const [undoingId, setUndoingId] = useState<string | null>(null);
 	const historyViewportRef = useRef<HTMLDivElement>(null);
 	const undoAssignment = useMutation(api.mutations.undoAssignmentFromHistory);
@@ -126,19 +126,33 @@ export function FeedHistory({
 	}, [assignmentHistory, myAssignmentsOnly, reviewers, userInfo?.email]);
 
 	const visibleHistory = filteredAssignmentHistory;
+	const hasHiddenHistory =
+		visibleHistoryCount < filteredAssignmentHistory.length;
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (filteredAssignmentHistory.length === 0) {
-			setHasHiddenHistory(false);
+			setVisibleHistoryCount(0);
 			return;
 		}
 		if (!open || showAll || !historyViewportRef.current) return;
 		const viewport = historyViewportRef.current;
-		const updateOverflow = () =>
-			setHasHiddenHistory(viewport.scrollHeight > viewport.clientHeight + 1);
-		const observer = new ResizeObserver(updateOverflow);
+		const articles = Array.from(
+			viewport.querySelectorAll<HTMLElement>("[data-history-entry]"),
+		);
+		const updateVisibleCount = () => {
+			const viewportBottom = viewport.getBoundingClientRect().bottom;
+			const firstClippedIndex = articles.findIndex(
+				(article) =>
+					article.getBoundingClientRect().bottom > viewportBottom + 1,
+			);
+			setVisibleHistoryCount(
+				firstClippedIndex === -1 ? articles.length : firstClippedIndex,
+			);
+		};
+		const observer = new ResizeObserver(updateVisibleCount);
 		observer.observe(viewport);
-		updateOverflow();
+		for (const article of articles) observer.observe(article);
+		updateVisibleCount();
 		return () => observer.disconnect();
 	}, [filteredAssignmentHistory.length, open, showAll]);
 
@@ -329,7 +343,13 @@ export function FeedHistory({
 										return (
 											<article
 												key={item.id}
-												className="group relative grid grid-cols-[3.5rem_minmax(0,1fr)] px-4 pt-4 lg:px-5"
+												data-history-entry
+												className={cn(
+													"group relative grid grid-cols-[3.5rem_minmax(0,1fr)] px-4 pt-4 lg:px-5",
+													!showAll &&
+														index >= visibleHistoryCount &&
+														"invisible",
+												)}
 											>
 												<div className="relative z-10 flex justify-center pt-0.5">
 													<Avatar size="lg">
