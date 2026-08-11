@@ -363,7 +363,7 @@ export function PageHeader({
 														{t("manage-reviewers-and-their-assignments")}
 													</DrawerDescription>
 												</DrawerHeader>
-												<div className="flex min-h-0 flex-col gap-3 overflow-hidden px-4 pb-4">
+												<div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 pb-4">
 													<div className="grid grid-cols-2 gap-2">
 														<Button
 															variant="outline"
@@ -397,7 +397,7 @@ export function PageHeader({
 														{deleteReviewerButton}
 														{reviewerColumnsButton}
 													</div>
-													<div className="min-h-0 overflow-y-auto overscroll-contain pb-2">
+													<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 [scrollbar-gutter:stable]">
 														<ReviewersTable
 															teamSlug={teamSlug}
 															showViewControls={false}
@@ -421,7 +421,7 @@ export function PageHeader({
 													<span>{t("pr.manageReviewers")}</span>
 												</Button>
 											</DialogTrigger>
-											<DialogContent className="max-h-[88dvh] gap-0 overflow-hidden p-0 sm:max-w-5xl">
+											<DialogContent className="max-h-[88dvh] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-5xl">
 												<div className="border-b border-border/60 bg-muted/20 px-6 py-5 pr-14">
 													<DialogHeader>
 														<DialogTitle className="text-lg font-semibold tracking-tight">
@@ -432,7 +432,7 @@ export function PageHeader({
 														</DialogDescription>
 													</DialogHeader>
 												</div>
-												<div className="flex min-h-0 flex-col gap-3 overflow-hidden px-6 py-4">
+												<div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 py-4">
 													<div className="flex flex-wrap items-center justify-end gap-2">
 														<Button
 															variant="outline"
@@ -466,7 +466,7 @@ export function PageHeader({
 														{deleteReviewerButton}
 														{reviewerColumnsButton}
 													</div>
-													<div className="min-h-0 overflow-y-auto">
+													<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 [scrollbar-gutter:stable]">
 														<ReviewersTable
 															teamSlug={teamSlug}
 															showViewControls={false}
