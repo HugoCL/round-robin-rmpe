@@ -516,7 +516,7 @@ export function AssignmentCard() {
 			<CardHeader className="sr-only">
 				<CardTitle>{t("pr.nextReviewer")}</CardTitle>
 			</CardHeader>
-			<CardContent className="flex flex-1 items-center justify-center px-5 pt-3 md:px-6 md:pt-4 2xl:px-8">
+			<CardContent className="flex flex-1 items-center justify-center px-3 pt-1 sm:px-5 sm:pt-3 md:px-6 md:pt-4 2xl:px-8">
 				<AssignmentHeroPanel
 					mode={mode}
 					lastAssignedReviewer={lastAssignedReviewer}
@@ -529,8 +529,8 @@ export function AssignmentCard() {
 					isLoadingTagReviewer={isLoadingTagReviewer}
 				/>
 			</CardContent>
-			<CardFooter className="flex-shrink-0 border-t border-border/60 px-5 py-4 md:px-6 2xl:px-8">
-				<div className="calm-subtle-panel flex w-full flex-col gap-3 p-3 lg:gap-4 lg:p-4">
+			<CardFooter className="flex-shrink-0 border-t border-border/60 px-3 py-2 sm:px-5 sm:py-4 md:px-6 2xl:px-8">
+				<div className="calm-subtle-panel flex w-full flex-col gap-3 p-1.5 sm:p-3 lg:gap-4 lg:p-4">
 					<AssignmentControlsPanel
 						tags={tags}
 						mode={mode}

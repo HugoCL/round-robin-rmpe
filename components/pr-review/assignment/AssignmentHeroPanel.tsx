@@ -80,8 +80,8 @@ export function AssignmentHeroPanel({
 	}
 
 	return (
-		<div className="w-full overflow-hidden py-2 text-center sm:py-3 md:py-4 2xl:py-5">
-			<div className="flex flex-col gap-3 2xl:gap-4">
+		<div className="w-full overflow-hidden py-1 text-center sm:py-3 md:py-4 2xl:py-5">
+			<div className="flex flex-col gap-2 sm:gap-3 2xl:gap-4">
 				{mode === "regular" && lastAssignedReviewer && (
 					<div className="flex flex-wrap items-center justify-center gap-2 text-center">
 						<Clock3
@@ -104,13 +104,13 @@ export function AssignmentHeroPanel({
 					</div>
 				)}
 
-				<div className="flex flex-col gap-2">
+				<div className="flex flex-col gap-1 sm:gap-2">
 					<div>
 						<span className="inline-flex items-center rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 lg:text-sm">
 							{mode === "tag" ? t("tags.nextReviewer") : t("pr.nextReviewer")}
 						</span>
 					</div>
-					<div className="relative mx-auto flex min-h-32 w-full items-center justify-center px-6 py-[clamp(1rem,2vh,2.5rem)] sm:min-h-[clamp(9rem,22vh,20rem)] md:px-12 2xl:px-16">
+					<div className="relative mx-auto flex min-h-24 w-full items-center justify-center px-4 py-2 sm:min-h-36 sm:px-8 sm:py-4 md:min-h-44 md:px-12 2xl:min-h-52 2xl:px-16">
 						<span
 							className="pointer-events-none absolute left-0 top-0 h-8 w-8 rounded-tl-xl border-l-2 border-t-2 border-primary"
 							aria-hidden="true"
@@ -127,20 +127,25 @@ export function AssignmentHeroPanel({
 							className="pointer-events-none absolute bottom-0 right-0 h-8 w-8 rounded-br-xl border-b-2 border-r-2 border-primary"
 							aria-hidden="true"
 						/>
-						<div className="relative flex flex-col gap-3">
+						<div className="relative flex flex-col gap-2 sm:gap-3">
 							<h3
-								className={`inline-flex max-w-full flex-wrap items-center justify-center gap-2.5 break-words text-[clamp(2.75rem,11vw,6rem)] font-bold leading-none text-primary transition-transform transition-opacity duration-300 motion-reduce:transition-none ${
+								className={`inline-flex w-full max-w-full flex-wrap items-center justify-center gap-2.5 break-words text-4xl font-bold leading-[1.05] text-primary transition-transform transition-opacity duration-300 sm:text-5xl md:text-6xl xl:text-7xl 2xl:text-8xl motion-reduce:transition-none ${
 									isAssigning
 										? "translate-y-1 opacity-0"
 										: "translate-y-0 opacity-100"
 								}`}
 							>
-								<TextMorph
-									className="max-w-full text-center !whitespace-normal"
-									ease={{ stiffness: 200, damping: 20 }}
-								>
+								<span className="w-full text-balance text-center sm:hidden">
 									{activeNextReviewer.name}
-								</TextMorph>
+								</span>
+								<span className="hidden sm:inline">
+									<TextMorph
+										className="max-w-full text-center !whitespace-normal"
+										ease={{ stiffness: 200, damping: 20 }}
+									>
+										{activeNextReviewer.name}
+									</TextMorph>
+								</span>
 								{activeHasBirthday && (
 									<span
 										className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-800 shadow-md shadow-amber-500/5 motion-safe:animate-pulse dark:text-amber-300"
@@ -165,8 +170,11 @@ export function AssignmentHeroPanel({
 								</div>
 							)}
 							{upcomingReviewer && (
-								<div className="mt-1 flex flex-col items-center gap-1">
-									<span className="h-5 w-px bg-border" aria-hidden="true" />
+								<div className="flex flex-col items-center gap-0.5 sm:mt-1 sm:gap-1">
+									<span
+										className="h-3 w-px bg-border sm:h-5"
+										aria-hidden="true"
+									/>
 									<span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground lg:text-xs">
 										{t("pr.upNext")}
 									</span>

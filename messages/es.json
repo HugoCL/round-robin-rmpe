@@ -562,6 +562,7 @@
 		"prUrlLabel": "PR URL",
 		"prUrlRequiredForAssignment": "Ingresa la URL del PR. La usaremos en el mensaje de Google Chat.",
 		"addContext": "Añadir contexto",
+		"addContextShort": "Contexto",
 		"contextUrlLabel": "URL de contexto (opcional)",
 		"contextUrlHint": "Se mostrará como botón 'Ver Contexto' en el mensaje",
 		"customizeToggle": "Personalizar mensaje",
@@ -973,6 +974,7 @@
 		}
 	},
 	"announcements": {
+		"title": "Avisos",
 		"automaticAssignmentMessages": "Asignar un PR ahora es más simple: el mensaje siempre se envía. Usa «Personalizar mensaje» solo si quieres cambiar el texto antes de asignar.",
 		"dismiss": "Descartar"
 	},

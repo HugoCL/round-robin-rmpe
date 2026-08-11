@@ -517,6 +517,7 @@
 		"prUrlLabel": "PR URL",
 		"prUrlRequiredForAssignment": "Enter the PR URL. It will be included in the Google Chat message.",
 		"addContext": "Add context",
+		"addContextShort": "Context",
 		"contextUrlLabel": "Context URL (optional)",
 		"contextUrlHint": "Will be shown as 'View Context' button in the message",
 		"customizeToggle": "Customize message",
@@ -928,6 +929,7 @@
 		}
 	},
 	"announcements": {
+		"title": "Notices",
 		"automaticAssignmentMessages": "Assigning a PR is simpler now: the message is always sent. Use “Customize message” only when you want to change the text before assigning.",
 		"dismiss": "Dismiss"
 	},

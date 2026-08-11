@@ -4,6 +4,7 @@ import {
 	Globe2,
 	Link2,
 	MessageSquare,
+	Plus,
 	UserCheck,
 	Users,
 } from "lucide-react";
@@ -163,7 +164,7 @@ export function AssignmentControlsPanel({
 	return (
 		<div className="flex flex-col gap-3 lg:gap-4">
 			{tags.length > 0 && (
-				<div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-3 lg:p-4">
+				<div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-muted/18 p-2 sm:gap-3 sm:p-3 lg:p-4">
 					<div className="grid grid-cols-2 gap-2">
 						<Button
 							variant={mode === "regular" ? "default" : "outline"}
@@ -257,8 +258,13 @@ export function AssignmentControlsPanel({
 								if (showContextInput) onContextUrlChange("");
 							}}
 						>
-							<Link2 data-icon="inline-start" />
-							{t("googleChat.addContext")}
+							<Plus data-icon="inline-start" aria-hidden="true" />
+							<span className="sm:hidden">
+								{t("googleChat.addContextShort")}
+							</span>
+							<span className="hidden sm:inline">
+								{t("googleChat.addContext")}
+							</span>
 						</InputGroupButton>
 					</InputGroupAddon>
 				</InputGroup>
@@ -286,7 +292,7 @@ export function AssignmentControlsPanel({
 				</Field>
 			)}
 
-			<div className="flex flex-wrap gap-2 lg:gap-3 2xl:gap-4">
+			<div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:gap-3 2xl:gap-4">
 				{!hideMultiAssignmentSection && (
 					<TooltipProvider>
 						<Tooltip>
@@ -300,13 +306,13 @@ export function AssignmentControlsPanel({
 									onValueChange={(value) =>
 										onMultiAssignmentToggle(value.includes("multi-assignment"))
 									}
-									className="inline-flex max-w-full"
+									className="inline-flex w-full max-w-full sm:w-auto"
 								>
 									<ToggleGroupItem
 										value="multi-assignment"
 										aria-label={t("pr.multipleAssignmentToggleLabel")}
 										className={cn(
-											"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm",
+											"h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:w-auto sm:px-3 lg:h-11 lg:px-4 lg:text-sm",
 											isMultiAssignmentEnabled &&
 												assignmentGroupItemActivePrimary,
 										)}
@@ -332,17 +338,17 @@ export function AssignmentControlsPanel({
 					</TooltipProvider>
 				)}
 
-				<section className="max-w-full">
+				<section className="w-full max-w-full sm:w-auto">
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
-								<div>
+								<div className="w-full">
 									<ForceAssignDialog
 										trigger={
 											<Button
 												variant="outline"
 												size="sm"
-												className="h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm"
+												className="h-10 w-full max-w-full rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:w-auto sm:px-3 lg:h-11 lg:px-4 lg:text-sm"
 											>
 												<div className="inline-flex items-center gap-2.5">
 													<span className="inline-flex size-4 items-center justify-center">
@@ -381,7 +387,7 @@ export function AssignmentControlsPanel({
 								size="sm"
 								aria-label={t("googleChat.customizeToggle")}
 								className={cn(
-									"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm",
+									"col-span-2 h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-colors duration-150 sm:w-auto lg:h-11 lg:px-4 lg:text-sm",
 									enableCustomMessage && assignmentChipActivePrimary,
 								)}
 							>
@@ -395,7 +401,7 @@ export function AssignmentControlsPanel({
 					</Tooltip>
 				</TooltipProvider>
 
-				<section className="max-w-full">
+				<section className="w-full max-w-full sm:w-auto">
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
@@ -407,7 +413,7 @@ export function AssignmentControlsPanel({
 									size="sm"
 									aria-label={t("googleChat.urgentToggle")}
 									className={cn(
-										"h-10 max-w-full cursor-pointer rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-red-900/50 dark:text-red-300",
+										"h-10 w-full max-w-full cursor-pointer rounded-full border-red-200/80 bg-transparent px-2 text-xs text-red-700 transition-colors duration-150 sm:w-auto sm:px-3 lg:h-11 lg:px-4 lg:text-sm dark:border-red-900/50 dark:text-red-300",
 										urgent && assignmentChipActiveUrgent,
 									)}
 								>
@@ -431,7 +437,7 @@ export function AssignmentControlsPanel({
 					</TooltipProvider>
 				</section>
 
-				<section className="max-w-full">
+				<section className="w-full max-w-full sm:w-auto">
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
@@ -443,7 +449,7 @@ export function AssignmentControlsPanel({
 									size="sm"
 									aria-label={t("googleChat.crossTeamToggle")}
 									className={cn(
-										"h-10 max-w-full cursor-pointer rounded-full border-sky-200/80 bg-transparent px-3 text-xs text-sky-700 transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-sky-900/50 dark:text-sky-300",
+										"h-10 w-full max-w-full cursor-pointer rounded-full border-sky-200/80 bg-transparent px-2 text-xs text-sky-700 transition-colors duration-150 sm:w-auto sm:px-3 lg:h-11 lg:px-4 lg:text-sm dark:border-sky-900/50 dark:text-sky-300",
 										crossTeamReview && assignmentChipActiveCrossTeam,
 									)}
 								>

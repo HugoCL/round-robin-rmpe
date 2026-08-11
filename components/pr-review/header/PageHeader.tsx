@@ -220,11 +220,11 @@ export function PageHeader({
 			>
 				<div className="flex flex-col gap-2">
 					<div className="flex flex-wrap items-center gap-2 sm:gap-3">
-						<div className="mr-auto flex min-w-0 items-center gap-2 sm:gap-3">
+						<div className="mr-auto flex w-full min-w-0 items-center gap-2 sm:w-auto sm:gap-3">
 							<h1 className="shrink-0 text-xl font-semibold tracking-tight sm:text-2xl">
 								La Lista
 							</h1>
-							<div className="min-w-0 [&_[data-slot=select-trigger]]:h-9 [&_[data-slot=select-trigger]]:w-[min(13rem,48vw)] [&_[data-slot=select-trigger]]:rounded-xl">
+							<div className="min-w-0 flex-1 sm:flex-none [&_[data-slot=select-trigger]]:h-9 [&_[data-slot=select-trigger]]:w-full [&_[data-slot=select-trigger]]:rounded-xl sm:[&_[data-slot=select-trigger]]:w-[min(13rem,48vw)]">
 								<TeamSwitcher teamSlug={teamSlug} />
 							</div>
 							<TeamWeeklyPRCounter teamSlug={teamSlug} />
