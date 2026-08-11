@@ -70,7 +70,7 @@ export function TagManager() {
 					{t("common.manage")} {t("pr.tags")}
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+			<DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-[700px]">
 				<DialogHeader>
 					<DialogTitle>
 						{t("common.manage")} {t("pr.tags")}
@@ -78,7 +78,7 @@ export function TagManager() {
 					<DialogDescription>{t("tags.manageDescription")}</DialogDescription>
 				</DialogHeader>
 
-				<div className="space-y-6">
+				<div className="flex flex-col gap-5 [&_[data-slot=card]]:rounded-2xl [&_[data-slot=card]]:border-border/60 [&_[data-slot=card]]:bg-muted/28 [&_[data-slot=card]]:shadow-none">
 					<TagEditorCard
 						isEditing={!!editingTag}
 						tagName={editingTag ? editingTag.name : newTagName}
@@ -124,13 +124,12 @@ export function TagManager() {
 				</div>
 
 				<DialogFooter>
-					<div className="flex justify-between w-full">
+					<div className="flex w-full justify-between">
 						<div className="flex gap-2">
 							{hasUnsavedChanges && (
 								<Button
 									onClick={() => void handleSaveChanges()}
 									disabled={loading}
-									className="bg-blue-600 hover:bg-blue-700"
 								>
 									<Save className="h-4 w-4 mr-2" />
 									{t("tags.saveChanges")}

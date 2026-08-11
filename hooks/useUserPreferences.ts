@@ -12,7 +12,6 @@ export type UserPreferences = {
 	showTags: boolean;
 	showEmails: boolean;
 	hideMultiAssignmentSection: boolean;
-	alwaysSendGoogleChatMessage: boolean;
 	enableAgentSetupExperiment: boolean;
 	defaultAgentTeamSlug?: string;
 };
@@ -29,7 +28,6 @@ const USER_PREFERENCE_DEFAULTS: UserPreferences = {
 	showTags: true,
 	showEmails: false,
 	hideMultiAssignmentSection: false,
-	alwaysSendGoogleChatMessage: false,
 	enableAgentSetupExperiment: false,
 	defaultAgentTeamSlug: undefined,
 };
@@ -88,7 +86,6 @@ function isSamePreferenceState(a: UserPreferences, b: UserPreferences) {
 		a.showTags === b.showTags &&
 		a.showEmails === b.showEmails &&
 		a.hideMultiAssignmentSection === b.hideMultiAssignmentSection &&
-		a.alwaysSendGoogleChatMessage === b.alwaysSendGoogleChatMessage &&
 		a.enableAgentSetupExperiment === b.enableAgentSetupExperiment &&
 		a.defaultAgentTeamSlug === b.defaultAgentTeamSlug
 	);
@@ -111,9 +108,6 @@ function resolvePatch(patch: UserPreferencePatch): UserPreferencePatch {
 	}
 	if (typeof patch.hideMultiAssignmentSection === "boolean") {
 		resolved.hideMultiAssignmentSection = patch.hideMultiAssignmentSection;
-	}
-	if (typeof patch.alwaysSendGoogleChatMessage === "boolean") {
-		resolved.alwaysSendGoogleChatMessage = patch.alwaysSendGoogleChatMessage;
 	}
 	if (typeof patch.enableAgentSetupExperiment === "boolean") {
 		resolved.enableAgentSetupExperiment = patch.enableAgentSetupExperiment;
@@ -148,7 +142,6 @@ export function useUserPreferences() {
 			showTags: preferenceQuery.showTags,
 			showEmails: preferenceQuery.showEmails,
 			hideMultiAssignmentSection: preferenceQuery.hideMultiAssignmentSection,
-			alwaysSendGoogleChatMessage: preferenceQuery.alwaysSendGoogleChatMessage,
 			enableAgentSetupExperiment:
 				preferenceQuery.enableAgentSetupExperiment === true,
 			defaultAgentTeamSlug: preferenceQuery.defaultAgentTeamSlug,

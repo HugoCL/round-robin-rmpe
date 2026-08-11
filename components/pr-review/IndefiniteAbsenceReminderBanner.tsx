@@ -35,15 +35,18 @@ export function IndefiniteAbsenceReminderBanner() {
 	const id = row._id as Id<"reviewers">;
 
 	return (
-		<Alert className="border-amber-500/40 bg-amber-500/5 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
-			<AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+		<Alert
+			data-notice
+			className="rounded-xl border-amber-500/30 bg-amber-500/[0.05] px-3 py-2.5 text-foreground shadow-none sm:px-4"
+		>
+			<AlertTriangle className="text-amber-600 dark:text-amber-400" />
 			<AlertTitle>{t("absent.indefiniteReminderTitle")}</AlertTitle>
-			<AlertDescription className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-				<p className="text-sm text-amber-900/90 dark:text-amber-50/90">
+			<AlertDescription className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+				<p className="line-clamp-2 text-xs sm:text-sm">
 					{t("absent.indefiniteReminderDescription")}
 				</p>
 				<TooltipProvider delayDuration={300}>
-					<div className="flex shrink-0 flex-wrap gap-2">
+					<div className="flex shrink-0 flex-wrap gap-1.5">
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button
@@ -65,7 +68,7 @@ export function IndefiniteAbsenceReminderBanner() {
 									type="button"
 									size="sm"
 									variant="outline"
-									className="w-fit border-amber-600/50 bg-background/80 dark:border-amber-400/40"
+									className="w-fit bg-background/70"
 									onClick={() => void onSetExcludedFromReviewPool(id, true)}
 								>
 									{t("absent.notAReviewerCta")}

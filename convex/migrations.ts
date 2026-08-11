@@ -48,6 +48,14 @@ export const backfillUserPreferenceDefaultTeamSlug = migrations.define({
 	},
 });
 
+export const removeAlwaysSendGoogleChatMessagePreference = migrations.define({
+	table: "userPreferences",
+	migrateOne: async (_ctx, preference) => {
+		if (preference.alwaysSendGoogleChatMessage === undefined) return;
+		return { alwaysSendGoogleChatMessage: undefined };
+	},
+});
+
 export const backfillReviewerTeamId = migrations.define({
 	table: "reviewers",
 	migrateOne: async (ctx, reviewer) => {
@@ -171,6 +179,10 @@ export const run = migrations.runner();
 
 export const runBackfillUserPreferenceDefaultTeamSlug = migrations.runner(
 	internal.migrations.backfillUserPreferenceDefaultTeamSlug,
+);
+
+export const runRemoveAlwaysSendGoogleChatMessagePreference = migrations.runner(
+	internal.migrations.removeAlwaysSendGoogleChatMessagePreference,
 );
 
 export const runMigrateSurveysToSpanishOnly = migrations.runner([

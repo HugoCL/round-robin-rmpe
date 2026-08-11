@@ -55,6 +55,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import { ChangelogDialog } from "../ChangelogDialog";
 import { AddReviewerDialog } from "../dialogs/AddReviewerDialog";
 import { CreateEventDialog } from "../dialogs/CreateEventDialog";
@@ -105,13 +106,13 @@ export function PageHeader({
 	).length;
 
 	const reviewerActions = canManageCurrentTeam ? (
-		<div className="flex flex-wrap justify-start gap-2 sm:justify-center">
+		<div className="flex flex-wrap justify-start gap-2">
 			<TagManager />
 			<AddReviewerDialog
 				onAddReviewer={addReviewer}
 				trigger={
 					<Button variant="outline" size="sm" className="min-h-11 sm:min-h-8">
-						<UserPlus className="h-4 w-4 mr-2" />
+						<UserPlus data-icon="inline-start" />
 						{t("pr.addReviewer")}
 					</Button>
 				}
@@ -119,7 +120,7 @@ export function PageHeader({
 			<CreateEventDialog
 				trigger={
 					<Button variant="outline" size="sm" className="min-h-11 sm:min-h-8">
-						<Calendar className="h-4 w-4 mr-2" />
+						<Calendar data-icon="inline-start" />
 						{t("events.createEvent")}
 					</Button>
 				}
@@ -137,7 +138,7 @@ export function PageHeader({
 					size="sm"
 					className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
 				>
-					<UserMinus className="h-4 w-4" />
+					<UserMinus data-icon="inline-start" />
 					<span>{t("pr.deleteReviewer")}</span>
 				</Button>
 			}
@@ -156,7 +157,7 @@ export function PageHeader({
 						size="sm"
 						className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
 					>
-						<SlidersHorizontal className="h-4 w-4 mr-2" />
+						<SlidersHorizontal data-icon="inline-start" />
 						{t("pr.viewColumns")}
 					</Button>
 				</DropdownMenuTrigger>
@@ -170,7 +171,7 @@ export function PageHeader({
 							if (checked !== showAssignments) toggleShowAssignments();
 						}}
 					>
-						<div className="space-y-1">
+						<div className="flex flex-col gap-1">
 							<p>{t("pr.showAssignments")}</p>
 							<p className="text-[11px] text-muted-foreground">
 								{t("pr.showAssignmentsDescription")}
@@ -184,7 +185,7 @@ export function PageHeader({
 							if (checked !== showTags) toggleShowTags();
 						}}
 					>
-						<div className="space-y-1">
+						<div className="flex flex-col gap-1">
 							<p>{t("pr.showTags")}</p>
 							<p className="text-[11px] text-muted-foreground">
 								{t("pr.showTagsDescription")}
@@ -198,7 +199,7 @@ export function PageHeader({
 							if (checked !== showEmails) toggleShowEmails();
 						}}
 					>
-						<div className="space-y-1">
+						<div className="flex flex-col gap-1">
 							<p>{t("pr.showEmails")}</p>
 							<p className="text-[11px] text-muted-foreground">
 								{t("pr.showEmailsDescription")}
@@ -211,30 +212,24 @@ export function PageHeader({
 	);
 
 	return (
-		<section className="calm-shell px-4 py-3 md:px-6 md:py-4">
+		<header className="sticky top-0 z-40 -mx-4 -mt-4 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:-mt-6 lg:px-8 2xl:-mx-10 2xl:px-10">
 			<Collapsible open={actionsOpen} onOpenChange={setActionsOpen}>
-				<div className="flex flex-col gap-3">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-						<div className="flex min-w-0 flex-col gap-2">
-							<div className="flex flex-wrap items-end gap-x-4 gap-y-2">
-								<div className="min-w-0">
-									<h1 className="text-3xl font-semibold tracking-tight md:text-4xl 2xl:text-5xl">
-										{t("pr.title")}
-									</h1>
-									{isForeignTeamView && (
-										<p className="mt-1 text-sm text-muted-foreground lg:text-base">
-											{t("team.foreignTeamReadonlyBanner")}
-										</p>
-									)}
-								</div>
-								<div className="flex flex-wrap items-center gap-2">
-									<TeamSwitcher teamSlug={teamSlug} />
-									<TeamWeeklyPRCounter teamSlug={teamSlug} />
-								</div>
+				<div className="flex flex-col gap-2">
+					<div className="flex flex-wrap items-center gap-2 sm:gap-3">
+						<div className="mr-auto flex min-w-0 items-center gap-2 sm:gap-3">
+							<h1 className="shrink-0 text-xl font-semibold tracking-tight sm:text-2xl">
+								La Lista
+							</h1>
+							<div className="min-w-0 [&_[data-slot=select-trigger]]:h-9 [&_[data-slot=select-trigger]]:w-[min(13rem,48vw)] [&_[data-slot=select-trigger]]:rounded-xl">
+								<TeamSwitcher teamSlug={teamSlug} />
 							</div>
+							<TeamWeeklyPRCounter teamSlug={teamSlug} />
 						</div>
-						<div className="flex items-center gap-2 self-start lg:self-auto">
-							<div className="flex items-center gap-1 rounded-full border border-border/70 bg-background/75 px-2 py-1">
+						<div className="flex items-center gap-1">
+							<nav
+								className="flex items-center gap-0.5"
+								aria-label={t("common.options")}
+							>
 								{userInfo?.email && (
 									<PushNotificationManager
 										userEmail={userInfo.email}
@@ -254,7 +249,7 @@ export function PageHeader({
 													aria-label={t("featureFlags.shortcut")}
 												>
 													<Link href={`/${locale}/${teamSlug}/feature-flags`}>
-														<Flag className="h-4 w-4" />
+														<Flag />
 													</Link>
 												</Button>
 											</TooltipTrigger>
@@ -272,7 +267,7 @@ export function PageHeader({
 												aria-label={t("suggestions.shortcut")}
 											>
 												<Link href={`/${locale}/suggestions`}>
-													<Lightbulb className="h-4 w-4" />
+													<Lightbulb />
 												</Link>
 											</Button>
 										</TooltipTrigger>
@@ -290,7 +285,7 @@ export function PageHeader({
 													aria-label={t("survey.shortcut")}
 												>
 													<Link href={`/${locale}/surveys`}>
-														<ClipboardList className="h-4 w-4" />
+														<ClipboardList />
 													</Link>
 												</Button>
 											</TooltipTrigger>
@@ -301,29 +296,37 @@ export function PageHeader({
 									) : null}
 								</TooltipProvider>
 								<HeaderOptionsDrawer />
-							</div>
-							<div className="rounded-full border border-border/70 bg-background/75 p-1">
+							</nav>
+							<div className="ml-0.5 border-l border-border/70 pl-1.5">
 								<CollapsibleTrigger asChild>
 									<Button
-										variant="ghost"
-										size="icon"
+										variant="outline"
+										size="sm"
+										className="size-9 rounded-full p-0 xl:h-9 xl:w-auto xl:px-3"
 										aria-label={
 											actionsOpen
 												? `${t("common.hide")} ${t("pr.actions")}`
 												: `${t("common.show")} ${t("pr.actions")}`
 										}
 									>
+										<span className="hidden xl:inline">{t("pr.actions")}</span>
 										<ChevronDown
-											className={`h-4 w-4 transition-transform ${
-												actionsOpen ? "rotate-180" : "rotate-0"
-											}`}
+											className={cn(
+												"h-4 w-4 transition-transform duration-200 ease-out motion-reduce:transition-none",
+												actionsOpen && "rotate-180",
+											)}
 										/>
 									</Button>
 								</CollapsibleTrigger>
 							</div>
 						</div>
+						{isForeignTeamView ? (
+							<p className="basis-full truncate text-xs text-muted-foreground">
+								{t("team.foreignTeamReadonlyBanner")}
+							</p>
+						) : null}
 					</div>
-					<CollapsibleContent className="overflow-hidden border-t border-border/60 pt-3 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
+					<CollapsibleContent className="border-t border-border/60 pt-2">
 						<div className="flex w-full flex-wrap items-center justify-start gap-2 sm:justify-end">
 							{!canManageCurrentTeam ? (
 								<div className="rounded-full border border-border/70 bg-background/70 px-4 py-2 text-sm text-muted-foreground">
@@ -332,9 +335,8 @@ export function PageHeader({
 										: t("team.foreignTeamReadonlyBanner")}
 								</div>
 							) : (
-								<div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+								<div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
 									{reviewerActions}
-									<div className="mx-1 hidden h-6 w-px bg-border/70 sm:block" />
 									{isMobile ? (
 										<Drawer
 											open={reviewersDrawerOpen}
@@ -346,7 +348,7 @@ export function PageHeader({
 													size="sm"
 													className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
 												>
-													<Menu className="h-4 w-4" />
+													<Menu data-icon="inline-start" />
 													<span>{t("pr.manageReviewers")}</span>
 												</Button>
 											</DrawerTrigger>
@@ -365,7 +367,7 @@ export function PageHeader({
 															className="col-span-2 min-h-11 rounded-full border-border/70 bg-background/70"
 															onClick={handleResetCounts}
 														>
-															<RotateCw className="h-4 w-4 mr-2" />
+															<RotateCw data-icon="inline-start" />
 															{t("reset-counts")}
 														</Button>
 														<Button
@@ -374,7 +376,7 @@ export function PageHeader({
 															className="min-h-11 rounded-full border-border/70 bg-background/70"
 															onClick={exportData}
 														>
-															<Save className="h-4 w-4 mr-2" />
+															<Save data-icon="inline-start" />
 															{t("pr.exportData")}
 														</Button>
 														<Button
@@ -385,7 +387,7 @@ export function PageHeader({
 																document.getElementById("import-file")?.click()
 															}
 														>
-															<Download className="h-4 w-4 mr-2" />
+															<Download data-icon="inline-start" />
 															{t("history.import")}
 														</Button>
 														{deleteReviewerButton}
@@ -411,20 +413,22 @@ export function PageHeader({
 													size="sm"
 													className="rounded-full border-border/70 bg-background/70"
 												>
-													<Menu className="h-4 w-4" />
+													<Menu data-icon="inline-start" />
 													<span>{t("pr.manageReviewers")}</span>
 												</Button>
 											</DialogTrigger>
-											<DialogContent className="max-h-[85vh] overflow-y-auto p-0 sm:max-w-5xl">
-												<div className="px-6 pt-4">
+											<DialogContent className="max-h-[88dvh] gap-0 overflow-hidden p-0 sm:max-w-5xl">
+												<div className="border-b border-border/60 bg-muted/20 px-6 py-5 pr-14">
 													<DialogHeader>
-														<DialogTitle>{t("pr.reviewers")}</DialogTitle>
+														<DialogTitle className="text-lg font-semibold tracking-tight">
+															{t("pr.reviewers")}
+														</DialogTitle>
 														<DialogDescription>
 															{t("manage-reviewers-and-their-assignments")}
 														</DialogDescription>
 													</DialogHeader>
 												</div>
-												<div className="flex flex-col gap-3 px-6 pb-4">
+												<div className="flex min-h-0 flex-col gap-3 overflow-hidden px-6 py-4">
 													<div className="flex flex-wrap items-center justify-end gap-2">
 														<Button
 															variant="outline"
@@ -432,7 +436,7 @@ export function PageHeader({
 															className="rounded-full border-border/70 bg-background/70"
 															onClick={handleResetCounts}
 														>
-															<RotateCw className="h-4 w-4 mr-2" />
+															<RotateCw data-icon="inline-start" />
 															{t("reset-counts")}
 														</Button>
 														<Button
@@ -441,7 +445,7 @@ export function PageHeader({
 															className="rounded-full border-border/70 bg-background/70"
 															onClick={exportData}
 														>
-															<Save className="h-4 w-4 mr-2" />
+															<Save data-icon="inline-start" />
 															{t("pr.exportData")}
 														</Button>
 														<Button
@@ -452,13 +456,13 @@ export function PageHeader({
 																document.getElementById("import-file")?.click()
 															}
 														>
-															<Download className="h-4 w-4 mr-2" />
+															<Download data-icon="inline-start" />
 															{t("history.import")}
 														</Button>
 														{deleteReviewerButton}
 														{reviewerColumnsButton}
 													</div>
-													<div className="max-h-[60vh] overflow-y-auto">
+													<div className="min-h-0 overflow-y-auto">
 														<ReviewersTable
 															teamSlug={teamSlug}
 															showViewControls={false}
@@ -474,6 +478,6 @@ export function PageHeader({
 					</CollapsibleContent>
 				</div>
 			</Collapsible>
-		</section>
+		</header>
 	);
 }

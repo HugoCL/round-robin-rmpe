@@ -19,7 +19,8 @@ export default defineSchema({
 		showTags: v.boolean(),
 		showEmails: v.boolean(),
 		hideMultiAssignmentSection: v.boolean(),
-		alwaysSendGoogleChatMessage: v.boolean(),
+		// Kept optional only while deployed rows are cleaned by the migration.
+		alwaysSendGoogleChatMessage: v.optional(v.boolean()),
 		enableAgentSetupExperiment: v.optional(v.boolean()),
 		defaultAgentTeamSlug: v.optional(v.string()),
 		createdAt: v.number(),

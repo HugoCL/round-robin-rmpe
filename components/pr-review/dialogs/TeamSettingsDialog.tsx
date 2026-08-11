@@ -124,8 +124,8 @@ export function TeamSettingsDialog({
 					<DialogTitle>{t("teamSettings.title")}</DialogTitle>
 					<DialogDescription>{t("teamSettings.description")}</DialogDescription>
 				</DialogHeader>
-				<div className="space-y-4 py-4">
-					<div className="space-y-2">
+				<div className="flex flex-col gap-5">
+					<div className="flex flex-col gap-2">
 						<Label htmlFor={timezoneId}>
 							{t("teamSettings.timezoneLabel")}
 						</Label>
@@ -139,7 +139,7 @@ export function TeamSettingsDialog({
 							{t("teamSettings.timezoneHint")}
 						</p>
 					</div>
-					<div className="space-y-2">
+					<div className="flex flex-col gap-2">
 						<Label htmlFor={webhookUrlId}>
 							{t("teamSettings.webhookUrlLabel")}
 						</Label>

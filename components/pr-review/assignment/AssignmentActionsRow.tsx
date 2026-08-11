@@ -27,7 +27,7 @@ export function AssignmentActionsRow({
 	const t = useTranslations();
 
 	return (
-		<div className="space-y-3">
+		<div className="flex flex-col gap-3">
 			{liveSummary && (
 				<p className="text-sm text-muted-foreground" aria-live="polite">
 					{liveSummary}
@@ -51,13 +51,13 @@ export function AssignmentActionsRow({
 						<TooltipTrigger asChild>
 							<Button
 								variant="outline"
-								size="icon"
-								className="h-12 w-12 shrink-0"
+								size="icon-lg"
+								className="size-12 shrink-0"
 								onClick={() => void onUndoAssignment()}
 								disabled={isAssigning}
+								aria-label={t("pr.undoLastAssignment")}
 							>
-								<Undo2 className="h-5 w-5" aria-hidden="true" />
-								<span className="sr-only">{t("pr.undoLastAssignment")}</span>
+								<Undo2 aria-hidden="true" />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent>

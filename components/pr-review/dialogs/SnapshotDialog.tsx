@@ -46,24 +46,24 @@ export function SnapshotDialog({
 						{t("history.restoreDescription")}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="py-4 max-h-[300px] overflow-y-auto">
+				<div className="max-h-[300px] overflow-y-auto">
 					{isLoading ? (
-						<div className="text-center py-4">
+						<div className="calm-subtle-panel p-4 text-center">
 							<p>{t("common.loading")}</p>
 						</div>
 					) : snapshots.length === 0 ? (
-						<div className="text-center py-4">
+						<div className="calm-subtle-panel p-4 text-center">
 							<p>{t("history.noSnapshots")}</p>
-							<p className="text-sm text-muted-foreground mt-2">
+							<p className="mt-2 text-sm text-muted-foreground">
 								{t("history.changesAutoSaved")}
 							</p>
 						</div>
 					) : (
-						<div className="space-y-2">
+						<div className="calm-list">
 							{snapshots.map((snapshot) => (
 								<div
 									key={snapshot.key}
-									className="flex justify-between items-center p-3 border  hover:bg-muted/50"
+									className="flex items-center justify-between gap-4 p-3 transition-colors hover:bg-muted/30"
 								>
 									<div>
 										<p className="font-medium">{snapshot.formattedDate}</p>

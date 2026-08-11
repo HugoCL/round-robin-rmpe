@@ -1,14 +1,20 @@
 "use client";
 
-import { Cake } from "lucide-react";
+import { Cake, ChevronDown } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
@@ -39,6 +45,7 @@ export function BirthdaySetupBanner() {
 	const [month, setMonth] = useState<string>("");
 	const [day, setDay] = useState<string>("");
 	const [saving, setSaving] = useState(false);
+	const [open, setOpen] = useState(false);
 
 	const monthLabels = useMemo(() => {
 		const fmt = new Intl.DateTimeFormat(locale, { month: "long" });
@@ -90,77 +97,99 @@ export function BirthdaySetupBanner() {
 		);
 
 	return (
-		<Alert className="border-fuchsia-500/35 bg-fuchsia-500/[0.06] text-fuchsia-950 dark:border-fuchsia-400/30 dark:bg-fuchsia-500/10 dark:text-fuchsia-50">
-			<Cake className="h-4 w-4 text-fuchsia-600 dark:text-fuchsia-300" />
-			<AlertTitle>{t("setupTitle")}</AlertTitle>
-			<AlertDescription className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
-				<p className="text-sm text-fuchsia-900/90 dark:text-fuchsia-50/90">
-					{t("setupDescription")}
-				</p>
-				<div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-end">
-					<div className="flex flex-wrap gap-3">
-						<div className="grid gap-1.5">
-							<Label htmlFor="birthday-month" className="text-xs">
-								{t("monthLabel")}
-							</Label>
-							<Select
-								value={month || undefined}
-								onValueChange={(v) => {
-									setMonth(v);
-									setDay("");
-								}}
-							>
-								<SelectTrigger
-									id="birthday-month"
-									className="w-[min(100vw-3rem,12rem)]"
-								>
-									<SelectValue placeholder={t("placeholderMonth")} />
-								</SelectTrigger>
-								<SelectContent>
-									{monthLabels.map((m) => (
-										<SelectItem key={m.value} value={m.value}>
-											{m.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="grid gap-1.5">
-							<Label htmlFor="birthday-day" className="text-xs">
-								{t("dayLabel")}
-							</Label>
-							<Select
-								value={day || undefined}
-								onValueChange={setDay}
-								disabled={!month}
-							>
-								<SelectTrigger
-									id="birthday-day"
-									className="w-[min(100vw-3rem,7rem)]"
-								>
-									<SelectValue placeholder={t("placeholderDay")} />
-								</SelectTrigger>
-								<SelectContent>
-									{validDays.map((d) => (
-										<SelectItem key={d} value={String(d)}>
-											{d}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+		<Collapsible open={open} onOpenChange={setOpen} data-notice>
+			<Alert className="rounded-xl border-primary/20 bg-primary/[0.04] px-3 py-2.5 text-foreground shadow-none sm:px-4">
+				<Cake className="text-primary" />
+				<div className="col-start-2 flex min-w-0 items-center gap-3">
+					<div className="min-w-0 flex-1">
+						<AlertTitle>{t("setupTitle")}</AlertTitle>
+						<AlertDescription className="line-clamp-1 text-xs sm:text-sm">
+							{t("setupDescription")}
+						</AlertDescription>
 					</div>
-					<Button
-						type="button"
-						size="sm"
-						className="w-fit shrink-0"
-						disabled={!canSave || saving}
-						onClick={() => void onSave()}
-					>
-						{saving ? t("saving") : t("save")}
-					</Button>
+					<CollapsibleTrigger asChild>
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							aria-label={t("setupAction")}
+						>
+							<span className="hidden sm:inline">{t("setupAction")}</span>
+							<ChevronDown
+								data-icon="inline-end"
+								className={
+									open
+										? "rotate-180 transition-transform"
+										: "transition-transform"
+								}
+							/>
+						</Button>
+					</CollapsibleTrigger>
 				</div>
-			</AlertDescription>
-		</Alert>
+				<CollapsibleContent className="col-span-full mt-3 border-t border-border/60 pt-3">
+					<AlertDescription>
+						<FieldGroup className="gap-3 sm:flex-row sm:items-end">
+							<Field className="sm:max-w-48">
+								<FieldLabel htmlFor="birthday-month" className="text-xs">
+									{t("monthLabel")}
+								</FieldLabel>
+								<Select
+									value={month || undefined}
+									onValueChange={(v) => {
+										setMonth(v);
+										setDay("");
+									}}
+								>
+									<SelectTrigger id="birthday-month" className="w-full">
+										<SelectValue placeholder={t("placeholderMonth")} />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectGroup>
+											{monthLabels.map((m) => (
+												<SelectItem key={m.value} value={m.value}>
+													{m.label}
+												</SelectItem>
+											))}
+										</SelectGroup>
+									</SelectContent>
+								</Select>
+							</Field>
+							<Field className="sm:max-w-28">
+								<FieldLabel htmlFor="birthday-day" className="text-xs">
+									{t("dayLabel")}
+								</FieldLabel>
+								<Select
+									value={day || undefined}
+									onValueChange={setDay}
+									disabled={!month}
+								>
+									<SelectTrigger id="birthday-day" className="w-full">
+										<SelectValue placeholder={t("placeholderDay")} />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectGroup>
+											{validDays.map((d) => (
+												<SelectItem key={d} value={String(d)}>
+													{d}
+												</SelectItem>
+											))}
+										</SelectGroup>
+									</SelectContent>
+								</Select>
+							</Field>
+							<Button
+								type="button"
+								size="sm"
+								className="w-full shrink-0 sm:w-auto"
+								disabled={!canSave || saving}
+								onClick={() => void onSave()}
+							>
+								{saving ? t("saving") : t("save")}
+							</Button>
+						</FieldGroup>
+					</AlertDescription>
+				</CollapsibleContent>
+			</Alert>
+		</Collapsible>
 	);
 }

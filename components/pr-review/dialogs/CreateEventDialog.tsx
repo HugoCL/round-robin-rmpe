@@ -256,7 +256,7 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 					<DialogDescription>{t("events.createDescription")}</DialogDescription>
 				</DialogHeader>
 
-				<div className="grid gap-4 py-4">
+				<div className="grid gap-4">
 					{/* Title */}
 					<div className="grid gap-2">
 						<Label htmlFor={titleId}>{t("events.title")}</Label>
@@ -333,7 +333,7 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 						</div>
 						{/* Show Chile time conversion if user is not in Chile */}
 						{!userInChile && chileTimePreview && (
-							<div className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/50  px-2 py-1">
+							<div className="calm-subtle-panel flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground">
 								<Globe className="h-3.5 w-3.5" />
 								<span>
 									{t("events.chileTimePreview", { time: chileTimePreview })}

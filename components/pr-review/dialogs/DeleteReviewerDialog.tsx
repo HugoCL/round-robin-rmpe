@@ -76,8 +76,8 @@ export function DeleteReviewerDialog({
 								})}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="grid gap-4 py-4">
-					<div className="space-y-2">
+				<div className="grid gap-4">
+					<div className="flex flex-col gap-2">
 						<label htmlFor="reviewer-select" className="text-sm font-medium">
 							{t("reviewer.selectReviewer")}
 						</label>
@@ -91,7 +91,7 @@ export function DeleteReviewerDialog({
 							<SelectContent>
 								{reviewers.map((reviewer) => (
 									<SelectItem key={reviewer._id} value={reviewer._id}>
-										<div className="flex items-center justify-between w-full">
+										<div className="flex w-full items-center justify-between">
 											<div className="flex items-center gap-2">
 												<span>{reviewer.name}</span>
 												{reviewer.effectiveIsAbsent && (

@@ -8,6 +8,7 @@ import {
 	CardContent,
 	CardFooter,
 	CardHeader,
+	CardTitle,
 } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
@@ -42,13 +43,11 @@ export function AssignmentCard() {
 		undoAssignment: onUndoAssignment,
 		userInfo: user,
 		hideMultiAssignmentSection,
-		alwaysSendGoogleChatMessage,
 	} = usePRReview();
 
 	const [isAssigning, setIsAssigning] = useState(false);
 	const [isMultiAssignmentEnabled, setIsMultiAssignmentEnabled] =
 		useState(false);
-	const [sendMessage, setSendMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
 	const [contextUrl, setContextUrl] = useState("");
 	const [urgent, setUrgent] = useState(false);
@@ -70,8 +69,6 @@ export function AssignmentCard() {
 	const [liveSummary, setLiveSummary] = useState("");
 	const isMultiAssignmentActive =
 		!hideMultiAssignmentSection && isMultiAssignmentEnabled;
-	const effectiveSendMessage = alwaysSendGoogleChatMessage || sendMessage;
-
 	const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
 	const [duplicateAssignment, setDuplicateAssignment] = useState<{
 		reviewerName: string;
@@ -114,12 +111,6 @@ export function AssignmentCard() {
 			setSlotConfigs([defaultSlotForMode(mode)]);
 		}
 	}, [hideMultiAssignmentSection, isMultiAssignmentEnabled, mode]);
-
-	useEffect(() => {
-		if (alwaysSendGoogleChatMessage && !sendMessage) {
-			setSendMessage(true);
-		}
-	}, [alwaysSendGoogleChatMessage, sendMessage]);
 
 	useEffect(() => {
 		if (!crossTeamReview && selectedCrossTeamSlugs.length > 0) {
@@ -203,7 +194,6 @@ export function AssignmentCard() {
 					reviewerId: slot.reviewerId ? String(slot.reviewerId) : null,
 					tagId: slot.tagId ? String(slot.tagId) : null,
 				})),
-				sendMessage: effectiveSendMessage,
 			}),
 		[
 			effectiveReviewerCount,
@@ -212,7 +202,6 @@ export function AssignmentCard() {
 			mode,
 			excludeTeammates,
 			selectedTagId,
-			effectiveSendMessage,
 		],
 	);
 
@@ -350,7 +339,7 @@ export function AssignmentCard() {
 	};
 
 	const sendAssignmentMessage = async (targetReviewer: Reviewer) => {
-		if (!(effectiveSendMessage && prUrl.trim() && teamSlug)) return;
+		if (!(prUrl.trim() && teamSlug)) return;
 		try {
 			const result = await sendGoogleChatAction({
 				reviewerName: targetReviewer.name,
@@ -415,7 +404,7 @@ export function AssignmentCard() {
 				return;
 			}
 
-			if (effectiveSendMessage && prUrl.trim() && teamSlug) {
+			if (prUrl.trim()) {
 				if (result.assignedCount > 1) {
 					const groupResult = await sendGoogleChatGroupAction({
 						reviewers: result.assigned.map(
@@ -518,14 +507,16 @@ export function AssignmentCard() {
 
 	const isAssignDisabled =
 		isAssigning ||
-		(effectiveSendMessage && !prUrl.trim()) ||
+		!prUrl.trim() ||
 		(crossTeamReview && selectedCrossTeamSlugs.length === 0) ||
 		resolvedPreview.resolved.length === 0;
 
 	return (
-		<Card className="calm-shell flex flex-col overflow-hidden border-0 bg-transparent py-0 shadow-none ring-0">
-			<CardHeader className="sr-only flex-shrink-0" />
-			<CardContent className="flex flex-1 items-center justify-center px-5 pt-5 md:px-6 md:pt-6 2xl:px-8 2xl:pt-8">
+		<Card className="calm-shell flex flex-col gap-0 overflow-hidden py-0 ring-0">
+			<CardHeader className="sr-only">
+				<CardTitle>{t("pr.nextReviewer")}</CardTitle>
+			</CardHeader>
+			<CardContent className="flex flex-1 items-center justify-center px-5 pt-3 md:px-6 md:pt-4 2xl:px-8">
 				<AssignmentHeroPanel
 					mode={mode}
 					lastAssignedReviewer={lastAssignedReviewer}
@@ -538,8 +529,8 @@ export function AssignmentCard() {
 					isLoadingTagReviewer={isLoadingTagReviewer}
 				/>
 			</CardContent>
-			<CardFooter className="flex-shrink-0 border-t border-border/60 px-5 pb-5 pt-5 md:px-6 md:pb-6 2xl:px-8 2xl:pb-8">
-				<div className="flex w-full flex-col gap-4 lg:gap-5">
+			<CardFooter className="flex-shrink-0 border-t border-border/60 px-5 py-4 md:px-6 2xl:px-8">
+				<div className="calm-subtle-panel flex w-full flex-col gap-3 p-3 lg:gap-4 lg:p-4">
 					<AssignmentControlsPanel
 						tags={tags}
 						mode={mode}
@@ -567,15 +558,6 @@ export function AssignmentCard() {
 							}
 							setReviewerCount(1);
 							setSlotConfigs([defaultSlotForMode(mode)]);
-						}}
-						effectiveSendMessage={effectiveSendMessage}
-						alwaysSendGoogleChatMessage={alwaysSendGoogleChatMessage}
-						onSendMessageToggle={(pressed) => {
-							if (alwaysSendGoogleChatMessage) return;
-							setSendMessage(pressed);
-							if (!pressed) {
-								resetMessageState();
-							}
 						}}
 						urgent={urgent}
 						onUrgentChange={setUrgent}

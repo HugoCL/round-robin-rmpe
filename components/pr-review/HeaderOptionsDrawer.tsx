@@ -63,8 +63,6 @@ export function HeaderOptionsDrawer() {
 		toggleShowEmails,
 		hideMultiAssignmentSection,
 		toggleHideMultiAssignmentSection,
-		alwaysSendGoogleChatMessage,
-		toggleAlwaysSendGoogleChatMessage,
 	} = usePRReview();
 
 	const renderMySetting = ({
@@ -81,7 +79,7 @@ export function HeaderOptionsDrawer() {
 		onToggle: () => void;
 	}) => (
 		<div className="flex items-start justify-between gap-4">
-			<div className="min-w-0 space-y-1">
+			<div className="flex min-w-0 flex-col gap-1">
 				<p className="text-sm font-medium">{label}</p>
 				<p className="text-xs text-muted-foreground">{description}</p>
 			</div>
@@ -96,10 +94,10 @@ export function HeaderOptionsDrawer() {
 	);
 
 	const bodyContent = (
-		<div className="min-w-0 space-y-4 px-4 pb-5">
-			<section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-				<div className="space-y-4">
-					<div className="space-y-1">
+		<div className="flex min-w-0 flex-col gap-4">
+			<section className="calm-subtle-panel p-4">
+				<div className="flex flex-col gap-4">
+					<div className="flex flex-col gap-1">
 						<h3 className="flex items-center gap-2 text-sm font-semibold">
 							<User className="h-4 w-4 text-primary" />
 							{t("mySettings.title")}
@@ -108,7 +106,7 @@ export function HeaderOptionsDrawer() {
 							{t("mySettings.description")}
 						</p>
 					</div>
-					<div className="space-y-3">
+					<div className="flex flex-col gap-3">
 						{renderMySetting({
 							id: "my-settings-show-assignments",
 							label: t("mySettings.showAssignmentsLabel"),
@@ -139,22 +137,13 @@ export function HeaderOptionsDrawer() {
 							checked: hideMultiAssignmentSection,
 							onToggle: toggleHideMultiAssignmentSection,
 						})}
-						{renderMySetting({
-							id: "my-settings-always-send-message",
-							label: t("mySettings.alwaysSendGoogleChatMessageLabel"),
-							description: t(
-								"mySettings.alwaysSendGoogleChatMessageDescription",
-							),
-							checked: alwaysSendGoogleChatMessage,
-							onToggle: toggleAlwaysSendGoogleChatMessage,
-						})}
 					</div>
 				</div>
 			</section>
 
-			<section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+			<section className="calm-subtle-panel p-4">
 				<div className="grid items-start gap-4 sm:grid-cols-2">
-					<div className="space-y-3">
+					<div className="flex flex-col gap-3">
 						<h3 className="flex items-center gap-2 text-sm font-semibold">
 							<Clock className="h-4 w-4 text-primary" />
 							{t("common.historyAndData")}
@@ -170,7 +159,7 @@ export function HeaderOptionsDrawer() {
 						</Button>
 					</div>
 
-					<div className="space-y-3">
+					<div className="flex flex-col gap-3">
 						<h3 className="flex items-center gap-2 text-sm font-semibold">
 							<Webhook className="h-4 w-4 text-primary" />
 							{t("teamSettings.title")}
@@ -192,9 +181,9 @@ export function HeaderOptionsDrawer() {
 				</div>
 			</section>
 
-			<section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-				<div className="space-y-4">
-					<div className="space-y-1">
+			<section className="calm-subtle-panel p-4">
+				<div className="flex flex-col gap-4">
+					<div className="flex flex-col gap-1">
 						<h3 className="flex items-center gap-2 text-sm font-semibold">
 							<FlaskConical className="h-4 w-4 text-primary" />
 							{t("experiments.title")}
@@ -203,7 +192,7 @@ export function HeaderOptionsDrawer() {
 							{t("experiments.description")}
 						</p>
 					</div>
-					<div className="space-y-3">
+					<div className="flex flex-col gap-3">
 						{renderMySetting({
 							id: "experiment-agent-setup",
 							label: t("experiments.agentSetupLabel"),
@@ -221,8 +210,8 @@ export function HeaderOptionsDrawer() {
 			</section>
 
 			{preferences.enableAgentSetupExperiment ? (
-				<section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-					<div className="space-y-3">
+				<section className="calm-subtle-panel p-4">
+					<div className="flex flex-col gap-3">
 						<h3 className="flex items-center gap-2 text-sm font-semibold">
 							<KeyRound className="h-4 w-4 text-primary" />
 							{t("agentSetup.title")}
@@ -235,9 +224,9 @@ export function HeaderOptionsDrawer() {
 				</section>
 			) : null}
 
-			<section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-				<div className="space-y-4">
-					<div className="space-y-3">
+			<section className="calm-subtle-panel p-4">
+				<div className="flex flex-col gap-4">
+					<div className="flex flex-col gap-3">
 						<h3 className="flex items-center gap-2 text-sm font-semibold">
 							<Eye className="h-4 w-4 text-primary" />
 							{t("common.language")}
@@ -247,7 +236,7 @@ export function HeaderOptionsDrawer() {
 
 					<Separator />
 
-					<div className="space-y-3">
+					<div className="flex flex-col gap-3">
 						<h3 className="flex items-center gap-2 text-sm font-semibold">
 							<Settings className="h-4 w-4 text-primary" />
 							{t("common.help")}
@@ -297,7 +286,7 @@ export function HeaderOptionsDrawer() {
 								{t("common.optionsDescription")}
 							</DrawerDescription>
 						</DrawerHeader>
-						{bodyContent}
+						<div className="px-4 pb-5">{bodyContent}</div>
 						<DrawerFooter>
 							<DrawerClose asChild>{footerAction}</DrawerClose>
 						</DrawerFooter>
@@ -311,17 +300,15 @@ export function HeaderOptionsDrawer() {
 		<>
 			{triggerButton}
 			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent className="max-h-[85vh] overflow-y-auto overscroll-contain p-0 sm:max-w-5xl">
-					<div className="px-4 pt-4">
-						<DialogHeader>
-							<DialogTitle>{t("common.options")}</DialogTitle>
-							<DialogDescription>
-								{t("common.optionsDescription")}
-							</DialogDescription>
-						</DialogHeader>
-					</div>
+				<DialogContent className="max-h-[85vh] overflow-y-auto overscroll-contain sm:max-w-5xl">
+					<DialogHeader>
+						<DialogTitle>{t("common.options")}</DialogTitle>
+						<DialogDescription>
+							{t("common.optionsDescription")}
+						</DialogDescription>
+					</DialogHeader>
 					{bodyContent}
-					<DialogFooter className="px-4 pb-4">
+					<DialogFooter>
 						<DialogClose asChild>{footerAction}</DialogClose>
 					</DialogFooter>
 				</DialogContent>

@@ -76,29 +76,32 @@ export function AnnouncementBanner() {
 	if (visibleAnnouncements.length === 0) return null;
 
 	return (
-		<div className="space-y-2">
+		<>
 			{visibleAnnouncements.map((announcement) => (
 				<Alert
 					key={announcement.id}
+					data-notice
 					variant={announcement.variant}
-					className="rounded-2xl border-border/70 bg-background/82"
+					className="flex min-h-11 items-center gap-2.5 rounded-xl border-border/70 bg-background/72 py-2.5 pr-12 shadow-none"
 				>
-					<Info className="h-4 w-4" />
-					<AlertTitle>{t("common.info")}</AlertTitle>
-					<AlertDescription>{t(announcement.translationKey)}</AlertDescription>
+					<Info className="shrink-0 text-muted-foreground" />
+					<AlertTitle className="sr-only">{t("common.info")}</AlertTitle>
+					<AlertDescription className="line-clamp-2 text-xs sm:text-sm">
+						{t(announcement.translationKey)}
+					</AlertDescription>
 					<AlertAction>
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-6 w-6"
+							className="size-7"
 							onClick={() => handleDismiss(announcement.id)}
 							aria-label={t("announcements.dismiss")}
 						>
-							<X className="h-4 w-4" />
+							<X />
 						</Button>
 					</AlertAction>
 				</Alert>
 			))}
-		</div>
+		</>
 	);
 }

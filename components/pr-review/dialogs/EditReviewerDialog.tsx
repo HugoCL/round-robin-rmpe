@@ -140,7 +140,7 @@ export function EditReviewerDialog({
 					<DialogTitle>{t("reviewer.editReviewer")}</DialogTitle>
 					<DialogDescription>{t("reviewer.editDescription")}</DialogDescription>
 				</DialogHeader>
-				<div className="grid gap-4 py-4">
+				<div className="grid gap-4">
 					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
 						<Label htmlFor={nameId} className="sm:text-right">
 							{t("common.name")}
@@ -193,7 +193,7 @@ export function EditReviewerDialog({
 							className="sm:col-span-3"
 						/>
 					</div>
-					<div className="col-span-full flex items-start gap-3 rounded-md border border-border/60 bg-muted/30 p-3">
+					<div className="calm-subtle-panel col-span-full flex items-start gap-3 p-3">
 						<Checkbox
 							id={`${nameId}-out-of-pool`}
 							checked={excludedOutOfPool}

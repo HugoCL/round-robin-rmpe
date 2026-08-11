@@ -32,7 +32,6 @@ type UserPreferenceFlags = {
 	showTags: boolean;
 	showEmails: boolean;
 	hideMultiAssignmentSection: boolean;
-	alwaysSendGoogleChatMessage: boolean;
 	enableAgentSetupExperiment: boolean;
 	defaultAgentTeamSlug?: string;
 };
@@ -51,7 +50,6 @@ const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	showTags: true,
 	showEmails: false,
 	hideMultiAssignmentSection: false,
-	alwaysSendGoogleChatMessage: false,
 	enableAgentSetupExperiment: false,
 	defaultAgentTeamSlug: undefined,
 };
@@ -94,9 +92,6 @@ function resolvePreferencePatch(
 	}
 	if (typeof patch.hideMultiAssignmentSection === "boolean") {
 		resolved.hideMultiAssignmentSection = patch.hideMultiAssignmentSection;
-	}
-	if (typeof patch.alwaysSendGoogleChatMessage === "boolean") {
-		resolved.alwaysSendGoogleChatMessage = patch.alwaysSendGoogleChatMessage;
 	}
 	if (typeof patch.enableAgentSetupExperiment === "boolean") {
 		resolved.enableAgentSetupExperiment = patch.enableAgentSetupExperiment;
@@ -404,7 +399,6 @@ export const bootstrapMyUserPreferences = mutation({
 		showTags: v.optional(v.boolean()),
 		showEmails: v.optional(v.boolean()),
 		hideMultiAssignmentSection: v.optional(v.boolean()),
-		alwaysSendGoogleChatMessage: v.optional(v.boolean()),
 		enableAgentSetupExperiment: v.optional(v.boolean()),
 		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
 	},
@@ -449,7 +443,6 @@ export const updateMyUserPreferences = mutation({
 		showTags: v.optional(v.boolean()),
 		showEmails: v.optional(v.boolean()),
 		hideMultiAssignmentSection: v.optional(v.boolean()),
-		alwaysSendGoogleChatMessage: v.optional(v.boolean()),
 		enableAgentSetupExperiment: v.optional(v.boolean()),
 		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
 	},

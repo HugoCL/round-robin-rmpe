@@ -32,10 +32,13 @@ export function BirthdayTeamNoticeBanner({
 			: `${names.slice(0, -1).join(", ")} ${t("and")} ${names[names.length - 1]}`;
 
 	return (
-		<Alert className="border-sky-500/35 bg-sky-500/[0.06] text-sky-950 dark:border-sky-400/30 dark:bg-sky-500/10 dark:text-sky-50">
-			<PartyPopper className="h-4 w-4 text-sky-600 dark:text-sky-300" />
-			<AlertTitle>{t("teamNoticeTitle")}</AlertTitle>
-			<AlertDescription className="text-sm text-sky-900/90 dark:text-sky-50/90">
+		<Alert
+			data-notice
+			className="flex min-h-11 items-center gap-2.5 rounded-xl border-primary/20 bg-primary/[0.04] py-2.5 shadow-none"
+		>
+			<PartyPopper className="shrink-0 text-primary" />
+			<AlertTitle className="sr-only">{t("teamNoticeTitle")}</AlertTitle>
+			<AlertDescription className="line-clamp-2 text-xs sm:text-sm">
 				{t("teamNoticeDescription", { names: list })}
 			</AlertDescription>
 		</Alert>

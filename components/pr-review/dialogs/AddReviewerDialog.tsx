@@ -114,7 +114,7 @@ export function AddReviewerDialog({
 					<DialogTitle>{t("reviewer.addNew")}</DialogTitle>
 					<DialogDescription>{t("reviewer.addDescription")}</DialogDescription>
 				</DialogHeader>
-				<div className="grid gap-4 py-4">
+				<div className="grid gap-4">
 					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
 						<Label htmlFor={reviewerNameId} className="sm:text-right">
 							{t("common.name")}

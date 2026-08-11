@@ -2,15 +2,24 @@ import {
 	AlertCircle,
 	AlertTriangle,
 	Globe2,
+	Link2,
 	MessageSquare,
 	UserCheck,
 	Users,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldLabel } from "@/components/ui/field";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupButton,
+	InputGroupInput,
+} from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -43,10 +52,6 @@ import type {
 } from "./ReviewerSlotsConfigurator";
 import { ReviewerSlotsConfigurator } from "./ReviewerSlotsConfigurator";
 
-/** Overrides Toggle `aria-pressed:bg-muted` so active chips keep readable primary colors. */
-const assignmentChipActivePrimary =
-	"aria-pressed:bg-primary aria-pressed:border-primary aria-pressed:text-primary-foreground hover:aria-pressed:bg-primary/95";
-
 /** Overrides ToggleGroupItem `data-[state=on]:bg-muted` for the same reason. */
 const assignmentGroupItemActivePrimary =
 	"data-[state=on]:bg-primary data-[state=on]:border-primary data-[state=on]:text-primary-foreground hover:data-[state=on]:bg-primary/95";
@@ -71,9 +76,6 @@ type AssignmentControlsPanelProps = {
 	isMultiAssignmentEnabled: boolean;
 	reviewerCount: number;
 	onMultiAssignmentToggle: (enabled: boolean) => void;
-	effectiveSendMessage: boolean;
-	alwaysSendGoogleChatMessage: boolean;
-	onSendMessageToggle: (pressed: boolean) => void;
 	urgent: boolean;
 	onUrgentChange: (value: boolean) => void;
 	crossTeamReview: boolean;
@@ -107,6 +109,9 @@ type AssignmentControlsPanelProps = {
 	} | null;
 };
 
+const assignmentChipActivePrimary =
+	"aria-pressed:bg-primary aria-pressed:border-primary aria-pressed:text-primary-foreground hover:aria-pressed:bg-primary/95";
+
 export function AssignmentControlsPanel({
 	tags,
 	mode,
@@ -118,9 +123,6 @@ export function AssignmentControlsPanel({
 	isMultiAssignmentEnabled,
 	reviewerCount,
 	onMultiAssignmentToggle,
-	effectiveSendMessage,
-	alwaysSendGoogleChatMessage,
-	onSendMessageToggle,
 	urgent,
 	onUrgentChange,
 	crossTeamReview,
@@ -154,11 +156,14 @@ export function AssignmentControlsPanel({
 	const resolvedNamesForMessage = resolvedPreview.resolved
 		.map((item) => item.reviewer.name)
 		.join(", ");
+	const [showContextInput, setShowContextInput] = useState(
+		contextUrl.trim().length > 0,
+	);
 
 	return (
-		<div className="flex flex-col gap-4 lg:gap-5">
+		<div className="flex flex-col gap-3 lg:gap-4">
 			{tags.length > 0 && (
-				<div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-4 lg:p-5">
+				<div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-3 lg:p-4">
 					<div className="grid grid-cols-2 gap-2">
 						<Button
 							variant={mode === "regular" ? "default" : "outline"}
@@ -166,7 +171,12 @@ export function AssignmentControlsPanel({
 							onClick={() => onModeChange("regular")}
 							className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 						>
-							{t("pr.assignmentModeRegular")}
+							<span className="sm:hidden">
+								{t("pr.assignmentModeRegularShort")}
+							</span>
+							<span className="hidden sm:inline">
+								{t("pr.assignmentModeRegular")}
+							</span>
 						</Button>
 						<Button
 							variant={mode === "tag" ? "default" : "outline"}
@@ -174,7 +184,12 @@ export function AssignmentControlsPanel({
 							onClick={() => onModeChange("tag")}
 							className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 						>
-							{t("pr.assignmentModeWithTags")}
+							<span className="sm:hidden">
+								{t("pr.assignmentModeWithTagsShort")}
+							</span>
+							<span className="hidden sm:inline">
+								{t("pr.assignmentModeWithTags")}
+							</span>
 						</Button>
 					</div>
 
@@ -210,6 +225,66 @@ export function AssignmentControlsPanel({
 				</div>
 			)}
 
+			<Field>
+				<FieldLabel htmlFor="assignment-pr-url" className="sr-only">
+					{t("googleChat.prUrlLabel")}
+				</FieldLabel>
+				<InputGroup className="h-12 rounded-2xl bg-background/70">
+					<InputGroupAddon align="inline-start">
+						<Link2 className="h-5 w-5" aria-hidden="true" />
+					</InputGroupAddon>
+					<InputGroupInput
+						id="assignment-pr-url"
+						placeholder={t("placeholders.pastePrUrl")}
+						value={prUrl}
+						onChange={(event) => onPrUrlChange(event.target.value)}
+						onBlur={() => void onPrUrlBlur()}
+						required
+						aria-required="true"
+						autoComplete="off"
+						inputMode="url"
+						spellCheck={false}
+						data-form-autocomplete="off"
+					/>
+					<InputGroupAddon align="inline-end">
+						<InputGroupButton
+							variant={showContextInput ? "secondary" : "ghost"}
+							aria-label={t("googleChat.addContext")}
+							aria-pressed={showContextInput}
+							onClick={() => {
+								setShowContextInput(!showContextInput);
+								if (showContextInput) onContextUrlChange("");
+							}}
+						>
+							<Link2 data-icon="inline-start" />
+							{t("googleChat.addContext")}
+						</InputGroupButton>
+					</InputGroupAddon>
+				</InputGroup>
+			</Field>
+
+			{showContextInput && (
+				<Field>
+					<FieldLabel htmlFor="assignment-context-url">
+						{t("googleChat.contextUrlLabel")}
+					</FieldLabel>
+					<InputGroup className="rounded-2xl bg-background/70">
+						<InputGroupAddon align="inline-start">
+							<Link2 aria-hidden="true" />
+						</InputGroupAddon>
+						<InputGroupInput
+							id="assignment-context-url"
+							placeholder={t("placeholders.contextUrl")}
+							value={contextUrl}
+							onChange={(event) => onContextUrlChange(event.target.value)}
+							autoComplete="off"
+							inputMode="url"
+							spellCheck={false}
+						/>
+					</InputGroup>
+				</Field>
+			)}
+
 			<div className="flex flex-wrap gap-3 lg:gap-4">
 				{!hideMultiAssignmentSection && (
 					<TooltipProvider>
@@ -243,7 +318,7 @@ export function AssignmentControlsPanel({
 												/>
 											</span>
 											<span className="leading-none">
-												{t("pr.multipleAssignmentToggleLabel")}
+												{t("pr.multipleAssignmentToggleShort")}
 											</span>
 										</div>
 									</ToggleGroupItem>
@@ -276,7 +351,7 @@ export function AssignmentControlsPanel({
 														/>
 													</span>
 													<span className="leading-none">
-														{t("pr.forceAssign")}
+														{t("pr.forceAssignShort")}
 													</span>
 												</div>
 											</Button>
@@ -291,42 +366,24 @@ export function AssignmentControlsPanel({
 					</TooltipProvider>
 				</section>
 
-				<section className="max-w-full">
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Toggle
-									id="assignment-send-message-toggle"
-									pressed={effectiveSendMessage}
-									onPressedChange={onSendMessageToggle}
-									variant="outline"
-									size="sm"
-									disabled={alwaysSendGoogleChatMessage}
-									aria-label={t("googleChat.sendMessageToggle")}
-									className={cn(
-										"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 disabled:cursor-not-allowed lg:h-11 lg:px-4 lg:text-sm",
-										effectiveSendMessage && assignmentChipActivePrimary,
-									)}
-								>
-									<div className="inline-flex items-center gap-2.5">
-										<span className="inline-flex size-4 items-center justify-center">
-											<MessageSquare
-												className="h-4 w-4 shrink-0"
-												aria-hidden="true"
-											/>
-										</span>
-										<span className="leading-none">
-											{t("googleChat.sendMessageToggle")}
-										</span>
-									</div>
-								</Toggle>
-							</TooltipTrigger>
-							<TooltipContent className="max-w-64 text-xs">
-								<p>{t("pr.sendMessageToggleDescription")}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				</section>
+				<Toggle
+					id="assignment-custom-message-toggle"
+					pressed={enableCustomMessage}
+					onPressedChange={(pressed) => {
+						onEnableCustomMessageChange(pressed);
+						if (!pressed) onCustomMessageChange("");
+					}}
+					variant="outline"
+					size="sm"
+					aria-label={t("googleChat.customizeToggle")}
+					className={cn(
+						"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm",
+						enableCustomMessage && assignmentChipActivePrimary,
+					)}
+				>
+					<MessageSquare data-icon="inline-start" />
+					{t("googleChat.customizeToggle")}
+				</Toggle>
 
 				<section className="max-w-full">
 					<TooltipProvider>
@@ -385,7 +442,7 @@ export function AssignmentControlsPanel({
 											<Globe2 className="h-4 w-4 shrink-0" aria-hidden="true" />
 										</span>
 										<span className="leading-none">
-											{t("googleChat.crossTeamToggle")}
+											{t("googleChat.crossTeamToggleShort")}
 										</span>
 									</div>
 								</Toggle>
@@ -397,6 +454,29 @@ export function AssignmentControlsPanel({
 					</TooltipProvider>
 				</section>
 			</div>
+
+			{enableCustomMessage && (
+				<section className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-4 lg:p-5">
+					<ChatMessageCustomizer
+						prUrl={prUrl}
+						onPrUrlChange={onPrUrlChange}
+						onPrUrlBlur={() => void onPrUrlBlur()}
+						contextUrl={contextUrl}
+						onContextUrlChange={onContextUrlChange}
+						enabled={enableCustomMessage}
+						onEnabledChange={onEnableCustomMessageChange}
+						message={customMessage}
+						onMessageChange={onCustomMessageChange}
+						nextReviewerName={
+							resolvedNamesForMessage || activeNextReviewer?.name
+						}
+						embedded
+						showPrUrlField={false}
+						showContextUrlField={false}
+						showCustomizeToggle={false}
+					/>
+				</section>
+			)}
 
 			{crossTeamReview && (
 				<section className="flex flex-col gap-3 rounded-2xl border border-sky-200/60 bg-sky-50/30 p-4 lg:p-5 dark:border-sky-900/40 dark:bg-sky-950/15">
@@ -482,35 +562,6 @@ export function AssignmentControlsPanel({
 						allowReviewerCountChange
 						onReviewerCountChange={onReviewerCountChange}
 						onSlotChange={onSlotChange}
-					/>
-				</section>
-			)}
-
-			{effectiveSendMessage && (
-				<section className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-4 lg:p-5">
-					{alwaysSendGoogleChatMessage && (
-						<p className="text-xs text-muted-foreground lg:text-sm">
-							{t("mySettings.messageAlwaysOnHint")}
-						</p>
-					)}
-
-					<ChatMessageCustomizer
-						prUrl={prUrl}
-						onPrUrlChange={onPrUrlChange}
-						onPrUrlBlur={() => void onPrUrlBlur()}
-						contextUrl={contextUrl}
-						onContextUrlChange={onContextUrlChange}
-						sendMessage={effectiveSendMessage}
-						onSendMessageChange={onSendMessageToggle}
-						enabled={enableCustomMessage}
-						onEnabledChange={onEnableCustomMessageChange}
-						message={customMessage}
-						onMessageChange={onCustomMessageChange}
-						nextReviewerName={
-							resolvedNamesForMessage || activeNextReviewer?.name
-						}
-						showSendToggle={false}
-						embedded
 					/>
 				</section>
 			)}

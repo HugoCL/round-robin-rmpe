@@ -35,9 +35,9 @@ export function PartTimeScheduleFields({
 	};
 
 	return (
-		<div className="space-y-3 rounded-md border border-border/70 p-3">
+		<div className="calm-subtle-panel flex flex-col gap-3 p-3">
 			<div className="flex items-center justify-between gap-3">
-				<div className="space-y-1">
+				<div className="flex flex-col gap-1">
 					<Label>{t("partTime.title")}</Label>
 					<p className="text-xs text-muted-foreground">
 						{t("partTime.description")}
@@ -47,7 +47,7 @@ export function PartTimeScheduleFields({
 			</div>
 
 			{enabled ? (
-				<div className="space-y-2">
+				<div className="flex flex-col gap-2">
 					<div className="flex flex-wrap gap-2">
 						{WORKDAY_VALUES.map((day) => {
 							const selected = workingDays.includes(day);

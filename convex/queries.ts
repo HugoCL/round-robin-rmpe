@@ -98,7 +98,6 @@ type UserPreferenceFlags = {
 	showTags: boolean;
 	showEmails: boolean;
 	hideMultiAssignmentSection: boolean;
-	alwaysSendGoogleChatMessage: boolean;
 	enableAgentSetupExperiment: boolean;
 	defaultAgentTeamSlug?: string;
 };
@@ -109,7 +108,6 @@ const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	showTags: true,
 	showEmails: false,
 	hideMultiAssignmentSection: false,
-	alwaysSendGoogleChatMessage: false,
 	enableAgentSetupExperiment: false,
 	defaultAgentTeamSlug: undefined,
 };
@@ -871,7 +869,6 @@ export const getMyUserPreferences = query({
 			showTags: existing.showTags,
 			showEmails: existing.showEmails,
 			hideMultiAssignmentSection: existing.hideMultiAssignmentSection,
-			alwaysSendGoogleChatMessage: existing.alwaysSendGoogleChatMessage,
 			enableAgentSetupExperiment: existing.enableAgentSetupExperiment === true,
 			defaultAgentTeamSlug: existing.defaultAgentTeamSlug,
 			isAuthenticated: true,

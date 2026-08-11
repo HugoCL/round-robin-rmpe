@@ -146,7 +146,7 @@ export function MarkAbsentDialog({
 					<DialogDescription>{getGreeting()}</DialogDescription>
 				</DialogHeader>
 
-				<div className="grid gap-4 py-4">
+				<div className="grid gap-4">
 					{/* Date Picker */}
 					<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
 						<Label className="sm:text-right">{t("absent.returnDate")}</Label>
@@ -205,7 +205,7 @@ export function MarkAbsentDialog({
 
 					{/* Preview */}
 					{(selectedDate || selectedTime) && (
-						<div className=" bg-muted p-3 text-sm">
+						<div className="calm-subtle-panel p-3 text-sm">
 							<p className="text-muted-foreground">{formatReturnInfo()}</p>
 						</div>
 					)}

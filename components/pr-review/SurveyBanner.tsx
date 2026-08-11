@@ -14,7 +14,13 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {
+	Field,
+	FieldGroup,
+	FieldLabel,
+	FieldLegend,
+	FieldSet,
+} from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
@@ -89,12 +95,15 @@ export function SurveyBanner() {
 
 	return (
 		<>
-			<Alert className="grid-cols-[auto_minmax(0,1fr)] border-sky-500/35 bg-sky-500/5 text-sky-950 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-50 *:data-[slot=alert-title]:col-start-auto [&>svg]:row-span-1">
-				<MessageSquareHeart className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-				<div className="col-start-2 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-					<div className="min-w-0 space-y-1">
+			<Alert
+				data-notice
+				className="grid-cols-[auto_minmax(0,1fr)] rounded-xl border-primary/20 bg-primary/[0.04] px-3 py-2.5 text-foreground shadow-none sm:px-4 *:data-[slot=alert-title]:col-start-auto [&>svg]:row-span-1"
+			>
+				<MessageSquareHeart className="text-primary" />
+				<div className="col-start-2 flex min-w-0 items-center gap-3 sm:gap-4">
+					<div className="min-w-0 flex-1">
 						<AlertTitle>{title}</AlertTitle>
-						<AlertDescription className="text-sky-950/90 dark:text-sky-50/90">
+						<AlertDescription className="line-clamp-1 text-xs sm:text-sm">
 							{description}
 						</AlertDescription>
 					</div>
@@ -102,7 +111,7 @@ export function SurveyBanner() {
 						type="button"
 						size="sm"
 						onClick={() => setOpen(true)}
-						className="w-full shrink-0 sm:w-auto"
+						className="shrink-0"
 					>
 						{t("openSurvey")}
 					</Button>
@@ -110,24 +119,40 @@ export function SurveyBanner() {
 			</Alert>
 
 			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-					<DialogHeader className="space-y-2 border-b border-border/60 px-6 py-5 pr-12 text-left">
-						<DialogTitle>{title}</DialogTitle>
-						<DialogDescription className="space-y-2">
+				<DialogContent className="flex max-h-[88dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+					<DialogHeader className="gap-2 border-b border-border/60 bg-muted/20 px-5 py-5 pr-14 text-left sm:px-6">
+						<DialogTitle className="text-lg font-semibold tracking-tight">
+							{title}
+						</DialogTitle>
+						<DialogDescription className="flex flex-col gap-2">
 							<span className="block">{description}</span>
 							<span className="block text-xs">{t("privacyNote")}</span>
 						</DialogDescription>
 					</DialogHeader>
 
-					<div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+					<FieldGroup className="min-h-0 flex-1 gap-5 overflow-y-auto px-5 py-5 sm:px-6">
 						{questions.map((question) => {
 							const fieldId = `survey-q-${question._id}`;
+							const missing =
+								Boolean(error) &&
+								question.required &&
+								!answers[question._id]?.trim().length;
 							return (
-								<div key={question._id} className="space-y-2">
+								<Field
+									key={question._id}
+									data-invalid={missing}
+									className="gap-2"
+								>
 									<div className="flex flex-wrap items-baseline gap-2">
-										<Label htmlFor={fieldId} className="text-sm font-medium">
-											{question.prompt}
-										</Label>
+										{question.type === "free_text" ? (
+											<FieldLabel htmlFor={fieldId}>
+												{question.prompt}
+											</FieldLabel>
+										) : (
+											<span className="text-sm font-medium">
+												{question.prompt}
+											</span>
+										)}
 										<span className="text-xs text-muted-foreground">
 											{question.required
 												? t("requiredMark")
@@ -144,36 +169,46 @@ export function SurveyBanner() {
 											}
 											rows={3}
 											maxLength={2000}
+											aria-invalid={missing}
 										/>
 									) : (
-										<RadioGroup
-											value={answers[question._id] ?? ""}
-											onValueChange={(value) => setAnswer(question._id, value)}
-											className="gap-2"
-										>
-											{question.options.map((option) => {
-												const optionId = `${fieldId}-${option.value}`;
-												return (
-													<div
-														key={option.value}
-														className="flex items-center gap-2"
-													>
-														<RadioGroupItem
-															value={option.value}
-															id={optionId}
-														/>
-														<Label
-															htmlFor={optionId}
-															className="font-normal text-sm"
+										<FieldSet>
+											<FieldLegend className="sr-only" variant="label">
+												{question.prompt}
+											</FieldLegend>
+											<RadioGroup
+												value={answers[question._id] ?? ""}
+												onValueChange={(value) =>
+													setAnswer(question._id, value)
+												}
+												className="gap-2"
+												aria-invalid={missing}
+											>
+												{question.options.map((option) => {
+													const optionId = `${fieldId}-${option.value}`;
+													return (
+														<Field
+															key={option.value}
+															orientation="horizontal"
+															className="gap-2"
 														>
-															{option.label}
-														</Label>
-													</div>
-												);
-											})}
-										</RadioGroup>
+															<RadioGroupItem
+																value={option.value}
+																id={optionId}
+															/>
+															<FieldLabel
+																htmlFor={optionId}
+																className="font-normal"
+															>
+																{option.label}
+															</FieldLabel>
+														</Field>
+													);
+												})}
+											</RadioGroup>
+										</FieldSet>
 									)}
-								</div>
+								</Field>
 							);
 						})}
 
@@ -182,9 +217,9 @@ export function SurveyBanner() {
 								{error}
 							</p>
 						) : null}
-					</div>
+					</FieldGroup>
 
-					<DialogFooter className="border-t border-border/60 px-6 py-4">
+					<DialogFooter className="border-t border-border/60 bg-muted/15 px-5 py-4 sm:px-6">
 						<Button
 							type="button"
 							variant="outline"

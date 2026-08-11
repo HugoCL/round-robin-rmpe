@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import {
@@ -29,8 +28,6 @@ export interface ChatMessageCustomizerProps {
 	onPrUrlBlur?: () => void;
 	contextUrl?: string;
 	onContextUrlChange?: (v: string) => void;
-	sendMessage: boolean;
-	onSendMessageChange: (v: boolean) => void;
 	enabled: boolean; // custom message enabled
 	onEnabledChange: (v: boolean) => void;
 	message: string;
@@ -38,8 +35,10 @@ export interface ChatMessageCustomizerProps {
 	nextReviewerName?: string | null;
 	compact?: boolean; // hide modifiers & AI generation
 	autoTemplate?: string;
-	showSendToggle?: boolean;
 	embedded?: boolean;
+	showPrUrlField?: boolean;
+	showContextUrlField?: boolean;
+	showCustomizeToggle?: boolean;
 }
 
 export function ChatMessageCustomizer({
@@ -48,8 +47,6 @@ export function ChatMessageCustomizer({
 	onPrUrlBlur,
 	contextUrl = "",
 	onContextUrlChange,
-	sendMessage,
-	onSendMessageChange,
 	enabled,
 	onEnabledChange,
 	message,
@@ -57,15 +54,16 @@ export function ChatMessageCustomizer({
 	nextReviewerName,
 	compact = false,
 	autoTemplate,
-	showSendToggle = true,
 	embedded = false,
+	showPrUrlField = true,
+	showContextUrlField = true,
+	showCustomizeToggle = true,
 }: ChatMessageCustomizerProps) {
 	const t = useTranslations();
 	const locale = useLocale();
 	const prUrlId = useId();
 	const contextUrlId = useId();
 	const toggleCustomId = useId();
-	const sendToggleId = useId();
 	const [userEdited, setUserEdited] = useState(false);
 	const [selectedMods, setSelectedMods] = useState<string[]>([]);
 	const [customPrompt, setCustomPrompt] = useState("");
@@ -112,7 +110,7 @@ export function ChatMessageCustomizer({
 
 	// Prefill template when enabling custom message
 	useEffect(() => {
-		if (sendMessage && enabled && !userEdited && !message.trim()) {
+		if (enabled && !userEdited && !message.trim()) {
 			if (autoTemplate) {
 				onMessageChange(autoTemplate);
 			} else if (nextReviewerName) {
@@ -120,7 +118,6 @@ export function ChatMessageCustomizer({
 			}
 		}
 	}, [
-		sendMessage,
 		enabled,
 		userEdited,
 		message,
@@ -130,13 +127,9 @@ export function ChatMessageCustomizer({
 		locale,
 	]);
 
-	if (!showSendToggle && !sendMessage) {
-		return null;
-	}
-
 	const containerClass = embedded
-		? "space-y-3"
-		: "space-y-3 border border-muted/50 bg-muted/30 p-4";
+		? "flex flex-col gap-3"
+		: "flex flex-col gap-3 border border-muted/50 bg-muted/30 p-4";
 
 	const generateMessage = async () => {
 		setIsGenerating(true);
@@ -171,203 +164,181 @@ export function ChatMessageCustomizer({
 
 	return (
 		<div className={containerClass}>
-			{showSendToggle && (
-				<div className="flex items-center justify-between">
-					<Label
-						htmlFor={sendToggleId}
-						className="text-xs text-muted-foreground flex items-center gap-1"
-					>
-						<MessageSquare className="h-3 w-3" />{" "}
-						{t("googleChat.sendMessageToggle", {
-							defaultValue: locale.startsWith("es")
-								? "Enviar mensaje"
-								: "Send message",
-						})}
+			{showPrUrlField && (
+				<div className="space-y-1">
+					<Label htmlFor={prUrlId} className="text-xs text-muted-foreground">
+						{t("googleChat.prUrlLabel")}
 					</Label>
-					<Switch
-						id={sendToggleId}
-						checked={sendMessage}
-						onCheckedChange={(v) => {
-							onSendMessageChange(v);
-							if (!v) {
-								resetCustomMessage();
-							}
-						}}
+					<Input
+						id={prUrlId}
+						placeholder={t("placeholders.githubPrUrl")}
+						value={prUrl}
+						onChange={(e) => onPrUrlChange(e.target.value)}
+						onBlur={onPrUrlBlur}
+						required
+						aria-required="true"
+						autoComplete="off"
+						inputMode="url"
+						spellCheck={false}
+						data-form-autocomplete="off"
+						className="text-sm"
 					/>
 				</div>
 			)}
 
-			{sendMessage && (
-				<>
-					<div className="space-y-1">
-						<Label htmlFor={prUrlId} className="text-xs text-muted-foreground">
-							{t("googleChat.prUrlLabel")}
-						</Label>
-						<Input
-							id={prUrlId}
-							placeholder={t("placeholders.githubPrUrl")}
-							value={prUrl}
-							onChange={(e) => onPrUrlChange(e.target.value)}
-							onBlur={onPrUrlBlur}
-							autoComplete="off"
-							inputMode="url"
-							spellCheck={false}
-							data-form-autocomplete="off"
-							className="text-sm"
-						/>
-					</div>
+			{showContextUrlField && (
+				<div className="space-y-1">
+					<Label
+						htmlFor={contextUrlId}
+						className="text-xs text-muted-foreground"
+					>
+						{t("googleChat.contextUrlLabel", {
+							defaultValue: "Context URL (optional)",
+						})}
+					</Label>
+					<Input
+						id={contextUrlId}
+						placeholder={t("placeholders.contextUrl", {
+							defaultValue: "https://...",
+						})}
+						value={contextUrl}
+						onChange={(e) => onContextUrlChange?.(e.target.value)}
+						autoComplete="off"
+						inputMode="url"
+						spellCheck={false}
+						data-form-autocomplete="off"
+						className="text-sm"
+					/>
+					{contextUrl?.trim() && (
+						<p className="text-[10px] text-muted-foreground italic">
+							{t("googleChat.contextUrlHint", {
+								defaultValue: 'Will add a "Ver Contexto" button',
+							})}
+						</p>
+					)}
+				</div>
+			)}
+
+			{showCustomizeToggle && (
+				<div className="flex flex-wrap items-center gap-2 pt-1">
+					<Toggle
+						id={toggleCustomId}
+						pressed={enabled}
+						onPressedChange={(pressed) => {
+							if (!pressed) {
+								resetCustomMessage();
+								return;
+							}
+							onEnabledChange(true);
+						}}
+						variant="outline"
+						size="sm"
+						aria-label={t("googleChat.customizeToggle")}
+						className="cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
+						style={enabled ? selectedPrimaryChipStyle : undefined}
+					>
+						<MessageSquare className="h-3.5 w-3.5" />
+						{t("googleChat.customizeToggle")}
+					</Toggle>
+				</div>
+			)}
+
+			{enabled && (
+				<div className="space-y-2 rounded-lg border border-muted bg-muted/20 p-3">
+					<Textarea
+						className="min-h-28 text-sm"
+						value={message}
+						onChange={(e) => {
+							onMessageChange(e.target.value);
+							setUserEdited(true);
+						}}
+						placeholder={t("googleChat.textareaPlaceholder")}
+					/>
 
 					<div className="space-y-1">
-						<Label
-							htmlFor={contextUrlId}
-							className="text-xs text-muted-foreground"
-						>
-							{t("googleChat.contextUrlLabel", {
-								defaultValue: "Context URL (optional)",
+						<Label className="text-xs text-muted-foreground">
+							{t("googleChat.customPromptLabel", {
+								defaultValue: "AI custom instructions (optional)",
 							})}
 						</Label>
 						<Input
-							id={contextUrlId}
-							placeholder={t("placeholders.contextUrl", {
-								defaultValue: "https://...",
+							value={customPrompt}
+							onChange={(e) => setCustomPrompt(e.target.value)}
+							placeholder={t("googleChat.customPromptPlaceholder", {
+								defaultValue:
+									"e.g. Keep it short, avoid movie references, mention teamwork",
 							})}
-							value={contextUrl}
-							onChange={(e) => onContextUrlChange?.(e.target.value)}
-							autoComplete="off"
-							inputMode="url"
-							spellCheck={false}
-							data-form-autocomplete="off"
 							className="text-sm"
 						/>
-						{contextUrl?.trim() && (
-							<p className="text-[10px] text-muted-foreground italic">
-								{t("googleChat.contextUrlHint", {
-									defaultValue: 'Will add a "Ver Contexto" button',
+						<p className="text-[10px] text-muted-foreground leading-snug">
+							{t("googleChat.customPromptHint", {
+								defaultValue:
+									"Used only when generating with AI. It is not saved.",
+							})}
+						</p>
+					</div>
+
+					{!compact && (
+						<div className="space-y-2">
+							<Label className="text-xs text-muted-foreground">
+								{t("modifiers.styleModifiers")}
+							</Label>
+							<div className="flex flex-wrap gap-2">
+								{availableMods.map((mod) => {
+									const isActive = selectedMods.includes(mod.id);
+									return (
+										<Badge
+											key={mod.id}
+											variant={isActive ? "default" : "outline"}
+											className="cursor-pointer hover:bg-primary/80 transition-colors text-xs"
+											onClick={() => {
+												setSelectedMods((prev) =>
+													prev.includes(mod.id)
+														? prev.filter((m) => m !== mod.id)
+														: [...prev, mod.id],
+												);
+											}}
+										>
+											<span className="mr-1">{mod.emoji}</span>
+											{mod.label}
+										</Badge>
+									);
 								})}
-							</p>
-						)}
-					</div>
-
-					<div className="flex flex-wrap items-center gap-2 pt-1">
-						<Toggle
-							id={toggleCustomId}
-							pressed={enabled}
-							onPressedChange={(pressed) => {
-								if (!pressed) {
-									resetCustomMessage();
-									return;
-								}
-								onEnabledChange(true);
-							}}
-							variant="outline"
-							size="sm"
-							aria-label={t("googleChat.customizeToggle")}
-							className="cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
-							style={enabled ? selectedPrimaryChipStyle : undefined}
-						>
-							<MessageSquare className="h-3.5 w-3.5" />
-							{t("googleChat.customizeToggle")}
-						</Toggle>
-					</div>
-
-					{enabled && (
-						<div className="space-y-2 rounded-lg border border-muted bg-muted/20 p-3">
-							<Textarea
-								className="min-h-28 text-sm"
-								value={message}
-								onChange={(e) => {
-									onMessageChange(e.target.value);
-									setUserEdited(true);
-								}}
-								placeholder={t("googleChat.textareaPlaceholder")}
-							/>
-
-							<div className="space-y-1">
-								<Label className="text-xs text-muted-foreground">
-									{t("googleChat.customPromptLabel", {
-										defaultValue: "AI custom instructions (optional)",
-									})}
-								</Label>
-								<Input
-									value={customPrompt}
-									onChange={(e) => setCustomPrompt(e.target.value)}
-									placeholder={t("googleChat.customPromptPlaceholder", {
-										defaultValue:
-											"e.g. Keep it short, avoid movie references, mention teamwork",
-									})}
-									className="text-sm"
-								/>
-								<p className="text-[10px] text-muted-foreground leading-snug">
-									{t("googleChat.customPromptHint", {
-										defaultValue:
-											"Used only when generating with AI. It is not saved.",
-									})}
-								</p>
 							</div>
-
-							{!compact && (
-								<div className="space-y-2">
-									<Label className="text-xs text-muted-foreground">
-										{t("modifiers.styleModifiers")}
-									</Label>
-									<div className="flex flex-wrap gap-2">
-										{availableMods.map((mod) => {
-											const isActive = selectedMods.includes(mod.id);
-											return (
-												<Badge
-													key={mod.id}
-													variant={isActive ? "default" : "outline"}
-													className="cursor-pointer hover:bg-primary/80 transition-colors text-xs"
-													onClick={() => {
-														setSelectedMods((prev) =>
-															prev.includes(mod.id)
-																? prev.filter((m) => m !== mod.id)
-																: [...prev, mod.id],
-														);
-													}}
-												>
-													<span className="mr-1">{mod.emoji}</span>
-													{mod.label}
-												</Badge>
-											);
-										})}
-									</div>
-								</div>
-							)}
-
-							<div className="flex flex-wrap gap-2 items-center">
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									disabled={isGenerating || !prUrl.trim() || !nextReviewerName}
-									onClick={() => {
-										setUserEdited(false);
-										generateMessage();
-									}}
-								>
-									{isGenerating ? (
-										<>
-											<Sparkles className="h-3 w-3 mr-1 animate-pulse" />{" "}
-											{t("googleChat.generating")}
-										</>
-									) : (
-										<>
-											<Sparkles className="h-3 w-3 mr-1" />
-											{hasGeneratedOnce
-												? t("googleChat.generateNew")
-												: t("googleChat.generate")}
-										</>
-									)}
-								</Button>
-							</div>
-
-							<p className="text-[10px] text-muted-foreground leading-snug">
-								{placeholdersHint}
-							</p>
 						</div>
 					)}
-				</>
+
+					<div className="flex flex-wrap gap-2 items-center">
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							disabled={isGenerating || !prUrl.trim() || !nextReviewerName}
+							onClick={() => {
+								setUserEdited(false);
+								generateMessage();
+							}}
+						>
+							{isGenerating ? (
+								<>
+									<Sparkles className="h-3 w-3 mr-1 animate-pulse" />{" "}
+									{t("googleChat.generating")}
+								</>
+							) : (
+								<>
+									<Sparkles className="h-3 w-3 mr-1" />
+									{hasGeneratedOnce
+										? t("googleChat.generateNew")
+										: t("googleChat.generate")}
+								</>
+							)}
+						</Button>
+					</div>
+
+					<p className="text-[10px] text-muted-foreground leading-snug">
+						{placeholdersHint}
+					</p>
+				</div>
 			)}
 		</div>
 	);

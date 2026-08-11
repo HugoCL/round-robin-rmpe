@@ -42,6 +42,20 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-08-11",
+		type: "improvement",
+		title: "Asignar un PR ahora es más directo",
+		description:
+			"Reorganizamos la vista para mantener la URL del PR y las acciones principales dentro del viewport. También dejamos “Añadir contexto” junto al link y simplificamos el flujo: cada asignación envía su mensaje a Google Chat automáticamente.",
+	},
+	{
+		date: "2026-08-11",
+		type: "improvement",
+		title: "Historial colapsable y navegación más compacta",
+		description:
+			"El historial lateral ahora se puede contraer para darle más espacio a la asignación sin perder filtros, estados, tags ni enlaces. Además, compactamos el navbar y la sección de revisores para aprovechar mejor pantallas grandes y pequeñas.",
+	},
+	{
 		date: "2026-07-25",
 		type: "improvement",
 		title: "Una experiencia más clara y confiable",

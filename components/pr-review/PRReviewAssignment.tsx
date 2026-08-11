@@ -73,7 +73,6 @@ export default function PRReviewAssignment({
 		showTags,
 		showEmails,
 		hideMultiAssignmentSection,
-		alwaysSendGoogleChatMessage,
 	} = preferences;
 
 	const {
@@ -235,14 +234,6 @@ export default function PRReviewAssignment({
 			}),
 		[hideMultiAssignmentSection, updatePreferences],
 	);
-	const toggleAlwaysSendGoogleChatMessage = useCallback(
-		() =>
-			void updatePreferences({
-				alwaysSendGoogleChatMessage: !alwaysSendGoogleChatMessage,
-			}),
-		[alwaysSendGoogleChatMessage, updatePreferences],
-	);
-
 	const providerValue = useMemo(
 		() => ({
 			teamSlug,
@@ -259,8 +250,6 @@ export default function PRReviewAssignment({
 			toggleShowEmails,
 			hideMultiAssignmentSection,
 			toggleHideMultiAssignmentSection,
-			alwaysSendGoogleChatMessage,
-			toggleAlwaysSendGoogleChatMessage,
 			openSnapshotDialog: handleOpenSnapshotDialog,
 			reviewers: reviewers || [],
 			nextReviewer: nextReviewer || null,
@@ -303,8 +292,6 @@ export default function PRReviewAssignment({
 			toggleShowEmails,
 			hideMultiAssignmentSection,
 			toggleHideMultiAssignmentSection,
-			alwaysSendGoogleChatMessage,
-			toggleAlwaysSendGoogleChatMessage,
 			handleOpenSnapshotDialog,
 			reviewers,
 			nextReviewer,
@@ -345,13 +332,17 @@ export default function PRReviewAssignment({
 			}}
 		>
 			<PRReviewProvider value={providerValue}>
-				<div className="mx-auto w-full max-w-screen-2xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6 2xl:max-w-[1800px] 2xl:px-10">
-					<div className="page-enter flex flex-col gap-5 lg:gap-6">
-						<PageHeader
-							teamSlug={teamSlug}
-							reviewersDrawerOpen={reviewersDrawerOpen}
-							setReviewersDrawerOpen={setReviewersDrawerOpen}
-						/>
+				<div className="mx-auto flex min-h-dvh w-full max-w-screen-2xl flex-col px-4 py-4 sm:px-6 lg:px-8 lg:py-6 2xl:max-w-[1800px] 2xl:px-10">
+					<PageHeader
+						teamSlug={teamSlug}
+						reviewersDrawerOpen={reviewersDrawerOpen}
+						setReviewersDrawerOpen={setReviewersDrawerOpen}
+					/>
+					<div
+						className="notice-stack page-enter mt-5 lg:mt-6"
+						role="region"
+						aria-label={t("common.notices")}
+					>
 						<AnnouncementBanner />
 						<SurveyBanner />
 						<TeamBirthdaySection teamSlug={teamSlug} />
@@ -395,7 +386,6 @@ export default function PRReviewAssignment({
 							if (!open) shortcutFlow.handleCancelShortcut();
 							else shortcutFlow.setShortcutDialogOpen(true);
 						}}
-						forceSendMessage={alwaysSendGoogleChatMessage}
 					/>
 				</div>
 			</PRReviewProvider>

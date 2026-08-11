@@ -181,6 +181,31 @@
 	@apply rounded-2xl border border-border/70 bg-background/70;
 }
 
+.notice-stack {
+	@apply flex flex-col gap-3;
+}
+
+.notice-stack:empty {
+	display: none;
+}
+
+.notice-stack:has(> [data-notice] + [data-notice]) {
+	@apply gap-0 overflow-hidden rounded-2xl border border-border/70 bg-background/72;
+}
+
+.notice-stack:has(> [data-notice] + [data-notice]) > [data-notice],
+.notice-stack:has(> [data-notice] + [data-notice])
+	> [data-notice]
+	> [data-slot="alert"] {
+	@apply rounded-none border-0 bg-transparent shadow-none;
+}
+
+.notice-stack:has(> [data-notice] + [data-notice])
+	> [data-notice]
+	+ [data-notice] {
+	@apply border-t border-border/60;
+}
+
 @keyframes page-fade-slide {
 	from {
 		opacity: 0;

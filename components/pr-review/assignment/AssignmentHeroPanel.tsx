@@ -1,5 +1,5 @@
 import { useQuery } from "convex/react";
-import { Info, Sparkles } from "lucide-react";
+import { Clock3, Info } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { TextMorph } from "torph/react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -80,48 +80,56 @@ export function AssignmentHeroPanel({
 	}
 
 	return (
-		<div className="w-full overflow-hidden py-6 text-center md:py-8 2xl:py-10">
-			<div className="flex flex-col gap-6 2xl:gap-8">
+		<div className="w-full overflow-hidden py-3 text-center md:py-4 2xl:py-5">
+			<div className="flex flex-col gap-3 2xl:gap-4">
 				{mode === "regular" && lastAssignedReviewer && (
-					<div className="flex flex-col gap-1">
-						<span className="text-xs font-medium uppercase tracking-wide text-muted-foreground lg:text-sm">
-							{t("pr.lastAssigned")}
+					<div className="flex flex-wrap items-center justify-start gap-2 px-1 text-left">
+						<Clock3
+							className="h-4 w-4 text-muted-foreground"
+							aria-hidden="true"
+						/>
+						<span className="text-sm text-muted-foreground">
+							{t("pr.lastAssigned")}:
 						</span>
 						<h4
-							className={`inline-flex items-center justify-center gap-1.5 text-lg font-medium text-muted-foreground opacity-80 transition-opacity duration-300 motion-reduce:transition-none lg:text-xl ${
+							className={`inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-opacity duration-300 motion-reduce:transition-none lg:text-base ${
 								isAssigning ? "opacity-0" : "opacity-80"
 							}`}
 						>
 							<TextMorph ease={{ stiffness: 200, damping: 20 }}>
 								{lastAssignedReviewer.name}
 							</TextMorph>
-							{lastHasBirthday && (
-								<span
-									className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-800 dark:text-amber-300 border border-amber-500/20 shrink-0"
-									title="¡Hoy es su cumpleaños! 🎂"
-								>
-									🎂 HBD
-								</span>
-							)}
+							{lastHasBirthday && <Badge variant="secondary">🎂 HBD</Badge>}
 						</h4>
 					</div>
 				)}
 
-				<div className="flex flex-col gap-3">
+				<div className="flex flex-col gap-2">
 					<div>
-						<span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 lg:text-sm dark:bg-white/12 dark:text-white dark:ring-white/20">
-							<Sparkles className="h-3 w-3" aria-hidden="true" />
+						<span className="inline-flex items-center rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 lg:text-sm">
 							{mode === "tag" ? t("tags.nextReviewer") : t("pr.nextReviewer")}
 						</span>
 					</div>
-					<div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-[2rem] border border-primary/16 bg-gradient-to-br from-primary/14 via-background to-primary/8 p-7 shadow-[0_28px_72px_-44px_rgba(37,99,235,0.55)] ring-1 ring-primary/12 md:p-8 2xl:max-w-3xl 2xl:p-10 dark:border-primary/18 dark:from-primary/20 dark:via-background dark:to-primary/10 dark:ring-primary/22">
-						<div
-							className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.25),transparent_36%),radial-gradient(circle_at_78%_20%,rgba(59,130,246,0.14),transparent_45%)] dark:bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.08),transparent_36%),radial-gradient(circle_at_78%_20%,rgba(59,130,246,0.22),transparent_45%)]"
-							aria-hidden
+					<div className="relative mx-auto flex min-h-[clamp(9rem,22vh,20rem)] w-full items-center justify-center px-8 py-[clamp(1rem,2vh,2.5rem)] md:px-12 2xl:px-16">
+						<span
+							className="pointer-events-none absolute left-0 top-0 h-8 w-8 rounded-tl-xl border-l-2 border-t-2 border-primary"
+							aria-hidden="true"
 						/>
-						<div className="relative flex flex-col gap-2">
+						<span
+							className="pointer-events-none absolute right-0 top-0 h-8 w-8 rounded-tr-xl border-r-2 border-t-2 border-primary"
+							aria-hidden="true"
+						/>
+						<span
+							className="pointer-events-none absolute bottom-0 left-0 h-8 w-8 rounded-bl-xl border-b-2 border-l-2 border-primary"
+							aria-hidden="true"
+						/>
+						<span
+							className="pointer-events-none absolute bottom-0 right-0 h-8 w-8 rounded-br-xl border-b-2 border-r-2 border-primary"
+							aria-hidden="true"
+						/>
+						<div className="relative flex flex-col gap-3">
 							<h3
-								className={`inline-flex items-center justify-center gap-2.5 break-words text-4xl font-bold text-primary drop-shadow-lg transition-transform transition-opacity duration-300 motion-reduce:transition-none md:text-5xl 2xl:text-6xl dark:text-white ${
+								className={`inline-flex items-center justify-center gap-2.5 break-words text-[clamp(3rem,8vh,6rem)] font-bold leading-none text-primary transition-transform transition-opacity duration-300 motion-reduce:transition-none ${
 									isAssigning
 										? "translate-y-1 opacity-0"
 										: "translate-y-0 opacity-100"
@@ -153,6 +161,22 @@ export function AssignmentHeroPanel({
 									</Badge>
 								</div>
 							)}
+							{upcomingReviewer && (
+								<div className="mt-1 flex flex-col items-center gap-1">
+									<span className="h-5 w-px bg-border" aria-hidden="true" />
+									<span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground lg:text-xs">
+										{t("pr.upNext")}
+									</span>
+									<h4 className="inline-flex items-center justify-center gap-1.5 text-lg font-medium text-foreground lg:text-xl">
+										<TextMorph ease={{ stiffness: 200, damping: 20 }}>
+											{upcomingReviewer.name}
+										</TextMorph>
+										{upcomingHasBirthday && (
+											<Badge variant="secondary">🎂 HBD</Badge>
+										)}
+									</h4>
+								</div>
+							)}
 						</div>
 					</div>
 				</div>
@@ -180,27 +204,6 @@ export function AssignmentHeroPanel({
 							</AlertDescription>
 						</Alert>
 					)}
-
-				{upcomingReviewer && (
-					<div className="flex flex-col gap-1">
-						<span className="text-xs font-medium uppercase tracking-wide text-muted-foreground lg:text-sm">
-							{t("pr.upNext")}
-						</span>
-						<h4 className="inline-flex items-center justify-center gap-1.5 text-lg font-medium text-muted-foreground opacity-80 lg:text-xl">
-							<TextMorph ease={{ stiffness: 200, damping: 20 }}>
-								{upcomingReviewer.name}
-							</TextMorph>
-							{upcomingHasBirthday && (
-								<span
-									className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-800 dark:text-amber-300 border border-amber-500/20 shrink-0"
-									title="¡Hoy es su cumpleaños! 🎂"
-								>
-									🎂 HBD
-								</span>
-							)}
-						</h4>
-					</div>
-				)}
 			</div>
 		</div>
 	);

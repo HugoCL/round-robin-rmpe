@@ -42,7 +42,6 @@ interface ShortcutConfirmationDialogProps {
 	nextAfterSkipName?: string | null; // optional pre-calculated if available
 	lastAssignmentFrom?: string | null;
 	lastAssignmentTo?: string | null;
-	forceSendMessage?: boolean;
 }
 
 export function ShortcutConfirmationDialog({
@@ -56,29 +55,22 @@ export function ShortcutConfirmationDialog({
 	nextAfterSkipName,
 	lastAssignmentFrom,
 	lastAssignmentTo,
-	forceSendMessage = false,
 }: ShortcutConfirmationDialogProps) {
 	const t = useTranslations();
 	const locale = useLocale();
 
-	// Unified chat message customization state
-	const [sendMessage, setSendMessage] = useState(false);
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [prUrl, setPrUrl] = useState("");
 	const [contextUrl, setContextUrl] = useState("");
 	const [urgent, setUrgent] = useState(false);
 	const [customMessage, setCustomMessage] = useState("");
-	const effectiveSendMessage = forceSendMessage || sendMessage;
-	const requiresPrUrl =
-		(action === "assign" || action === "skip") && effectiveSendMessage;
+	const requiresPrUrl = action === "assign" || action === "skip";
 	const canConfirm = !requiresPrUrl || prUrl.trim().length > 0;
 
 	// Expose chosen message via CustomEvent so parent can pick it up without prop drilling changes
 	useEffect(() => {
 		if (!isOpen) return;
 		const detail = {
-			shouldSend: effectiveSendMessage,
-			customEnabled: enableCustomMessage,
 			prUrl: prUrl.trim() || undefined,
 			contextUrl: contextUrl.trim() || undefined,
 			urgent,
@@ -90,19 +82,10 @@ export function ShortcutConfirmationDialog({
 		window.dispatchEvent(
 			new CustomEvent("shortcutDialogMessageState", { detail }),
 		);
-	}, [
-		effectiveSendMessage,
-		enableCustomMessage,
-		prUrl,
-		contextUrl,
-		urgent,
-		customMessage,
-		isOpen,
-	]);
+	}, [enableCustomMessage, prUrl, contextUrl, urgent, customMessage, isOpen]);
 
 	useEffect(() => {
 		if (isOpen) return;
-		setSendMessage(false);
 		setEnableCustomMessage(false);
 		setPrUrl("");
 		setContextUrl("");
@@ -187,7 +170,7 @@ export function ShortcutConfirmationDialog({
 			<DialogContent className="sm:max-w-115">
 				<DialogHeader>
 					<div className="flex items-center gap-2">
-						<span className="inline-flex h-10 w-10 items-center justify-center  bg-primary/10 text-primary">
+						<span className="inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
 							<span className="text-sm font-semibold">⌘</span>
 						</span>
 						<DialogTitle>{t("shortcutConfirm.title")}</DialogTitle>
@@ -196,7 +179,7 @@ export function ShortcutConfirmationDialog({
 						<DialogDescription>
 							{base[action]} {detailed ? <span>{detailed} </span> : null}
 							{t("shortcutConfirm.confirmHint")}
-							<span className="block text-[11px] text-muted-foreground mt-1">
+							<span className="mt-1 block text-[11px] text-muted-foreground">
 								Enter / Y to confirm · Esc / N to cancel
 							</span>
 						</DialogDescription>
@@ -238,17 +221,11 @@ export function ShortcutConfirmationDialog({
 							onPrUrlChange={setPrUrl}
 							contextUrl={contextUrl}
 							onContextUrlChange={setContextUrl}
-							sendMessage={effectiveSendMessage}
-							onSendMessageChange={(value) => {
-								if (forceSendMessage) return;
-								setSendMessage(value);
-							}}
 							enabled={enableCustomMessage}
 							onEnabledChange={setEnableCustomMessage}
 							message={customMessage}
 							onMessageChange={setCustomMessage}
 							nextReviewerName={nextReviewerName || undefined}
-							showSendToggle={!forceSendMessage}
 							compact
 							autoTemplate={
 								nextReviewerName
@@ -259,8 +236,8 @@ export function ShortcutConfirmationDialog({
 					</>
 				)}
 				{requiresPrUrl && (
-					<p className="text-xs text-muted-foreground">
-						{t("mySettings.prUrlRequiredWhenMessageIsForced")}
+					<p className="calm-subtle-panel p-3 text-xs text-muted-foreground">
+						{t("googleChat.prUrlRequiredForAssignment")}
 					</p>
 				)}
 				<DialogFooter>

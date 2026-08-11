@@ -12,6 +12,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
 export function KeyboardShortcutsHelp() {
 	const t = useTranslations();
@@ -48,12 +49,12 @@ export function KeyboardShortcutsHelp() {
 					<DialogTitle>{t("shortcuts.title")}</DialogTitle>
 					<DialogDescription>{t("shortcuts.description")}</DialogDescription>
 				</DialogHeader>
-				<div className="py-4">
-					<div className="space-y-4">
+				<div className="flex flex-col gap-4">
+					<div className="calm-list">
 						{shortcuts.map((shortcut) => (
 							<div
 								key={shortcut.key}
-								className="flex items-start justify-between gap-4"
+								className="flex items-start justify-between gap-4 p-3"
 							>
 								<div className="flex-1">
 									<div className="font-medium">{shortcut.description}</div>
@@ -61,22 +62,20 @@ export function KeyboardShortcutsHelp() {
 										{shortcut.note}
 									</div>
 								</div>
-								<div className="flex items-center gap-1">
+								<KbdGroup>
 									{shortcut.key.split(" + ").map((key) => (
-										<span key={key} className="flex items-center">
+										<span key={key} className="flex items-center gap-1">
 											{key !== shortcut.key.split(" + ")[0] && (
-												<span className="mx-1">+</span>
+												<span className="text-muted-foreground">+</span>
 											)}
-											<kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 ">
-												{key}
-											</kbd>
+											<Kbd>{key}</Kbd>
 										</span>
 									))}
-								</div>
+								</KbdGroup>
 							</div>
 						))}
 					</div>
-					<div className="mt-6 p-3 bg-muted ">
+					<div className="calm-subtle-panel p-3">
 						<p className="text-sm text-muted-foreground">
 							<strong>{t("shortcuts.note")}</strong> {t("shortcuts.globalNote")}
 						</p>

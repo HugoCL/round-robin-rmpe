@@ -14,8 +14,6 @@ export type ShortcutRunnerOptions = {
 };
 
 type ShortcutDialogMessageState = {
-	shouldSend: boolean;
-	customEnabled: boolean;
 	prUrl?: string;
 	contextUrl?: string;
 	urgent?: boolean;
@@ -66,8 +64,8 @@ export function useShortcutDialogFlow({
 			const preReviewer = nextReviewer;
 			await pendingRunnerRef.current(shortcutOptions);
 			if (
-				lastMessageState.current?.shouldSend &&
-				lastMessageState.current.prUrl
+				(pendingShortcut === "assign" || pendingShortcut === "skip") &&
+				lastMessageState.current?.prUrl
 			) {
 				try {
 					let target = preReviewer;

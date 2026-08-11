@@ -21,8 +21,6 @@ export interface PRReviewContextValue {
 	toggleShowEmails: () => void;
 	hideMultiAssignmentSection: boolean;
 	toggleHideMultiAssignmentSection: () => void;
-	alwaysSendGoogleChatMessage: boolean;
-	toggleAlwaysSendGoogleChatMessage: () => void;
 	openSnapshotDialog: () => void;
 
 	// Data
