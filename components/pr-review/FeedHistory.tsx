@@ -132,7 +132,7 @@ export function FeedHistory({
 			setHasHiddenHistory(false);
 			return;
 		}
-		if (showAll || !historyViewportRef.current) return;
+		if (!open || showAll || !historyViewportRef.current) return;
 		const viewport = historyViewportRef.current;
 		const updateOverflow = () =>
 			setHasHiddenHistory(viewport.scrollHeight > viewport.clientHeight + 1);
@@ -140,7 +140,7 @@ export function FeedHistory({
 		observer.observe(viewport);
 		updateOverflow();
 		return () => observer.disconnect();
-	}, [filteredAssignmentHistory.length, showAll]);
+	}, [filteredAssignmentHistory.length, open, showAll]);
 
 	const getTagBadge = (tagId: string) => {
 		const tag = tags.find((item: Doc<"tags">) => item._id === tagId);
@@ -222,7 +222,7 @@ export function FeedHistory({
 			<Collapsible
 				open={open}
 				onOpenChange={onOpenChange}
-				className="page-enter h-full min-w-0"
+				className="page-enter min-h-0 min-w-0"
 			>
 				<section
 					className={cn(

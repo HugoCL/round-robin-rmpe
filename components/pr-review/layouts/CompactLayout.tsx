@@ -31,15 +31,15 @@ export function CompactLayout() {
 	);
 	const hasActiveEvents = (activeEvents?.length ?? 0) > 0;
 	return (
-		<div className="mt-3 flex flex-col gap-4 sm:mt-5 sm:gap-6 lg:mt-6 lg:flex-1">
+		<div className="mt-3 flex flex-col gap-4 sm:mt-5 sm:gap-6 lg:mt-6 lg:min-h-0 lg:flex-1 lg:overflow-hidden">
 			<div
 				className={cn(
-					"grid items-stretch gap-4 sm:gap-6 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_3.5rem]",
+					"grid items-stretch gap-4 sm:gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_3.5rem]",
 					historyOpen &&
 						"lg:grid-cols-[minmax(0,1.18fr)_minmax(340px,0.82fr)] 2xl:grid-cols-[minmax(0,1.28fr)_minmax(420px,0.72fr)]",
 				)}
 			>
-				<div className="flex min-w-0 flex-col gap-4 sm:gap-6 lg:h-full">
+				<div className="flex min-w-0 flex-col gap-4 sm:gap-6 lg:h-full lg:min-h-0 lg:overflow-y-auto">
 					<section className="page-enter-soft lg:flex lg:flex-1 lg:flex-col lg:[&>[data-slot=card]]:flex-1">
 						{isForeignTeamView ? (
 							<ForeignTeamAssignmentCard />
