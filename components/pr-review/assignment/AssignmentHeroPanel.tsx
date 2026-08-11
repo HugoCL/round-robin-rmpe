@@ -140,7 +140,7 @@ export function AssignmentHeroPanel({
 								</span>
 								<span className="hidden sm:inline">
 									<TextMorph
-										className="max-w-full text-center !whitespace-normal"
+										className="max-w-full !whitespace-normal !text-center"
 										ease={{ stiffness: 200, damping: 20 }}
 									>
 										{activeNextReviewer.name}
