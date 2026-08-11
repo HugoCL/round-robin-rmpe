@@ -275,7 +275,12 @@ export function FeedHistory({
 						)}
 					</div>
 
-					<CollapsibleContent className="animation-duration-300 ease-in-out lg:data-closed:animate-none! lg:data-open:animate-none!">
+					<CollapsibleContent
+						role="region"
+						aria-label={t("pr.history")}
+						tabIndex={0}
+						className="animation-duration-300 ease-in-out lg:min-h-0 lg:flex-1 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain lg:data-closed:animate-none! lg:data-open:animate-none!"
+					>
 						{filteredAssignmentHistory.length === 0 ? (
 							<Empty className="m-4 border border-border/70 bg-muted/20 p-6 lg:p-8">
 								<EmptyHeader>
