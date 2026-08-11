@@ -71,6 +71,7 @@ export interface GroupedAssignmentHistoryReviewer {
 
 export interface GroupedAssignmentHistoryItem {
 	id: string;
+	historyId: Id<"assignmentHistory">;
 	batchId?: string;
 	timestamp: number;
 	forced: boolean;

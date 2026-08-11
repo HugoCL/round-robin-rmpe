@@ -1,17 +1,33 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
 	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
 	ChevronUp,
 	ExternalLink,
+	FileText,
 	History,
+	MessageSquare,
+	Undo2,
+	UsersRound,
 } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useMemo, useState } from "react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,9 +45,28 @@ import {
 } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { toast } from "@/hooks/use-toast";
 import type { GroupedAssignmentHistoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { usePRReview } from "./PRReviewContext";
+
+const INITIAL_VISIBLE_ENTRIES = 4;
+
+function getInitials(name?: string) {
+	return (
+		name
+			?.trim()
+			.split(/\s+/)
+			.slice(0, 2)
+			.map((part) => part[0])
+			.join("")
+			.toUpperCase() || "?"
+	);
+}
+
+function getPRNumber(prUrl?: string) {
+	return prUrl?.match(/(?:pull|pulls|merge_requests)\/(\d+)(?:[/?#]|$)/i)?.[1];
+}
 
 export function FeedHistory({
 	teamSlug,
@@ -43,10 +78,18 @@ export function FeedHistory({
 	onOpenChange: (open: boolean) => void;
 }) {
 	const t = useTranslations();
-	const { userInfo, reviewers, myAssignmentsOnly, toggleMyAssignmentsOnly } =
-		usePRReview();
+	const locale = useLocale();
+	const {
+		userInfo,
+		reviewers,
+		myAssignmentsOnly,
+		toggleMyAssignmentsOnly,
+		canManageCurrentTeam,
+	} = usePRReview();
+	const [showAll, setShowAll] = useState(false);
+	const [undoingId, setUndoingId] = useState<string | null>(null);
+	const undoAssignment = useMutation(api.mutations.undoAssignmentFromHistory);
 
-	// Use Convex for real-time tags and assignment history
 	const tags =
 		useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") || [];
 	const assignmentHistory: GroupedAssignmentHistoryItem[] =
@@ -82,8 +125,12 @@ export function FeedHistory({
 		});
 	}, [assignmentHistory, myAssignmentsOnly, reviewers, userInfo?.email]);
 
+	const visibleHistory = showAll
+		? filteredAssignmentHistory
+		: filteredAssignmentHistory.slice(0, INITIAL_VISIBLE_ENTRIES);
+
 	const getTagBadge = (tagId: string) => {
-		const tag = tags.find((t: Doc<"tags">) => t._id === tagId);
+		const tag = tags.find((item: Doc<"tags">) => item._id === tagId);
 		if (!tag) return null;
 
 		return (
@@ -101,6 +148,33 @@ export function FeedHistory({
 		);
 	};
 
+	const handleUndo = async (item: GroupedAssignmentHistoryItem) => {
+		if (!teamSlug) return;
+		setUndoingId(item.id);
+		try {
+			const result = await undoAssignment({
+				teamSlug,
+				historyId: item.historyId,
+			});
+			if (!result.success)
+				throw new Error("Assignment history entry not found");
+			toast({
+				title: t("history.undoSuccessTitle"),
+				description: t("history.undoSuccessDescription", {
+					count: result.undoneCount,
+				}),
+			});
+		} catch {
+			toast({
+				title: t("history.undoErrorTitle"),
+				description: t("history.undoErrorDescription"),
+				variant: "destructive",
+			});
+		} finally {
+			setUndoingId(null);
+		}
+	};
+
 	const historyToggle = (
 		<Tooltip>
 			<TooltipTrigger asChild>
@@ -112,19 +186,13 @@ export function FeedHistory({
 					>
 						{open ? (
 							<>
-								<ChevronUp data-icon="inline-start" className="lg:hidden" />
-								<ChevronRight
-									data-icon="inline-start"
-									className="hidden lg:block"
-								/>
+								<ChevronUp className="lg:hidden" />
+								<ChevronRight className="hidden lg:block" />
 							</>
 						) : (
 							<>
-								<ChevronDown data-icon="inline-start" className="lg:hidden" />
-								<ChevronLeft
-									data-icon="inline-start"
-									className="hidden lg:block"
-								/>
+								<ChevronDown className="lg:hidden" />
+								<ChevronLeft className="hidden lg:block" />
 							</>
 						)}
 					</Button>
@@ -145,8 +213,8 @@ export function FeedHistory({
 			>
 				<section
 					className={cn(
-						"calm-section h-full",
-						!open && "lg:items-center lg:p-2! 2xl:p-2!",
+						"calm-section h-full lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto lg:overscroll-contain",
+						!open && "lg:items-center lg:overflow-hidden lg:p-2! 2xl:p-2!",
 					)}
 				>
 					<div
@@ -166,8 +234,7 @@ export function FeedHistory({
 							<h4
 								className={cn(
 									"text-lg font-semibold lg:text-xl",
-									!open &&
-										"lg:[writing-mode:vertical-rl] lg:rotate-180 lg:text-sm",
+									!open && "lg:[writing-mode:vertical-rl] lg:text-sm",
 								)}
 							>
 								{t("pr.history")}
@@ -195,9 +262,8 @@ export function FeedHistory({
 									id="history-my-assignments-toggle"
 									checked={myAssignmentsOnly}
 									onCheckedChange={(checked) => {
-										if (checked !== myAssignmentsOnly) {
+										if (checked !== myAssignmentsOnly)
 											toggleMyAssignmentsOnly();
-										}
 									}}
 								/>
 								{historyToggle}
@@ -208,159 +274,257 @@ export function FeedHistory({
 							</div>
 						)}
 					</div>
+
 					<CollapsibleContent className="animation-duration-300 ease-in-out lg:data-closed:animate-none! lg:data-open:animate-none!">
-						<div>
-							{filteredAssignmentHistory.length === 0 ? (
-								<Empty className="border border-border/70 bg-muted/20 p-6 lg:p-8">
-									<EmptyHeader>
-										<EmptyDescription>{t("pr.noAssignments")}</EmptyDescription>
-									</EmptyHeader>
-								</Empty>
-							) : (
-								<div className="calm-list">
-									{filteredAssignmentHistory.slice(0, 6).map((item) => (
-										<div
-											key={item.id}
-											className={cn(
-												"flex flex-col items-start gap-3 px-4 py-4 transition-colors hover:bg-muted/30 first:rounded-t-2xl last:rounded-b-2xl sm:flex-row sm:justify-between sm:gap-4 md:px-5 lg:px-6 lg:py-5",
-												item.urgent && "urgent-card",
-											)}
-										>
-											<div className="min-w-0 flex-1">
-												<p className="break-words text-lg font-semibold lg:text-xl">
-													{item.reviewerCount === 1
-														? item.reviewers[0]?.reviewerName
-														: t("history.assigneesCount", {
-																count: item.reviewerCount,
-															})}
-												</p>
-												{item.reviewerCount > 1 && (
-													<div className="mt-2 flex flex-wrap gap-2">
-														{item.reviewers.map((reviewer) => (
-															<div
-																key={`${reviewer.reviewerId}-${reviewer.timestamp}`}
-																className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1 text-xs"
-															>
-																<span className="font-medium">
-																	{reviewer.reviewerName}
-																</span>
-																{reviewer.tagId && getTagBadge(reviewer.tagId)}
-															</div>
-														))}
-													</div>
-												)}
-												<div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-													<p className="text-xs text-muted-foreground lg:text-sm">
-														{new Date(item.timestamp).toLocaleString()}
-													</p>
-													{(item.actionByName || item.actionByEmail) && (
-														<>
-															<span className="text-xs text-muted-foreground/50 lg:text-sm">
-																·
-															</span>
-															<p className="text-xs text-muted-foreground lg:text-sm">
-																{t("history.assignedBy")}{" "}
-																{item.actionByName || item.actionByEmail}
-															</p>
-														</>
-													)}
-												</div>
-												{item.prUrl && (
-													<p className="mt-1 flex flex-wrap gap-2 text-xs lg:text-sm">
-														<Link
-															href={item.prUrl}
-															target="_blank"
-															rel="noreferrer noopener"
-															aria-label={t("common.viewPR")}
-															className="inline-flex items-center gap-1"
+						{filteredAssignmentHistory.length === 0 ? (
+							<Empty className="m-4 border border-border/70 bg-muted/20 p-6 lg:p-8">
+								<EmptyHeader>
+									<EmptyDescription>{t("pr.noAssignments")}</EmptyDescription>
+								</EmptyHeader>
+							</Empty>
+						) : (
+							<>
+								<div className="relative">
+									<div
+										aria-hidden="true"
+										className="absolute top-9 bottom-9 left-11 w-px bg-border/80 lg:left-12"
+									/>
+									{visibleHistory.map((item, index) => {
+										const reviewerNames = item.reviewers
+											.map((reviewer) => reviewer.reviewerName)
+											.join(", ");
+										const prNumber = getPRNumber(item.prUrl);
+										const isRealAssignment =
+											!item.skipped && !item.isAbsentSkip;
+
+										return (
+											<article
+												key={item.id}
+												className="group relative grid grid-cols-[3.5rem_minmax(0,1fr)] px-4 pt-4 lg:px-5"
+											>
+												<div className="relative z-10 flex justify-center pt-0.5">
+													<Avatar size="lg">
+														<AvatarFallback
+															className={cn(
+																"font-semibold",
+																isRealAssignment &&
+																	"bg-primary text-primary-foreground",
+															)}
 														>
-															<Badge
-																variant="outline"
-																className="cursor-pointer hover:bg-primary/10 transition-colors"
-															>
-																{t("common.viewPR")}
-																<ExternalLink
-																	data-icon="inline-end"
-																	className="ml-1"
+															{item.reviewerCount > 1 ? (
+																<UsersRound
+																	className="size-5"
+																	aria-hidden="true"
 																/>
-															</Badge>
-														</Link>
-														{item.contextUrl && (
-															<Link
-																href={item.contextUrl}
-																target="_blank"
-																rel="noreferrer noopener"
-																aria-label={t("common.viewContext")}
-																className="inline-flex items-center gap-1"
-															>
-																<Badge
-																	variant="outline"
-																	className="cursor-pointer hover:bg-primary/10 transition-colors"
-																>
-																	{t("common.viewContext")}
-																	<ExternalLink
-																		data-icon="inline-end"
-																		className="ml-1"
-																	/>
+															) : (
+																getInitials(item.reviewers[0]?.reviewerName)
+															)}
+														</AvatarFallback>
+													</Avatar>
+												</div>
+
+												<div
+													className={cn(
+														"min-w-0 pb-4",
+														index < visibleHistory.length - 1 &&
+															"border-b border-border/70",
+													)}
+												>
+													<div className="flex flex-wrap items-start justify-between gap-2">
+														<div className="min-w-0">
+															<h5 className="truncate text-base font-semibold text-primary">
+																{item.reviewerCount === 1
+																	? item.reviewers[0]?.reviewerName
+																	: t("history.assigneesCount", {
+																			count: item.reviewerCount,
+																		})}
+															</h5>
+															<p className="mt-0.5 text-xs text-muted-foreground">
+																{new Intl.DateTimeFormat(locale, {
+																	day: "numeric",
+																	month: "short",
+																	hour: "2-digit",
+																	minute: "2-digit",
+																}).format(item.timestamp)}
+																{item.actionByName || item.actionByEmail
+																	? ` · ${t("history.assignedBy")} ${
+																			item.actionByName || item.actionByEmail
+																		}`
+																	: ""}
+															</p>
+														</div>
+														<div className="flex flex-wrap justify-end gap-1">
+															{item.urgent ? (
+																<Badge variant="destructive">
+																	{t("pr.urgent")}
 																</Badge>
-															</Link>
-														)}
-														{item.googleChatThreadUrl && (
-															<Link
-																href={item.googleChatThreadUrl}
-																target="_blank"
-																rel="noreferrer noopener"
-																aria-label={t("common.viewChatThread")}
-																className="inline-flex items-center gap-1"
-															>
-																<Badge
-																	variant="outline"
-																	className="cursor-pointer hover:bg-primary/10 transition-colors"
-																>
-																	{t("common.viewChatThread")}
-																	<ExternalLink
-																		data-icon="inline-end"
-																		className="ml-1"
-																	/>
+															) : null}
+															{item.crossTeamReview ? (
+																<Badge variant="outline">
+																	{t("pr.crossTeamReview")}
 																</Badge>
-															</Link>
-														)}
-													</p>
-												)}
-												{item.reviewerCount === 1 &&
-												item.reviewers[0]?.tagId ? (
-													<div className="mt-1">
-														{getTagBadge(item.reviewers[0].tagId)}
+															) : null}
+															{item.forced ? (
+																<Badge variant="secondary">
+																	{t("pr.forceAssign")}
+																</Badge>
+															) : null}
+															{item.skipped || item.isAbsentSkip ? (
+																<Badge variant="outline">{t("pr.skip")}</Badge>
+															) : null}
+														</div>
 													</div>
-												) : null}
-											</div>
-											<div className="flex shrink-0 flex-wrap items-center gap-1 sm:flex-col sm:items-end">
-												{item.urgent && (
-													<Badge className="bg-red-50 text-red-700 border-red-200 hover:border-transparent hover:bg-red-100 transition-colors dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60">
-														{t("pr.urgent")}
-													</Badge>
-												)}
-												{item.crossTeamReview && (
-													<Badge className="border-sky-200 bg-sky-50 text-sky-700 transition-colors hover:border-transparent hover:bg-sky-100 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300">
-														{t("pr.crossTeamReview")}
-													</Badge>
-												)}
-												{item.forced && (
-													<Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:border-transparent hover:bg-amber-100 transition-colors">
-														{t("pr.forceAssign")}
-													</Badge>
-												)}
-												{(item.skipped || item.isAbsentSkip) && (
-													<Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:border-transparent hover:bg-blue-100 transition-colors">
-														{t("pr.skip")}
-													</Badge>
-												)}
-											</div>
-										</div>
-									))}
+
+													{item.reviewerCount > 1 ? (
+														<div className="mt-3 space-y-2">
+															{item.reviewers.map((reviewer) => (
+																<div
+																	key={`${reviewer.reviewerId}-${reviewer.timestamp}`}
+																	className="flex items-center gap-2 text-sm"
+																>
+																	<Avatar size="sm">
+																		<AvatarFallback>
+																			{getInitials(reviewer.reviewerName)}
+																		</AvatarFallback>
+																	</Avatar>
+																	<span className="font-medium">
+																		{reviewer.reviewerName}
+																	</span>
+																	{reviewer.tagId
+																		? getTagBadge(reviewer.tagId)
+																		: null}
+																</div>
+															))}
+														</div>
+													) : item.reviewers[0]?.tagId ? (
+														<div className="mt-2">
+															{getTagBadge(item.reviewers[0].tagId)}
+														</div>
+													) : null}
+
+													<div className="mt-3 flex flex-wrap items-center gap-1">
+														{item.prUrl ? (
+															<Button variant="ghost" size="xs" asChild>
+																<Link
+																	href={item.prUrl}
+																	target="_blank"
+																	rel="noreferrer noopener"
+																>
+																	<ExternalLink aria-hidden="true" />
+																	{prNumber
+																		? `PR #${prNumber}`
+																		: t("common.viewPR")}
+																</Link>
+															</Button>
+														) : null}
+														{item.contextUrl ? (
+															<Button variant="ghost" size="xs" asChild>
+																<Link
+																	href={item.contextUrl}
+																	target="_blank"
+																	rel="noreferrer noopener"
+																>
+																	<FileText aria-hidden="true" />
+																	{t("common.viewContext")}
+																</Link>
+															</Button>
+														) : null}
+														{item.googleChatThreadUrl ? (
+															<Button variant="ghost" size="xs" asChild>
+																<Link
+																	href={item.googleChatThreadUrl}
+																	target="_blank"
+																	rel="noreferrer noopener"
+																>
+																	<MessageSquare aria-hidden="true" />
+																	{t("common.viewChatThread")}
+																</Link>
+															</Button>
+														) : null}
+														{canManageCurrentTeam ? (
+															<AlertDialog>
+																<Tooltip>
+																	<TooltipTrigger asChild>
+																		<AlertDialogTrigger asChild>
+																			<Button
+																				variant="ghost"
+																				size="icon-xs"
+																				className="ml-auto text-muted-foreground hover:text-destructive"
+																				aria-label={t("history.undoAction")}
+																			>
+																				<Undo2 aria-hidden="true" />
+																			</Button>
+																		</AlertDialogTrigger>
+																	</TooltipTrigger>
+																	<TooltipContent>
+																		{t("history.undoAction")}
+																	</TooltipContent>
+																</Tooltip>
+																<AlertDialogContent>
+																	<AlertDialogHeader>
+																		<AlertDialogTitle>
+																			{t("history.undoConfirmTitle")}
+																		</AlertDialogTitle>
+																		<AlertDialogDescription>
+																			{t("history.undoConfirmDescription", {
+																				count: item.reviewerCount,
+																				names: reviewerNames,
+																			})}
+																			{item.batchId ? (
+																				<span className="mt-2 block">
+																					{t("history.undoBatchDescription")}
+																				</span>
+																			) : null}
+																			{isRealAssignment ? (
+																				<span className="mt-2 block">
+																					{t("history.undoMetricDescription")}
+																				</span>
+																			) : null}
+																		</AlertDialogDescription>
+																	</AlertDialogHeader>
+																	<AlertDialogFooter>
+																		<AlertDialogCancel>
+																			{t("common.cancel")}
+																		</AlertDialogCancel>
+																		<AlertDialogAction
+																			variant="destructive"
+																			disabled={undoingId === item.id}
+																			onClick={() => void handleUndo(item)}
+																		>
+																			{undoingId === item.id
+																				? t("history.undoing")
+																				: t("history.undoConfirmAction")}
+																		</AlertDialogAction>
+																	</AlertDialogFooter>
+																</AlertDialogContent>
+															</AlertDialog>
+														) : null}
+													</div>
+												</div>
+											</article>
+										);
+									})}
 								</div>
-							)}
-						</div>
+								{filteredAssignmentHistory.length > INITIAL_VISIBLE_ENTRIES ? (
+									<div className="border-t border-border/70 p-2 text-center">
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => setShowAll((value) => !value)}
+										>
+											{t(showAll ? "history.showLess" : "history.showMore")}
+											<ChevronDown
+												className={cn(
+													"transition-transform",
+													showAll && "rotate-180",
+												)}
+												aria-hidden="true"
+											/>
+										</Button>
+									</div>
+								) : null}
+							</>
+						)}
 					</CollapsibleContent>
 				</section>
 			</Collapsible>

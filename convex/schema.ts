@@ -114,7 +114,8 @@ export default defineSchema({
 		actionByName: v.optional(v.string()),
 	})
 		.index("by_timestamp", ["timestamp"]) // legacy
-		.index("by_team_timestamp", ["teamId", "timestamp"]),
+		.index("by_team_timestamp", ["teamId", "timestamp"])
+		.index("by_team_batch", ["teamId", "batchId"]),
 
 	assignmentFeed: defineTable({
 		teamId: v.optional(v.id("teams")),
@@ -156,7 +157,8 @@ export default defineSchema({
 	})
 		.index("by_assignee", ["assigneeId"])
 		.index("by_assigner", ["assignerId"])
-		.index("by_team", ["teamId"]),
+		.index("by_team", ["teamId"])
+		.index("by_team_batch", ["teamId", "batchId"]),
 
 	// Store last few sent Google Chat messages for debugging (keep trimmed via mutation)
 	debugMessages: defineTable({

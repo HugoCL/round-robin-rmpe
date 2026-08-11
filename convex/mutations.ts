@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { resolveAssignmentSlots } from "../lib/assignmentResolver";
+import { undoRemovesReviewedPR } from "../lib/historyUndo";
 import {
 	DEFAULT_TEAM_TIMEZONE,
 	getReviewerAvailability,
@@ -192,6 +193,20 @@ async function incrementGlobalReviewedPRCounter(ctx: MutationCtx) {
 		value: 1,
 		updatedAt: Date.now(),
 	});
+}
+
+async function decrementGlobalReviewedPRCounter(ctx: MutationCtx) {
+	const metric = await ctx.db
+		.query("appMetrics")
+		.withIndex("by_key", (q) => q.eq("key", GLOBAL_REVIEWED_PR_COUNTER_KEY))
+		.first();
+
+	if (metric) {
+		await ctx.db.patch(metric._id, {
+			value: Math.max(0, metric.value - 1),
+			updatedAt: Date.now(),
+		});
+	}
 }
 
 function getReviewerAvailabilityForTeam(
@@ -2030,6 +2045,70 @@ export const cleanupLegacyPRAssignmentStatus = mutation({
 	},
 });
 
+async function undoHistoryEntry(
+	ctx: MutationCtx,
+	teamId: Id<"teams">,
+	target: Doc<"assignmentHistory">,
+) {
+	const rows = target.batchId
+		? await ctx.db
+				.query("assignmentHistory")
+				.withIndex("by_team_batch", (q) =>
+					q.eq("teamId", teamId).eq("batchId", target.batchId),
+				)
+				.collect()
+		: [target];
+
+	if (rows.length === 0) return { success: false as const };
+
+	const reviewerCounts = new Map<Id<"reviewers">, number>();
+	for (const row of rows) {
+		reviewerCounts.set(
+			row.reviewerId,
+			(reviewerCounts.get(row.reviewerId) ?? 0) + 1,
+		);
+	}
+
+	const reviewerNames: string[] = [];
+	for (const [reviewerId, count] of reviewerCounts) {
+		const reviewer = await ctx.db.get(reviewerId);
+		if (!reviewer) continue;
+		reviewerNames.push(reviewer.name);
+		await ctx.db.patch(reviewerId, {
+			assignmentCount: Math.max(0, reviewer.assignmentCount - count),
+		});
+	}
+
+	for (const row of rows) await ctx.db.delete(row._id);
+
+	if (target.batchId) {
+		const activeAssignments = await ctx.db
+			.query("prAssignments")
+			.withIndex("by_team_batch", (q) =>
+				q.eq("teamId", teamId).eq("batchId", target.batchId),
+			)
+			.collect();
+		for (const row of activeAssignments) await ctx.db.delete(row._id);
+	}
+
+	if (undoRemovesReviewedPR(rows)) {
+		await decrementGlobalReviewedPRCounter(ctx);
+	}
+	await updateAssignmentFeedAfterUndo(ctx, teamId);
+	await createSnapshot(
+		ctx,
+		teamId,
+		`Undid assignment (${rows.length}): ${reviewerNames.join(", ")}`,
+	);
+
+	return {
+		success: true as const,
+		batchId: target.batchId,
+		undoneCount: rows.length,
+		reviewerId: target.reviewerId,
+	};
+}
+
 export const undoLastAssignment = mutation({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
@@ -2040,82 +2119,34 @@ export const undoLastAssignment = mutation({
 			.order("desc")
 			.first();
 
-		if (!lastAssignment) {
-			return { success: false };
+		return lastAssignment
+			? await undoHistoryEntry(ctx, team._id, lastAssignment)
+			: { success: false as const };
+	},
+});
+
+export const undoAssignmentFromHistory = mutation({
+	args: {
+		teamSlug: v.string(),
+		historyId: v.id("assignmentHistory"),
+	},
+	returns: v.union(
+		v.object({ success: v.literal(false) }),
+		v.object({
+			success: v.literal(true),
+			batchId: v.optional(v.string()),
+			undoneCount: v.number(),
+			reviewerId: v.id("reviewers"),
+		}),
+	),
+	handler: async (ctx, { teamSlug, historyId }) => {
+		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
+		const target = await ctx.db.get(historyId);
+		if (!target || target.teamId !== team._id) {
+			return { success: false as const };
 		}
 
-		if (lastAssignment.batchId) {
-			const batchId = lastAssignment.batchId;
-			const batchAssignments = await ctx.db
-				.query("assignmentHistory")
-				.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
-				.collect();
-			const rowsForBatch = batchAssignments.filter(
-				(row) => row.batchId === batchId,
-			);
-			if (rowsForBatch.length === 0) {
-				return { success: false };
-			}
-
-			const prAssignments = await ctx.db
-				.query("prAssignments")
-				.withIndex("by_team", (q) => q.eq("teamId", team._id))
-				.collect();
-			const prAssignmentsForBatch = prAssignments.filter(
-				(row) => row.batchId === batchId,
-			);
-
-			const undoneReviewerNames: string[] = [];
-			for (const row of rowsForBatch) {
-				const reviewer = await ctx.db.get(row.reviewerId as Id<"reviewers">);
-				if (!reviewer || !("assignmentCount" in reviewer)) continue;
-				undoneReviewerNames.push(reviewer.name);
-				await ctx.db.patch(row.reviewerId as Id<"reviewers">, {
-					assignmentCount: Math.max(0, reviewer.assignmentCount - 1),
-				});
-				await ctx.db.delete(row._id);
-			}
-
-			for (const row of prAssignmentsForBatch) {
-				await ctx.db.delete(row._id);
-			}
-
-			await updateAssignmentFeedAfterUndo(ctx, team._id);
-			await createSnapshot(
-				ctx,
-				team._id,
-				`Undid batch assignment (${rowsForBatch.length}): ${undoneReviewerNames.join(", ")}`,
-			);
-
-			return {
-				success: true,
-				batchId,
-				undoneCount: rowsForBatch.length,
-				reviewerId: lastAssignment.reviewerId,
-			};
-		}
-
-		const reviewer = await ctx.db.get(
-			lastAssignment.reviewerId as Id<"reviewers">,
-		);
-		if (!reviewer || !("assignmentCount" in reviewer)) {
-			return { success: false };
-		}
-		await ctx.db.patch(lastAssignment.reviewerId as Id<"reviewers">, {
-			assignmentCount: Math.max(0, reviewer.assignmentCount - 1),
-		});
-		await ctx.db.delete(lastAssignment._id);
-		await updateAssignmentFeedAfterUndo(ctx, reviewer.teamId);
-		await createSnapshot(
-			ctx,
-			reviewer.teamId,
-			`Undid assignment for: ${reviewer.name}`,
-		);
-
-		return {
-			success: true,
-			reviewerId: lastAssignment.reviewerId,
-		};
+		return await undoHistoryEntry(ctx, team._id, target);
 	},
 });
 

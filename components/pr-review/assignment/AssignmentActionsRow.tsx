@@ -1,6 +1,17 @@
 import { Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { TextMorph } from "torph/react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -47,23 +58,45 @@ export function AssignmentActionsRow({
 				</Button>
 
 				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant="outline"
-								size="icon-lg"
-								className="size-12 shrink-0"
-								onClick={() => void onUndoAssignment()}
-								disabled={isAssigning}
-								aria-label={t("pr.undoLastAssignment")}
-							>
-								<Undo2 aria-hidden="true" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>
-							<p>{t("pr.undoLastAssignment")}</p>
-						</TooltipContent>
-					</Tooltip>
+					<AlertDialog>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<AlertDialogTrigger asChild>
+									<Button
+										variant="outline"
+										size="icon-lg"
+										className="size-12 shrink-0"
+										disabled={isAssigning}
+										aria-label={t("pr.undoLastAssignment")}
+									>
+										<Undo2 aria-hidden="true" />
+									</Button>
+								</AlertDialogTrigger>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>{t("pr.undoLastAssignment")}</p>
+							</TooltipContent>
+						</Tooltip>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>
+									{t("history.undoConfirmTitle")}
+								</AlertDialogTitle>
+								<AlertDialogDescription>
+									{t("history.undoLastConfirmDescription")}
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+								<AlertDialogAction
+									variant="destructive"
+									onClick={() => void onUndoAssignment()}
+								>
+									{t("history.undoConfirmAction")}
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
 				</TooltipProvider>
 			</div>
 		</div>

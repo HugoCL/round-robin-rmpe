@@ -62,6 +62,7 @@ type ResolvedEvent = Omit<EventDoc, "createdBy" | "participants"> & {
 };
 type GroupedAssignmentHistoryItem = {
 	id: string;
+	historyId: Id<"assignmentHistory">;
 	batchId?: string;
 	timestamp: number;
 	forced: boolean;
@@ -253,12 +254,17 @@ function groupAssignmentHistory(
 
 	for (const item of history) {
 		const key = item.batchId ?? `single:${item._id}`;
-		const reviewerName = resolveReviewerName(item.reviewerId, byId);
+		const reviewerName = resolveReviewerName(
+			item.reviewerId,
+			byId,
+			item.reviewerName,
+		);
 		const actionBy = resolveReviewerMeta(item.actionByReviewerId, byId);
 
 		if (!grouped.has(key)) {
 			grouped.set(key, {
 				id: item.batchId ?? String(item._id),
+				historyId: item._id,
 				batchId: item.batchId,
 				timestamp: item.timestamp,
 				forced: item.forced,
