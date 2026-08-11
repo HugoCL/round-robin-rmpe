@@ -214,14 +214,14 @@ export function FeedHistory({
 				<section
 					className={cn(
 						"calm-section h-full lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto lg:overscroll-contain",
-						!open && "lg:items-center lg:overflow-hidden lg:p-2! 2xl:p-2!",
+						!open && "p-3 lg:items-center lg:overflow-hidden lg:p-2! 2xl:p-2!",
 					)}
 				>
 					<div
 						className={cn(
 							"calm-section-header",
 							!open &&
-								"w-full items-center border-0 pb-0 lg:h-full lg:flex-col lg:flex-nowrap lg:justify-start",
+								"min-h-10 w-full items-center border-0 pb-0 lg:h-full lg:flex-col lg:flex-nowrap lg:justify-start",
 						)}
 					>
 						<div

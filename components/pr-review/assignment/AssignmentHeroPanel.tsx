@@ -80,7 +80,7 @@ export function AssignmentHeroPanel({
 	}
 
 	return (
-		<div className="w-full overflow-hidden py-3 text-center md:py-4 2xl:py-5">
+		<div className="w-full overflow-hidden py-2 text-center sm:py-3 md:py-4 2xl:py-5">
 			<div className="flex flex-col gap-3 2xl:gap-4">
 				{mode === "regular" && lastAssignedReviewer && (
 					<div className="flex flex-wrap items-center justify-center gap-2 text-center">
@@ -110,7 +110,7 @@ export function AssignmentHeroPanel({
 							{mode === "tag" ? t("tags.nextReviewer") : t("pr.nextReviewer")}
 						</span>
 					</div>
-					<div className="relative mx-auto flex min-h-[clamp(9rem,22vh,20rem)] w-full items-center justify-center px-8 py-[clamp(1rem,2vh,2.5rem)] md:px-12 2xl:px-16">
+					<div className="relative mx-auto flex min-h-32 w-full items-center justify-center px-6 py-[clamp(1rem,2vh,2.5rem)] sm:min-h-[clamp(9rem,22vh,20rem)] md:px-12 2xl:px-16">
 						<span
 							className="pointer-events-none absolute left-0 top-0 h-8 w-8 rounded-tl-xl border-l-2 border-t-2 border-primary"
 							aria-hidden="true"
@@ -129,13 +129,16 @@ export function AssignmentHeroPanel({
 						/>
 						<div className="relative flex flex-col gap-3">
 							<h3
-								className={`inline-flex items-center justify-center gap-2.5 break-words text-[clamp(3rem,8vh,6rem)] font-bold leading-none text-primary transition-transform transition-opacity duration-300 motion-reduce:transition-none ${
+								className={`inline-flex max-w-full flex-wrap items-center justify-center gap-2.5 break-words text-[clamp(2.75rem,11vw,6rem)] font-bold leading-none text-primary transition-transform transition-opacity duration-300 motion-reduce:transition-none ${
 									isAssigning
 										? "translate-y-1 opacity-0"
 										: "translate-y-0 opacity-100"
 								}`}
 							>
-								<TextMorph ease={{ stiffness: 200, damping: 20 }}>
+								<TextMorph
+									className="max-w-full text-center !whitespace-normal"
+									ease={{ stiffness: 200, damping: 20 }}
+								>
 									{activeNextReviewer.name}
 								</TextMorph>
 								{activeHasBirthday && (

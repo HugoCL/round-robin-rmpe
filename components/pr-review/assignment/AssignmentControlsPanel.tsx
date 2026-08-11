@@ -169,7 +169,7 @@ export function AssignmentControlsPanel({
 							variant={mode === "regular" ? "default" : "outline"}
 							size="sm"
 							onClick={() => onModeChange("regular")}
-							className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+							className="h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 						>
 							<span className="sm:hidden">
 								{t("pr.assignmentModeRegularShort")}
@@ -182,7 +182,7 @@ export function AssignmentControlsPanel({
 							variant={mode === "tag" ? "default" : "outline"}
 							size="sm"
 							onClick={() => onModeChange("tag")}
-							className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+							className="h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 						>
 							<span className="sm:hidden">
 								{t("pr.assignmentModeWithTagsShort")}
@@ -249,6 +249,7 @@ export function AssignmentControlsPanel({
 					<InputGroupAddon align="inline-end">
 						<InputGroupButton
 							variant={showContextInput ? "secondary" : "ghost"}
+							size="sm"
 							aria-label={t("googleChat.addContext")}
 							aria-pressed={showContextInput}
 							onClick={() => {
@@ -285,7 +286,7 @@ export function AssignmentControlsPanel({
 				</Field>
 			)}
 
-			<div className="flex flex-wrap gap-3 lg:gap-4">
+			<div className="flex flex-wrap gap-2 lg:gap-3 2xl:gap-4">
 				{!hideMultiAssignmentSection && (
 					<TooltipProvider>
 						<Tooltip>
@@ -305,7 +306,7 @@ export function AssignmentControlsPanel({
 										value="multi-assignment"
 										aria-label={t("pr.multipleAssignmentToggleLabel")}
 										className={cn(
-											"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm",
+											"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm",
 											isMultiAssignmentEnabled &&
 												assignmentGroupItemActivePrimary,
 										)}
@@ -341,7 +342,7 @@ export function AssignmentControlsPanel({
 											<Button
 												variant="outline"
 												size="sm"
-												className="h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm"
+												className="h-10 max-w-full rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm"
 											>
 												<div className="inline-flex items-center gap-2.5">
 													<span className="inline-flex size-4 items-center justify-center">
@@ -380,7 +381,7 @@ export function AssignmentControlsPanel({
 								size="sm"
 								aria-label={t("googleChat.customizeToggle")}
 								className={cn(
-									"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm",
+									"h-10 max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm",
 									enableCustomMessage && assignmentChipActivePrimary,
 								)}
 							>
@@ -406,7 +407,7 @@ export function AssignmentControlsPanel({
 									size="sm"
 									aria-label={t("googleChat.urgentToggle")}
 									className={cn(
-										"h-10 max-w-full cursor-pointer rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-red-900/50 dark:text-red-300",
+										"h-10 max-w-full cursor-pointer rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-red-900/50 dark:text-red-300",
 										urgent && assignmentChipActiveUrgent,
 									)}
 								>
@@ -442,7 +443,7 @@ export function AssignmentControlsPanel({
 									size="sm"
 									aria-label={t("googleChat.crossTeamToggle")}
 									className={cn(
-										"h-10 max-w-full cursor-pointer rounded-full border-sky-200/80 bg-transparent px-3 text-xs text-sky-700 transition-all duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-sky-900/50 dark:text-sky-300",
+										"h-10 max-w-full cursor-pointer rounded-full border-sky-200/80 bg-transparent px-3 text-xs text-sky-700 transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm dark:border-sky-900/50 dark:text-sky-300",
 										crossTeamReview && assignmentChipActiveCrossTeam,
 									)}
 								>

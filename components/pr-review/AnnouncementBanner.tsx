@@ -86,14 +86,14 @@ export function AnnouncementBanner() {
 				>
 					<Info className="shrink-0 text-muted-foreground" />
 					<AlertTitle className="sr-only">{t("common.info")}</AlertTitle>
-					<AlertDescription className="line-clamp-2 text-xs sm:text-sm">
+					<AlertDescription className="line-clamp-3 text-pretty text-xs sm:line-clamp-2 sm:text-sm">
 						{t(announcement.translationKey)}
 					</AlertDescription>
 					<AlertAction>
 						<Button
 							variant="ghost"
 							size="icon"
-							className="size-7"
+							className="size-8"
 							onClick={() => handleDismiss(announcement.id)}
 							aria-label={t("announcements.dismiss")}
 						>
