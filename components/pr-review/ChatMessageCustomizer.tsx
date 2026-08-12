@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import {
-	GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
 	GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
 	GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
 	getDefaultPRChatMessageTemplate,
@@ -103,9 +102,7 @@ export function ChatMessageCustomizer({
 	const placeholdersHint = t("googleChat.placeholdersHint", {
 		reviewer: GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
 		requester: GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
-		pr: GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
-		defaultValue:
-			"Use {{reviewer_name}}, {{requester_name}} and <URL_PLACEHOLDER|PR>",
+		defaultValue: "Use {{reviewer_name}} and {{requester_name}}",
 	});
 
 	// Prefill template when enabling custom message

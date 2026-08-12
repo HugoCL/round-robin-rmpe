@@ -1,5 +1,9 @@
 import { v } from "convex/values";
-import { formatGoogleChatPerson } from "../lib/googleChatMessageTemplate";
+import {
+	buildPrAssignmentChatMessage,
+	formatGoogleChatPerson,
+	stripPrLinkPlaceholders,
+} from "../lib/googleChatMessageTemplate";
 import type { Reviewer } from "../lib/types";
 import { api } from "./_generated/api";
 import { type ActionCtx, action } from "./_generated/server";
@@ -252,7 +256,7 @@ export const sendGoogleChatMessage = action({
 				if (reviewerChatId && sendOnlyNames) {
 					sendOnlyNames = false;
 				}
-				// Replace handlebars placeholders with actual values / formatted link
+				// Replace handlebars placeholders with actual values
 				let base = customMessage.trim();
 				const reviewerMention = formatPerson(
 					reviewerName,
@@ -269,21 +273,9 @@ export const sendGoogleChatMessage = action({
 				// e.g. <users/12345>! -> <users/12345>
 				base = base.replace(/(<users\/[^>]+>)!/g, "$1");
 
-				// Google Chat link style: <url|PR>
-				const prLinked = `<${prUrl}|PR>`;
-
-				// If user forgot to include any reviewer placeholder and we have a chat id and tagging is enabled, inject mention once at start
-				// No auto-injection now; rely on placeholders or user-provided formatting
-
-				// Replace new link placeholder pattern before legacy ones
-				const replaced = base
-					.replace(/<URL_PLACEHOLDER\|PR>/g, `<${prUrl}|PR>`)
+				builtMessage = base
 					.replace(/{{\s*reviewer_name\s*}}/gi, reviewerMention)
-					.replace(/{{\s*requester_name\s*}}/gi, assignerMention)
-					.replace(/{{\s*pr\s*}}/gi, prLinked)
-					.replace(/{{\s*PR\s*}}/g, prLinked);
-				// Remove redundant preceding 'PR' if user wrote 'PR: {{PR}}' or 'PR {{PR}}'
-				builtMessage = replaced.replace(/\bPR:?\s*(<[^>]+\|PR>)/g, "$1");
+					.replace(/{{\s*requester_name\s*}}/gi, assignerMention);
 			} else {
 				// Import translations dynamically based on locale
 				const messages = await import(`../messages/${locale}.json`);
@@ -310,44 +302,25 @@ export const sendGoogleChatMessage = action({
 				builtMessage = greetingText;
 
 				if (assignerMention) {
-					const assignmentText = t.googleChat.assignmentMessage
-						.replace("{assigner}", assignerMention)
-						.replace("{prUrl}", prUrl);
+					const assignmentText = t.googleChat.assignmentMessage.replace(
+						"{assigner}",
+						assignerMention,
+					);
 					builtMessage += `\n${assignmentText}`;
 				} else {
-					// Fallback when no assigner is provided
-					const assignmentText = t.googleChat.assignmentMessage
-						.replace("{assigner}", "Someone")
-						.replace("{prUrl}", prUrl);
+					const assignmentText = t.googleChat.assignmentMessage.replace(
+						"{assigner}",
+						"Someone",
+					);
 					builtMessage += `\n${assignmentText}`;
 				}
 			}
 
-			builtMessage = prependUrgentNotice(builtMessage, locale, urgent);
-
-			// Build Google Chat card with buttons for PR and context
-			const buttons = [
-				{
-					text: "Ver PR",
-					onClick: {
-						openLink: {
-							url: prUrl,
-						},
-					},
-				},
-			];
-
-			// Add context button if context URL is provided
-			if (contextUrl?.trim()) {
-				buttons.push({
-					text: "Ver Contexto",
-					onClick: {
-						openLink: {
-							url: contextUrl,
-						},
-					},
-				});
-			}
+			builtMessage = prependUrgentNotice(
+				stripPrLinkPlaceholders(builtMessage),
+				locale,
+				urgent,
+			);
 
 			let googleChatThreadUrl: string | undefined;
 			for (const target of webhookTargets) {
@@ -357,28 +330,14 @@ export const sendGoogleChatMessage = action({
 					sourceTeamName,
 					target.isExternalTarget,
 				);
-				const message = {
-					text: targetMessage, // Show full message as text (with mentions working)
-					cardsV2: [
-						{
-							cardId: "pr-assignment-card",
-							card: {
-								sections: [
-									{
-										widgets: [
-											{
-												buttonList: {
-													buttons: buttons,
-												},
-											},
-										],
-									},
-								],
-							},
-						},
-					],
-					thread: { threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD " },
-				};
+				const message = buildPrAssignmentChatMessage({
+					text: targetMessage,
+					prUrl,
+					contextUrl,
+					locale,
+					urgent,
+					cardId: "pr-assignment-card",
+				});
 
 				const response = await fetch(target.webhookUrl, {
 					method: "POST",
@@ -562,45 +521,23 @@ export const sendGoogleChatGroupMessage = action({
 				? formatGoogleChatPerson(resolvedAssignerName, assignerChatId)
 				: "Someone";
 
-			const prLinked = `<${prUrl}|PR>`;
 			const isSpanish = locale.startsWith("es");
 			let builtMessage = "";
 			if (customMessage && customMessage.trim().length > 0) {
 				const base = customMessage.trim().replace(/(<users\/[^>]+>)!/g, "$1");
-				const replaced = base
-					.replace(/<URL_PLACEHOLDER\|PR>/g, prLinked)
+				builtMessage = base
 					.replace(/{{\s*reviewer_name\s*}}/gi, reviewerList)
-					.replace(/{{\s*requester_name\s*}}/gi, assignerComposite)
-					.replace(/{{\s*pr\s*}}/gi, prLinked)
-					.replace(/{{\s*PR\s*}}/g, prLinked);
-				builtMessage = replaced.replace(/\bPR:?\s*(<[^>]+\|PR>)/g, "$1");
+					.replace(/{{\s*requester_name\s*}}/gi, assignerComposite);
 			} else {
 				builtMessage = isSpanish
-					? `Hola ${reviewerList} 👋\n${assignerComposite} les ha asignado la revisión de este ${prLinked}`
-					: `Hello ${reviewerList} 👋\n${assignerComposite} has assigned all of you to review this ${prLinked}`;
+					? `Hola ${reviewerList} 👋\n${assignerComposite} les ha asignado esta revisión`
+					: `Hello ${reviewerList} 👋\n${assignerComposite} has assigned all of you this review`;
 			}
-			builtMessage = prependUrgentNotice(builtMessage, locale, urgent);
-
-			const buttons = [
-				{
-					text: "Ver PR",
-					onClick: {
-						openLink: {
-							url: prUrl,
-						},
-					},
-				},
-			];
-			if (contextUrl?.trim()) {
-				buttons.push({
-					text: "Ver Contexto",
-					onClick: {
-						openLink: {
-							url: contextUrl,
-						},
-					},
-				});
-			}
+			builtMessage = prependUrgentNotice(
+				stripPrLinkPlaceholders(builtMessage),
+				locale,
+				urgent,
+			);
 
 			let googleChatThreadUrl: string | undefined;
 			for (const target of webhookTargets) {
@@ -610,28 +547,14 @@ export const sendGoogleChatGroupMessage = action({
 					sourceTeamName,
 					target.isExternalTarget,
 				);
-				const message = {
+				const message = buildPrAssignmentChatMessage({
 					text: targetMessage,
-					cardsV2: [
-						{
-							cardId: "pr-assignment-batch-card",
-							card: {
-								sections: [
-									{
-										widgets: [
-											{
-												buttonList: {
-													buttons,
-												},
-											},
-										],
-									},
-								],
-							},
-						},
-					],
-					thread: { threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD " },
-				};
+					prUrl,
+					contextUrl,
+					locale,
+					urgent,
+					cardId: "pr-assignment-batch-card",
+				});
 
 				const response = await fetch(target.webhookUrl, {
 					method: "POST",
@@ -1219,43 +1142,21 @@ export const flashAssign = action({
 					"{reviewer}",
 					reviewerComposite,
 				);
-				const assignmentText = t.googleChat.assignmentMessage
-					.replace("{assigner}", assignerComposite)
-					.replace("{prUrl}", prUrl);
+				const assignmentText = t.googleChat.assignmentMessage.replace(
+					"{assigner}",
+					assignerComposite,
+				);
 
-				const builtMessage = `${greetingText}\n${assignmentText}`;
+				const builtMessage = stripPrLinkPlaceholders(
+					`${greetingText}\n${assignmentText}`,
+				);
 
-				const message = {
+				const message = buildPrAssignmentChatMessage({
 					text: builtMessage,
-					cardsV2: [
-						{
-							cardId: "pr-assignment-card",
-							card: {
-								sections: [
-									{
-										widgets: [
-											{
-												buttonList: {
-													buttons: [
-														{
-															text: "Ver PR",
-															onClick: {
-																openLink: { url: prUrl },
-															},
-														},
-													],
-												},
-											},
-										],
-									},
-								],
-							},
-						},
-					],
-					thread: {
-						threadKey: "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD ",
-					},
-				};
+					prUrl,
+					locale: "es",
+					cardId: "pr-assignment-card",
+				});
 
 				const response = await fetch(webhookUrl, {
 					method: "POST",

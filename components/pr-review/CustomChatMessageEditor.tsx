@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
-	GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
 	GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
 	GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
 } from "@/lib/googleChatMessageTemplate";
@@ -105,9 +104,7 @@ export function CustomChatMessageEditor({
 						{t("googleChat.placeholdersHint", {
 							reviewer: GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
 							requester: GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
-							pr: GOOGLE_CHAT_PR_LINK_PLACEHOLDER,
-							defaultValue:
-								"Use {{reviewer_name}}, {{requester_name}} and <URL_PLACEHOLDER|PR>",
+							defaultValue: "Use {{reviewer_name}} and {{requester_name}}",
 						})}
 					</p>
 				)}

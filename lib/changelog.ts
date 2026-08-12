@@ -44,6 +44,13 @@ export const changelogEntries: ChangelogEntry[] = [
 	{
 		date: "2026-08-12",
 		type: "improvement",
+		title: "Cards de Google Chat más claros al asignar un PR",
+		description:
+			"El mensaje ya no repite el link del PR: para abrirlo está el botón Ver PR. El card ahora muestra de qué PR se trata (repo y número) y, si es urgente, lo deja ver de un vistazo.",
+	},
+	{
+		date: "2026-08-12",
+		type: "improvement",
 		title: "Menciones más limpias en Google Chat",
 		description:
 			"Si ya tienes tu ID de Google Chat configurado, los mensajes de asignación (y también los de eventos y cumpleaños) te mencionan solo con el @, sin repetir tu nombre al lado. Si alguien aún no tiene el ID, seguimos mostrando el nombre para que se entienda igual de bien.",
