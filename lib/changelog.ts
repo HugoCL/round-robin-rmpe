@@ -47,6 +47,7 @@ export const changelogEntries: ChangelogEntry[] = [
 		title: "Menciones más limpias en Google Chat",
 		description:
 			"Si ya tienes tu ID de Google Chat configurado, los mensajes de asignación (y también los de eventos y cumpleaños) te mencionan solo con el @, sin repetir tu nombre al lado. Si alguien aún no tiene el ID, seguimos mostrando el nombre para que se entienda igual de bien.",
+		suggestedBy: "Alfonso Zuñiga",
 	},
 	{
 		date: "2026-08-11",
