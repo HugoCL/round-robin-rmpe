@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { formatGoogleChatPerson } from "../lib/googleChatMessageTemplate";
 import {
 	getLocalDateKeyYYYYMMDD,
 	getLocalHourInTimeZone,
@@ -93,10 +94,8 @@ function buildGoogleChatBirthdayText(
 ): string {
 	const tail =
 		"Que la pases genial — el equipo te manda un abrazo y buena onda (también en los PRs).";
-	if (googleChatUserId) {
-		return `🎂 ¡Hoy cumple años ${name} (<users/${googleChatUserId}>)! ${tail}`;
-	}
-	return `🎂 ¡Hoy cumple años ${name}! ${tail}`;
+	const person = formatGoogleChatPerson(name, googleChatUserId);
+	return `🎂 ¡Hoy cumple años ${person}! ${tail}`;
 }
 
 export const processBirthdayNotifications = internalAction({

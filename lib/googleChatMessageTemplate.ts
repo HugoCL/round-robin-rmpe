@@ -19,3 +19,11 @@ export function getDefaultPRChatMessageTemplate(locale?: string): string {
 		? DEFAULT_TEMPLATE_ES
 		: DEFAULT_TEMPLATE_EN;
 }
+
+export function formatGoogleChatPerson(name: string, chatId?: string): string {
+	const trimmedId = chatId?.trim();
+	if (trimmedId) {
+		return `<users/${trimmedId}>`;
+	}
+	return name.trim() || name;
+}

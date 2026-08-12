@@ -42,6 +42,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-08-12",
+		type: "improvement",
+		title: "Menciones más limpias en Google Chat",
+		description:
+			"Si ya tienes tu ID de Google Chat configurado, los mensajes de asignación (y también los de eventos y cumpleaños) te mencionan solo con el @, sin repetir tu nombre al lado. Si alguien aún no tiene el ID, seguimos mostrando el nombre para que se entienda igual de bien.",
+	},
+	{
 		date: "2026-08-11",
 		type: "improvement",
 		title: "Asignar un PR ahora es más directo",

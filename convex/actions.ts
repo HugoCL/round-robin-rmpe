@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { formatGoogleChatPerson } from "../lib/googleChatMessageTemplate";
 import type { Reviewer } from "../lib/types";
 import { api } from "./_generated/api";
 import { type ActionCtx, action } from "./_generated/server";
@@ -235,19 +236,15 @@ export const sendGoogleChatMessage = action({
 			);
 			let builtMessage = ""; // init to satisfy TS definite assignment
 
-			// Build composite display: Name (@<users/ID>) so Google Chat shows both
-			const buildComposite = (
+			const formatPerson = (
 				name: string | undefined,
 				chatId: string | undefined,
 				fallback: string,
-			): { composite: string; rawMention: string | null } => {
-				const resolvedName = name || fallback;
-				if (sendOnlyNames || !chatId || !/\S/.test(chatId)) {
-					return { composite: resolvedName, rawMention: null };
-				}
-				const raw = `<users/${chatId}>`;
-				return { composite: `${resolvedName} (${raw})`, rawMention: raw };
-			};
+			) =>
+				formatGoogleChatPerson(
+					name || fallback,
+					sendOnlyNames ? undefined : chatId,
+				);
 
 			// Note: Legacy variable `messageText` fully removed in favor of `builtMessage`.
 			if (customMessage && customMessage.trim().length > 0) {
@@ -257,14 +254,12 @@ export const sendGoogleChatMessage = action({
 				}
 				// Replace handlebars placeholders with actual values / formatted link
 				let base = customMessage.trim();
-				// Prefer explicit Chat user ID if provided
-				// Build mentions: only use Chat user ID mention if present; otherwise plain name
-				const reviewerComposite = buildComposite(
+				const reviewerMention = formatPerson(
 					reviewerName,
 					reviewerChatId,
 					reviewerName || "Reviewer",
 				);
-				const assignerComposite = buildComposite(
+				const assignerMention = formatPerson(
 					resolvedAssignerName,
 					assignerChatId,
 					"Someone",
@@ -283,8 +278,8 @@ export const sendGoogleChatMessage = action({
 				// Replace new link placeholder pattern before legacy ones
 				const replaced = base
 					.replace(/<URL_PLACEHOLDER\|PR>/g, `<${prUrl}|PR>`)
-					.replace(/{{\s*reviewer_name\s*}}/gi, reviewerComposite.composite)
-					.replace(/{{\s*requester_name\s*}}/gi, assignerComposite.composite)
+					.replace(/{{\s*reviewer_name\s*}}/gi, reviewerMention)
+					.replace(/{{\s*requester_name\s*}}/gi, assignerMention)
 					.replace(/{{\s*pr\s*}}/gi, prLinked)
 					.replace(/{{\s*PR\s*}}/g, prLinked);
 				// Remove redundant preceding 'PR' if user wrote 'PR: {{PR}}' or 'PR {{PR}}'
@@ -294,31 +289,29 @@ export const sendGoogleChatMessage = action({
 				const messages = await import(`../messages/${locale}.json`);
 				const t = messages.default || messages;
 
-				// Create mentions - use names if sendOnlyNames is true, otherwise use email format
-				const reviewerComposite = buildComposite(
+				const reviewerMention = formatPerson(
 					reviewerName,
 					reviewerChatId,
 					reviewerName || "Reviewer",
 				);
-				const assignerComposite = resolvedAssignerName
-					? buildComposite(
+				const assignerMention = resolvedAssignerName
+					? formatPerson(
 							resolvedAssignerName,
 							assignerChatId,
 							resolvedAssignerName,
 						)
 					: null;
 
-				// Build the message with proper mentions using i18n
 				const greetingText = t.googleChat.greeting.replace(
 					"{reviewer}",
-					reviewerComposite.composite,
+					reviewerMention,
 				);
 
 				builtMessage = greetingText;
 
-				if (assignerComposite) {
+				if (assignerMention) {
 					const assignmentText = t.googleChat.assignmentMessage
-						.replace("{assigner}", assignerComposite.composite)
+						.replace("{assigner}", assignerMention)
 						.replace("{prUrl}", prUrl);
 					builtMessage += `\n${assignmentText}`;
 				} else {
@@ -557,33 +550,16 @@ export const sendGoogleChatGroupMessage = action({
 				},
 			);
 
-			const buildComposite = (
-				name: string | undefined,
-				chatId: string | undefined,
-				fallback: string,
-			) => {
-				const resolvedName = name || fallback;
-				if (!chatId || !/\S/.test(chatId)) {
-					return resolvedName;
-				}
-				return `${resolvedName} (<users/${chatId}>)`;
-			};
-
 			const reviewerList = normalizedReviewers
 				.map((reviewer) =>
-					buildComposite(
-						reviewer.name,
+					formatGoogleChatPerson(
+						reviewer.name || reviewer.email,
 						reviewer.reviewerChatId,
-						reviewer.email,
 					),
 				)
 				.join(", ");
 			const assignerComposite = resolvedAssignerName
-				? buildComposite(
-						resolvedAssignerName,
-						assignerChatId,
-						resolvedAssignerName,
-					)
+				? formatGoogleChatPerson(resolvedAssignerName, assignerChatId)
 				: "Someone";
 
 			const prLinked = `<${prUrl}|PR>`;
@@ -1021,12 +997,7 @@ export const sendEventStartNotification = action({
 				let participantMentions = "";
 				if (event.participants.length > 0) {
 					participantMentions = event.participants
-						.map((p) => {
-							if (p.googleChatUserId?.trim()) {
-								return `${p.name} (<users/${p.googleChatUserId}>)`;
-							}
-							return p.name;
-						})
+						.map((p) => formatGoogleChatPerson(p.name, p.googleChatUserId))
 						.join(", ");
 				} else {
 					participantMentions = messages.noParticipants;
@@ -1232,20 +1203,12 @@ export const flashAssign = action({
 					nextReviewer.googleChatUserId?.trim() || undefined;
 				const assignerChatId = assigner?.googleChatUserId?.trim() || undefined;
 
-				const buildComposite = (
-					name: string,
-					chatId: string | undefined,
-				): string => {
-					if (!chatId) return name;
-					return `${name} (<users/${chatId}>)`;
-				};
-
-				const reviewerComposite = buildComposite(
+				const reviewerComposite = formatGoogleChatPerson(
 					nextReviewer.name,
 					reviewerChatId,
 				);
 				const assignerComposite = assigner
-					? buildComposite(assigner.name, assignerChatId)
+					? formatGoogleChatPerson(assigner.name, assignerChatId)
 					: assignerEmail;
 
 				// Use Spanish default template (extension UI is in Spanish)
