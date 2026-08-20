@@ -4,6 +4,8 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
+import { AgentSetupDialog } from "@/components/settings/AgentSetupDialog";
+import { McpLaunchBanner } from "@/components/settings/McpLaunchBanner";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
@@ -344,6 +346,7 @@ export default function PRReviewAssignment({
 							role="region"
 							aria-label={t("common.notices")}
 						>
+							<McpLaunchBanner />
 							<AnnouncementBanner />
 							<SurveyBanner />
 							<TeamBirthdaySection teamSlug={teamSlug} />
@@ -362,6 +365,7 @@ export default function PRReviewAssignment({
 						className="hidden"
 					/>
 
+					<AgentSetupDialog />
 					<SnapshotDialog
 						isOpen={snapshotDialogOpen}
 						onOpenChange={setSnapshotDialogOpen}

@@ -42,6 +42,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-08-20",
+		type: "feature",
+		title: "El agente MCP sale de experimental",
+		description:
+			"Ya puedes conectar Claude Code sin activar experimentos: hay un acceso MCP en el header, un tutorial de cómo activarlo y un comando de un solo paso. Con el token personal, tu agente puede asignar PRs, ver a quién le toca y registrar o marcar feature flags en el Repositorio de FF.",
+	},
+	{
 		date: "2026-08-12",
 		type: "improvement",
 		title: "Cards de Google Chat más claros al asignar un PR",
