@@ -44,12 +44,13 @@ function CodeSnippet({
 }) {
 	return (
 		<div className="min-w-0 w-full space-y-2">
-			<div className="flex items-center justify-between gap-3">
-				<p className="text-sm font-medium">{title}</p>
+			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+				<p className="min-w-0 text-sm font-medium">{title}</p>
 				<Button
 					type="button"
 					variant="outline"
 					size="sm"
+					className="shrink-0 self-start"
 					onClick={onCopy}
 					disabled={disabled}
 				>
@@ -61,7 +62,7 @@ function CodeSnippet({
 					{copied ? copiedLabel : copyLabel}
 				</Button>
 			</div>
-			<pre className="w-full overflow-x-auto rounded-2xl border border-border/70 bg-muted/40 p-3 font-mono text-xs leading-6 text-foreground">
+			<pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-all rounded-2xl border border-border/70 bg-muted/40 p-3 font-mono text-xs leading-6 text-foreground">
 				<code>{code}</code>
 			</pre>
 			{disabled && disabledHint ? (
@@ -73,11 +74,11 @@ function CodeSnippet({
 
 function StepHeading({ step, title }: { step: number; title: string }) {
 	return (
-		<div className="flex items-center gap-3">
+		<div className="flex min-w-0 items-center gap-3">
 			<span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
 				{step}
 			</span>
-			<h3 className="text-sm font-semibold">{title}</h3>
+			<h3 className="min-w-0 text-sm font-semibold">{title}</h3>
 		</div>
 	);
 }
@@ -196,10 +197,15 @@ export function AgentSetupSection() {
 	};
 
 	return (
-		<Tabs defaultValue="connect" className="w-full">
-			<TabsList variant="line" className="w-full justify-start">
-				<TabsTrigger value="connect">{t("agentSetup.connectTab")}</TabsTrigger>
-				<TabsTrigger value="tokens">
+		<Tabs defaultValue="connect" className="min-w-0 w-full">
+			<TabsList
+				variant="line"
+				className="h-auto min-w-0 w-full max-w-full justify-start overflow-x-auto"
+			>
+				<TabsTrigger value="connect" className="flex-none">
+					{t("agentSetup.connectTab")}
+				</TabsTrigger>
+				<TabsTrigger value="tokens" className="flex-none">
 					{t("agentSetup.tokensTab")}
 					{activeTokens.length > 0 ? (
 						<span className="ml-1.5 text-xs text-muted-foreground">
@@ -228,7 +234,10 @@ export function AgentSetupSection() {
 								void handleDefaultTeamChange(value);
 							}}
 						>
-							<SelectTrigger id="default-agent-team">
+							<SelectTrigger
+								id="default-agent-team"
+								className="w-full min-w-0 max-w-full"
+							>
 								<SelectValue
 									placeholder={t("agentSetup.defaultTeamPlaceholder")}
 								/>
@@ -284,7 +293,7 @@ export function AgentSetupSection() {
 								<p className="text-xs font-medium text-primary">
 									{t("agentSetup.tokenRevealTitle")}
 								</p>
-								<pre className="overflow-x-auto font-mono text-xs leading-6 text-foreground">
+								<pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground">
 									<code>{revealedToken}</code>
 								</pre>
 								<Button
@@ -358,11 +367,11 @@ export function AgentSetupSection() {
 						{tokens.map((token) => (
 							<div
 								key={String(token.id)}
-								className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-start md:justify-between"
+								className="flex min-w-0 flex-col gap-3 px-4 py-3 md:flex-row md:items-start md:justify-between"
 							>
-								<div className="space-y-1">
+								<div className="min-w-0 space-y-1">
 									<p className="text-sm font-medium">{token.label}</p>
-									<p className="font-mono text-xs text-muted-foreground">
+									<p className="break-all font-mono text-xs text-muted-foreground">
 										{token.tokenPrefix}
 									</p>
 									<p className="text-xs text-muted-foreground">
@@ -387,6 +396,7 @@ export function AgentSetupSection() {
 									type="button"
 									variant="outline"
 									size="sm"
+									className="shrink-0 self-start"
 									onClick={() => void handleRevokeToken(String(token.id))}
 									disabled={
 										Boolean(token.revokedAt) ||

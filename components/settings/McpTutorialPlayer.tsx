@@ -84,12 +84,16 @@ function useTypedText(
 function SceneOpen({ compact }: { compact: boolean }) {
 	const t = useTranslations("agentSetup");
 	return (
-		<div className="flex h-full flex-col justify-center gap-3">
-			<div className="flex items-center justify-between gap-2 rounded-2xl border border-border/70 bg-background/80 px-3 py-2">
-				<p className="text-sm font-semibold tracking-tight">La Lista</p>
-				<div className="flex items-center gap-1">
-					<span className="hidden size-7 rounded-full bg-muted/80 sm:block" />
-					<span className="ring-2 ring-primary/45 ring-offset-2 ring-offset-background inline-flex h-8 items-center rounded-full border border-primary/25 bg-primary/12 px-2.5 text-xs font-medium text-primary">
+		<div className="flex h-full min-w-0 flex-col justify-center gap-3">
+			<div className="flex min-w-0 items-center justify-between gap-2 rounded-2xl border border-border/70 bg-background/80 px-3 py-2">
+				<p className="min-w-0 truncate text-sm font-semibold tracking-tight">
+					La Lista
+				</p>
+				<div className="flex shrink-0 items-center gap-1">
+					{compact ? null : (
+						<span className="hidden size-7 rounded-full bg-muted/80 sm:block" />
+					)}
+					<span className="inline-flex h-8 items-center rounded-full border border-primary/25 bg-primary/12 px-2.5 text-xs font-medium text-primary ring-2 ring-primary/45 ring-offset-2 ring-offset-background">
 						MCP
 					</span>
 					<span className="size-7 rounded-full bg-muted/80" />
@@ -107,14 +111,14 @@ function SceneOpen({ compact }: { compact: boolean }) {
 function SceneToken({ compact }: { compact: boolean }) {
 	const t = useTranslations("agentSetup");
 	return (
-		<div className="flex h-full flex-col justify-center gap-3">
-			<div className="rounded-2xl border border-border/70 bg-background/80 px-3 py-3">
+		<div className="flex h-full min-w-0 flex-col justify-center gap-3">
+			<div className="min-w-0 rounded-2xl border border-border/70 bg-background/80 px-3 py-3">
 				<p className="text-xs font-medium">{t("generateTokenTitle")}</p>
-				<div className="mt-3 flex items-center gap-2">
+				<div className="mt-3 flex min-w-0 flex-wrap items-center gap-2">
 					<span className="inline-flex h-8 items-center rounded-full bg-primary px-3 text-xs font-medium text-primary-foreground">
 						{t("generateToken")}
 					</span>
-					<span className="font-mono text-[11px] text-muted-foreground">
+					<span className="min-w-0 truncate font-mono text-[11px] text-muted-foreground">
 						ll_live_8f3a…k2
 					</span>
 				</div>
@@ -137,10 +141,10 @@ function SceneCommand({
 	const typedCommand = useTypedText(DEMO_COMMAND, true, playing, 3600);
 	const finished = typedCommand.length >= DEMO_COMMAND.length;
 	return (
-		<div className="flex h-full flex-col justify-center gap-2">
-			<div className="rounded-2xl border border-border/70 bg-muted/40 px-3 py-3">
+		<div className="flex h-full min-w-0 flex-col justify-center gap-2">
+			<div className="min-w-0 rounded-2xl border border-border/70 bg-muted/40 px-3 py-3">
 				<p className="calm-kicker mb-2">{t("tutorialTerminalLabel")}</p>
-				<pre className="overflow-hidden font-mono text-[11px] leading-5 text-foreground">
+				<pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-all font-mono text-[10px] leading-5 text-foreground sm:text-[11px]">
 					<code>
 						{typedCommand}
 						<span className="ml-px inline-block h-3 w-1.5 translate-y-px bg-primary/80" />
@@ -164,11 +168,11 @@ function SceneCommand({
 function SceneAssign() {
 	const t = useTranslations("agentSetup");
 	return (
-		<div className="flex h-full flex-col justify-center gap-2">
-			<div className="ml-auto max-w-[90%] rounded-2xl bg-primary px-3 py-2 text-xs text-primary-foreground">
+		<div className="flex h-full min-w-0 flex-col justify-center gap-2">
+			<div className="ml-auto max-w-[min(90%,100%)] break-words rounded-2xl bg-primary px-3 py-2 text-xs text-primary-foreground">
 				{t("tutorialChatUser")}
 			</div>
-			<div className="max-w-[92%] rounded-2xl border border-border/70 bg-background/80 px-3 py-2 text-xs text-foreground">
+			<div className="max-w-[min(92%,100%)] break-words rounded-2xl border border-border/70 bg-background/80 px-3 py-2 text-xs text-foreground">
 				{t("tutorialChatAgent")}
 			</div>
 		</div>
@@ -220,7 +224,7 @@ export function McpTutorialPlayer({
 
 	if (prefersReducedMotion) {
 		return (
-			<div className={cn("calm-subtle-panel p-4", className)}>
+			<div className={cn("calm-subtle-panel min-w-0 p-4", className)}>
 				<p className="calm-kicker">{t("tutorialTitle")}</p>
 				<ol className="mt-3 space-y-2">
 					{staticSteps.map((step, index) => (
@@ -239,27 +243,27 @@ export function McpTutorialPlayer({
 	return (
 		<figure
 			className={cn(
-				"overflow-hidden rounded-2xl border border-border/70 bg-muted/28",
+				"min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-muted/28",
 				className,
 			)}
 			aria-label={t("tutorialTitle")}
 		>
-			<div className="flex items-center justify-between gap-3 border-b border-border/60 px-3 py-2">
-				<p className="calm-kicker">{t("tutorialTitle")}</p>
-				<p className="font-mono text-[11px] text-muted-foreground">
+			<div className="flex min-w-0 items-center justify-between gap-3 border-b border-border/60 px-3 py-2">
+				<p className="calm-kicker min-w-0 truncate">{t("tutorialTitle")}</p>
+				<p className="shrink-0 font-mono text-[11px] text-muted-foreground">
 					{formatTimecode(elapsedMs)} / {formatTimecode(TOTAL_MS)}
 				</p>
 			</div>
 			<div
 				className={cn(
-					"relative bg-background/55 px-3 pb-14 pt-3",
-					compact ? "min-h-[176px]" : "min-h-[222px]",
+					"relative min-w-0 bg-background/55 px-3 pt-3",
+					compact ? "min-h-[9.75rem]" : "min-h-[13rem]",
 				)}
 			>
 				<AnimatePresence mode="wait">
 					<motion.div
 						key={sceneIndex}
-						className="h-full"
+						className="min-h-0 min-w-0"
 						initial={{ opacity: 0, y: 8 }}
 						animate={{ opacity: 1, y: 0 }}
 						exit={{ opacity: 0, y: -8 }}
@@ -289,11 +293,11 @@ export function McpTutorialPlayer({
 						</span>
 					</button>
 				) : null}
-				<figcaption className="pointer-events-none absolute inset-x-3 bottom-3 rounded-xl bg-background/88 px-3 py-2 text-xs text-foreground">
-					{captions[sceneIndex]}
-				</figcaption>
 			</div>
-			<div className="flex items-center gap-3 px-3 py-2">
+			<figcaption className="px-3 pb-3 pt-2 text-xs leading-relaxed text-muted-foreground">
+				{captions[sceneIndex]}
+			</figcaption>
+			<div className="flex min-w-0 items-center gap-3 px-3 py-2">
 				<Button
 					type="button"
 					variant="ghost"
