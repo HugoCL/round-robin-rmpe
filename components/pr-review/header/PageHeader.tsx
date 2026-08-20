@@ -48,6 +48,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+	IconActionButton,
+	iconActionButtonClass,
+} from "@/components/ui/icon-action-button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
 	Tooltip,
@@ -70,6 +74,10 @@ import { usePRReview } from "../PRReviewContext";
 import { ReviewersTable } from "../ReviewersTable";
 import { TagManager } from "../TagManager";
 import { TeamWeeklyPRCounter } from "./TeamWeeklyPRCounter";
+
+/** Every control in the collapsible actions row shares this pill treatment. */
+const actionPillClass =
+	"min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8";
 
 interface PageHeaderProps {
 	teamSlug?: string;
@@ -112,12 +120,12 @@ export function PageHeader({
 	).length;
 
 	const reviewerActions = canManageCurrentTeam ? (
-		<div className="flex flex-wrap justify-start gap-2">
+		<div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-start">
 			<TagManager />
 			<AddReviewerDialog
 				onAddReviewer={addReviewer}
 				trigger={
-					<Button variant="outline" size="sm" className="min-h-11 sm:min-h-8">
+					<Button variant="outline" size="sm" className={actionPillClass}>
 						<UserPlus data-icon="inline-start" />
 						{t("pr.addReviewer")}
 					</Button>
@@ -125,7 +133,7 @@ export function PageHeader({
 			/>
 			<CreateEventDialog
 				trigger={
-					<Button variant="outline" size="sm" className="min-h-11 sm:min-h-8">
+					<Button variant="outline" size="sm" className={actionPillClass}>
 						<Calendar data-icon="inline-start" />
 						{t("events.createEvent")}
 					</Button>
@@ -139,11 +147,7 @@ export function PageHeader({
 			reviewers={reviewers}
 			onDeleteReviewer={removeReviewer}
 			trigger={
-				<Button
-					variant="outline"
-					size="sm"
-					className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
-				>
+				<Button variant="outline" size="sm" className={actionPillClass}>
 					<UserMinus data-icon="inline-start" />
 					<span>{t("pr.deleteReviewer")}</span>
 				</Button>
@@ -152,69 +156,63 @@ export function PageHeader({
 	) : null;
 
 	const reviewerColumnsButton = (
-		<div className="flex items-center gap-2">
-			<span className="text-sm font-medium text-foreground/90">
-				{visibleColumnsCount}/3
-			</span>
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button
-						variant="outline"
-						size="sm"
-						className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
-					>
-						<SlidersHorizontal data-icon="inline-start" />
-						{t("pr.viewColumns")}
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end" className="w-72">
-					<DropdownMenuLabel>{t("common.viewOptions")}</DropdownMenuLabel>
-					<DropdownMenuSeparator />
-					<DropdownMenuCheckboxItem
-						checked={showAssignments}
-						onSelect={(event) => event.preventDefault()}
-						onCheckedChange={(checked) => {
-							if (checked !== showAssignments) toggleShowAssignments();
-						}}
-					>
-						<div className="flex flex-col gap-1">
-							<p>{t("pr.showAssignments")}</p>
-							<p className="text-[11px] text-muted-foreground">
-								{t("pr.showAssignmentsDescription")}
-							</p>
-						</div>
-					</DropdownMenuCheckboxItem>
-					<DropdownMenuCheckboxItem
-						checked={showTags}
-						onSelect={(event) => event.preventDefault()}
-						onCheckedChange={(checked) => {
-							if (checked !== showTags) toggleShowTags();
-						}}
-					>
-						<div className="flex flex-col gap-1">
-							<p>{t("pr.showTags")}</p>
-							<p className="text-[11px] text-muted-foreground">
-								{t("pr.showTagsDescription")}
-							</p>
-						</div>
-					</DropdownMenuCheckboxItem>
-					<DropdownMenuCheckboxItem
-						checked={showEmails}
-						onSelect={(event) => event.preventDefault()}
-						onCheckedChange={(checked) => {
-							if (checked !== showEmails) toggleShowEmails();
-						}}
-					>
-						<div className="flex flex-col gap-1">
-							<p>{t("pr.showEmails")}</p>
-							<p className="text-[11px] text-muted-foreground">
-								{t("pr.showEmailsDescription")}
-							</p>
-						</div>
-					</DropdownMenuCheckboxItem>
-				</DropdownMenuContent>
-			</DropdownMenu>
-		</div>
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button variant="outline" size="sm" className={actionPillClass}>
+					<SlidersHorizontal data-icon="inline-start" />
+					{t("pr.viewColumns")}
+					<span className="ml-1 rounded-full bg-muted/60 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+						{visibleColumnsCount}/3
+					</span>
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="w-72">
+				<DropdownMenuLabel>{t("common.viewOptions")}</DropdownMenuLabel>
+				<DropdownMenuSeparator />
+				<DropdownMenuCheckboxItem
+					checked={showAssignments}
+					onSelect={(event) => event.preventDefault()}
+					onCheckedChange={(checked) => {
+						if (checked !== showAssignments) toggleShowAssignments();
+					}}
+				>
+					<div className="flex flex-col gap-1">
+						<p>{t("pr.showAssignments")}</p>
+						<p className="text-[11px] text-muted-foreground">
+							{t("pr.showAssignmentsDescription")}
+						</p>
+					</div>
+				</DropdownMenuCheckboxItem>
+				<DropdownMenuCheckboxItem
+					checked={showTags}
+					onSelect={(event) => event.preventDefault()}
+					onCheckedChange={(checked) => {
+						if (checked !== showTags) toggleShowTags();
+					}}
+				>
+					<div className="flex flex-col gap-1">
+						<p>{t("pr.showTags")}</p>
+						<p className="text-[11px] text-muted-foreground">
+							{t("pr.showTagsDescription")}
+						</p>
+					</div>
+				</DropdownMenuCheckboxItem>
+				<DropdownMenuCheckboxItem
+					checked={showEmails}
+					onSelect={(event) => event.preventDefault()}
+					onCheckedChange={(checked) => {
+						if (checked !== showEmails) toggleShowEmails();
+					}}
+				>
+					<div className="flex flex-col gap-1">
+						<p>{t("pr.showEmails")}</p>
+						<p className="text-[11px] text-muted-foreground">
+							{t("pr.showEmailsDescription")}
+						</p>
+					</div>
+				</DropdownMenuCheckboxItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 
 	return (
@@ -235,11 +233,41 @@ export function PageHeader({
 							</div>
 							<TeamWeeklyPRCounter teamSlug={teamSlug} />
 						</div>
-						<div className="flex items-center gap-1">
+						<div className="flex w-full flex-wrap items-center justify-end gap-0.5 sm:w-auto sm:flex-nowrap">
 							<nav
-								className="flex items-center gap-0.5"
+								className="flex flex-wrap items-center justify-end gap-0.5"
 								aria-label={t("common.options")}
 							>
+								<IconActionButton
+									accent
+									label={t("agentSetup.navbarLabel")}
+									tooltip={t("agentSetup.navbarTooltip")}
+									aria-expanded={agentSetupOpen}
+									aria-haspopup="dialog"
+									onClick={() => openAgentSetupDialog()}
+								>
+									<Bot />
+								</IconActionButton>
+								{teamSlug ? (
+									<IconActionButton asChild label={t("featureFlags.shortcut")}>
+										<Link href={`/${locale}/${teamSlug}/feature-flags`}>
+											<Flag />
+										</Link>
+									</IconActionButton>
+								) : null}
+								<IconActionButton asChild label={t("suggestions.shortcut")}>
+									<Link href={`/${locale}/suggestions`}>
+										<Lightbulb />
+									</Link>
+								</IconActionButton>
+								{isAdmin ? (
+									<IconActionButton asChild label={t("survey.shortcut")}>
+										<Link href={`/${locale}/surveys`}>
+											<ClipboardList />
+										</Link>
+									</IconActionButton>
+								) : null}
+								<ChangelogDialog iconOnly />
 								{userInfo?.email && (
 									<PushNotificationManager
 										userEmail={userInfo.email}
@@ -247,109 +275,39 @@ export function PageHeader({
 									/>
 								)}
 								<ThemeToggle />
-								<ChangelogDialog iconOnly />
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												variant="outline"
-												size="sm"
-												className="h-9 gap-1.5 border-primary/20 bg-primary/10 px-2.5 text-primary hover:bg-primary/15 hover:text-primary sm:px-3"
-												aria-label={t("agentSetup.navbarTooltip")}
-												aria-expanded={agentSetupOpen}
-												aria-haspopup="dialog"
-												onClick={() => openAgentSetupDialog()}
-											>
-												<Bot />
-												<span className="hidden sm:inline">
-													{t("agentSetup.navbarLabel")}
-												</span>
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>{t("agentSetup.navbarTooltip")}</p>
-										</TooltipContent>
-									</Tooltip>
-									{teamSlug ? (
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													asChild
-													variant="ghost"
-													size="icon"
-													aria-label={t("featureFlags.shortcut")}
-												>
-													<Link href={`/${locale}/${teamSlug}/feature-flags`}>
-														<Flag />
-													</Link>
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>
-												<p>{t("featureFlags.shortcut")}</p>
-											</TooltipContent>
-										</Tooltip>
-									) : null}
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												asChild
-												variant="ghost"
-												size="icon"
-												aria-label={t("suggestions.shortcut")}
-											>
-												<Link href={`/${locale}/suggestions`}>
-													<Lightbulb />
-												</Link>
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>{t("suggestions.shortcut")}</p>
-										</TooltipContent>
-									</Tooltip>
-									{isAdmin ? (
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													asChild
-													variant="ghost"
-													size="icon"
-													aria-label={t("survey.shortcut")}
-												>
-													<Link href={`/${locale}/surveys`}>
-														<ClipboardList />
-													</Link>
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>
-												<p>{t("survey.shortcut")}</p>
-											</TooltipContent>
-										</Tooltip>
-									) : null}
-								</TooltipProvider>
 								<HeaderOptionsDrawer />
 							</nav>
-							<div className="ml-0.5 border-l border-border/70 pl-1.5">
-								<CollapsibleTrigger asChild>
-									<Button
-										variant="outline"
-										size="sm"
-										className="size-9 rounded-full p-0 xl:h-9 xl:w-auto xl:px-3"
-										aria-label={
-											actionsOpen
-												? `${t("common.hide")} ${t("pr.actions")}`
-												: `${t("common.show")} ${t("pr.actions")}`
-										}
-									>
-										<span className="hidden xl:inline">{t("pr.actions")}</span>
-										<ChevronDown
-											className={cn(
-												"h-4 w-4 transition-transform duration-200 ease-out motion-reduce:transition-none",
-												actionsOpen && "rotate-180",
-											)}
-										/>
-									</Button>
-								</CollapsibleTrigger>
-							</div>
+							<span
+								className="mx-1 h-5 w-px shrink-0 bg-border/70"
+								aria-hidden="true"
+							/>
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<CollapsibleTrigger asChild>
+											<Button
+												variant="ghost"
+												className={cn(iconActionButtonClass, "p-0")}
+												aria-label={
+													actionsOpen
+														? `${t("common.hide")} ${t("pr.actions")}`
+														: `${t("common.show")} ${t("pr.actions")}`
+												}
+											>
+												<ChevronDown
+													className={cn(
+														"h-4 w-4 transition-transform duration-200 ease-out motion-reduce:transition-none",
+														actionsOpen && "rotate-180",
+													)}
+												/>
+											</Button>
+										</CollapsibleTrigger>
+									</TooltipTrigger>
+									<TooltipContent>
+										<p>{t("pr.actions")}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
 						</div>
 						{isForeignTeamView ? (
 							<p className="basis-full truncate text-xs text-muted-foreground">
@@ -377,7 +335,7 @@ export function PageHeader({
 												<Button
 													variant="outline"
 													size="sm"
-													className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
+													className={actionPillClass}
 												>
 													<Menu data-icon="inline-start" />
 													<span>{t("pr.manageReviewers")}</span>
@@ -395,7 +353,7 @@ export function PageHeader({
 														<Button
 															variant="outline"
 															size="sm"
-															className="col-span-2 min-h-11 rounded-full border-border/70 bg-background/70"
+															className={cn(actionPillClass, "col-span-2")}
 															onClick={handleResetCounts}
 														>
 															<RotateCw data-icon="inline-start" />
@@ -404,7 +362,7 @@ export function PageHeader({
 														<Button
 															variant="outline"
 															size="sm"
-															className="min-h-11 rounded-full border-border/70 bg-background/70"
+															className={actionPillClass}
 															onClick={exportData}
 														>
 															<Save data-icon="inline-start" />
@@ -413,7 +371,7 @@ export function PageHeader({
 														<Button
 															variant="outline"
 															size="sm"
-															className="min-h-11 rounded-full border-border/70 bg-background/70"
+															className={actionPillClass}
 															onClick={() =>
 																document.getElementById("import-file")?.click()
 															}
@@ -442,7 +400,7 @@ export function PageHeader({
 												<Button
 													variant="outline"
 													size="sm"
-													className="rounded-full border-border/70 bg-background/70"
+													className={actionPillClass}
 												>
 													<Menu data-icon="inline-start" />
 													<span>{t("pr.manageReviewers")}</span>
@@ -464,7 +422,7 @@ export function PageHeader({
 														<Button
 															variant="outline"
 															size="sm"
-															className="rounded-full border-border/70 bg-background/70"
+															className={actionPillClass}
 															onClick={handleResetCounts}
 														>
 															<RotateCw data-icon="inline-start" />
@@ -473,7 +431,7 @@ export function PageHeader({
 														<Button
 															variant="outline"
 															size="sm"
-															className="rounded-full border-border/70 bg-background/70"
+															className={actionPillClass}
 															onClick={exportData}
 														>
 															<Save data-icon="inline-start" />
@@ -482,7 +440,7 @@ export function PageHeader({
 														<Button
 															variant="outline"
 															size="sm"
-															className="rounded-full border-border/70 bg-background/70"
+															className={actionPillClass}
 															onClick={() =>
 																document.getElementById("import-file")?.click()
 															}

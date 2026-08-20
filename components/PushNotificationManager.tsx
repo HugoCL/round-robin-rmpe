@@ -8,14 +8,9 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { IconActionButton } from "@/components/ui/icon-action-button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 interface PushNotificationManagerProps {
@@ -50,33 +45,23 @@ export function PushNotificationManager({
 
 	if (iconOnly) {
 		return (
-			<TooltipProvider>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() => handleToggle(!isEnabled)}
-							disabled={isLoading || isDenied}
-							className="relative"
-							aria-label={isEnabled ? t("disable") : t("enable")}
-						>
-							<HugeiconsIcon
-								icon={isEnabled ? Notification02Icon : NotificationOff01Icon}
-								className="h-4 w-4"
-							/>
-							{isEnabled && (
-								<span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-green-500 ring-2 ring-background" />
-							)}
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>
-						<p>
-							{isDenied ? t("blocked") : isEnabled ? t("enabled") : t("enable")}
-						</p>
-					</TooltipContent>
-				</Tooltip>
-			</TooltipProvider>
+			<IconActionButton
+				label={isEnabled ? t("disable") : t("enable")}
+				tooltip={
+					isDenied ? t("blocked") : isEnabled ? t("enabled") : t("enable")
+				}
+				onClick={() => handleToggle(!isEnabled)}
+				disabled={isLoading || isDenied}
+				className="relative"
+			>
+				<HugeiconsIcon
+					icon={isEnabled ? Notification02Icon : NotificationOff01Icon}
+					className="h-4 w-4"
+				/>
+				{isEnabled && (
+					<span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-background" />
+				)}
+			</IconActionButton>
 		);
 	}
 

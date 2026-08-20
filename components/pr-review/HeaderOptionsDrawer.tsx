@@ -24,14 +24,9 @@ import {
 	DrawerHeader,
 	DrawerTitle,
 } from "@/components/ui/drawer";
+import { IconActionButton } from "@/components/ui/icon-action-button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { openAgentSetupDialog } from "@/lib/agent-setup-dialog-store";
 
@@ -226,23 +221,9 @@ export function HeaderOptionsDrawer() {
 	);
 
 	const triggerButton = (
-		<TooltipProvider>
-			<Tooltip>
-				<TooltipTrigger asChild>
-					<Button
-						variant="ghost"
-						size="icon"
-						aria-label={t("common.options")}
-						onClick={() => setOpen(true)}
-					>
-						<Settings className="h-4 w-4" />
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent>
-					<p>{t("common.options")}</p>
-				</TooltipContent>
-			</Tooltip>
-		</TooltipProvider>
+		<IconActionButton label={t("common.options")} onClick={() => setOpen(true)}>
+			<Settings className="h-4 w-4" />
+		</IconActionButton>
 	);
 
 	if (isMobile) {

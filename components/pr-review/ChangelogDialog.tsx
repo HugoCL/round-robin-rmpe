@@ -20,13 +20,8 @@ import {
 	DrawerHeader,
 	DrawerTitle,
 } from "@/components/ui/drawer";
+import { IconActionButton } from "@/components/ui/icon-action-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
 	type ChangelogEntry,
@@ -119,24 +114,9 @@ export function ChangelogDialog({ iconOnly = false }: { iconOnly?: boolean }) {
 	const description = tChangelog("description");
 
 	const iconOnlyButton = (
-		<TooltipProvider>
-			<Tooltip>
-				<TooltipTrigger asChild>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
-						aria-label={title}
-						onClick={() => setOpen(true)}
-					>
-						<Sparkles className="h-4 w-4" />
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent>
-					<p>{title}</p>
-				</TooltipContent>
-			</Tooltip>
-		</TooltipProvider>
+		<IconActionButton label={title} onClick={() => setOpen(true)}>
+			<Sparkles className="h-4 w-4" />
+		</IconActionButton>
 	);
 
 	const standardButton = (
