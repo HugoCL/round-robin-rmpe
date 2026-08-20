@@ -443,7 +443,7 @@
 	"agentSetup": {
 		"badge": "Agente MCP personal",
 		"title": "Agente MCP",
-		"drawerDescription": "Genera un token, corre un comando y deja que Claude Code asigne PRs o registre feature flags por ti.",
+		"drawerDescription": "Genera un token, corre un comando y deja que Claude Code asigne el PR que gh acaba de abrir.",
 		"navbarLabel": "MCP",
 		"navbarTooltip": "Agente MCP",
 		"openSetup": "Abrir configuración MCP",
@@ -453,6 +453,7 @@
 		"capabilityAssign": "Asigna PRs y manda el mensaje a Google Chat.",
 		"capabilityContext": "Mira a quién le toca en la rotación antes de asignar.",
 		"capabilityFlags": "Lista, registra y marca feature flags en el Repositorio de FF.",
+		"capabilityGh": "Junto a gh: el CLI publica el PR, La Lista elige al revisor.",
 		"tokenSectionTitle": "Tokens y acceso",
 		"tokenSectionDescription": "Revoca un token si se te perdió un laptop o se filtró un comando. Generar uno nuevo no apaga los demás.",
 		"installSectionTitle": "Conexión MCP",
@@ -482,7 +483,7 @@
 		"mcpInstallCommandTitle": "Comando de instalación (Claude Code)",
 		"mcpInstallStepOne": "Genera un token personal. El comando lo incluye al instante.",
 		"mcpInstallStepTwo": "Copia el comando y córrelo en tu terminal. Necesitas tener Claude Code instalado.",
-		"mcpInstallStepThree": "Reinicia Claude Code y pídele que asigne un PR o registre un feature flag.",
+		"mcpInstallStepThree": "Reinicia Claude Code. Crea o abre el PR con gh y pídele que lo asigne en La Lista.",
 		"commandNeedsToken": "Genera un token primero para que el comando lleve tu clave.",
 		"commandTokenPlaceholder": "TU_TOKEN",
 		"copySnippet": "Copiar",
@@ -507,14 +508,41 @@
 		"tutorialSceneTokenCaption": "Genera un token personal. Solo lo vas a ver una vez.",
 		"tutorialSceneCommandCaption": "Copia el comando y córrelo en la terminal de Claude Code.",
 		"tutorialSceneCommandHint": "Claude Code tiene que estar instalado en esa máquina.",
-		"tutorialSceneAssignCaption": "Pídele a tu agente que asigne el PR. La Lista hace la rotación.",
-		"tutorialChatUser": "asigna este PR",
-		"tutorialChatAgent": "Listo. Le tocó a la siguiente persona disponible, y Google Chat ya tiene el mensaje."
+		"tutorialSceneAssignCaption": "Pídele el PR desde gh y que La Lista asigne. No hace falta adivinar la URL.",
+		"usageTitle": "Cómo pedírselo al agente",
+		"usageBestWay": "La forma más limpia: que Claude Code cree o abra el PR con gh, y después le pidas que lo asigne en La Lista. gh se queda con GitHub (crear, push, checks). La Lista elige a quién le toca y avisa en Google Chat. Si no tienes la URL, dile que la saque con gh pr view.",
+		"usageExample": {
+			"ghAssign": {
+				"label": "Crear el PR",
+				"user": "Crea el PR con gh y asígnalo en La Lista.",
+				"agent": "PR #482 publicado. Le tocó a Nicolás, y Google Chat ya tiene el aviso."
+			},
+			"ghUrgent": {
+				"label": "Urgente desde gh",
+				"user": "Saca la URL con gh pr view y asígnala urgente.",
+				"agent": "Urgente para Camila. El espacio de Chat ya recibió el ping."
+			},
+			"nextUp": {
+				"label": "Quién sigue",
+				"user": "¿A quién le toca ahora, sin asignar todavía?",
+				"agent": "Sigue Diego. Sofía está fuera hoy, así que no entra en la rotación."
+			},
+			"featureFlag": {
+				"label": "Feature flag",
+				"user": "Agregué enable_new_checkout. Regístralo en el Repositorio de FF.",
+				"agent": "Quedó anotado. El recuento de edad empieza hoy."
+			},
+			"backendTag": {
+				"label": "Por tag",
+				"user": "Asigna este PR a alguien de backend.",
+				"agent": "Valentina, de backend. La rotación sigue pareja."
+			}
+		}
 	},
 	"mcpLaunch": {
 		"kicker": "Nuevo",
 		"title": "El agente MCP ya salió de experimentos",
-		"description": "Asigna PRs y registra feature flags desde Claude Code. Genera un token, corre un comando y listo.",
+		"description": "Desde Claude Code, gh publica el PR y La Lista asigna al revisor. Genera un token, corre un comando y listo.",
 		"configure": "Configurarlo ahora",
 		"later": "Más tarde",
 		"dismiss": "Cerrar este aviso"

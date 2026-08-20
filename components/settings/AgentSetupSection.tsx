@@ -4,6 +4,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { Check, Copy, KeyRound, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { McpUsageExamples } from "@/components/settings/McpUsageExamples";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -220,6 +221,7 @@ export function AgentSetupSection() {
 					<li>{t("agentSetup.capabilityAssign")}</li>
 					<li>{t("agentSetup.capabilityContext")}</li>
 					<li>{t("agentSetup.capabilityFlags")}</li>
+					<li>{t("agentSetup.capabilityGh")}</li>
 				</ul>
 
 				<section className="space-y-3">
@@ -345,6 +347,8 @@ export function AgentSetupSection() {
 						))}
 					</ol>
 				</section>
+
+				<McpUsageExamples />
 
 				{isSaving ? (
 					<p className="text-xs text-muted-foreground">

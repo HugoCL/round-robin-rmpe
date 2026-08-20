@@ -4,11 +4,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Pause, Play } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { McpUsageExampleScene } from "@/components/settings/McpUsageExamples";
 import { Button } from "@/components/ui/button";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
 
-const SCENE_MS = [3800, 4200, 5600, 4800] as const;
+const SCENE_MS = [3800, 4200, 5600, 8400] as const;
 const TOTAL_MS = SCENE_MS.reduce((sum, value) => sum + value, 0);
 const TICK_MS = 80;
 const MOTION_EASE = [0.22, 1, 0.36, 1] as const;
@@ -165,20 +166,6 @@ function SceneCommand({
 	);
 }
 
-function SceneAssign() {
-	const t = useTranslations("agentSetup");
-	return (
-		<div className="flex h-full min-w-0 flex-col justify-center gap-2">
-			<div className="ml-auto max-w-[min(90%,100%)] break-words rounded-2xl bg-primary px-3 py-2 text-xs text-primary-foreground">
-				{t("tutorialChatUser")}
-			</div>
-			<div className="max-w-[min(92%,100%)] break-words rounded-2xl border border-border/70 bg-background/80 px-3 py-2 text-xs text-foreground">
-				{t("tutorialChatAgent")}
-			</div>
-		</div>
-	);
-}
-
 export function McpTutorialPlayer({
 	compact = false,
 	className,
@@ -278,7 +265,9 @@ export function McpTutorialPlayer({
 								playing={playing}
 							/>
 						) : null}
-						{sceneIndex === 3 ? <SceneAssign /> : null}
+						{sceneIndex === 3 ? (
+							<McpUsageExampleScene compact={compact} playing={playing} />
+						) : null}
 					</motion.div>
 				</AnimatePresence>
 				{compact && !playing ? (

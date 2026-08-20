@@ -398,7 +398,7 @@
 	"agentSetup": {
 		"badge": "Personal MCP agent",
 		"title": "MCP agent",
-		"drawerDescription": "Generate a token, run one command, and let Claude Code assign PRs or register feature flags for you.",
+		"drawerDescription": "Generate a token, run one command, and let Claude Code assign the PR that gh just opened.",
 		"navbarLabel": "MCP",
 		"navbarTooltip": "MCP agent",
 		"openSetup": "Open MCP setup",
@@ -408,6 +408,7 @@
 		"capabilityAssign": "Assign PRs and send the Google Chat message.",
 		"capabilityContext": "See who is next in the rotation before you assign.",
 		"capabilityFlags": "List, register, and mark feature flags in the FF Repository.",
+		"capabilityGh": "Pair it with gh: the CLI publishes the PR, La Lista picks the reviewer.",
 		"tokenSectionTitle": "Tokens and access",
 		"tokenSectionDescription": "Revoke a token if a laptop is gone or a command leaked. Generating a new one does not disable the others.",
 		"installSectionTitle": "MCP connection",
@@ -437,7 +438,7 @@
 		"mcpInstallCommandTitle": "Install command (Claude Code)",
 		"mcpInstallStepOne": "Generate a personal token. The command includes it right away.",
 		"mcpInstallStepTwo": "Copy the command and run it in your terminal. You need Claude Code installed.",
-		"mcpInstallStepThree": "Restart Claude Code, then ask it to assign a PR or register a feature flag.",
+		"mcpInstallStepThree": "Restart Claude Code. Create or open the PR with gh, then ask it to assign that PR in La Lista.",
 		"commandNeedsToken": "Generate a token first so the command includes your key.",
 		"commandTokenPlaceholder": "YOUR_TOKEN",
 		"copySnippet": "Copy",
@@ -462,14 +463,41 @@
 		"tutorialSceneTokenCaption": "Generate a personal token. You will only see it once.",
 		"tutorialSceneCommandCaption": "Copy the command and run it in the Claude Code terminal.",
 		"tutorialSceneCommandHint": "Claude Code has to be installed on that machine.",
-		"tutorialSceneAssignCaption": "Ask your agent to assign the PR. La Lista does the rotation.",
-		"tutorialChatUser": "assign this PR",
-		"tutorialChatAgent": "Done. It went to the next person available, and Google Chat already has the message."
+		"tutorialSceneAssignCaption": "Ask for the PR from gh, then let La Lista assign. You don't have to guess the URL.",
+		"usageTitle": "How to ask the agent",
+		"usageBestWay": "The cleanest path: let Claude Code create or open the PR with gh, then ask it to assign that PR in La Lista. gh owns GitHub (create, push, checks). La Lista picks who is next and sends Google Chat. If you don't have the URL, tell it to grab it with gh pr view.",
+		"usageExample": {
+			"ghAssign": {
+				"label": "Create the PR",
+				"user": "Create the PR with gh and assign it in La Lista.",
+				"agent": "PR #482 is up. It went to Nicolás, and Google Chat already has the note."
+			},
+			"ghUrgent": {
+				"label": "Urgent from gh",
+				"user": "Grab the URL with gh pr view and assign it urgent.",
+				"agent": "Urgent for Camila. The Chat space already got the ping."
+			},
+			"nextUp": {
+				"label": "Who's next",
+				"user": "Who's up next, without assigning yet?",
+				"agent": "Diego is next. Sofía is out today, so she stays out of the rotation."
+			},
+			"featureFlag": {
+				"label": "Feature flag",
+				"user": "I added enable_new_checkout. Register it in the FF Repository.",
+				"agent": "It's in. Age tracking starts today."
+			},
+			"backendTag": {
+				"label": "By tag",
+				"user": "Assign this PR to someone on backend.",
+				"agent": "Valentina, from backend. The rotation stays even."
+			}
+		}
 	},
 	"mcpLaunch": {
 		"kicker": "New",
 		"title": "The MCP agent is out of experiments",
-		"description": "Assign PRs and register feature flags from Claude Code. Generate a token, run one command, and you are done.",
+		"description": "From Claude Code, gh publishes the PR and La Lista assigns the reviewer. Generate a token, run one command, and you are done.",
 		"configure": "Set it up now",
 		"later": "Later",
 		"dismiss": "Dismiss this notice"
