@@ -329,23 +329,24 @@ export function AgentSetupSection() {
 						disabled={!hasFreshToken}
 						disabledHint={t("agentSetup.commandNeedsToken")}
 					/>
-					<ol className="space-y-2">
+					<ul className="space-y-1.5">
 						{[
 							t("agentSetup.mcpInstallStepOne"),
 							t("agentSetup.mcpInstallStepTwo"),
 							t("agentSetup.mcpInstallStepThree"),
-						].map((step, index) => (
+						].map((note) => (
 							<li
-								key={step}
-								className="flex min-w-0 gap-3 text-sm text-muted-foreground"
+								key={note}
+								className="flex min-w-0 gap-2.5 text-sm text-muted-foreground"
 							>
-								<span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border/70 text-[11px] font-semibold text-foreground">
-									{index + 1}
-								</span>
-								<span className="min-w-0">{step}</span>
+								<span
+									className="mt-2 size-1.5 shrink-0 rounded-full bg-border"
+									aria-hidden="true"
+								/>
+								<span className="min-w-0">{note}</span>
 							</li>
 						))}
-					</ol>
+					</ul>
 				</section>
 
 				<McpUsageExamples />

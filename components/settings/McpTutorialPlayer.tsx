@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Pause, Play } from "lucide-react";
+import { Bot, Pause, Play } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { McpUsageExampleScene } from "@/components/settings/McpUsageExamples";
@@ -91,12 +91,12 @@ function SceneOpen({ compact }: { compact: boolean }) {
 					La Lista
 				</p>
 				<div className="flex shrink-0 items-center gap-1">
+					<span className="inline-flex size-8 items-center justify-center rounded-full bg-primary/12 text-primary ring-2 ring-primary/45 ring-offset-2 ring-offset-background">
+						<Bot className="size-4" />
+					</span>
 					{compact ? null : (
 						<span className="hidden size-7 rounded-full bg-muted/80 sm:block" />
 					)}
-					<span className="inline-flex h-8 items-center rounded-full border border-primary/25 bg-primary/12 px-2.5 text-xs font-medium text-primary ring-2 ring-primary/45 ring-offset-2 ring-offset-background">
-						MCP
-					</span>
 					<span className="size-7 rounded-full bg-muted/80" />
 				</div>
 			</div>
@@ -188,16 +188,6 @@ export function McpTutorialPlayer({
 		],
 		[t],
 	);
-	const staticSteps = useMemo(
-		() => [
-			t("mcpInstallStepOne"),
-			t("mcpInstallStepTwo"),
-			t("mcpInstallStepThree"),
-			t("tutorialSceneAssignCaption"),
-		],
-		[t],
-	);
-
 	useEffect(() => {
 		if (prefersReducedMotion || !playing) return;
 		const id = window.setInterval(() => {
@@ -214,7 +204,7 @@ export function McpTutorialPlayer({
 			<div className={cn("calm-subtle-panel min-w-0 p-4", className)}>
 				<p className="calm-kicker">{t("tutorialTitle")}</p>
 				<ol className="mt-3 space-y-2">
-					{staticSteps.map((step, index) => (
+					{captions.map((step, index) => (
 						<li key={step} className="flex min-w-0 gap-3 text-sm">
 							<span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-[11px] font-semibold text-primary">
 								{index + 1}
