@@ -1,4 +1,5 @@
 import {
+	Bot,
 	Calendar,
 	ChevronDown,
 	ClipboardList,
@@ -55,6 +56,10 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+	openAgentSetupDialog,
+	useAgentSetupDialogOpen,
+} from "@/lib/agent-setup-dialog-store";
 import { cn } from "@/lib/utils";
 import { ChangelogDialog } from "../ChangelogDialog";
 import { AddReviewerDialog } from "../dialogs/AddReviewerDialog";
@@ -100,6 +105,7 @@ export function PageHeader({
 	} = usePRReview();
 	const isMobile = useIsMobile();
 	const locale = useLocale();
+	const agentSetupOpen = useAgentSetupDialogOpen();
 	const [actionsOpen, setActionsOpen] = useState(false);
 	const visibleColumnsCount = [showAssignments, showTags, showEmails].filter(
 		Boolean,
@@ -243,6 +249,27 @@ export function PageHeader({
 								<ThemeToggle />
 								<ChangelogDialog iconOnly />
 								<TooltipProvider>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												variant="outline"
+												size="sm"
+												className="h-9 gap-1.5 border-primary/20 bg-primary/10 px-2.5 text-primary hover:bg-primary/15 hover:text-primary sm:px-3"
+												aria-label={t("agentSetup.navbarTooltip")}
+												aria-expanded={agentSetupOpen}
+												aria-haspopup="dialog"
+												onClick={() => openAgentSetupDialog()}
+											>
+												<Bot />
+												<span className="hidden sm:inline">
+													{t("agentSetup.navbarLabel")}
+												</span>
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent>
+											<p>{t("agentSetup.navbarTooltip")}</p>
+										</TooltipContent>
+									</Tooltip>
 									{teamSlug ? (
 										<Tooltip>
 											<TooltipTrigger asChild>
