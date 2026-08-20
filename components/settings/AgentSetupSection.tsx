@@ -23,6 +23,8 @@ import {
 	buildClaudeMcpInstallCommand,
 	DEFAULT_MCP_ORIGIN,
 } from "@/lib/agent-mcp-install";
+import { setAgentSetupDialogOpen } from "@/lib/agent-setup-dialog-store";
+import { cn } from "@/lib/utils";
 
 function CodeSnippet({
 	title,
@@ -73,17 +75,6 @@ function CodeSnippet({
 	);
 }
 
-function StepHeading({ step, title }: { step: number; title: string }) {
-	return (
-		<div className="flex min-w-0 items-center gap-3">
-			<span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
-				{step}
-			</span>
-			<h3 className="min-w-0 text-sm font-semibold">{title}</h3>
-		</div>
-	);
-}
-
 export function AgentSetupSection() {
 	const t = useTranslations();
 	const locale = useLocale();
@@ -97,6 +88,7 @@ export function AgentSetupSection() {
 	const [tokenLabel, setTokenLabel] = useState("");
 	const [revealedToken, setRevealedToken] = useState<string | null>(null);
 	const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+	const [activeStep, setActiveStep] = useState(1);
 	const [isGeneratingToken, startGenerateTransition] = useTransition();
 	const [revokingTokenId, setRevokingTokenId] = useState<string | null>(null);
 
@@ -116,6 +108,11 @@ export function AgentSetupSection() {
 		[mcpOrigin, revealedToken, t],
 	);
 	const activeTokens = tokens.filter((token) => !token.revokedAt);
+	const wizardSteps = [
+		t("agentSetup.wizardTeam"),
+		t("agentSetup.wizardToken"),
+		t("agentSetup.wizardConnect"),
+	];
 
 	const formatDate = (value?: number) => {
 		if (!value) return t("agentSetup.neverUsed");
@@ -160,6 +157,7 @@ export function AgentSetupSection() {
 				});
 				setRevealedToken(result.rawToken);
 				setTokenLabel("");
+				setActiveStep(3);
 				toast({
 					title: t("common.success"),
 					description: t("agentSetup.tokenGenerated"),
@@ -201,7 +199,7 @@ export function AgentSetupSection() {
 		<Tabs defaultValue="connect" className="min-w-0 w-full">
 			<TabsList
 				variant="line"
-				className="h-auto min-w-0 w-full max-w-full justify-start overflow-x-auto"
+				className="h-auto min-w-0 w-full max-w-full justify-start"
 			>
 				<TabsTrigger value="connect" className="flex-none">
 					{t("agentSetup.connectTab")}
@@ -216,140 +214,240 @@ export function AgentSetupSection() {
 				</TabsTrigger>
 			</TabsList>
 
-			<TabsContent value="connect" className="mt-5 min-w-0 space-y-7">
-				<ul className="space-y-1.5 text-sm text-muted-foreground">
-					<li>{t("agentSetup.capabilityAssign")}</li>
-					<li>{t("agentSetup.capabilityContext")}</li>
-					<li>{t("agentSetup.capabilityFlags")}</li>
-					<li>{t("agentSetup.capabilityGh")}</li>
-				</ul>
+			<TabsContent value="connect" className="mt-5 min-w-0 space-y-4">
+				<ol
+					className="grid grid-cols-3 gap-1 rounded-2xl bg-muted/45 p-1"
+					aria-label={t("agentSetup.wizardProgress")}
+				>
+					{wizardSteps.map((label, index) => {
+						const step = index + 1;
+						const isComplete = step < activeStep;
+						const isCurrent = step === activeStep;
 
-				<section className="space-y-3">
-					<StepHeading step={1} title={t("agentSetup.defaultTeamLabel")} />
-					<div className="space-y-2">
-						<Label htmlFor="default-agent-team" className="sr-only">
-							{t("agentSetup.defaultTeamLabel")}
-						</Label>
-						<Select
-							value={defaultTeamSlug || "__none__"}
-							onValueChange={(value) => {
-								void handleDefaultTeamChange(value);
-							}}
-						>
-							<SelectTrigger
-								id="default-agent-team"
-								className="w-full min-w-0 max-w-full"
+						return (
+							<li
+								key={label}
+								className={cn(
+									"flex min-w-0 items-center gap-2 rounded-xl px-2 py-2 text-xs font-medium transition-colors",
+									isCurrent &&
+										"bg-background text-foreground ring-1 ring-border/70",
+									isComplete && "text-primary",
+									!isCurrent && !isComplete && "text-muted-foreground",
+								)}
+								aria-current={isCurrent ? "step" : undefined}
 							>
-								<SelectValue
-									placeholder={t("agentSetup.defaultTeamPlaceholder")}
-								/>
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="__none__">
-									{t("agentSetup.noDefaultTeam")}
-								</SelectItem>
-								{teams.map((team) => (
-									<SelectItem key={String(team.id)} value={team.slug}>
-										{team.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<p className="text-xs text-muted-foreground">
-							{t("agentSetup.defaultTeamDescription")}
-						</p>
-					</div>
-				</section>
+								<span
+									className={cn(
+										"flex size-5 shrink-0 items-center justify-center rounded-full border text-[10px]",
+										isComplete &&
+											"border-primary bg-primary text-primary-foreground",
+										isCurrent && "border-primary/40 bg-primary/10 text-primary",
+										!isCurrent &&
+											!isComplete &&
+											"border-border text-muted-foreground",
+									)}
+								>
+									{isComplete ? <Check className="size-3" /> : step}
+								</span>
+								<span className="min-w-0 truncate">{label}</span>
+							</li>
+						);
+					})}
+				</ol>
 
-				<section className="space-y-3">
-					<StepHeading step={2} title={t("agentSetup.generateTokenTitle")} />
-					<div className="space-y-3">
-						<div className="space-y-2">
-							<Label htmlFor="agent-token-label">
-								{t("agentSetup.tokenLabel")}
-							</Label>
-							<Input
-								id="agent-token-label"
-								value={tokenLabel}
-								onChange={(event) => setTokenLabel(event.target.value)}
-								placeholder={t("agentSetup.tokenLabelPlaceholder")}
-							/>
-						</div>
-						<div className="flex min-w-0 flex-wrap items-center gap-3">
-							<Button
-								type="button"
-								onClick={handleGenerateToken}
-								disabled={isGeneratingToken}
-							>
-								<KeyRound className="mr-2 h-4 w-4" />
-								{isGeneratingToken
-									? t("agentSetup.generatingToken")
-									: t("agentSetup.generateToken")}
-							</Button>
-							<p className="min-w-0 flex-1 text-xs text-muted-foreground">
-								{t("agentSetup.tokenOnceHint")}
-							</p>
-						</div>
-						{revealedToken ? (
-							<div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
-								<p className="text-xs font-medium text-primary">
-									{t("agentSetup.tokenRevealTitle")}
+				<section className="min-h-[19rem] rounded-2xl border border-border/70 bg-background/60 p-4 sm:p-5">
+					{activeStep === 1 ? (
+						<div className="flex min-h-[17rem] flex-col">
+							<div className="space-y-2">
+								<p className="calm-kicker">
+									{t("agentSetup.wizardStep", { current: 1, total: 3 })}
 								</p>
-								<pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground">
-									<code>{revealedToken}</code>
-								</pre>
+								<h3 className="text-lg font-semibold">
+									{t("agentSetup.defaultTeamLabel")}
+								</h3>
+								<p className="max-w-[65ch] text-sm text-muted-foreground">
+									{t("agentSetup.defaultTeamDescription")}
+								</p>
+							</div>
+							<div className="mt-6 space-y-2">
+								<Label htmlFor="default-agent-team" className="sr-only">
+									{t("agentSetup.defaultTeamLabel")}
+								</Label>
+								<Select
+									value={defaultTeamSlug || "__none__"}
+									onValueChange={(value) => {
+										void handleDefaultTeamChange(value);
+									}}
+								>
+									<SelectTrigger
+										id="default-agent-team"
+										className="w-full min-w-0 max-w-full"
+									>
+										<SelectValue
+											placeholder={t("agentSetup.defaultTeamPlaceholder")}
+										/>
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="__none__">
+											{t("agentSetup.noDefaultTeam")}
+										</SelectItem>
+										{teams.map((team) => (
+											<SelectItem key={String(team.id)} value={team.slug}>
+												{team.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="mt-auto flex justify-end pt-6">
+								<Button type="button" onClick={() => setActiveStep(2)}>
+									{t("common.next")}
+								</Button>
+							</div>
+						</div>
+					) : null}
+
+					{activeStep === 2 ? (
+						<div className="flex min-h-[17rem] flex-col">
+							<div className="space-y-2">
+								<p className="calm-kicker">
+									{t("agentSetup.wizardStep", { current: 2, total: 3 })}
+								</p>
+								<h3 className="text-lg font-semibold">
+									{t("agentSetup.generateTokenTitle")}
+								</h3>
+								<p className="text-sm text-muted-foreground">
+									{t("agentSetup.tokenOnceHint")}
+								</p>
+							</div>
+							<div className="mt-6 space-y-2">
+								<Label htmlFor="agent-token-label">
+									{t("agentSetup.tokenLabel")}
+								</Label>
+								<Input
+									id="agent-token-label"
+									value={tokenLabel}
+									onChange={(event) => setTokenLabel(event.target.value)}
+									placeholder={t("agentSetup.tokenLabelPlaceholder")}
+								/>
+							</div>
+							{revealedToken ? (
+								<div className="mt-4 space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+									<p className="text-xs font-medium text-primary">
+										{t("agentSetup.tokenRevealTitle")}
+									</p>
+									<pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground">
+										<code>{revealedToken}</code>
+									</pre>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={() => void copyText("raw-token", revealedToken)}
+									>
+										<Copy className="mr-2 h-4 w-4" />
+										{t("agentSetup.copyToken")}
+									</Button>
+								</div>
+							) : null}
+							<div className="mt-auto flex flex-col-reverse gap-2 pt-6 sm:flex-row sm:justify-between">
 								<Button
 									type="button"
 									variant="outline"
-									size="sm"
-									onClick={() => void copyText("raw-token", revealedToken)}
+									onClick={() => setActiveStep(1)}
 								>
-									<Copy className="mr-2 h-4 w-4" />
-									{t("agentSetup.copyToken")}
+									{t("common.back")}
+								</Button>
+								{revealedToken ? (
+									<Button type="button" onClick={() => setActiveStep(3)}>
+										{t("common.next")}
+									</Button>
+								) : (
+									<Button
+										type="button"
+										onClick={handleGenerateToken}
+										disabled={isGeneratingToken}
+									>
+										<KeyRound className="mr-2 h-4 w-4" />
+										{isGeneratingToken
+											? t("agentSetup.generatingToken")
+											: t("agentSetup.generateToken")}
+									</Button>
+								)}
+							</div>
+						</div>
+					) : null}
+
+					{activeStep === 3 ? (
+						<div className="flex min-h-[17rem] flex-col">
+							<div className="space-y-2">
+								<p className="calm-kicker">
+									{t("agentSetup.wizardStep", { current: 3, total: 3 })}
+								</p>
+								<h3 className="text-lg font-semibold">
+									{t("agentSetup.installTitle")}
+								</h3>
+								<p className="text-sm text-muted-foreground">
+									{t("agentSetup.installDescription")}
+								</p>
+							</div>
+							<div className="mt-6">
+								<CodeSnippet
+									title={t("agentSetup.mcpInstallCommandTitle")}
+									code={claudeMcpInstallCommand}
+									onCopy={() =>
+										void copyText(
+											"mcp-install-command",
+											claudeMcpInstallCommand,
+										)
+									}
+									copied={copiedSnippet === "mcp-install-command"}
+									copyLabel={t("agentSetup.copySnippet")}
+									copiedLabel={t("agentSetup.copiedSnippet")}
+									disabled={!hasFreshToken}
+									disabledHint={t("agentSetup.commandNeedsToken")}
+								/>
+							</div>
+							<ul className="mt-4 space-y-1.5">
+								{[
+									t("agentSetup.mcpInstallStepOne"),
+									t("agentSetup.mcpInstallStepTwo"),
+									t("agentSetup.mcpInstallStepThree"),
+								].map((note) => (
+									<li
+										key={note}
+										className="flex min-w-0 gap-2.5 text-sm text-muted-foreground"
+									>
+										<span
+											className="mt-2 size-1.5 shrink-0 rounded-full bg-border"
+											aria-hidden="true"
+										/>
+										<span className="min-w-0">{note}</span>
+									</li>
+								))}
+							</ul>
+							<div className="mt-6 border-t border-border/60 pt-6">
+								<McpUsageExamples />
+							</div>
+							<div className="mt-auto flex flex-col-reverse gap-2 pt-6 sm:flex-row sm:justify-between">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => setActiveStep(2)}
+								>
+									{t("common.back")}
+								</Button>
+								<Button
+									type="button"
+									onClick={() => setAgentSetupDialogOpen(false)}
+								>
+									<Check className="mr-2 h-4 w-4" />
+									{t("common.finish")}
 								</Button>
 							</div>
-						) : null}
-					</div>
+						</div>
+					) : null}
 				</section>
-
-				<section className="space-y-3">
-					<StepHeading step={3} title={t("agentSetup.installTitle")} />
-					<p className="text-sm text-muted-foreground">
-						{t("agentSetup.installDescription")}
-					</p>
-					<CodeSnippet
-						title={t("agentSetup.mcpInstallCommandTitle")}
-						code={claudeMcpInstallCommand}
-						onCopy={() =>
-							void copyText("mcp-install-command", claudeMcpInstallCommand)
-						}
-						copied={copiedSnippet === "mcp-install-command"}
-						copyLabel={t("agentSetup.copySnippet")}
-						copiedLabel={t("agentSetup.copiedSnippet")}
-						disabled={!hasFreshToken}
-						disabledHint={t("agentSetup.commandNeedsToken")}
-					/>
-					<ul className="space-y-1.5">
-						{[
-							t("agentSetup.mcpInstallStepOne"),
-							t("agentSetup.mcpInstallStepTwo"),
-							t("agentSetup.mcpInstallStepThree"),
-						].map((note) => (
-							<li
-								key={note}
-								className="flex min-w-0 gap-2.5 text-sm text-muted-foreground"
-							>
-								<span
-									className="mt-2 size-1.5 shrink-0 rounded-full bg-border"
-									aria-hidden="true"
-								/>
-								<span className="min-w-0">{note}</span>
-							</li>
-						))}
-					</ul>
-				</section>
-
-				<McpUsageExamples />
 
 				{isSaving ? (
 					<p className="text-xs text-muted-foreground">

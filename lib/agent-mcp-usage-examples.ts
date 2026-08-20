@@ -2,7 +2,6 @@ export const MCP_USAGE_EXAMPLE_IDS = [
 	"ghAssign",
 	"ghUrgent",
 	"nextUp",
-	"featureFlag",
 	"backendTag",
 ] as const;
 

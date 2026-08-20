@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { AgentSetupSection } from "@/components/settings/AgentSetupSection";
-import { McpTutorialPlayer } from "@/components/settings/McpTutorialPlayer";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -27,16 +26,7 @@ import {
 } from "@/lib/agent-setup-dialog-store";
 
 function AgentSetupBody() {
-	return (
-		<div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,18.5rem)_minmax(0,1fr)] lg:items-start lg:gap-6">
-			<div className="min-w-0 lg:sticky lg:top-0">
-				<McpTutorialPlayer compact />
-			</div>
-			<div className="min-w-0">
-				<AgentSetupSection />
-			</div>
-		</div>
-	);
+	return <AgentSetupSection />;
 }
 
 export function AgentSetupDialog() {
@@ -70,7 +60,7 @@ export function AgentSetupDialog() {
 
 	return (
 		<Dialog open={open} onOpenChange={setAgentSetupDialogOpen}>
-			<DialogContent className="flex max-h-[min(88dvh,52rem)] w-[min(100%-1.5rem,56rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl lg:max-w-4xl">
+			<DialogContent className="flex max-h-[min(88dvh,48rem)] w-[min(100%-1.5rem,42rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
 				<div className="shrink-0 border-b border-border/60 bg-muted/20 px-5 py-4 pr-14 sm:px-6 sm:py-5">
 					<DialogHeader className="pr-0 text-left">
 						<DialogTitle>{title}</DialogTitle>

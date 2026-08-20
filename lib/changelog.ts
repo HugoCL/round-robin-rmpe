@@ -46,7 +46,7 @@ export const changelogEntries: ChangelogEntry[] = [
 		type: "feature",
 		title: "El agente MCP sale de experimental",
 		description:
-			"Ya puedes conectar Claude Code sin activar experimentos: hay un acceso MCP en el header, un tutorial de cómo activarlo y un comando de un solo paso. Con el token personal, tu agente puede asignar PRs, ver a quién le toca y registrar o marcar feature flags en el Repositorio de FF.",
+			"Ya puedes conectar Claude Code sin activar experimentos: hay un acceso MCP en el header y un setup guiado de tres pasos. Con el token personal, tu agente puede asignar PRs y ver a quién le toca; GitHub CLI (gh) se encarga de publicar el PR.",
 	},
 	{
 		date: "2026-08-12",

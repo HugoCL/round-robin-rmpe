@@ -449,10 +449,14 @@
 		"settingsRowDescription": "El mismo setup que abre el ícono del robot en el header.",
 		"connectTab": "Conectar",
 		"tokensTab": "Tokens",
+		"wizardProgress": "Progreso de la configuración",
+		"wizardStep": "Paso {current} de {total}",
+		"wizardTeam": "Equipo",
+		"wizardToken": "Token",
+		"wizardConnect": "Conectar",
 		"capabilityAssign": "Asignar un PR y avisar en Google Chat.",
 		"capabilityContext": "Consultar a quién le toca, sin asignar todavía.",
-		"capabilityFlags": "Registrar y marcar feature flags en el Repositorio de FF.",
-		"capabilityGh": "Trabajar junto a gh, que se queda con GitHub.",
+		"capabilityGh": "Trabajar junto a GitHub CLI (gh), que se queda con GitHub.",
 		"tokenSectionDescription": "Revoca un token si perdiste el laptop o se filtró un comando. Los demás siguen funcionando.",
 		"defaultTeamLabel": "Equipo por defecto",
 		"defaultTeamPlaceholder": "Elige un equipo por defecto…",
@@ -504,15 +508,15 @@
 		"tutorialSceneCommandHint": "Claude Code tiene que estar instalado en esa máquina.",
 		"tutorialSceneAssignCaption": "Listo: desde ahí se lo pides conversando.",
 		"usageTitle": "Cómo pedírselo",
-		"usageBestWay": "Deja que gh se encargue de GitHub (crear el PR, push, checks) y que La Lista elija al revisor y avise en Google Chat. Si no tienes la URL a mano, pídele que la saque con gh pr view.",
+		"usageBestWay": "Deja que GitHub CLI (gh) se encargue de GitHub —crear el PR, hacer push y revisar los checks— y que La Lista elija al revisor y avise en Google Chat. Si no tienes la URL a mano, pídele que la saque con gh pr view.",
 		"usageExample": {
 			"ghAssign": {
 				"label": "Crear el PR",
-				"user": "Crea el PR con gh y asígnalo en La Lista.",
+				"user": "Crea el PR con GitHub CLI (gh) y asígnalo en La Lista.",
 				"agent": "PR #482 publicado. Le tocó a Nicolás y ya avisé en Chat."
 			},
 			"ghUrgent": {
-				"label": "Urgente desde gh",
+				"label": "Urgente desde GitHub CLI",
 				"user": "Saca la URL con gh pr view y asígnalo como urgente.",
 				"agent": "Urgente para Camila. El ping ya salió al espacio de Chat."
 			},
@@ -520,11 +524,6 @@
 				"label": "Quién sigue",
 				"user": "¿A quién le toca ahora, sin asignar todavía?",
 				"agent": "Sigue Diego. Sofía está de vacaciones, así que no entra en la rotación."
-			},
-			"featureFlag": {
-				"label": "Feature flag",
-				"user": "Agregué enable_new_checkout. Regístralo en el Repositorio de FF.",
-				"agent": "Registrada. La antigüedad empieza a contar hoy."
 			},
 			"backendTag": {
 				"label": "Por tag",
@@ -536,7 +535,7 @@
 	"mcpLaunch": {
 		"kicker": "Nuevo",
 		"title": "El agente MCP ya salió de experimentos",
-		"description": "Desde Claude Code: gh publica el PR y La Lista elige al revisor. Un token, un comando y queda andando.",
+		"description": "Desde Claude Code: GitHub CLI (gh) publica el PR y La Lista elige al revisor. Un token, un comando y queda andando.",
 		"configure": "Configurarlo ahora",
 		"later": "Más tarde",
 		"dismiss": "Cerrar este aviso"

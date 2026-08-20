@@ -43,12 +43,6 @@ function useMcpUsageExampleCopy(id: McpUsageExampleId): UsageExampleCopy {
 				user: t("usageExample.nextUp.user"),
 				agent: t("usageExample.nextUp.agent"),
 			};
-		case "featureFlag":
-			return {
-				label: t("usageExample.featureFlag.label"),
-				user: t("usageExample.featureFlag.user"),
-				agent: t("usageExample.featureFlag.agent"),
-			};
 		case "backendTag":
 			return {
 				label: t("usageExample.backendTag.label"),

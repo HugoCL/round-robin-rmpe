@@ -404,10 +404,14 @@
 		"settingsRowDescription": "The same setup the robot icon opens in the header.",
 		"connectTab": "Connect",
 		"tokensTab": "Tokens",
+		"wizardProgress": "Setup progress",
+		"wizardStep": "Step {current} of {total}",
+		"wizardTeam": "Team",
+		"wizardToken": "Token",
+		"wizardConnect": "Connect",
 		"capabilityAssign": "Assign a PR and post to Google Chat.",
 		"capabilityContext": "Check who is next, without assigning yet.",
-		"capabilityFlags": "Register and retire feature flags in the FF Repository.",
-		"capabilityGh": "Work alongside gh, which keeps GitHub.",
+		"capabilityGh": "Work alongside GitHub CLI (gh), which handles GitHub.",
 		"tokenSectionDescription": "Revoke a token if a laptop is gone or a command leaked. The rest keep working.",
 		"defaultTeamLabel": "Default team",
 		"defaultTeamPlaceholder": "Choose a default team…",
@@ -459,15 +463,15 @@
 		"tutorialSceneCommandHint": "Claude Code has to be installed on that machine.",
 		"tutorialSceneAssignCaption": "Done: from there you just ask for it in plain language.",
 		"usageTitle": "How to ask for it",
-		"usageBestWay": "Let gh handle GitHub (create the PR, push, checks) and let La Lista pick the reviewer and post to Google Chat. If you don't have the URL at hand, tell it to grab it with gh pr view.",
+		"usageBestWay": "Let GitHub CLI (gh) handle GitHub—create the PR, push, and check CI—and let La Lista pick the reviewer and post to Google Chat. If you don't have the URL at hand, tell it to grab it with gh pr view.",
 		"usageExample": {
 			"ghAssign": {
 				"label": "Create the PR",
-				"user": "Create the PR with gh and assign it in La Lista.",
+				"user": "Create the PR with GitHub CLI (gh) and assign it in La Lista.",
 				"agent": "PR #482 is up. It went to Nicolás, and Chat already knows."
 			},
 			"ghUrgent": {
-				"label": "Urgent from gh",
+				"label": "Urgent from GitHub CLI",
 				"user": "Grab the URL with gh pr view and assign it as urgent.",
 				"agent": "Urgent for Camila. The ping already hit the Chat space."
 			},
@@ -475,11 +479,6 @@
 				"label": "Who's next",
 				"user": "Who's up next, without assigning yet?",
 				"agent": "Diego is next. Sofía is on vacation, so she stays out of the rotation."
-			},
-			"featureFlag": {
-				"label": "Feature flag",
-				"user": "I added enable_new_checkout. Register it in the FF Repository.",
-				"agent": "Registered. Age tracking starts today."
 			},
 			"backendTag": {
 				"label": "By tag",
@@ -491,7 +490,7 @@
 	"mcpLaunch": {
 		"kicker": "New",
 		"title": "The MCP agent is out of experiments",
-		"description": "From Claude Code: gh publishes the PR and La Lista picks the reviewer. One token, one command, done.",
+		"description": "From Claude Code: GitHub CLI (gh) publishes the PR and La Lista picks the reviewer. One token, one command, done.",
 		"configure": "Set it up now",
 		"later": "Later",
 		"dismiss": "Dismiss this notice"

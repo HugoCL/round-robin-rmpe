@@ -4,7 +4,6 @@ import {
 	ChevronDown,
 	ClipboardList,
 	Download,
-	Flag,
 	Lightbulb,
 	Menu,
 	RotateCw,
@@ -248,13 +247,6 @@ export function PageHeader({
 								>
 									<Bot />
 								</IconActionButton>
-								{teamSlug ? (
-									<IconActionButton asChild label={t("featureFlags.shortcut")}>
-										<Link href={`/${locale}/${teamSlug}/feature-flags`}>
-											<Flag />
-										</Link>
-									</IconActionButton>
-								) : null}
 								<IconActionButton asChild label={t("suggestions.shortcut")}>
 									<Link href={`/${locale}/suggestions`}>
 										<Lightbulb />
