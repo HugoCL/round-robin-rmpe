@@ -1023,7 +1023,7 @@
 	},
 	"announcements": {
 		"title": "Avisos",
-		"automaticAssignmentMessages": "Asignar un PR ahora es más simple: el mensaje siempre se envía. Usa «Personalizar mensaje» solo si quieres cambiar el texto antes de asignar.",
+		"mcpSetupWizard": "Conectar el Agente MCP ahora es más fácil: elige tu equipo, genera un token y conecta Claude Code en tres pasos. Abre el ícono del robot para empezar.",
 		"dismiss": "Descartar"
 	},
 	"changelog": {

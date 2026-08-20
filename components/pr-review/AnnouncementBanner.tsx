@@ -25,8 +25,8 @@ interface Announcement {
 
 const ANNOUNCEMENTS: Announcement[] = [
 	{
-		id: "automatic-assignment-messages-v1",
-		translationKey: "announcements.automaticAssignmentMessages",
+		id: "mcp-setup-wizard-v1",
+		translationKey: "announcements.mcpSetupWizard",
 		variant: "default",
 	},
 ];

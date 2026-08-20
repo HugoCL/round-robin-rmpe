@@ -978,7 +978,7 @@
 	},
 	"announcements": {
 		"title": "Notices",
-		"automaticAssignmentMessages": "Assigning a PR is simpler now: the message is always sent. Use “Customize message” only when you want to change the text before assigning.",
+		"mcpSetupWizard": "Connecting the MCP Agent is easier now: choose your team, generate a token, and connect Claude Code in three steps. Open the robot icon to get started.",
 		"dismiss": "Dismiss"
 	},
 	"changelog": {
