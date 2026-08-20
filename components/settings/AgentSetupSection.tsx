@@ -215,7 +215,7 @@ export function AgentSetupSection() {
 				</TabsTrigger>
 			</TabsList>
 
-			<TabsContent value="connect" className="mt-5 space-y-7">
+			<TabsContent value="connect" className="mt-5 min-w-0 space-y-7">
 				<ul className="space-y-1.5 text-sm text-muted-foreground">
 					<li>{t("agentSetup.capabilityAssign")}</li>
 					<li>{t("agentSetup.capabilityContext")}</li>
@@ -273,7 +273,7 @@ export function AgentSetupSection() {
 								placeholder={t("agentSetup.tokenLabelPlaceholder")}
 							/>
 						</div>
-						<div className="flex flex-wrap items-center gap-3">
+						<div className="flex min-w-0 flex-wrap items-center gap-3">
 							<Button
 								type="button"
 								onClick={handleGenerateToken}
@@ -284,7 +284,7 @@ export function AgentSetupSection() {
 									? t("agentSetup.generatingToken")
 									: t("agentSetup.generateToken")}
 							</Button>
-							<p className="text-xs text-muted-foreground">
+							<p className="min-w-0 flex-1 text-xs text-muted-foreground">
 								{t("agentSetup.tokenOnceHint")}
 							</p>
 						</div>
@@ -335,12 +335,12 @@ export function AgentSetupSection() {
 						].map((step, index) => (
 							<li
 								key={step}
-								className="flex gap-3 text-sm text-muted-foreground"
+								className="flex min-w-0 gap-3 text-sm text-muted-foreground"
 							>
 								<span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border/70 text-[11px] font-semibold text-foreground">
 									{index + 1}
 								</span>
-								<span>{step}</span>
+								<span className="min-w-0">{step}</span>
 							</li>
 						))}
 					</ol>
@@ -353,7 +353,7 @@ export function AgentSetupSection() {
 				) : null}
 			</TabsContent>
 
-			<TabsContent value="tokens" className="mt-5 space-y-3">
+			<TabsContent value="tokens" className="mt-5 min-w-0 space-y-3">
 				<p className="text-sm text-muted-foreground">
 					{t("agentSetup.tokenSectionDescription")}
 				</p>

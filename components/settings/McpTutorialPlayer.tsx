@@ -228,11 +228,11 @@ export function McpTutorialPlayer({
 				<p className="calm-kicker">{t("tutorialTitle")}</p>
 				<ol className="mt-3 space-y-2">
 					{staticSteps.map((step, index) => (
-						<li key={step} className="flex gap-3 text-sm">
+						<li key={step} className="flex min-w-0 gap-3 text-sm">
 							<span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-[11px] font-semibold text-primary">
 								{index + 1}
 							</span>
-							<span className="text-muted-foreground">{step}</span>
+							<span className="min-w-0 text-muted-foreground">{step}</span>
 						</li>
 					))}
 				</ol>
