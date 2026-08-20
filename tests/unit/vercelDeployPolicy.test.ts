@@ -4,15 +4,33 @@ import {
 	DEMO_VERCEL_PROJECT_ID,
 	shouldRunConvexDeploy,
 	shouldSkipVercelBuild,
+	V0_VERCEL_PROJECT_ID,
 } from "../../scripts/vercel-deploy-policy.mjs";
 
-test("skips only the leftover demo Vercel project", () => {
+test("skips leftover Vercel projects that cannot pass PR checks", () => {
 	assert.equal(
 		shouldSkipVercelBuild({ projectId: DEMO_VERCEL_PROJECT_ID }),
 		true,
 	);
 	assert.equal(
-		shouldSkipVercelBuild({ projectId: "prj_zDdUvumm7d7kb9zaEgtIqdepyeDt" }),
+		shouldSkipVercelBuild({
+			projectId: V0_VERCEL_PROJECT_ID,
+			vercelEnv: "preview",
+		}),
+		true,
+	);
+	assert.equal(
+		shouldSkipVercelBuild({
+			projectId: V0_VERCEL_PROJECT_ID,
+			vercelEnv: "production",
+		}),
+		false,
+	);
+	assert.equal(
+		shouldSkipVercelBuild({
+			projectId: "prj_zDdUvumm7d7kb9zaEgtIqdepyeDt",
+			vercelEnv: "preview",
+		}),
 		false,
 	);
 	assert.equal(shouldSkipVercelBuild({}), false);
