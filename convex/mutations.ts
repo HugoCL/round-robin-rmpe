@@ -9,7 +9,10 @@ import {
 	normalizePartTimeSchedule,
 	resolveTeamTimezone,
 } from "../lib/reviewerAvailability";
-import { isExcludedFromReviewPool } from "../lib/reviewerEligibility";
+import {
+	isExcludedFromReviewPool,
+	isIncludedInTagRotations,
+} from "../lib/reviewerEligibility";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
 	internalMutation,
@@ -619,6 +622,7 @@ export const updateReviewer = mutation({
 		googleChatUserId: v.optional(v.string()),
 		partTimeSchedule: partTimeScheduleValidator,
 		excludedFromReviewPool: v.optional(v.boolean()),
+		includedInTagRotations: v.optional(v.boolean()),
 	},
 	handler: async (
 		ctx,
@@ -629,6 +633,7 @@ export const updateReviewer = mutation({
 			googleChatUserId,
 			partTimeSchedule,
 			excludedFromReviewPool,
+			includedInTagRotations,
 		},
 	) => {
 		const reviewer = await ctx.db.get(id);
@@ -655,43 +660,19 @@ export const updateReviewer = mutation({
 
 		const normalizedPartTimeSchedule =
 			normalizePartTimeSchedule(partTimeSchedule);
-		const team =
-			reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
-		const now = Date.now();
-
 		const patchBase = {
 			name: name.trim(),
 			email: email.trim().toLowerCase(),
 			googleChatUserId: googleChatUserId?.trim() || undefined,
 			partTimeSchedule: normalizedPartTimeSchedule,
+			...(excludedFromReviewPool !== undefined
+				? { excludedFromReviewPool }
+				: {}),
+			...(includedInTagRotations !== undefined
+				? { includedInTagRotations }
+				: {}),
 		};
-
-		if (excludedFromReviewPool === true) {
-			const allReviewers = await ctx.db
-				.query("reviewers")
-				.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
-				.collect();
-			const availableReviewers = allReviewers.filter(
-				(candidate) =>
-					isReviewerEligibleForAssignmentForTeam(candidate, team, now) ||
-					candidate._id === id,
-			);
-			const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
-			await ctx.db.patch(id, {
-				...patchBase,
-				excludedFromReviewPool: true,
-				isAbsent: false,
-				absentUntil: undefined,
-				assignmentCount: mostCommonCount,
-			});
-		} else if (excludedFromReviewPool === false) {
-			await ctx.db.patch(id, {
-				...patchBase,
-				excludedFromReviewPool: false,
-			});
-		} else {
-			await ctx.db.patch(id, patchBase);
-		}
+		await ctx.db.patch(id, patchBase);
 
 		// Create backup snapshot
 		const scheduleMessage = normalizedPartTimeSchedule
@@ -701,8 +682,8 @@ export const updateReviewer = mutation({
 			excludedFromReviewPool === undefined
 				? ""
 				: excludedFromReviewPool
-					? " [out of review pool]"
-					: " [in review pool]";
+					? " [out of general rotation]"
+					: " [in general rotation]";
 		await createSnapshot(
 			ctx,
 			reviewer.teamId,
@@ -932,39 +913,26 @@ export const setReviewerExcludedFromReviewPool = mutation({
 			throw new Error("Reviewer is missing team assignment");
 		}
 		await assertCanMutateTeamById(ctx, reviewer.teamId);
-		const team =
-			reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
-		const now = Date.now();
-
+		const includedInTagRotations = isIncludedInTagRotations(reviewer);
 		if (excluded) {
-			const allReviewers = await ctx.db
-				.query("reviewers")
-				.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
-				.collect();
-			const availableReviewers = allReviewers.filter(
-				(candidate) =>
-					isReviewerEligibleForAssignmentForTeam(candidate, team, now) ||
-					candidate._id === id,
-			);
-			const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
-
 			await ctx.db.patch(id, {
 				excludedFromReviewPool: true,
-				isAbsent: false,
-				absentUntil: undefined,
-				assignmentCount: mostCommonCount,
+				includedInTagRotations,
 			});
 			await createSnapshot(
 				ctx,
 				reviewer.teamId,
-				`Marked ${reviewer.name} as not in review pool (out of rotation)`,
+				`Marked ${reviewer.name} as out of the general rotation`,
 			);
 		} else {
-			await ctx.db.patch(id, { excludedFromReviewPool: false });
+			await ctx.db.patch(id, {
+				excludedFromReviewPool: false,
+				includedInTagRotations,
+			});
 			await createSnapshot(
 				ctx,
 				reviewer.teamId,
-				`Marked ${reviewer.name} as in review pool again`,
+				`Marked ${reviewer.name} as in the general rotation again`,
 			);
 		}
 
@@ -1425,9 +1393,8 @@ async function executeAssignPRBatch(
 			reviewerTimezoneTeam,
 			availabilityNow,
 		);
-		const poolExcluded = isExcludedFromReviewPool(reviewer);
 		availabilityByReviewerId.set(reviewer._id, {
-			effectiveIsAbsent: poolExcluded || availability.effectiveIsAbsent,
+			effectiveIsAbsent: availability.effectiveIsAbsent,
 			isPartTime: availability.partTimeSchedule !== undefined,
 		});
 	}
@@ -1498,12 +1465,11 @@ async function executeAssignPRBatch(
 			...reviewer,
 			effectiveIsAbsent:
 				availabilityByReviewerId.get(reviewer._id)?.effectiveIsAbsent ??
-				(isReviewerEffectivelyAbsentForTeam(
+				isReviewerEffectivelyAbsentForTeam(
 					reviewer,
 					reviewerTimezoneTeamById.get(reviewer._id) ?? team,
 					availabilityNow,
-				) ||
-					isExcludedFromReviewPool(reviewer)),
+				),
 		})),
 		excludedReviewerId: actionByReviewerId,
 	});
@@ -1730,7 +1696,10 @@ async function executeAssignPR(
 	if (!reviewer) {
 		throw new Error("Reviewer not found");
 	}
-	if (!forced && isExcludedFromReviewPool(reviewer)) {
+	const includedByRotation = tagId
+		? isIncludedInTagRotations(reviewer) && reviewer.tags.includes(tagId)
+		: !isExcludedFromReviewPool(reviewer);
+	if (!forced && !includedByRotation) {
 		throw new Error("Reviewer is not in the review pool");
 	}
 
@@ -2301,6 +2270,7 @@ export const importReviewersData = mutation({
 				assignmentCount: v.number(),
 				isAbsent: v.boolean(),
 				excludedFromReviewPool: v.optional(v.boolean()),
+				includedInTagRotations: v.optional(v.boolean()),
 				createdAt: v.optional(v.number()),
 				tags: v.optional(v.array(v.string())),
 				googleChatUserId: v.optional(v.string()),
@@ -2343,6 +2313,7 @@ export const importReviewersData = mutation({
 				assignmentCount: reviewerData.assignmentCount,
 				isAbsent: reviewerData.isAbsent,
 				excludedFromReviewPool: reviewerData.excludedFromReviewPool,
+				includedInTagRotations: reviewerData.includedInTagRotations,
 				partTimeSchedule: normalizePartTimeSchedule(
 					reviewerData.partTimeSchedule,
 				),
@@ -2530,6 +2501,7 @@ async function createSnapshot(
 		assignmentCount: reviewer.assignmentCount,
 		isAbsent: reviewer.isAbsent,
 		excludedFromReviewPool: reviewer.excludedFromReviewPool,
+		includedInTagRotations: reviewer.includedInTagRotations,
 		partTimeSchedule: normalizePartTimeSchedule(reviewer.partTimeSchedule),
 		birthdayMonth: reviewer.birthdayMonth,
 		birthdayDay: reviewer.birthdayDay,
@@ -2706,6 +2678,7 @@ export const restoreFromBackup = mutation({
 					assignmentCount: reviewerData.assignmentCount,
 					isAbsent: reviewerData.isAbsent,
 					excludedFromReviewPool: reviewerData.excludedFromReviewPool,
+					includedInTagRotations: reviewerData.includedInTagRotations,
 					partTimeSchedule: normalizePartTimeSchedule(
 						reviewerData.partTimeSchedule,
 					),

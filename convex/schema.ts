@@ -53,8 +53,10 @@ export default defineSchema({
 		assignmentCount: v.number(),
 		isAbsent: v.boolean(),
 		absentUntil: v.optional(v.number()), // Timestamp when the reviewer is expected to return
-		/** When true, never picked by round-robin / batch assignment for this team */
+		/** Legacy name: when true, skipped by the general rotation. */
 		excludedFromReviewPool: v.optional(v.boolean()),
+		/** Defaults to !excludedFromReviewPool for rows created before this setting. */
+		includedInTagRotations: v.optional(v.boolean()),
 		partTimeSchedule: v.optional(
 			v.object({
 				workingDays: v.array(
@@ -185,6 +187,7 @@ export default defineSchema({
 				assignmentCount: v.number(),
 				isAbsent: v.boolean(),
 				excludedFromReviewPool: v.optional(v.boolean()),
+				includedInTagRotations: v.optional(v.boolean()),
 				partTimeSchedule: v.optional(
 					v.object({
 						workingDays: v.array(

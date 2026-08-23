@@ -42,6 +42,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-08-23",
+		type: "feature",
+		title: "Rotaciones generales y por tag, por separado",
+		description:
+			"Ahora puedes decidir por cada revisor si participa en la rotación general y, de forma independiente, en las rotaciones de los tags que tiene asignados. Así alguien puede salir del round robin general sin perder sus especialidades, o hacer lo contrario.",
+	},
+	{
 		date: "2026-08-20",
 		type: "feature",
 		title: "El agente MCP sale de experimental",

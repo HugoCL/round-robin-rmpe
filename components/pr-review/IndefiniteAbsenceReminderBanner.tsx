@@ -11,6 +11,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { Id } from "@/convex/_generated/dataModel";
+import { isIncludedInTagRotations } from "@/lib/reviewerEligibility";
 import { usePRReview } from "./PRReviewContext";
 
 export function IndefiniteAbsenceReminderBanner() {
@@ -27,7 +28,7 @@ export function IndefiniteAbsenceReminderBanner() {
 	if (
 		!row.isAbsent ||
 		row.absentUntil != null ||
-		row.excludedFromReviewPool === true
+		(row.excludedFromReviewPool === true && !isIncludedInTagRotations(row))
 	) {
 		return null;
 	}
@@ -62,22 +63,24 @@ export function IndefiniteAbsenceReminderBanner() {
 								{t("absent.markAvailableCtaTooltip")}
 							</TooltipContent>
 						</Tooltip>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									className="w-fit bg-background/70"
-									onClick={() => void onSetExcludedFromReviewPool(id, true)}
-								>
-									{t("absent.notAReviewerCta")}
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent side="top" className="max-w-xs text-xs">
-								{t("absent.notAReviewerCtaTooltip")}
-							</TooltipContent>
-						</Tooltip>
+						{row.excludedFromReviewPool !== true && (
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										type="button"
+										size="sm"
+										variant="outline"
+										className="w-fit bg-background/70"
+										onClick={() => void onSetExcludedFromReviewPool(id, true)}
+									>
+										{t("absent.notAReviewerCta")}
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent side="top" className="max-w-xs text-xs">
+									{t("absent.notAReviewerCtaTooltip")}
+								</TooltipContent>
+							</Tooltip>
+						)}
 					</div>
 				</TooltipProvider>
 			</AlertDescription>

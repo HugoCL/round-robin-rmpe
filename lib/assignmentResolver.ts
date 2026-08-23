@@ -1,3 +1,5 @@
+import { isEligibleForAssignment } from "./reviewerEligibility";
+
 export type AssignmentMode = "regular" | "tag";
 
 export type AssignmentSlotStrategy =
@@ -28,8 +30,10 @@ export type AssignmentResolverReviewer<ReviewerId = string, TagId = string> = {
 	assignmentCount: number;
 	createdAt: number;
 	effectiveIsAbsent: boolean;
-	/** When true, treated as unavailable for random/tag strategies (same as absent) */
+	/** Legacy name: when true, excluded from the general rotation. */
 	excludedFromReviewPool?: boolean;
+	/** Defaults to the inverse of excludedFromReviewPool for legacy rows. */
+	includedInTagRotations?: boolean;
 	tags: TagId[];
 };
 
@@ -135,10 +139,7 @@ export function resolveAssignmentSlots<
 				failed.push({ slotIndex, reason: "reviewer_not_found" });
 				continue;
 			}
-			if (
-				reviewer.effectiveIsAbsent ||
-				reviewer.excludedFromReviewPool === true
-			) {
+			if (!isEligibleForAssignment(reviewer)) {
 				failed.push({ slotIndex, reason: "reviewer_absent" });
 				continue;
 			}
@@ -188,12 +189,7 @@ export function resolveAssignmentSlots<
 		}
 
 		const candidates = reviewers.filter((reviewer) => {
-			if (
-				reviewer.effectiveIsAbsent ||
-				reviewer.excludedFromReviewPool === true
-			) {
-				return false;
-			}
+			if (!isEligibleForAssignment(reviewer, chosenTagId)) return false;
 			if (
 				excludedReviewerId !== undefined &&
 				toKey(reviewer._id) === toKey(excludedReviewerId)
@@ -201,12 +197,6 @@ export function resolveAssignmentSlots<
 				return false;
 			}
 			if (selectedReviewerIds.has(toKey(reviewer._id))) return false;
-			if (
-				chosenTagId !== undefined &&
-				!reviewer.tags.some((tagId) => toKey(tagId) === toKey(chosenTagId))
-			) {
-				return false;
-			}
 			return true;
 		});
 

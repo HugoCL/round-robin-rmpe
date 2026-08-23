@@ -89,6 +89,7 @@ type AgentReviewerSummary = {
 	assignmentCount: number;
 	effectiveIsAbsent: boolean;
 	excludedFromReviewPool?: boolean;
+	includedInTagRotations?: boolean;
 	tags: string[];
 };
 
@@ -129,6 +130,7 @@ function summarizeReviewer(reviewer: {
 	assignmentCount?: number;
 	effectiveIsAbsent?: boolean;
 	excludedFromReviewPool?: boolean;
+	includedInTagRotations?: boolean;
 	tags?: string[];
 }): AgentReviewerSummary {
 	return {
@@ -139,6 +141,7 @@ function summarizeReviewer(reviewer: {
 		effectiveIsAbsent: reviewer.effectiveIsAbsent === true,
 		excludedFromReviewPool:
 			reviewer.excludedFromReviewPool === true ? true : undefined,
+		includedInTagRotations: reviewer.includedInTagRotations,
 		tags: (reviewer.tags ?? []).map((tagId) => String(tagId)),
 	};
 }
@@ -282,12 +285,12 @@ function selectNextReviewer<
 		createdAt: number;
 		effectiveIsAbsent: boolean;
 		excludedFromReviewPool?: boolean;
+		includedInTagRotations?: boolean;
 		tags: string[];
 	},
 >(reviewers: T[], tagId?: string) {
 	const candidates = reviewers
-		.filter((reviewer) => isEligibleForAssignment(reviewer))
-		.filter((reviewer) => (tagId ? reviewer.tags.includes(tagId) : true))
+		.filter((reviewer) => isEligibleForAssignment(reviewer, tagId))
 		.sort((a, b) => {
 			if (a.assignmentCount !== b.assignmentCount) {
 				return a.assignmentCount - b.assignmentCount;

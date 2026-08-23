@@ -252,18 +252,20 @@
 		"countUpdateFailed": "Failed to update assignment count. Please try again.",
 		"updateSuccess": "Reviewer updated successfully",
 		"updateFailed": "Failed to update reviewer. Please try again.",
-		"notAReviewerCta": "I don't take PRs in this rotation",
-		"outOfReviewPoolBadge": "Out of rotation",
-		"inReviewPoolSwitchLabel": "Included in automatic assignment",
-		"inReviewPoolSwitchLabelShort": "Automatic assignment",
+		"notAReviewerCta": "I don't take PRs in the general rotation",
+		"outOfReviewPoolBadge": "Out of general rotation",
+		"inReviewPoolSwitchLabel": "Included in the general rotation",
+		"inReviewPoolSwitchLabelShort": "General rotation",
 		"availabilitySwitchLabel": "Available today",
 		"availabilityHelp": "Shows whether this person can receive PRs today. It can change because of an absence or part-time schedule.",
-		"automaticAssignmentHelp": "Controls whether this person takes part in the round robin and receives automatic assignments.",
-		"outOfReviewPoolEditLabel": "Not in review pool",
-		"outOfReviewPoolEditHint": "Excluded from automatic PR assignment for this team. You can still use the app.",
-		"excludedFromPoolSuccess": "You are no longer in the review rotation for this team.",
-		"includedInPoolSuccess": "You are back in the review rotation for this team.",
-		"rotationColumn": "Automatic assignment"
+		"automaticAssignmentHelp": "Controls only the general round robin. Tag participation is configured when editing the reviewer.",
+		"outOfReviewPoolEditLabel": "Out of the general rotation",
+		"outOfReviewPoolEditHint": "You won't receive PRs from the general round robin.",
+		"tagRotationsEditLabel": "Included in tag rotations",
+		"tagRotationsEditHint": "Allows assignments from your assigned tags, independently from the general rotation.",
+		"excludedFromPoolSuccess": "You are no longer in this team's general rotation.",
+		"includedInPoolSuccess": "You are back in this team's general rotation.",
+		"rotationColumn": "General rotation"
 	},
 	"messages": {
 		"tagAdded": "Tag added successfully",
@@ -718,9 +720,9 @@
 		"indefiniteReminderTitle": "You're still marked absent, with no return date",
 		"indefiniteReminderDescription": "Without a return date, your team can't tell when you're back. Pick the option that matches your situation:",
 		"markAvailableCta": "I'm available again",
-		"markAvailableCtaTooltip": "Clears absence; you stay in the reviewer rotation.",
-		"notAReviewerCta": "I don't take PRs in this rotation",
-		"notAReviewerCtaTooltip": "Leaves automatic PR assignment; this banner stops showing."
+		"markAvailableCtaTooltip": "Clears your absence without changing your rotations.",
+		"notAReviewerCta": "I don't take PRs in the general rotation",
+		"notAReviewerCtaTooltip": "Leaves the general rotation; tag rotations keep their current setting."
 	},
 	"birthday": {
 		"setupTitle": "When is your birthday?",

@@ -297,18 +297,20 @@
 		"countUpdateFailed": "Falló al actualizar el contador de asignaciones. Por favor intenta de nuevo.",
 		"updateSuccess": "Revisor actualizado exitosamente",
 		"updateFailed": "Falló al actualizar el revisor. Por favor intenta de nuevo.",
-		"notAReviewerCta": "No participo en la rotación de PRs",
-		"outOfReviewPoolBadge": "Fuera de rotación",
-		"inReviewPoolSwitchLabel": "Participa en la asignación automática",
-		"inReviewPoolSwitchLabelShort": "Asignación automática",
+		"notAReviewerCta": "No participo en la rotación general",
+		"outOfReviewPoolBadge": "Fuera de rotación general",
+		"inReviewPoolSwitchLabel": "Participa en la rotación general",
+		"inReviewPoolSwitchLabelShort": "Rotación general",
 		"availabilitySwitchLabel": "Disponible hoy",
 		"availabilityHelp": "Indica si esta persona puede recibir PRs hoy. Puede cambiar por una ausencia o un horario parcial.",
-		"automaticAssignmentHelp": "Define si esta persona participa en el round robin y recibe asignaciones automáticas.",
-		"outOfReviewPoolEditLabel": "Fuera del pool de revisores",
-		"outOfReviewPoolEditHint": "No recibes asignaciones automáticas de PR en este equipo. Sigues pudiendo usar la app.",
-		"excludedFromPoolSuccess": "Ya no estás en la rotación de revisores de este equipo.",
-		"includedInPoolSuccess": "Volviste a la rotación de revisores de este equipo.",
-		"rotationColumn": "Asignación automática"
+		"automaticAssignmentHelp": "Controla solo el round robin general. La participación por tag se configura al editar al revisor.",
+		"outOfReviewPoolEditLabel": "Fuera de la rotación general",
+		"outOfReviewPoolEditHint": "No recibes asignaciones del round robin general.",
+		"tagRotationsEditLabel": "Participa en rotaciones por tag",
+		"tagRotationsEditHint": "Permite recibir asignaciones de los tags que tengas asignados, independiente de la rotación general.",
+		"excludedFromPoolSuccess": "Ya no estás en la rotación general de este equipo.",
+		"includedInPoolSuccess": "Volviste a la rotación general de este equipo.",
+		"rotationColumn": "Rotación general"
 	},
 	"messages": {
 		"tagAdded": "Tag agregado exitosamente",
@@ -763,9 +765,9 @@
 		"indefiniteReminderTitle": "Sigues marcado como ausente, sin fecha de regreso",
 		"indefiniteReminderDescription": "Sin fecha de regreso el equipo no sabe cuándo volverás. Elige la opción que coincida con tu situación:",
 		"markAvailableCta": "Volver a estar disponible",
-		"markAvailableCtaTooltip": "Quita el ausente; sigues en la rotación de revisores.",
-		"notAReviewerCta": "No participo en la rotación de PRs",
-		"notAReviewerCtaTooltip": "Sales de la asignación automática de PRs; dejamos de mostrarte este aviso."
+		"markAvailableCtaTooltip": "Quita el ausente sin cambiar tus rotaciones.",
+		"notAReviewerCta": "No participo en la rotación general",
+		"notAReviewerCtaTooltip": "Sales de la rotación general; las rotaciones por tag conservan su configuración."
 	},
 	"birthday": {
 		"setupTitle": "¿Cuándo cumples años?",

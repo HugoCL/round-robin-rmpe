@@ -5,6 +5,7 @@ import {
 	resolveTeamTimezone,
 	type Weekday,
 } from "../lib/reviewerAvailability";
+import { isEligibleForAssignment } from "../lib/reviewerEligibility";
 import { summarizeRecentAssignments } from "../lib/websiteMetrics";
 import {
 	getMemberTeamsForEmail,
@@ -1017,9 +1018,8 @@ export const getNextReviewer = query({
 		}
 
 		// Find available reviewers (not absent, in pool)
-		const availableReviewers = enrichedReviewers.filter(
-			(reviewer) =>
-				reviewer.excludedFromReviewPool !== true && !reviewer.effectiveIsAbsent,
+		const availableReviewers = enrichedReviewers.filter((reviewer) =>
+			isEligibleForAssignment(reviewer),
 		);
 
 		if (availableReviewers.length > 0) {
@@ -1057,11 +1057,8 @@ export const getNextReviewerByTag = query({
 		const enrichedReviewers = enrichReviewers(allReviewers, team, Date.now());
 
 		// Filter for available reviewers with the specific tag
-		const availableReviewers = enrichedReviewers.filter(
-			(reviewer) =>
-				reviewer.excludedFromReviewPool !== true &&
-				!reviewer.effectiveIsAbsent &&
-				reviewer.tags.includes(tagId),
+		const availableReviewers = enrichedReviewers.filter((reviewer) =>
+			isEligibleForAssignment(reviewer, tagId),
 		);
 
 		if (availableReviewers.length === 0) {

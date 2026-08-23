@@ -14,8 +14,10 @@ export interface Reviewer {
 	assignmentCount: number;
 	isAbsent: boolean;
 	absentUntil?: number;
-	/** When true, never picked by round-robin for this team */
+	/** Legacy name: when true, skipped by the general round-robin. */
 	excludedFromReviewPool?: boolean;
+	/** Defaults to !excludedFromReviewPool for legacy rows. */
+	includedInTagRotations?: boolean;
 	partTimeSchedule?: PartTimeSchedule;
 	birthdayMonth?: number;
 	birthdayDay?: number;

@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { PartTimeSchedule, Weekday } from "@/lib/reviewerAvailability";
+import { isIncludedInTagRotations } from "@/lib/reviewerEligibility";
 import type { Reviewer } from "@/lib/types";
 import {
 	PartTimeScheduleFields,
@@ -32,6 +33,7 @@ interface EditReviewerDialogProps {
 		googleChatUserId?: string,
 		partTimeSchedule?: PartTimeSchedule,
 		excludedFromReviewPool?: boolean,
+		includedInTagRotations?: boolean,
 	) => Promise<boolean>;
 	trigger?: React.ReactNode;
 }
@@ -57,6 +59,9 @@ export function EditReviewerDialog({
 	);
 	const [excludedOutOfPool, setExcludedOutOfPool] = useState(
 		reviewer.excludedFromReviewPool === true,
+	);
+	const [includedInTagRotations, setIncludedInTagRotations] = useState(
+		isIncludedInTagRotations(reviewer),
 	);
 	const [workingDays, setWorkingDays] = useState<Weekday[]>(
 		reviewer.partTimeSchedule?.workingDays ?? [],
@@ -93,6 +98,7 @@ export function EditReviewerDialog({
 				googleChatUserId.trim() || undefined,
 				scheduleFromSelection(partTimeEnabled, workingDays),
 				excludedOutOfPool,
+				includedInTagRotations,
 			);
 			if (success) {
 				setIsOpen(false);
@@ -113,6 +119,7 @@ export function EditReviewerDialog({
 		setIsOpen(open);
 		if (open) {
 			setExcludedOutOfPool(reviewer.excludedFromReviewPool === true);
+			setIncludedInTagRotations(isIncludedInTagRotations(reviewer));
 			setPartTimeEnabled(Boolean(reviewer.partTimeSchedule));
 			setWorkingDays(reviewer.partTimeSchedule?.workingDays ?? []);
 		} else {
@@ -120,6 +127,7 @@ export function EditReviewerDialog({
 			setPartTimeEnabled(Boolean(reviewer.partTimeSchedule));
 			setWorkingDays(reviewer.partTimeSchedule?.workingDays ?? []);
 			setExcludedOutOfPool(reviewer.excludedFromReviewPool === true);
+			setIncludedInTagRotations(isIncludedInTagRotations(reviewer));
 		}
 	};
 
@@ -193,23 +201,44 @@ export function EditReviewerDialog({
 							className="sm:col-span-3"
 						/>
 					</div>
-					<div className="calm-subtle-panel col-span-full flex items-start gap-3 p-3">
-						<Checkbox
-							id={`${nameId}-out-of-pool`}
-							checked={excludedOutOfPool}
-							onCheckedChange={(v) => setExcludedOutOfPool(v === true)}
-							disabled={isUpdating}
-						/>
-						<div className="grid gap-1.5 leading-none">
-							<label
-								htmlFor={`${nameId}-out-of-pool`}
-								className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-							>
-								{t("reviewer.outOfReviewPoolEditLabel")}
-							</label>
-							<p className="text-xs text-muted-foreground">
-								{t("reviewer.outOfReviewPoolEditHint")}
-							</p>
+					<div className="calm-subtle-panel col-span-full grid gap-3 p-3">
+						<div className="flex items-start gap-3">
+							<Checkbox
+								id={`${nameId}-out-of-pool`}
+								checked={excludedOutOfPool}
+								onCheckedChange={(v) => setExcludedOutOfPool(v === true)}
+								disabled={isUpdating}
+							/>
+							<div className="grid gap-1.5 leading-none">
+								<label
+									htmlFor={`${nameId}-out-of-pool`}
+									className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+								>
+									{t("reviewer.outOfReviewPoolEditLabel")}
+								</label>
+								<p className="text-xs text-muted-foreground">
+									{t("reviewer.outOfReviewPoolEditHint")}
+								</p>
+							</div>
+						</div>
+						<div className="flex items-start gap-3 border-t border-border/60 pt-3">
+							<Checkbox
+								id={`${nameId}-tag-rotations`}
+								checked={includedInTagRotations}
+								onCheckedChange={(v) => setIncludedInTagRotations(v === true)}
+								disabled={isUpdating}
+							/>
+							<div className="grid gap-1.5 leading-none">
+								<label
+									htmlFor={`${nameId}-tag-rotations`}
+									className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+								>
+									{t("reviewer.tagRotationsEditLabel")}
+								</label>
+								<p className="text-xs text-muted-foreground">
+									{t("reviewer.tagRotationsEditHint")}
+								</p>
+							</div>
 						</div>
 					</div>
 					<div className="col-span-full">

@@ -29,8 +29,12 @@ test("selects fairly while excluding absent, duplicate, and current reviewers", 
 		reviewers: [
 			reviewer("current", 0, 1),
 			reviewer("absent", 0, 2, { effectiveIsAbsent: true }),
-			reviewer("next", 0, 3),
-			reviewer("after", 1, 4),
+			reviewer("general-pool-excluded", 0, 3, {
+				excludedFromReviewPool: true,
+				includedInTagRotations: true,
+			}),
+			reviewer("next", 0, 4),
+			reviewer("after", 1, 5),
 		],
 		excludedReviewerId: "current",
 	});
@@ -51,7 +55,19 @@ test("resolves tag slots and reports missing tag candidates", () => {
 			{ strategy: "tag_random_other", tagId: "backend" },
 		],
 		reviewers: [
-			reviewer("frontend-reviewer", 0, 1, { tags: ["frontend"] }),
+			reviewer("tag-disabled", 0, -1, {
+				tags: ["frontend"],
+				includedInTagRotations: false,
+			}),
+			reviewer("legacy-excluded", 0, 0, {
+				tags: ["frontend"],
+				excludedFromReviewPool: true,
+			}),
+			reviewer("frontend-reviewer", 0, 1, {
+				tags: ["frontend"],
+				excludedFromReviewPool: true,
+				includedInTagRotations: true,
+			}),
 			reviewer("backend-reviewer", 0, 2, {
 				tags: ["backend"],
 				effectiveIsAbsent: true,

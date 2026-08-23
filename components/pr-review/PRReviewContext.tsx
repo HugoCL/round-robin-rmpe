@@ -67,6 +67,7 @@ export interface PRReviewContextValue {
 		googleChatUserId?: string,
 		partTimeSchedule?: PartTimeSchedule,
 		excludedFromReviewPool?: boolean,
+		includedInTagRotations?: boolean,
 	) => Promise<boolean>;
 	setReviewerBirthday: (
 		reviewerId: Id<"reviewers">,

@@ -311,6 +311,7 @@ export function ReviewersTable({
 											googleChatUserId,
 											partTimeSchedule,
 											excludedFromReviewPool,
+											includedInTagRotations,
 										) =>
 											updateReviewer(
 												id,
@@ -319,6 +320,7 @@ export function ReviewersTable({
 												googleChatUserId,
 												partTimeSchedule,
 												excludedFromReviewPool,
+												includedInTagRotations,
 											)
 										}
 										trigger={
@@ -760,6 +762,7 @@ export function ReviewersTable({
 														googleChatUserId,
 														partTimeSchedule,
 														excludedFromReviewPool,
+														includedInTagRotations,
 													) =>
 														updateReviewer(
 															id,
@@ -768,6 +771,7 @@ export function ReviewersTable({
 															googleChatUserId,
 															partTimeSchedule,
 															excludedFromReviewPool,
+															includedInTagRotations,
 														)
 													}
 													trigger={

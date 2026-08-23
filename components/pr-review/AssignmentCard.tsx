@@ -229,13 +229,12 @@ export function AssignmentCard() {
 		!!selectedTagId &&
 		typeof nextReviewerByTag === "undefined";
 	const availableReviewersForMode = useMemo(() => {
-		const available = reviewers.filter((reviewer) =>
-			isEligibleForAssignment(reviewer),
-		);
-		if (mode !== "tag") return available;
+		if (mode !== "tag") {
+			return reviewers.filter((reviewer) => isEligibleForAssignment(reviewer));
+		}
 		if (!selectedTagId) return [];
-		return available.filter((reviewer) =>
-			reviewer.tags.includes(selectedTagId),
+		return reviewers.filter((reviewer) =>
+			isEligibleForAssignment(reviewer, selectedTagId),
 		);
 	}, [mode, reviewers, selectedTagId]);
 	const upcomingReviewer = useMemo(() => {
@@ -491,7 +490,7 @@ export function AssignmentCard() {
 			reviewer.tags?.includes(tagId),
 		);
 		const availableReviewers = tagReviewers.filter((reviewer) =>
-			isEligibleForAssignment(reviewer),
+			isEligibleForAssignment(reviewer, tagId),
 		);
 		return {
 			totalReviewers: tagReviewers.length,

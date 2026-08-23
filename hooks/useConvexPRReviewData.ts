@@ -333,6 +333,7 @@ export function useConvexPRReviewData(
 		googleChatUserId?: string,
 		partTimeSchedule?: PartTimeSchedule,
 		excludedFromReviewPool?: boolean,
+		includedInTagRotations?: boolean,
 	) => {
 		if (!name.trim()) {
 			toast({
@@ -361,6 +362,9 @@ export function useConvexPRReviewData(
 				partTimeSchedule,
 				...(excludedFromReviewPool !== undefined
 					? { excludedFromReviewPool }
+					: {}),
+				...(includedInTagRotations !== undefined
+					? { includedInTagRotations }
 					: {}),
 			});
 
@@ -523,6 +527,7 @@ export function useConvexPRReviewData(
 			assignmentCount: number;
 			isAbsent: boolean;
 			excludedFromReviewPool?: boolean;
+			includedInTagRotations?: boolean;
 			createdAt: number;
 			tags: string[];
 			googleChatUserId?: string;
@@ -538,6 +543,9 @@ export function useConvexPRReviewData(
 			isAbsent: r.isAbsent,
 			...(r.excludedFromReviewPool === true
 				? { excludedFromReviewPool: true }
+				: {}),
+			...(r.includedInTagRotations !== undefined
+				? { includedInTagRotations: r.includedInTagRotations }
 				: {}),
 			createdAt: r.createdAt,
 			tags: r.tags || [],
@@ -592,6 +600,7 @@ export function useConvexPRReviewData(
 					"assignmentCount",
 					"isAbsent",
 					"excludedFromReviewPool",
+					"includedInTagRotations",
 					"createdAt",
 					"tags",
 					"googleChatUserId",
@@ -607,6 +616,7 @@ export function useConvexPRReviewData(
 					assignmentCount: number;
 					isAbsent: boolean;
 					excludedFromReviewPool?: boolean;
+					includedInTagRotations?: boolean;
 					createdAt: number;
 					tags?: string[];
 					googleChatUserId?: string;
@@ -642,6 +652,18 @@ export function useConvexPRReviewData(
 					}
 					// Normalize optional fields
 					if (obj.tags && !Array.isArray(obj.tags)) delete obj.tags;
+					if (
+						obj.excludedFromReviewPool !== undefined &&
+						typeof obj.excludedFromReviewPool !== "boolean"
+					) {
+						delete obj.excludedFromReviewPool;
+					}
+					if (
+						obj.includedInTagRotations !== undefined &&
+						typeof obj.includedInTagRotations !== "boolean"
+					) {
+						delete obj.includedInTagRotations;
+					}
 					if (obj.tags) {
 						obj.tags = (obj.tags as unknown[]).filter(
 							(t) => typeof t === "string",
