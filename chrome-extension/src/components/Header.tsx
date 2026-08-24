@@ -13,7 +13,6 @@ export function Header() {
 			<div className="flex items-center gap-2">
 				{isSignedIn ? (
 					<UserButton
-						afterSignOutUrl="/"
 						appearance={{
 							elements: { avatarBox: "w-7 h-7" },
 						}}

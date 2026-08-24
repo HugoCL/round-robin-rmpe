@@ -12,7 +12,7 @@ import { useChatToggle } from "../hooks/useChatToggle";
 import { useCheckPR } from "../hooks/useCheckPR";
 import { usePRDetection } from "../hooks/usePRDetection";
 import { useTeamStorage } from "../hooks/useTeamStorage";
-import type { AssignmentMode, SlotConfig } from "../types";
+import type { AssignmentMode, SlotConfig, TeamInfo } from "../types";
 import { AlreadyAssignedWarning } from "./AlreadyAssignedWarning";
 import { ChatToggle } from "./ChatToggle";
 import { ErrorMessage } from "./ErrorMessage";
@@ -62,7 +62,7 @@ function MainView({ userEmail }: { userEmail: string }) {
 	const userTeams = useQuery(
 		convexApi.queries.getTeamsForUserEmail,
 		userEmail ? { email: userEmail } : "skip",
-	);
+	) as TeamInfo[] | undefined;
 	const userTeamSlugs = useMemo(
 		() => (userTeams ?? []).map((t) => t.slug),
 		[userTeams],
@@ -108,7 +108,7 @@ function MainView({ userEmail }: { userEmail: string }) {
 	// Get the reviewer to show based on tag filter
 	const displayedReviewer = selectedTagId
 		? getNextReviewerByTag(selectedTagId)
-		: nextReviewer;
+		: (nextReviewer ?? null);
 
 	// Find the signed-in user's reviewer record
 	const currentUserReviewer = selectedTeam

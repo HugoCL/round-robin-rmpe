@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
@@ -6,30 +6,23 @@ import { routing } from "./i18n/routing";
 // Create the internationalization middleware
 const intlMiddleware = createMiddleware(routing);
 
-// Define public routes (include both with and without locale prefixes)
-const isPublicRoute = createRouteMatcher([
-	"/",
-	"/(es|en)",
-	"/api/agent(.*)",
-	"/api/mcp(.*)",
-	"/api/updates",
-	"/sign-in(.*)",
-	"/sign-up(.*)",
-	"/(es|en)/sign-in(.*)",
-	"/(es|en)/sign-up(.*)",
-	"/surveys/(.*)/results",
-	"/(es|en)/surveys/(.*)/results",
-	// App Router icon routes and common static files should be public and not localized
-	"/icon(.*)",
-	"/apple-icon(.*)",
-	"/favicon.ico",
-	"/robots.txt",
-	"/sitemap.xml",
-]);
+const PUBLIC_ROUTE_PATTERNS = [
+	/^\/$/,
+	/^\/(?:es|en)\/?$/,
+	/^\/api\/(?:agent(?:\/.*)?|mcp(?:\/.*)?|updates\/?)$/,
+	/^\/(?:(?:es|en)\/)?sign-(?:in|up)(?:\/.*)?$/,
+	/^\/(?:(?:es|en)\/)?surveys\/[^/]+\/results(?:\/.*)?$/,
+	/^\/(?:icon|apple-icon).*$/,
+	/^\/(?:favicon\.ico|robots\.txt|sitemap\.xml)$/,
+];
+
+export function isPublicRoute(pathname: string) {
+	return PUBLIC_ROUTE_PATTERNS.some((pattern) => pattern.test(pathname));
+}
 
 export default clerkMiddleware(async (auth, req) => {
 	// Protect all routes except public ones
-	if (!isPublicRoute(req)) {
+	if (!isPublicRoute(req.nextUrl.pathname)) {
 		await auth.protect();
 	}
 

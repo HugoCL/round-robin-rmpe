@@ -13,7 +13,7 @@ export function useTeamStorage(userTeamSlugs?: string[]) {
 	const autoDetected = useRef(false);
 
 	useEffect(() => {
-		chrome.storage.local.get(STORAGE_KEY, (result) => {
+		chrome.storage.local.get<{ [STORAGE_KEY]: string }>(STORAGE_KEY, (result) => {
 			if (result[STORAGE_KEY]) {
 				setSelectedTeam(result[STORAGE_KEY]);
 			}
