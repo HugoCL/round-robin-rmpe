@@ -57,8 +57,8 @@ export function EditReviewerDialog({
 	const [partTimeEnabled, setPartTimeEnabled] = useState(
 		Boolean(reviewer.partTimeSchedule),
 	);
-	const [excludedOutOfPool, setExcludedOutOfPool] = useState(
-		reviewer.excludedFromReviewPool === true,
+	const [includedInRotation, setIncludedInRotation] = useState(
+		reviewer.excludedFromReviewPool !== true,
 	);
 	const [includedInTagRotations, setIncludedInTagRotations] = useState(
 		isIncludedInTagRotations(reviewer),
@@ -97,7 +97,7 @@ export function EditReviewerDialog({
 				reviewerEmail.trim(),
 				googleChatUserId.trim() || undefined,
 				scheduleFromSelection(partTimeEnabled, workingDays),
-				excludedOutOfPool,
+				!includedInRotation,
 				includedInTagRotations,
 			);
 			if (success) {
@@ -118,7 +118,7 @@ export function EditReviewerDialog({
 	const handleOpenChange = (open: boolean) => {
 		setIsOpen(open);
 		if (open) {
-			setExcludedOutOfPool(reviewer.excludedFromReviewPool === true);
+			setIncludedInRotation(reviewer.excludedFromReviewPool !== true);
 			setIncludedInTagRotations(isIncludedInTagRotations(reviewer));
 			setPartTimeEnabled(Boolean(reviewer.partTimeSchedule));
 			setWorkingDays(reviewer.partTimeSchedule?.workingDays ?? []);
@@ -126,7 +126,7 @@ export function EditReviewerDialog({
 			setEdits({}); // Clear edits when closing
 			setPartTimeEnabled(Boolean(reviewer.partTimeSchedule));
 			setWorkingDays(reviewer.partTimeSchedule?.workingDays ?? []);
-			setExcludedOutOfPool(reviewer.excludedFromReviewPool === true);
+			setIncludedInRotation(reviewer.excludedFromReviewPool !== true);
 			setIncludedInTagRotations(isIncludedInTagRotations(reviewer));
 		}
 	};
@@ -204,20 +204,20 @@ export function EditReviewerDialog({
 					<div className="calm-subtle-panel col-span-full grid gap-3 p-3">
 						<div className="flex items-start gap-3">
 							<Checkbox
-								id={`${nameId}-out-of-pool`}
-								checked={excludedOutOfPool}
-								onCheckedChange={(v) => setExcludedOutOfPool(v === true)}
+								id={`${nameId}-in-rotation`}
+								checked={includedInRotation}
+								onCheckedChange={(v) => setIncludedInRotation(v === true)}
 								disabled={isUpdating}
 							/>
 							<div className="grid gap-1.5 leading-none">
 								<label
-									htmlFor={`${nameId}-out-of-pool`}
+									htmlFor={`${nameId}-in-rotation`}
 									className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 								>
-									{t("reviewer.outOfReviewPoolEditLabel")}
+									{t("reviewer.inReviewPoolSwitchLabel")}
 								</label>
 								<p className="text-xs text-muted-foreground">
-									{t("reviewer.outOfReviewPoolEditHint")}
+									{t("reviewer.automaticAssignmentHelp")}
 								</p>
 							</div>
 						</div>
