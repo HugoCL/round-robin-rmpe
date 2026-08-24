@@ -7,9 +7,12 @@ import { useCallback, useMemo, useState } from "react";
 import type {
 	AssignmentMode,
 	AssignmentStatus,
+	ReviewerInfo,
 	SlotConfig,
 	SlotPreview,
 	SlotStrategy,
+	TagInfo,
+	TeamInfo,
 } from "../types";
 
 // ── Helpers ──
@@ -61,18 +64,24 @@ export function useAssignment(teamSlug: string | null) {
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	// Queries — skip if no team selected
-	const teams = useQuery(api.queries.getTeams) ?? [];
+	const teams = (useQuery(api.queries.getTeams) as TeamInfo[] | undefined) ?? [];
 
 	const reviewers =
-		useQuery(api.queries.getReviewers, teamSlug ? { teamSlug } : "skip") ?? [];
+		(useQuery(
+			api.queries.getReviewers,
+			teamSlug ? { teamSlug } : "skip",
+		) as ReviewerInfo[] | undefined) ?? [];
 
 	const tags =
-		useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") ?? [];
+		(useQuery(
+			api.queries.getTags,
+			teamSlug ? { teamSlug } : "skip",
+		) as TagInfo[] | undefined) ?? [];
 
 	const nextReviewer = useQuery(
 		api.queries.getNextReviewer,
 		teamSlug ? { teamSlug } : "skip",
-	);
+	) as ReviewerInfo | null | undefined;
 
 	// Mutations & actions
 	const assignPRMutation = useMutation(api.mutations.assignPR);

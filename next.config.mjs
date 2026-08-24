@@ -21,9 +21,6 @@ const nextConfig = {
 			},
 		],
 	},
-	experimental: {
-		viewTransition: true,
-	},
 };
 
 export default withNextIntl(nextConfig);

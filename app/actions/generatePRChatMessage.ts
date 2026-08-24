@@ -1,5 +1,6 @@
 "use server";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { auth } from "@clerk/nextjs/server";
 import { generateObject } from "ai";
 import z from "zod/v4";
 import {
@@ -36,6 +37,8 @@ export async function generatePRChatMessage({
 	customPrompt,
 	locale,
 }: GenerateArgs): Promise<{ response: string }> {
+	await auth.protect();
+
 	const googleGenerativeAiApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 	if (!googleGenerativeAiApiKey) {
 		return { response: "No configurado: GOOGLE_GENERATIVE_AI_API_KEY" };
@@ -120,7 +123,7 @@ export async function generatePRChatMessage({
 				}),
 				model: google(GOOGLE_MODEL),
 				prompt,
-				system,
+				instructions: system,
 			});
 			const candidate = object.response ? object.response.trim() : "";
 
