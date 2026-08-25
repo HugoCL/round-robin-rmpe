@@ -210,9 +210,16 @@ export function MarkAbsentDialog({
 						</div>
 					)}
 
-					<p className="text-xs text-muted-foreground">
-						{t("absent.optionalReturnInfo")}
-					</p>
+					<div className="grid gap-1.5 text-xs text-muted-foreground">
+						<p>{t("absent.optionalReturnInfo")}</p>
+						<p>
+							{isSelf
+								? t("absent.permanentRotationHintSelf")
+								: t("absent.permanentRotationHintOther", {
+										name: reviewer.name,
+									})}
+						</p>
+					</div>
 				</div>
 
 				<DialogFooter>

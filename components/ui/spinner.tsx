@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils"
 interface SpinnerProps {
   className?: string
   size?: number
+  "data-icon"?: "inline-start" | "inline-end"
 }
 
-function Spinner({ className, size = 16 }: SpinnerProps) {
+function Spinner({ className, size = 16, ...props }: SpinnerProps) {
   return (
     <HugeiconsIcon
       icon={Loading03Icon}
@@ -16,6 +17,7 @@ function Spinner({ className, size = 16 }: SpinnerProps) {
       role="status"
       aria-label="Loading"
       className={cn("animate-spin", className)}
+      {...props}
     />
   )
 }

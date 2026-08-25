@@ -54,4 +54,32 @@ function TooltipContent({
   )
 }
 
-export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger }
+/**
+ * Wrap any control that has no visible label. Always uses a span host so it
+ * works with disabled buttons and with Dialog/Dropdown/Collapsible triggers
+ * that need `asChild` on a DOM node.
+ */
+function WithTooltip({
+  label,
+  children,
+  side = "bottom",
+  className,
+}: {
+  label: string
+  children: React.ReactNode
+  side?: React.ComponentProps<typeof TooltipContent>["side"]
+  className?: string
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={cn("inline-flex", className)}>{children}</span>
+      </TooltipTrigger>
+      <TooltipContent side={side} sideOffset={6}>
+        <p>{label}</p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, WithTooltip }

@@ -17,5 +17,6 @@ export { PageHeader } from "./header/PageHeader";
 export { CompactLayout } from "./layouts/CompactLayout";
 export { default as PRReviewAssignment } from "./PRReviewAssignment";
 export { RecentAssignments } from "./RecentAssignments";
+export { ReviewersPanel } from "./ReviewersPanel";
 export { ReviewersTable } from "./ReviewersTable";
 export { TagManager } from "./TagManager";

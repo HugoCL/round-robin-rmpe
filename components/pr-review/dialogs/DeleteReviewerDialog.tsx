@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2, UserMinus } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -28,17 +28,23 @@ interface DeleteReviewerDialogProps {
 	reviewers: Reviewer[];
 	onDeleteReviewer: (id: Id<"reviewers">) => Promise<void>;
 	trigger?: React.ReactNode;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 }
 
 export function DeleteReviewerDialog({
 	reviewers,
 	onDeleteReviewer,
 	trigger,
+	open,
+	onOpenChange,
 }: DeleteReviewerDialogProps) {
 	const t = useTranslations();
 	const [selectedReviewerId, setSelectedReviewerId] = useState<string>("");
-	const [isOpen, setIsOpen] = useState(false);
+	const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const isOpen = open ?? uncontrolledOpen;
+	const setIsOpen = onOpenChange ?? setUncontrolledOpen;
 
 	const selectedReviewer = reviewers.find((r) => r._id === selectedReviewerId);
 
@@ -56,15 +62,14 @@ export function DeleteReviewerDialog({
 	};
 
 	return (
-		<Dialog open={isOpen} onOpenChange={setIsOpen}>
-			<DialogTrigger asChild>
-				{trigger || (
-					<Button variant="outline" size="sm">
-						<UserMinus className="h-4 w-4 mr-2" />
-						{t("pr.deleteReviewer")}
-					</Button>
-				)}
-			</DialogTrigger>
+		<Dialog
+			open={isOpen}
+			onOpenChange={(nextOpen) => {
+				setIsOpen(nextOpen);
+				if (!nextOpen) setSelectedReviewerId("");
+			}}
+		>
+			{trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
 					<DialogTitle>{t("reviewer.deleteTitle")}</DialogTitle>

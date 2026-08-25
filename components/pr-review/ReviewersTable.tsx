@@ -1,37 +1,15 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { Check, CircleHelp, Edit, SlidersHorizontal, X } from "lucide-react";
+import { Check, Settings, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuCheckboxItem,
-	DropdownMenuContent,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { WithTooltip } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
@@ -41,18 +19,27 @@ import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
 import { MarkAbsentDialog } from "./dialogs/MarkAbsentDialog";
+import { usePRReview } from "./PRReviewContext";
 
 interface ReviewersTableProps {
 	teamSlug?: string;
-	showViewControls?: boolean;
 	readOnly?: boolean;
 }
 
-import { usePRReview } from "./PRReviewContext";
+function getInitials(name?: string) {
+	return (
+		name
+			?.trim()
+			.split(/\s+/)
+			.slice(0, 2)
+			.map((part) => part[0])
+			.join("")
+			.toUpperCase() || "?"
+	);
+}
 
 export function ReviewersTable({
 	teamSlug,
-	showViewControls = true,
 	readOnly = false,
 }: ReviewersTableProps) {
 	const t = useTranslations();
@@ -60,16 +47,9 @@ export function ReviewersTable({
 	const {
 		reviewers,
 		nextReviewer,
-		assignmentFeed,
-		showAssignments,
 		showTags,
-		showEmails,
-		toggleShowAssignments,
-		toggleShowTags,
-		toggleShowEmails,
 		onMarkAbsent,
 		onMarkAvailable,
-		onSetExcludedFromReviewPool,
 		userInfo,
 		onDataUpdate,
 		updateReviewer,
@@ -81,22 +61,13 @@ export function ReviewersTable({
 	const [selectedReviewer, setSelectedReviewer] = useState<Reviewer | null>(
 		null,
 	);
-	const visibleColumnsCount = [showAssignments, showTags, showEmails].filter(
-		Boolean,
-	).length;
-
-	const actualShowViewControls = showViewControls && !readOnly;
-
 	const team = useQuery(api.queries.getTeam, teamSlug ? { teamSlug } : "skip");
 	const teamTimezone = team?.timezone ?? "UTC";
-
-	// Use Convex for real-time tags
 	const { tags } = useConvexTags(teamSlug);
-
-	// Use Convex mutation for updating assignment count
 	const updateAssignmentCountMutation = useMutation(
 		api.mutations.updateAssignmentCount,
 	);
+	const canEdit = canManageCurrentTeam && !readOnly;
 
 	const startEditing = (id: string, currentValue: number) => {
 		setEditingId(id);
@@ -108,10 +79,7 @@ export function ReviewersTable({
 	};
 
 	const saveEditing = async () => {
-		if (!canManageCurrentTeam) return;
-		if (!editingId) return;
-
-		// Validate input
+		if (!canEdit || !editingId) return;
 		if (editValue < 0 || Number.isNaN(editValue)) {
 			toast({
 				title: t("common.error"),
@@ -122,23 +90,17 @@ export function ReviewersTable({
 		}
 
 		try {
-			// Update using Convex mutation
 			await updateAssignmentCountMutation({
 				id: editingId as Id<"reviewers">,
 				count: editValue,
 			});
-
-			// Refresh data to get updated reviewers
 			await onDataUpdate();
-
 			toast({
 				title: t("common.success"),
 				description: t("reviewer.countUpdated"),
 			});
-
-			// Exit edit mode
 			setEditingId(null);
-		} catch (_error) {
+		} catch {
 			toast({
 				title: t("common.error"),
 				description: t("reviewer.countUpdateFailed"),
@@ -149,7 +111,8 @@ export function ReviewersTable({
 
 	const getTagBadge = (tagId: string) => {
 		const tag = tags.find(
-			(t: { _id: string; name: string; color: string }) => t._id === tagId,
+			(item: { _id: string; name: string; color: string }) =>
+				item._id === tagId,
 		);
 		if (!tag) return null;
 
@@ -157,7 +120,7 @@ export function ReviewersTable({
 			<Badge
 				key={tagId}
 				variant="secondary"
-				className="text-xs"
+				className="h-4 px-1.5 text-[10px] font-medium"
 				style={{
 					backgroundColor: `${tag.color}20`,
 					color: tag.color,
@@ -187,133 +150,164 @@ export function ReviewersTable({
 	};
 
 	return (
-		<div className="flex flex-col gap-4 [&_[data-slot=table-container]]:hidden md:[&_[data-slot=table-container]]:block">
-			{actualShowViewControls && (
-				<section className="flex justify-end">
-					<div className="flex shrink-0 items-center gap-2">
-						<Badge variant="secondary" className="h-5 px-2 py-0.5 text-xs">
-							{visibleColumnsCount}/3
-						</Badge>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="outline" size="sm" className="h-8 gap-2">
-									<SlidersHorizontal className="h-3.5 w-3.5" />
-									{t("pr.viewColumns")}
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end" className="w-72">
-								<DropdownMenuLabel>{t("common.viewOptions")}</DropdownMenuLabel>
-								<DropdownMenuSeparator />
-								<DropdownMenuCheckboxItem
-									checked={showAssignments}
-									onSelect={(event) => event.preventDefault()}
-									onCheckedChange={(checked) => {
-										if (checked !== showAssignments) toggleShowAssignments();
-									}}
-								>
-									<div className="space-y-1">
-										<p>{t("pr.showAssignments")}</p>
-										<p className="text-[11px] text-muted-foreground">
-											{t("pr.showAssignmentsDescription")}
-										</p>
-									</div>
-								</DropdownMenuCheckboxItem>
-								<DropdownMenuCheckboxItem
-									checked={showTags}
-									onSelect={(event) => event.preventDefault()}
-									onCheckedChange={(checked) => {
-										if (checked !== showTags) toggleShowTags();
-									}}
-								>
-									<div className="space-y-1">
-										<p>{t("pr.showTags")}</p>
-										<p className="text-[11px] text-muted-foreground">
-											{t("pr.showTagsDescription")}
-										</p>
-									</div>
-								</DropdownMenuCheckboxItem>
-								<DropdownMenuCheckboxItem
-									checked={showEmails}
-									onSelect={(event) => event.preventDefault()}
-									onCheckedChange={(checked) => {
-										if (checked !== showEmails) toggleShowEmails();
-									}}
-								>
-									<div className="space-y-1">
-										<p>{t("pr.showEmails")}</p>
-										<p className="text-[11px] text-muted-foreground">
-											{t("pr.showEmailsDescription")}
-										</p>
-									</div>
-								</DropdownMenuCheckboxItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					</div>
-				</section>
-			)}
-
-			<div className="calm-list md:hidden">
+		<div>
+			<div className="divide-y divide-border/60">
 				{reviewers.map((reviewer) => {
 					const isBirthdayToday = reviewerHasBirthdayToday(
 						reviewer,
 						teamTimezone,
 					);
 					const statusDetail = getStatusDetail(reviewer);
+					const isNext = nextReviewer?._id === reviewer._id;
+					const outOfPool = reviewer.excludedFromReviewPool === true;
+					const meta = [
+						outOfPool ? t("reviewer.outOfReviewPoolBadge") : null,
+						statusDetail,
+					]
+						.filter((part): part is string => Boolean(part))
+						.join(" · ");
+					const visibleTags =
+						showTags && reviewer.tags?.length > 0 ? reviewer.tags : [];
 
 					return (
 						<article
 							key={reviewer._id}
-							className={cn("p-4", reviewer.effectiveIsAbsent && "opacity-70")}
+							className={cn(
+								"group py-2.5 hover:bg-muted/30",
+								reviewer.effectiveIsAbsent && "opacity-70",
+							)}
 						>
-							<div className="flex items-start gap-3">
-								<Avatar className="size-10 shrink-0">
-									<AvatarFallback>
-										{reviewer.name?.slice(0, 2).toUpperCase()}
-									</AvatarFallback>
-								</Avatar>
+							<div className="flex items-center gap-2.5">
+								<div className="flex shrink-0 items-center gap-2">
+									{canEdit ? (
+										<WithTooltip
+											label={t("reviewer.availabilitySwitchLabel")}
+											side="right"
+										>
+											<Switch
+												id={`absence-${reviewer._id}`}
+												size="sm"
+												checked={!reviewer.manualIsAbsent}
+												aria-label={t("reviewer.availabilitySwitchLabel")}
+												onCheckedChange={(checked) => {
+													if (!checked) {
+														setSelectedReviewer(reviewer);
+														setAbsentDialogOpen(true);
+													} else {
+														void onMarkAvailable(reviewer._id);
+													}
+												}}
+											/>
+										</WithTooltip>
+									) : null}
+									<Avatar className="size-7 shrink-0">
+										<AvatarFallback className="text-[11px]">
+											{getInitials(reviewer.name)}
+										</AvatarFallback>
+									</Avatar>
+								</div>
 								<div className="min-w-0 flex-1">
-									<div className="flex flex-wrap items-center gap-1.5">
-										<h4 className="min-w-0 truncate text-base font-semibold">
+									<div className="flex min-w-0 items-baseline gap-1.5">
+										<h4 className="min-w-0 truncate text-sm font-medium leading-none">
 											{reviewer.name}
 										</h4>
-										{isBirthdayToday && (
-											<span
-												className="inline-flex shrink-0 items-center rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-300"
-												title="¡Hoy es su cumpleaños! 🎂"
-											>
-												🎂 HBD
-											</span>
-										)}
-										{reviewer.excludedFromReviewPool === true && (
-											<Badge variant="outline" className="h-5 px-2 text-[11px]">
-												{t("reviewer.outOfReviewPoolBadge")}
-											</Badge>
-										)}
-										{!readOnly && nextReviewer?._id === reviewer._id && (
-											<Badge className="h-5 px-2 text-[11px]">
+										{isBirthdayToday ? (
+											<WithTooltip label={t("birthday.todayTooltip")}>
+												<span className="shrink-0 self-center text-xs leading-none">
+													🎂
+												</span>
+											</WithTooltip>
+										) : null}
+										{isNext ? (
+											<span className="shrink-0 text-[11px] font-medium leading-none text-primary">
 												{t("pr.next")}
-											</Badge>
-										)}
+											</span>
+										) : null}
 									</div>
-									{showEmails && !readOnly && (
-										<p className="mt-1 truncate text-sm text-muted-foreground">
-											{reviewer.email}
-										</p>
-									)}
+									{meta || visibleTags.length > 0 ? (
+										<div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1">
+											{meta ? (
+												<p className="min-w-0 truncate text-[11px] text-muted-foreground">
+													{meta}
+												</p>
+											) : null}
+											{visibleTags.map((tagId) => getTagBadge(tagId))}
+										</div>
+									) : null}
 								</div>
-								{!readOnly && (
-									<EditReviewerDialog
-										reviewer={reviewer}
-										onUpdateReviewer={async (
-											id,
-											name,
-											email,
-											googleChatUserId,
-											partTimeSchedule,
-											excludedFromReviewPool,
-											includedInTagRotations,
-										) =>
-											updateReviewer(
+								<div className="flex shrink-0 items-center gap-0.5">
+									{editingId === reviewer._id && canEdit ? (
+										<div className="flex items-center gap-0.5">
+											<Input
+												type="number"
+												value={editValue}
+												onChange={(event) =>
+													setEditValue(
+														Number.parseInt(event.target.value, 10) || 0,
+													)
+												}
+												className="h-7 w-12 px-1.5 text-xs"
+												min={0}
+												aria-label={t("pr.assignmentsHeader")}
+											/>
+											<WithTooltip label={t("common.save")}>
+												<Button
+													size="icon"
+													variant="ghost"
+													className="size-7"
+													onClick={() => void saveEditing()}
+													aria-label={t("common.save")}
+												>
+													<Check className="h-3.5 w-3.5 text-green-600" />
+												</Button>
+											</WithTooltip>
+											<WithTooltip label={t("common.cancel")}>
+												<Button
+													size="icon"
+													variant="ghost"
+													className="size-7"
+													onClick={cancelEditing}
+													aria-label={t("common.cancel")}
+												>
+													<X className="h-3.5 w-3.5 text-destructive" />
+												</Button>
+											</WithTooltip>
+										</div>
+									) : (
+										<WithTooltip
+											label={
+												canEdit
+													? `${t("common.edit")}: ${t("pr.assignmentsHeader")}`
+													: t("pr.assignmentsHeader")
+											}
+										>
+											<button
+												type="button"
+												className={cn(
+													"min-w-7 rounded-md px-1.5 py-1 text-sm font-medium tabular-nums text-muted-foreground",
+													canEdit
+														? "hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+														: "cursor-default",
+												)}
+												disabled={!canEdit}
+												onClick={() =>
+													canEdit &&
+													startEditing(reviewer._id, reviewer.assignmentCount)
+												}
+												aria-label={
+													canEdit
+														? `${t("common.edit")}: ${t("pr.assignmentsHeader")}`
+														: t("pr.assignmentsHeader")
+												}
+											>
+												{reviewer.assignmentCount}
+											</button>
+										</WithTooltip>
+									)}
+									{canEdit ? (
+										<EditReviewerDialog
+											reviewer={reviewer}
+											onUpdateReviewer={async (
 												id,
 												name,
 												email,
@@ -321,482 +315,37 @@ export function ReviewersTable({
 												partTimeSchedule,
 												excludedFromReviewPool,
 												includedInTagRotations,
-											)
-										}
-										trigger={
-											<Button
-												size="icon"
-												variant="ghost"
-												disabled={!canManageCurrentTeam}
-												className="-mr-2 -mt-2 size-11"
-												aria-label={`${t("common.edit")}: ${reviewer.name}`}
-											>
-												<Edit className="h-4 w-4 text-muted-foreground" />
-											</Button>
-										}
-									/>
-								)}
-							</div>
-
-							<div className="mt-3 flex flex-wrap items-center gap-2">
-								<Badge
-									variant={reviewer.effectiveIsAbsent ? "secondary" : "default"}
-									className="h-6 px-2.5 text-xs"
-								>
-									{reviewer.effectiveIsAbsent
-										? t("pr.absent")
-										: t("pr.available")}
-								</Badge>
-								{statusDetail && (
-									<span className="text-xs text-muted-foreground">
-										{statusDetail}
-									</span>
-								)}
-							</div>
-
-							{showTags && reviewer.tags?.length > 0 && (
-								<div className="mt-3 flex flex-wrap gap-1">
-									{reviewer.tags.map((tagId: string) => getTagBadge(tagId))}
-								</div>
-							)}
-
-							{(showAssignments || !readOnly) && (
-								<div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-3">
-									{showAssignments && (
-										<div className="min-w-0">
-											<p className="text-xs text-muted-foreground">
-												{t("pr.assignmentsHeader")}
-											</p>
-											{editingId === reviewer._id && !readOnly ? (
-												<div className="mt-1 flex items-center gap-1">
-													<Input
-														type="number"
-														value={editValue}
-														onChange={(event) =>
-															setEditValue(
-																Number.parseInt(event.target.value, 10) || 0,
-															)
-														}
-														className="h-10 w-16"
-														min={0}
-													/>
-													<Button
-														size="icon"
-														variant="ghost"
-														className="size-10"
-														onClick={saveEditing}
-														aria-label={t("common.save")}
-													>
-														<Check className="h-4 w-4 text-green-600" />
-													</Button>
-													<Button
-														size="icon"
-														variant="ghost"
-														className="size-10"
-														onClick={cancelEditing}
-														aria-label={t("common.cancel")}
-													>
-														<X className="h-4 w-4 text-destructive" />
-													</Button>
-												</div>
-											) : (
-												<div className="mt-1 flex items-center gap-1">
-													<span className="text-sm font-medium">
-														{reviewer.assignmentCount}
-													</span>
-													{!readOnly && (
-														<Button
-															size="icon"
-															variant="ghost"
-															className="size-10"
-															disabled={!canManageCurrentTeam}
-															onClick={() =>
-																startEditing(
-																	reviewer._id,
-																	reviewer.assignmentCount,
-																)
-															}
-															aria-label={`${t("common.edit")}: ${t("pr.assignmentsHeader")}`}
-														>
-															<Edit className="h-3.5 w-3.5 text-muted-foreground" />
-														</Button>
-													)}
-												</div>
-											)}
-										</div>
-									)}
-									{!readOnly && (
-										<div className="col-span-2 flex flex-wrap items-center justify-between gap-4 sm:col-span-1 sm:justify-end">
-											<div className="flex items-center gap-2">
-												<Switch
-													id={`mobile-absence-${reviewer._id}`}
-													checked={!reviewer.manualIsAbsent}
-													disabled={!canManageCurrentTeam}
-													onCheckedChange={(checked) => {
-														if (!canManageCurrentTeam) return;
-														if (!checked) {
-															setSelectedReviewer(reviewer);
-															setAbsentDialogOpen(true);
-														} else {
-															onMarkAvailable(reviewer._id);
-														}
-													}}
-												/>
-												<Label
-													htmlFor={`mobile-absence-${reviewer._id}`}
-													className="text-xs"
+											) =>
+												updateReviewer(
+													id,
+													name,
+													email,
+													googleChatUserId,
+													partTimeSchedule,
+													excludedFromReviewPool,
+													includedInTagRotations,
+												)
+											}
+											trigger={
+												<Button
+													size="icon"
+													variant="ghost"
+													className="size-7 text-muted-foreground"
+													aria-label={t("reviewer.editReviewer")}
 												>
-													{t("reviewer.availabilitySwitchLabel")}
-												</Label>
-											</div>
-											<div className="flex items-center gap-2">
-												<Switch
-													id={`mobile-pool-${reviewer._id}`}
-													checked={reviewer.excludedFromReviewPool !== true}
-													disabled={!canManageCurrentTeam}
-													onCheckedChange={(checked) => {
-														if (!canManageCurrentTeam) return;
-														void onSetExcludedFromReviewPool(
-															reviewer._id,
-															checked !== true,
-														);
-													}}
-												/>
-												<Label
-													htmlFor={`mobile-pool-${reviewer._id}`}
-													className="text-xs"
-												>
-													{t("reviewer.inReviewPoolSwitchLabelShort")}
-												</Label>
-											</div>
-										</div>
-									)}
+													<Settings className="h-3.5 w-3.5" />
+												</Button>
+											}
+										/>
+									) : null}
 								</div>
-							)}
+							</div>
 						</article>
 					);
 				})}
 			</div>
 
-			<TooltipProvider delayDuration={200}>
-				<Table className="text-sm lg:text-base">
-					<TableHeader>
-						<TableRow>
-							<TableHead className="min-w-0">{t("pr.nameHeader")}</TableHead>
-							{showEmails && !readOnly && (
-								<TableHead className="min-w-0 max-w-[14rem]">
-									{t("common.email")}
-								</TableHead>
-							)}
-							{showTags && (
-								<TableHead className="min-w-0 max-w-[10rem]">
-									{t("pr.tagsHeader")}
-								</TableHead>
-							)}
-							{showAssignments && (
-								<TableHead className="w-[1%] whitespace-nowrap">
-									{t("pr.assignmentsHeader")}
-								</TableHead>
-							)}
-							<TableHead className="min-w-0 whitespace-normal">
-								<span className="inline-flex items-center gap-1.5">
-									{t("pr.statusHeader")}
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<button
-												type="button"
-												className="rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-												aria-label={t("reviewer.availabilityHelp")}
-											>
-												<CircleHelp className="size-3.5" />
-											</button>
-										</TooltipTrigger>
-										<TooltipContent side="top" className="max-w-64">
-											{t("reviewer.availabilityHelp")}
-										</TooltipContent>
-									</Tooltip>
-								</span>
-							</TableHead>
-							{!readOnly && (
-								<>
-									<TableHead className="w-[1%] min-w-[8rem] max-w-[9rem] whitespace-normal text-center text-xs font-medium leading-tight">
-										<span className="inline-flex items-center justify-center gap-1.5">
-											{t("reviewer.rotationColumn")}
-											<Tooltip>
-												<TooltipTrigger asChild>
-													<button
-														type="button"
-														className="shrink-0 rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-														aria-label={t("reviewer.automaticAssignmentHelp")}
-													>
-														<CircleHelp className="size-3.5" />
-													</button>
-												</TooltipTrigger>
-												<TooltipContent side="top" className="max-w-64">
-													{t("reviewer.automaticAssignmentHelp")}
-												</TooltipContent>
-											</Tooltip>
-										</span>
-									</TableHead>
-									<TableHead className="w-10 p-2" />
-								</>
-							)}
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{reviewers.map((reviewer) => {
-							const isBirthdayToday = reviewerHasBirthdayToday(
-								reviewer,
-								teamTimezone,
-							);
-							return (
-								<TableRow
-									key={reviewer._id}
-									className={cn(
-										"group transition-colors",
-										reviewer.effectiveIsAbsent
-											? "opacity-60"
-											: "hover:bg-muted/40",
-									)}
-								>
-									<TableCell className="min-w-0 max-w-[18rem] whitespace-normal font-medium lg:text-base">
-										<div className="flex min-w-0 items-center gap-3">
-											<Avatar className="size-8 shrink-0 lg:size-9">
-												<AvatarFallback>
-													{reviewer.name?.slice(0, 2).toUpperCase()}
-												</AvatarFallback>
-											</Avatar>
-											<div className="min-w-0 flex-1">
-												<span className="block truncate" title={reviewer.name}>
-													{reviewer.name}
-												</span>
-												<div className="mt-1 flex flex-wrap gap-1">
-													{isBirthdayToday && (
-														<span
-															className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-300"
-															title="¡Hoy es su cumpleaños! 🎂"
-														>
-															🎂 HBD
-														</span>
-													)}
-													{reviewer.excludedFromReviewPool === true && (
-														<Badge
-															variant="outline"
-															className="h-5 px-2 text-xs"
-														>
-															{t("reviewer.outOfReviewPoolBadge")}
-														</Badge>
-													)}
-													{!readOnly && nextReviewer?._id === reviewer._id && (
-														<Badge className="h-5 px-2 text-xs">
-															{t("pr.next")}
-														</Badge>
-													)}
-													{!readOnly &&
-														assignmentFeed.lastAssigned?.reviewerId ===
-															reviewer._id && (
-															<Badge
-																variant="secondary"
-																className="h-5 px-2 text-xs"
-															>
-																{t("pr.lastAssigned")}
-															</Badge>
-														)}
-												</div>
-											</div>
-										</div>
-									</TableCell>
-									{showEmails && !readOnly && (
-										<TableCell className="max-w-[14rem] truncate text-sm text-muted-foreground lg:text-base">
-											{reviewer.email}
-										</TableCell>
-									)}
-									{showTags && (
-										<TableCell>
-											<div className="flex flex-wrap gap-1">
-												{reviewer.tags && reviewer.tags.length > 0 ? (
-													reviewer.tags.map((tagId: string) =>
-														getTagBadge(tagId),
-													)
-												) : (
-													<span className="text-sm text-muted-foreground lg:text-base">
-														{t("pr.noTags")}
-													</span>
-												)}
-											</div>
-										</TableCell>
-									)}
-									{showAssignments && (
-										<TableCell>
-											{editingId === reviewer._id && !readOnly ? (
-												<div className="flex items-center gap-2">
-													<Input
-														type="number"
-														value={editValue}
-														onChange={(e) =>
-															setEditValue(
-																Number.parseInt(e.target.value, 10) || 0,
-															)
-														}
-														className="w-20"
-														min={0}
-													/>
-													<Button
-														size="icon"
-														variant="ghost"
-														onClick={saveEditing}
-														aria-label={t("common.save")}
-													>
-														<Check className="h-4 w-4 text-green-500" />
-													</Button>
-													<Button
-														size="icon"
-														variant="ghost"
-														onClick={cancelEditing}
-														aria-label={t("common.cancel")}
-													>
-														<X className="h-4 w-4 text-red-500" />
-													</Button>
-												</div>
-											) : (
-												<div className="flex items-center gap-2">
-													<span className="lg:text-base">
-														{reviewer.assignmentCount}
-													</span>
-													{!readOnly && (
-														<Button
-															size="icon"
-															variant="ghost"
-															disabled={!canManageCurrentTeam}
-															onClick={() =>
-																startEditing(
-																	reviewer._id,
-																	reviewer.assignmentCount,
-																)
-															}
-														>
-															<Edit className="h-3 w-3 text-muted-foreground" />
-														</Button>
-													)}
-												</div>
-											)}
-										</TableCell>
-									)}
-									<TableCell className="min-w-0 max-w-[18rem] whitespace-normal">
-										<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-											{!readOnly && (
-												<div className="flex shrink-0 items-center border-r border-border/60 pr-3">
-													<Switch
-														id={`absence-${reviewer._id}`}
-														aria-label={t("reviewer.availabilitySwitchLabel")}
-														checked={!reviewer.manualIsAbsent}
-														disabled={!canManageCurrentTeam}
-														onCheckedChange={(checked) => {
-															if (!canManageCurrentTeam) return;
-															if (!checked) {
-																setSelectedReviewer(reviewer);
-																setAbsentDialogOpen(true);
-															} else {
-																onMarkAvailable(reviewer._id);
-															}
-														}}
-													/>
-													<Label
-														htmlFor={`absence-${reviewer._id}`}
-														className="sr-only"
-													>
-														{t("reviewer.availabilitySwitchLabel")}
-													</Label>
-												</div>
-											)}
-											<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-												<Badge
-													variant={
-														reviewer.effectiveIsAbsent ? "secondary" : "default"
-													}
-													className="h-5 shrink-0 px-2 py-0.5 text-xs"
-												>
-													{reviewer.effectiveIsAbsent
-														? t("pr.absent")
-														: t("pr.available")}
-												</Badge>
-												{getStatusDetail(reviewer) && (
-													<span className="min-w-0 text-balance text-xs text-muted-foreground">
-														{getStatusDetail(reviewer)}
-													</span>
-												)}
-											</div>
-										</div>
-									</TableCell>
-									{!readOnly && (
-										<>
-											<TableCell className="w-[1%] min-w-[8rem] max-w-[9rem] whitespace-normal align-top">
-												<div className="flex flex-col items-center gap-1.5 py-0.5 text-center">
-													<Switch
-														id={`pool-${reviewer._id}`}
-														checked={reviewer.excludedFromReviewPool !== true}
-														disabled={!canManageCurrentTeam}
-														onCheckedChange={(checked) => {
-															if (!canManageCurrentTeam) return;
-															void onSetExcludedFromReviewPool(
-																reviewer._id,
-																checked !== true,
-															);
-														}}
-													/>
-													<Label
-														htmlFor={`pool-${reviewer._id}`}
-														className="block text-pretty text-[11px] font-normal leading-snug text-muted-foreground"
-													>
-														{t("reviewer.inReviewPoolSwitchLabelShort")}
-													</Label>
-												</div>
-											</TableCell>
-											<TableCell className="w-10 p-2">
-												<EditReviewerDialog
-													reviewer={reviewer}
-													onUpdateReviewer={async (
-														id,
-														name,
-														email,
-														googleChatUserId,
-														partTimeSchedule,
-														excludedFromReviewPool,
-														includedInTagRotations,
-													) =>
-														updateReviewer(
-															id,
-															name,
-															email,
-															googleChatUserId,
-															partTimeSchedule,
-															excludedFromReviewPool,
-															includedInTagRotations,
-														)
-													}
-													trigger={
-														<Button
-															size="icon"
-															variant="ghost"
-															disabled={!canManageCurrentTeam}
-															className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-															aria-label={t("common.edit")}
-														>
-															<Edit className="h-4 w-4 text-muted-foreground" />
-														</Button>
-													}
-												/>
-											</TableCell>
-										</>
-									)}
-								</TableRow>
-							);
-						})}
-					</TableBody>
-				</Table>
-			</TooltipProvider>
-
-			{selectedReviewer && (
+			{selectedReviewer ? (
 				<MarkAbsentDialog
 					isOpen={absentDialogOpen}
 					onOpenChange={(open) => {
@@ -809,7 +358,7 @@ export function ReviewersTable({
 						await onMarkAbsent(selectedReviewer._id, absentUntil);
 					}}
 				/>
-			)}
+			) : null}
 		</div>
 	);
 }

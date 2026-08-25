@@ -1,6 +1,6 @@
 "use client";
 
-import { Palette, Save } from "lucide-react";
+import { Save, Tag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { TagAssignmentsCard } from "./tag-manager/TagAssignmentsCard";
 import { TagEditorCard } from "./tag-manager/TagEditorCard";
 import { useTagManagerController } from "./tag-manager/useTagManagerController";
 
-export function TagManager() {
+export function TagManager({ trigger }: { trigger?: React.ReactNode }) {
 	const t = useTranslations();
 	const { reviewers, onDataUpdate, teamSlug } = usePRReview();
 	const [isOpen, setIsOpen] = useState(false);
@@ -65,14 +65,18 @@ export function TagManager() {
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
 			<DialogTrigger asChild>
-				<Button
-					variant="outline"
-					size="sm"
-					className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
-				>
-					<Palette className="h-4 w-4 mr-2" />
-					{t("common.manage")} {t("pr.tags")}
-				</Button>
+				<span className="inline-flex">
+					{trigger ?? (
+						<Button
+							variant="outline"
+							size="sm"
+							className="min-h-11 rounded-full border-border/70 bg-background/70 sm:min-h-8"
+						>
+							<Tag className="h-4 w-4 mr-2" />
+							{t("common.manage")} {t("pr.tags")}
+						</Button>
+					)}
+				</span>
 			</DialogTrigger>
 			<DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-[700px]">
 				<DialogHeader>

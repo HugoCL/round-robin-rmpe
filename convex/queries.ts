@@ -793,6 +793,23 @@ export const getTeam = query({
 	},
 });
 
+function assignmentHistoryPrKey(row: Doc<"assignmentHistory">): string | null {
+	if (row.skipped || row.isAbsentSkip) {
+		return null;
+	}
+
+	const normalizedPrUrl = row.prUrl?.trim().toLowerCase();
+	if (normalizedPrUrl) {
+		return `pr:${normalizedPrUrl}`;
+	}
+
+	if (row.batchId) {
+		return `batch:${row.batchId}`;
+	}
+
+	return `single:${row._id}`;
+}
+
 export const getTeamWeeklyPrCount = query({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
@@ -815,19 +832,9 @@ export const getTeamWeeklyPrCount = query({
 
 		const uniqueAssignedPrKeys = new Set<string>();
 		for (const row of weeklyRows) {
-			if (!row.skipped && !row.isAbsentSkip) {
-				const normalizedPrUrl = row.prUrl?.trim().toLowerCase();
-				if (normalizedPrUrl) {
-					uniqueAssignedPrKeys.add(`pr:${normalizedPrUrl}`);
-					continue;
-				}
-
-				if (row.batchId) {
-					uniqueAssignedPrKeys.add(`batch:${row.batchId}`);
-					continue;
-				}
-
-				uniqueAssignedPrKeys.add(`single:${row._id}`);
+			const key = assignmentHistoryPrKey(row);
+			if (key) {
+				uniqueAssignedPrKeys.add(key);
 			}
 		}
 
@@ -839,6 +846,127 @@ export const getTeamWeeklyPrCount = query({
 			weekEndMs,
 			timeZone,
 		};
+	},
+});
+
+export const getMyWeeklyAssignmentStats = query({
+	args: {
+		teamSlug: v.string(),
+		now: v.number(),
+	},
+	returns: v.object({
+		received: v.number(),
+		sent: v.number(),
+		weekStartMs: v.number(),
+		weekEndMs: v.number(),
+		lastReceived: v.union(
+			v.null(),
+			v.object({
+				prUrl: v.union(v.string(), v.null()),
+				timestamp: v.number(),
+			}),
+		),
+		lastSent: v.union(
+			v.null(),
+			v.object({
+				prUrl: v.union(v.string(), v.null()),
+				timestamp: v.number(),
+			}),
+		),
+	}),
+	handler: async (ctx, { teamSlug, now }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const timeZone = resolveTeamTimezone(team.timezone);
+		const { weekStartMs, weekEndMs } = getCurrentWeekRangeInTimezone(
+			now,
+			timeZone,
+		);
+		const empty = {
+			received: 0,
+			sent: 0,
+			weekStartMs,
+			weekEndMs,
+			lastReceived: null,
+			lastSent: null,
+		};
+
+		const identity = await ctx.auth.getUserIdentity();
+		const email = normalizeEmail(identity?.email);
+		if (!email) {
+			return empty;
+		}
+
+		const me = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team_email", (q) =>
+				q.eq("teamId", team._id).eq("email", email),
+			)
+			.first();
+		if (!me) {
+			return empty;
+		}
+
+		const lookbackStartMs = Math.min(
+			weekStartMs,
+			now - 7 * 24 * 60 * 60 * 1000,
+		);
+		const rows = await ctx.db
+			.query("assignmentHistory")
+			.withIndex("by_team_timestamp", (q) =>
+				q.eq("teamId", team._id).gte("timestamp", lookbackStartMs),
+			)
+			.collect();
+
+		const receivedKeys = new Set<string>();
+		const sentKeys = new Set<string>();
+		let lastReceived: { prUrl: string | null; timestamp: number } | null = null;
+		let lastSent: { prUrl: string | null; timestamp: number } | null = null;
+
+		for (const row of rows) {
+			const key = assignmentHistoryPrKey(row);
+			if (!key) {
+				continue;
+			}
+			const prUrl = row.prUrl?.trim() ? row.prUrl.trim() : null;
+			if (row.reviewerId === me._id) {
+				if (row.timestamp >= weekStartMs && row.timestamp < weekEndMs) {
+					receivedKeys.add(key);
+				}
+				if (!lastReceived || row.timestamp > lastReceived.timestamp) {
+					lastReceived = { prUrl, timestamp: row.timestamp };
+				}
+			}
+			if (row.actionByReviewerId === me._id) {
+				if (row.timestamp >= weekStartMs && row.timestamp < weekEndMs) {
+					sentKeys.add(key);
+				}
+				if (!lastSent || row.timestamp > lastSent.timestamp) {
+					lastSent = { prUrl, timestamp: row.timestamp };
+				}
+			}
+		}
+
+		return {
+			received: receivedKeys.size,
+			sent: sentKeys.size,
+			weekStartMs,
+			weekEndMs,
+			lastReceived,
+			lastSent,
+		};
+	},
+});
+
+export const teamHasEvents = query({
+	args: { teamSlug: v.string() },
+	returns: v.boolean(),
+	handler: async (ctx, { teamSlug }) => {
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const event = await ctx.db
+			.query("events")
+			.withIndex("by_team", (q) => q.eq("teamId", team._id))
+			.first();
+		return event !== null;
 	},
 });
 

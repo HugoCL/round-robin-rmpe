@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { McpTutorialPlayer } from "@/components/settings/McpTutorialPlayer";
 import { Button } from "@/components/ui/button";
+import { WithTooltip } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import { openAgentSetupDialog } from "@/lib/agent-setup-dialog-store";
 
@@ -58,15 +59,17 @@ export function McpLaunchBanner() {
 						<h2 className="text-lg font-semibold tracking-tight">
 							{t("title")}
 						</h2>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon-sm"
-							onClick={handleDismiss}
-							aria-label={t("dismiss")}
-						>
-							<X />
-						</Button>
+						<WithTooltip label={t("dismiss")}>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								onClick={handleDismiss}
+								aria-label={t("dismiss")}
+							>
+								<X />
+							</Button>
+						</WithTooltip>
 					</div>
 					<p className="max-w-prose text-sm text-muted-foreground">
 						{t("description")}

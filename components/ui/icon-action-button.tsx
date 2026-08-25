@@ -1,12 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { WithTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 /**
@@ -38,28 +33,21 @@ export function IconActionButton({
 	...props
 }: IconActionButtonProps) {
 	return (
-		<TooltipProvider>
-			<Tooltip>
-				<TooltipTrigger asChild>
-					<Button
-						variant="ghost"
-						size="icon"
-						aria-label={label}
-						className={cn(
-							iconActionButtonClass,
-							accent &&
-								"bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
-							className,
-						)}
-						{...props}
-					>
-						{children}
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent>
-					<p>{tooltip ?? label}</p>
-				</TooltipContent>
-			</Tooltip>
-		</TooltipProvider>
+		<WithTooltip label={tooltip ?? label}>
+			<Button
+				variant="ghost"
+				size="icon"
+				aria-label={label}
+				className={cn(
+					iconActionButtonClass,
+					accent &&
+						"bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
+					className,
+				)}
+				{...props}
+			>
+				{children}
+			</Button>
+		</WithTooltip>
 	);
 }

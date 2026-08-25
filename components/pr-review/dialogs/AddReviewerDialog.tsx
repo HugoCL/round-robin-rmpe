@@ -102,12 +102,14 @@ export function AddReviewerDialog({
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
 			<DialogTrigger asChild>
-				{trigger || (
-					<Button variant="outline" size="sm">
-						<UserPlus className="h-4 w-4 mr-2" />
-						{t("pr.addReviewer")}
-					</Button>
-				)}
+				<span className="inline-flex">
+					{trigger || (
+						<Button variant="outline" size="sm">
+							<UserPlus className="h-4 w-4 mr-2" />
+							{t("pr.addReviewer")}
+						</Button>
+					)}
+				</span>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>

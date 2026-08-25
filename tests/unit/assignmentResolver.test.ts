@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
 	type AssignmentResolverReviewer,
+	countRegularAssignmentsUntilReviewer,
 	resolveAssignmentSlots,
 } from "../../lib/assignmentResolver";
 
@@ -80,4 +81,32 @@ test("resolves tag slots and reports missing tag candidates", () => {
 		["frontend-reviewer"],
 	);
 	assert.deepEqual(result.failed, [{ slotIndex: 1, reason: "no_candidates" }]);
+});
+
+test("counts how many regular assignments remain until a reviewer is next", () => {
+	const reviewers = [
+		reviewer("ana", 0, 1),
+		reviewer("bruno", 1, 2),
+		reviewer("carla", 1, 3),
+		reviewer("out", 0, 0, { excludedFromReviewPool: true }),
+		reviewer("away", 0, 0, { effectiveIsAbsent: true }),
+	];
+
+	assert.equal(countRegularAssignmentsUntilReviewer(reviewers, "ana"), 0);
+	assert.equal(countRegularAssignmentsUntilReviewer(reviewers, "bruno"), 2);
+	assert.equal(countRegularAssignmentsUntilReviewer(reviewers, "out"), null);
+	assert.equal(countRegularAssignmentsUntilReviewer(reviewers, "away"), null);
+});
+
+test("counts through a large assignment-count gap", () => {
+	const reviewers = [
+		reviewer("ana", 0, 1),
+		reviewer("bruno", 0, 2),
+		reviewer("carla", 5, 3),
+	];
+
+	assert.equal(countRegularAssignmentsUntilReviewer(reviewers, "ana"), 0);
+	assert.ok(
+		(countRegularAssignmentsUntilReviewer(reviewers, "carla") ?? 0) > 3,
+	);
 });

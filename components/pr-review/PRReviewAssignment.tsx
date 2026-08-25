@@ -14,6 +14,7 @@ import { useConvexTags } from "@/hooks/useConvexTags";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import type { Assignment, UserInfo } from "@/lib/types";
+import { ActiveEventsList } from "./ActiveEventsList";
 import { AnnouncementBanner } from "./AnnouncementBanner";
 import { ShortcutConfirmationDialog } from "./dialogs/ShortcutConfirmationDialog";
 import { SnapshotDialog } from "./dialogs/SnapshotDialog";
@@ -48,7 +49,6 @@ export default function PRReviewAssignment({
 	const [snapshots, setSnapshots] = useState<BackupEntry[]>([]);
 	const [snapshotsLoading, setSnapshotsLoading] = useState(false);
 	const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
-	const [reviewersDrawerOpen, setReviewersDrawerOpen] = useState(false);
 
 	const accessContext = useQuery(
 		api.queries.getMyTeamAccess,
@@ -335,17 +335,14 @@ export default function PRReviewAssignment({
 		>
 			<PRReviewProvider value={providerValue}>
 				<div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
-					<PageHeader
-						teamSlug={teamSlug}
-						reviewersDrawerOpen={reviewersDrawerOpen}
-						setReviewersDrawerOpen={setReviewersDrawerOpen}
-					/>
+					<PageHeader teamSlug={teamSlug} />
 					<main className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col px-3 pb-4 sm:px-6 lg:min-h-0 lg:px-8 lg:pb-6">
 						<div
 							className="notice-stack page-enter mt-3 sm:mt-5 lg:mt-6"
 							role="region"
 							aria-label={t("common.notices")}
 						>
+							<ActiveEventsList />
 							<McpLaunchBanner />
 							<AnnouncementBanner />
 							<SurveyBanner />

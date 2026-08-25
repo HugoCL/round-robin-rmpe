@@ -230,3 +230,73 @@ export function resolveAssignmentSlots<
 		totalRequested: slots.length,
 	};
 }
+
+export function selectNextRegularReviewer<
+	ReviewerId,
+	TagId,
+	Reviewer extends AssignmentResolverReviewer<ReviewerId, TagId>,
+>(reviewers: Reviewer[]): Reviewer | null {
+	const candidates = reviewers.filter((reviewer) =>
+		isEligibleForAssignment(reviewer),
+	);
+	if (candidates.length === 0) return null;
+
+	let next = candidates[0];
+	if (!next) return null;
+
+	for (let index = 1; index < candidates.length; index++) {
+		const candidate = candidates[index];
+		if (!candidate) continue;
+		if (candidate.assignmentCount < next.assignmentCount) {
+			next = candidate;
+			continue;
+		}
+		if (
+			candidate.assignmentCount === next.assignmentCount &&
+			candidate.createdAt < next.createdAt
+		) {
+			next = candidate;
+		}
+	}
+
+	return next;
+}
+
+/**
+ * How many regular-rotation assignments happen before `reviewerId` is next.
+ * `0` means they are up now. `null` if they are out of the pool or absent.
+ */
+export function countRegularAssignmentsUntilReviewer<
+	ReviewerId,
+	TagId,
+	Reviewer extends AssignmentResolverReviewer<ReviewerId, TagId>,
+>(reviewers: Reviewer[], reviewerId: ReviewerId): number | null {
+	const reviewerKey = String(reviewerId);
+	const me = reviewers.find((reviewer) => String(reviewer._id) === reviewerKey);
+	if (!me || !isEligibleForAssignment(me)) return null;
+
+	const state = reviewers.map((reviewer) => ({ ...reviewer }));
+	const eligible = state.filter((reviewer) =>
+		isEligibleForAssignment(reviewer),
+	);
+	if (eligible.length === 0) return null;
+
+	let minCount = eligible[0]?.assignmentCount ?? 0;
+	let maxCount = minCount;
+	for (const reviewer of eligible) {
+		if (reviewer.assignmentCount < minCount)
+			minCount = reviewer.assignmentCount;
+		if (reviewer.assignmentCount > maxCount)
+			maxCount = reviewer.assignmentCount;
+	}
+	const maxSteps = eligible.length * (maxCount - minCount + 1);
+
+	for (let steps = 0; steps < maxSteps; steps++) {
+		const next = selectNextRegularReviewer(state);
+		if (!next) return null;
+		if (String(next._id) === reviewerKey) return steps;
+		next.assignmentCount += 1;
+	}
+
+	return null;
+}

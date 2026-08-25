@@ -1,6 +1,15 @@
 "use client";
 
-import { Bot, Clock, Eye, Settings, User, Webhook } from "lucide-react";
+import {
+	Bot,
+	Clock,
+	Download,
+	Eye,
+	Save,
+	Settings,
+	User,
+	Webhook,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -40,14 +49,9 @@ export function HeaderOptionsDrawer() {
 	const {
 		teamSlug,
 		openSnapshotDialog,
-		showAssignments,
-		toggleShowAssignments,
-		showTags,
-		toggleShowTags,
-		showEmails,
-		toggleShowEmails,
 		hideMultiAssignmentSection,
 		toggleHideMultiAssignmentSection,
+		exportData,
 	} = usePRReview();
 
 	const renderMySetting = ({
@@ -93,27 +97,6 @@ export function HeaderOptionsDrawer() {
 					</div>
 					<div className="flex flex-col gap-3">
 						{renderMySetting({
-							id: "my-settings-show-assignments",
-							label: t("mySettings.showAssignmentsLabel"),
-							description: t("mySettings.showAssignmentsDescription"),
-							checked: showAssignments,
-							onToggle: toggleShowAssignments,
-						})}
-						{renderMySetting({
-							id: "my-settings-show-tags",
-							label: t("mySettings.showTagsLabel"),
-							description: t("mySettings.showTagsDescription"),
-							checked: showTags,
-							onToggle: toggleShowTags,
-						})}
-						{renderMySetting({
-							id: "my-settings-show-emails",
-							label: t("mySettings.showEmailsLabel"),
-							description: t("mySettings.showEmailsDescription"),
-							checked: showEmails,
-							onToggle: toggleShowEmails,
-						})}
-						{renderMySetting({
 							id: "my-settings-hide-multi-assignment",
 							label: t("mySettings.hideMultiAssignmentSectionLabel"),
 							description: t(
@@ -141,6 +124,24 @@ export function HeaderOptionsDrawer() {
 						>
 							<Clock className="mr-2 h-4 w-4" />
 							{t("pr.history")}
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							className="min-h-[46px] w-full justify-start"
+							onClick={exportData}
+						>
+							<Save className="mr-2 h-4 w-4" />
+							{t("pr.exportData")}
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							className="min-h-[46px] w-full justify-start"
+							onClick={() => document.getElementById("import-file")?.click()}
+						>
+							<Download className="mr-2 h-4 w-4" />
+							{t("history.import")}
 						</Button>
 					</div>
 

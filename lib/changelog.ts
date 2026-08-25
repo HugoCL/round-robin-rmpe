@@ -42,6 +42,34 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-08-25",
+		type: "improvement",
+		title: "La barra personal ahora te dice qué PR fue el último",
+		description:
+			"Además de los de esta semana, ves el último PR que te asignaron y el último que enviaste. Si no te toca ahora, también te dice en cuántos PRs más caes en la rotación general.",
+	},
+	{
+		date: "2026-08-25",
+		type: "improvement",
+		title: "Crear evento se mudó al header",
+		description:
+			"Si tu equipo usa eventos, el botón ya no está en un desplegable: está en el calendario del navbar, junto al resto de acciones. Debajo dejamos una barra siempre visible con tu disponibilidad, cuántos PRs enviaste y recibiste esta semana, y los atajos.",
+	},
+	{
+		date: "2026-08-25",
+		type: "improvement",
+		title: "Gestionar Revisores se cambió de casa",
+		description:
+			"Sacamos el botón del header: ábrelo desde el panel lateral de Revisores. Ahí está la lista, el manejo de tags y los ajustes por usuario. Si abres revisores, el historial se pliega.",
+	},
+	{
+		date: "2026-08-25",
+		type: "improvement",
+		title: "Editar a un revisor, sin el formulario apretado",
+		description:
+			"Al configurar a alguien ves quién es arriba, con su nombre y correo, y abajo el resto en vertical: contacto, rotación con interruptores, y los días del horario parcial en una sola fila. En el teléfono se abre como una hoja desde abajo.",
+	},
+	{
 		date: "2026-08-23",
 		type: "feature",
 		title: "Rotaciones generales y por tag, por separado",

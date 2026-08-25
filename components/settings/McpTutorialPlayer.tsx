@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { McpUsageExampleScene } from "@/components/settings/McpUsageExamples";
 import { Button } from "@/components/ui/button";
+import { WithTooltip } from "@/components/ui/tooltip";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
 
@@ -277,15 +278,17 @@ export function McpTutorialPlayer({
 				{captions[sceneIndex]}
 			</figcaption>
 			<div className="flex min-w-0 items-center gap-3 px-3 py-2">
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-sm"
-					onClick={() => setPlaying((current) => !current)}
-					aria-label={playing ? t("tutorialPause") : t("tutorialPlay")}
-				>
-					{playing ? <Pause /> : <Play />}
-				</Button>
+				<WithTooltip label={playing ? t("tutorialPause") : t("tutorialPlay")}>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						onClick={() => setPlaying((current) => !current)}
+						aria-label={playing ? t("tutorialPause") : t("tutorialPlay")}
+					>
+						{playing ? <Pause /> : <Play />}
+					</Button>
+				</WithTooltip>
 				<div className="flex min-w-0 flex-1 items-center gap-1.5">
 					{SCENE_MS.map((duration, index) => {
 						const progress = progressForScene(elapsedMs, index);

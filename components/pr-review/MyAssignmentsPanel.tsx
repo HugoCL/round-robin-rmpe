@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WithTooltip } from "@/components/ui/tooltip";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useMyAssignments } from "@/hooks/useMyAssignments";
 
@@ -44,36 +45,39 @@ export function MyAssignmentsPanel() {
 			<Card className="h-full flex flex-col min-w-0">
 				<CardHeader className="flex-shrink-0 flex flex-row flex-wrap items-center justify-between gap-2">
 					<CardTitle>{t("pr.assignedToMe")}</CardTitle>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8 mt-1"
-						title={t("pr.markAllApproved")}
-						disabled={
-							assignedToMe.length === 0 || processing === "__bulk_assignedToMe"
-						}
-						onClick={async () => {
-							if (assignedToMe.length === 0) return;
-							if (!confirm(t("pr.confirmMarkAll"))) return;
-							setProcessing("__bulk_assignedToMe");
-							try {
-								for (const a of assignedToMe) {
-									try {
-										await complete({
-											id: a._id as Id<"prAssignments">,
-											reviewerId: a.assigneeId,
-										});
-									} catch (e) {
-										console.warn("Failed to complete assignment", a._id, e);
-									}
-								}
-							} finally {
-								setProcessing(null);
+					<WithTooltip label={t("pr.markAllApproved")}>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 mt-1"
+							aria-label={t("pr.markAllApproved")}
+							disabled={
+								assignedToMe.length === 0 ||
+								processing === "__bulk_assignedToMe"
 							}
-						}}
-					>
-						<CheckSquare2 className="h-4 w-4" />
-					</Button>
+							onClick={async () => {
+								if (assignedToMe.length === 0) return;
+								if (!confirm(t("pr.confirmMarkAll"))) return;
+								setProcessing("__bulk_assignedToMe");
+								try {
+									for (const a of assignedToMe) {
+										try {
+											await complete({
+												id: a._id as Id<"prAssignments">,
+												reviewerId: a.assigneeId,
+											});
+										} catch (e) {
+											console.warn("Failed to complete assignment", a._id, e);
+										}
+									}
+								} finally {
+									setProcessing(null);
+								}
+							}}
+						>
+							<CheckSquare2 className="h-4 w-4" />
+						</Button>
+					</WithTooltip>
 				</CardHeader>
 				<CardContent className="flex-1 overflow-hidden">
 					{assignedToMe.length === 0 ? (
@@ -133,26 +137,28 @@ export function MyAssignmentsPanel() {
 											</p>
 										</div>
 										<div className="flex flex-col items-start sm:items-end gap-2 sm:ml-3">
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-8 w-8"
-												title={t("pr.reviewedApproved")}
-												disabled={processing === a._id}
-												onClick={async () => {
-													setProcessing(a._id);
-													try {
-														await complete({
-															id: a._id as Id<"prAssignments">,
-															reviewerId: a.assigneeId,
-														});
-													} finally {
-														setProcessing(null);
-													}
-												}}
-											>
-												<Check className="h-4 w-4" />
-											</Button>
+											<WithTooltip label={t("pr.reviewedApproved")}>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-8 w-8"
+													aria-label={t("pr.reviewedApproved")}
+													disabled={processing === a._id}
+													onClick={async () => {
+														setProcessing(a._id);
+														try {
+															await complete({
+																id: a._id as Id<"prAssignments">,
+																reviewerId: a.assigneeId,
+															});
+														} finally {
+															setProcessing(null);
+														}
+													}}
+												>
+													<Check className="h-4 w-4" />
+												</Button>
+											</WithTooltip>
 										</div>
 									</div>
 								);
@@ -165,36 +171,38 @@ export function MyAssignmentsPanel() {
 			<Card className="h-full flex flex-col min-w-0">
 				<CardHeader className="flex-shrink-0 flex flex-row flex-wrap items-center justify-between gap-2">
 					<CardTitle>{t("pr.iAssigned")}</CardTitle>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8 mt-1"
-						title={t("pr.markAllApproved")}
-						disabled={
-							iAssigned.length === 0 || processing === "__bulk_iAssigned"
-						}
-						onClick={async () => {
-							if (iAssigned.length === 0) return;
-							if (!confirm(t("pr.confirmMarkAll"))) return;
-							setProcessing("__bulk_iAssigned");
-							try {
-								for (const a of iAssigned) {
-									try {
-										await complete({
-											id: a._id as Id<"prAssignments">,
-											reviewerId: a.assignerId,
-										});
-									} catch (e) {
-										console.warn("Failed to complete assignment", a._id, e);
-									}
-								}
-							} finally {
-								setProcessing(null);
+					<WithTooltip label={t("pr.markAllApproved")}>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 mt-1"
+							aria-label={t("pr.markAllApproved")}
+							disabled={
+								iAssigned.length === 0 || processing === "__bulk_iAssigned"
 							}
-						}}
-					>
-						<CheckSquare2 className="h-4 w-4" />
-					</Button>
+							onClick={async () => {
+								if (iAssigned.length === 0) return;
+								if (!confirm(t("pr.confirmMarkAll"))) return;
+								setProcessing("__bulk_iAssigned");
+								try {
+									for (const a of iAssigned) {
+										try {
+											await complete({
+												id: a._id as Id<"prAssignments">,
+												reviewerId: a.assignerId,
+											});
+										} catch (e) {
+											console.warn("Failed to complete assignment", a._id, e);
+										}
+									}
+								} finally {
+									setProcessing(null);
+								}
+							}}
+						>
+							<CheckSquare2 className="h-4 w-4" />
+						</Button>
+					</WithTooltip>
 				</CardHeader>
 				<CardContent className="flex-1 overflow-hidden">
 					{iAssigned.length === 0 ? (
@@ -254,26 +262,28 @@ export function MyAssignmentsPanel() {
 											</p>
 										</div>
 										<div className="flex flex-col items-start sm:items-end gap-2 sm:ml-3">
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-8 w-8"
-												title={t("pr.reviewedApproved")}
-												disabled={processing === a._id}
-												onClick={async () => {
-													setProcessing(a._id);
-													try {
-														await complete({
-															id: a._id as Id<"prAssignments">,
-															reviewerId: a.assignerId,
-														});
-													} finally {
-														setProcessing(null);
-													}
-												}}
-											>
-												<Check className="h-4 w-4" />
-											</Button>
+											<WithTooltip label={t("pr.reviewedApproved")}>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-8 w-8"
+													aria-label={t("pr.reviewedApproved")}
+													disabled={processing === a._id}
+													onClick={async () => {
+														setProcessing(a._id);
+														try {
+															await complete({
+																id: a._id as Id<"prAssignments">,
+																reviewerId: a.assignerId,
+															});
+														} finally {
+															setProcessing(null);
+														}
+													}}
+												>
+													<Check className="h-4 w-4" />
+												</Button>
+											</WithTooltip>
 										</div>
 									</div>
 								);

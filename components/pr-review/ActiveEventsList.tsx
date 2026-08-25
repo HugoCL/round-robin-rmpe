@@ -6,7 +6,6 @@ import {
 	Check,
 	Clock,
 	Trash2,
-	User,
 	UserCheck,
 	UserMinus,
 	UserPlus,
@@ -277,211 +276,199 @@ export function ActiveEventsList() {
 		return null;
 	}
 
+	const grouped = sortedEvents.length > 1;
+
+	const rows = sortedEvents.map((event) => {
+		const { dateStr, timeStr } = formatDateTime(event.scheduledAt);
+		const participating = isParticipating(event);
+		const creator = isCreator(event);
+		const remaining = event.scheduledAt - now;
+		const isPast = remaining <= 0;
+
+		return (
+			<div
+				key={event._id}
+				className="flex flex-col gap-2.5 px-3 py-2.5 lg:flex-row lg:items-center lg:gap-4"
+			>
+				<div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">
+					{grouped ? null : (
+						<Calendar
+							className="size-4 shrink-0 text-muted-foreground"
+							aria-hidden="true"
+						/>
+					)}
+					<p className="min-w-0 text-sm font-medium leading-tight break-words">
+						{event.title}
+					</p>
+					{event.status === "started" ? (
+						<Badge variant="default" className="h-6 text-xs">
+							{t("events.inProgress")}
+						</Badge>
+					) : null}
+					{event.status === "scheduled" && isPast ? (
+						<Badge variant="secondary" className="h-6 text-xs">
+							{t("events.starting")}
+						</Badge>
+					) : null}
+					{event.status === "scheduled" && !isPast ? (
+						<Badge
+							variant="outline"
+							className="h-6 gap-1 font-mono text-xs tabular-nums"
+						>
+							<Clock className="size-3" aria-hidden="true" />
+							{formatCountdown(remaining)}
+						</Badge>
+					) : null}
+					<span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+						<Clock className="size-3 shrink-0" aria-hidden="true" />
+						{dateStr} · {timeStr}
+					</span>
+					{event.participants.length > 0 ? (
+						<span className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-xs text-muted-foreground">
+							<Users className="size-3 shrink-0" aria-hidden="true" />
+							<span className="truncate">
+								{event.participants
+									.map((participant) => participant.name)
+									.join(" · ")}
+							</span>
+						</span>
+					) : null}
+					{event.description ? (
+						<span className="min-w-0 truncate text-xs text-muted-foreground">
+							{event.description}
+						</span>
+					) : null}
+				</div>
+
+				<div className="flex shrink-0 flex-wrap items-center gap-2">
+					{event.status === "scheduled" ? (
+						participating ? (
+							<Button
+								variant="outline"
+								size="sm"
+								className="text-destructive"
+								onClick={() => handleLeave(event._id)}
+							>
+								<UserMinus className="h-4 w-4 mr-1" />
+								{t("events.leave")}
+							</Button>
+						) : (
+							<Button
+								variant="default"
+								size="sm"
+								onClick={() => handleJoin(event._id)}
+							>
+								<UserCheck className="h-4 w-4 mr-1" />
+								{t("events.join")}
+							</Button>
+						)
+					) : null}
+
+					{creator &&
+					event.status === "scheduled" &&
+					getAvailableReviewers(event).length > 0 ? (
+						<Popover>
+							<PopoverTrigger asChild>
+								<Button variant="outline" size="sm">
+									<UserPlus className="h-4 w-4 mr-1" />
+									{t("events.addParticipant")}
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent className="w-56 p-2" align="end">
+								<div className="space-y-1">
+									<p className="mb-2 text-sm font-medium">
+										{t("events.selectTeamMember")}
+									</p>
+									<div className="max-h-48 space-y-1 overflow-y-auto">
+										{getAvailableReviewers(event).map((reviewer) => (
+											<Button
+												key={reviewer._id}
+												variant="ghost"
+												size="sm"
+												className="w-full justify-start text-left"
+												onClick={() =>
+													handleAddParticipant(event._id, reviewer._id)
+												}
+											>
+												{reviewer.name}
+											</Button>
+										))}
+									</div>
+								</div>
+							</PopoverContent>
+						</Popover>
+					) : null}
+
+					{creator && event.status === "started" ? (
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="outline"
+										size="icon"
+										className="h-8 w-8 text-green-600 hover:text-green-600"
+										onClick={() => handleComplete(event._id)}
+									>
+										<Check className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>{t("events.completeEvent")}</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					) : null}
+
+					{creator && canManageCurrentTeam && event.status === "scheduled" ? (
+						<EditEventScheduleDialog
+							eventId={event._id}
+							eventTitle={event.title}
+							scheduledAt={event.scheduledAt}
+						/>
+					) : null}
+
+					{creator && event.status === "scheduled" ? (
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="outline"
+										size="sm"
+										className="text-destructive hover:text-destructive"
+										onClick={() => handleCancel(event._id)}
+									>
+										<Trash2 className="h-4 w-4 mr-1" />
+										{t("events.cancelEvent")}
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>{t("events.cancelEvent")}</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					) : null}
+				</div>
+			</div>
+		);
+	});
+
+	if (!grouped) {
+		return (
+			<section
+				className="rounded-xl border border-border/70 bg-background/72 shadow-none"
+				aria-label={t("events.upcomingEvents")}
+			>
+				{rows}
+			</section>
+		);
+	}
+
 	return (
-		<div className="calm-list w-full">
-			{sortedEvents.map((event) => {
-				const { dateStr, timeStr } = formatDateTime(event.scheduledAt);
-				const participating = isParticipating(event);
-				const creator = isCreator(event);
-				const remaining = event.scheduledAt - now;
-				const isPast = remaining <= 0;
-
-				return (
-					<div
-						key={event._id}
-						className="px-4 py-4 transition-colors hover:bg-muted/30 md:px-5"
-					>
-						<div className="flex flex-col gap-4">
-							<div className="min-w-0 space-y-3">
-								<div className="flex flex-wrap items-center gap-2.5">
-									<p className="min-w-0 text-sm font-semibold leading-tight break-words">
-										{event.title}
-									</p>
-									{event.status === "started" && (
-										<Badge variant="default" className="h-6 text-xs">
-											{t("events.inProgress")}
-										</Badge>
-									)}
-									{event.status === "scheduled" && isPast && (
-										<Badge variant="secondary" className="h-6 text-xs">
-											{t("events.starting")}
-										</Badge>
-									)}
-									{event.status === "scheduled" && !isPast && (
-										<Badge
-											variant="outline"
-											className="h-6 gap-1 font-mono text-xs tabular-nums"
-										>
-											<Clock className="h-3 w-3" />
-											{formatCountdown(remaining)}
-										</Badge>
-									)}
-								</div>
-
-								<div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5">
-									<span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 py-1.5 text-xs text-muted-foreground sm:max-w-fit">
-										<User className="h-3 w-3 shrink-0" />
-										<span className="truncate">
-											{t("events.createdBy", {
-												name: event.createdBy.name,
-											})}
-										</span>
-									</span>
-									<div className="flex flex-wrap items-center gap-2.5">
-										<span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 py-1.5 text-xs text-muted-foreground">
-											<Calendar className="h-3 w-3 shrink-0" />
-											{dateStr}
-										</span>
-										<span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 py-1.5 text-xs text-muted-foreground">
-											<Clock className="h-3 w-3 shrink-0" />
-											{timeStr}
-										</span>
-									</div>
-								</div>
-
-								{event.participants.length > 0 && (
-									<div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5">
-										<span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-2.5 py-1.5 text-xs text-muted-foreground">
-											<Users className="h-3 w-3 shrink-0" />
-											{t("events.participantsLabel")}
-										</span>
-										<div className="flex flex-wrap items-center gap-1.5">
-											{event.participants.map((participant) => (
-												<Badge
-													key={participant.email}
-													variant="secondary"
-													className="max-w-full truncate text-xs font-normal"
-													title={participant.name}
-												>
-													{participant.name}
-												</Badge>
-											))}
-										</div>
-									</div>
-								)}
-
-								{event.description && (
-									<p className="truncate text-xs text-muted-foreground">
-										{event.description}
-									</p>
-								)}
-							</div>
-
-							<div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
-								{event.status === "scheduled" &&
-									(participating ? (
-										<Button
-											variant="outline"
-											size="sm"
-											className="text-destructive"
-											onClick={() => handleLeave(event._id)}
-										>
-											<UserMinus className="h-4 w-4 mr-1" />
-											{t("events.leave")}
-										</Button>
-									) : (
-										<Button
-											variant="default"
-											size="sm"
-											onClick={() => handleJoin(event._id)}
-										>
-											<UserCheck className="h-4 w-4 mr-1" />
-											{t("events.join")}
-										</Button>
-									))}
-
-								{/* Add participants popover - visible to creator */}
-								{creator &&
-									event.status === "scheduled" &&
-									getAvailableReviewers(event).length > 0 && (
-										<Popover>
-											<PopoverTrigger asChild>
-												<Button variant="outline" size="sm">
-													<UserPlus className="h-4 w-4 mr-1" />
-													{t("events.addParticipant")}
-												</Button>
-											</PopoverTrigger>
-											<PopoverContent className="w-56 p-2" align="end">
-												<div className="space-y-1">
-													<p className="text-sm font-medium mb-2">
-														{t("events.selectTeamMember")}
-													</p>
-													<div className="max-h-48 overflow-y-auto space-y-1">
-														{getAvailableReviewers(event).map((reviewer) => (
-															<Button
-																key={reviewer._id}
-																variant="ghost"
-																size="sm"
-																className="w-full justify-start text-left"
-																onClick={() =>
-																	handleAddParticipant(event._id, reviewer._id)
-																}
-															>
-																{reviewer.name}
-															</Button>
-														))}
-													</div>
-												</div>
-											</PopoverContent>
-										</Popover>
-									)}
-
-								{/* Complete button - visible to creator when event is started */}
-								{creator && event.status === "started" && (
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant="outline"
-													size="icon"
-													className="h-8 w-8 text-green-600 hover:text-green-600"
-													onClick={() => handleComplete(event._id)}
-												>
-													<Check className="h-4 w-4" />
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>
-												{t("events.completeEvent")}
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-								)}
-
-								{/* Reschedule - creator on scheduled events */}
-								{creator &&
-									canManageCurrentTeam &&
-									event.status === "scheduled" && (
-										<EditEventScheduleDialog
-											eventId={event._id}
-											eventTitle={event.title}
-											scheduledAt={event.scheduledAt}
-										/>
-									)}
-
-								{/* Cancel button - visible to creator when scheduled */}
-								{creator && event.status === "scheduled" && (
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant="outline"
-													size="sm"
-													className="text-destructive hover:text-destructive"
-													onClick={() => handleCancel(event._id)}
-												>
-													<Trash2 className="h-4 w-4 mr-1" />
-													{t("events.cancelEvent")}
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>{t("events.cancelEvent")}</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-								)}
-							</div>
-						</div>
-					</div>
-				);
-			})}
-		</div>
+		<section className="calm-panel p-2" aria-label={t("events.upcomingEvents")}>
+			<div className="flex h-10 items-center gap-2 px-2 text-sm font-medium">
+				<Calendar className="size-4 text-muted-foreground" aria-hidden="true" />
+				<span>{t("events.upcomingEvents")}</span>
+				<Badge variant="secondary" className="ml-auto">
+					{sortedEvents.length}
+				</Badge>
+			</div>
+			<div className="divide-y divide-border/60">{rows}</div>
+		</section>
 	);
 }

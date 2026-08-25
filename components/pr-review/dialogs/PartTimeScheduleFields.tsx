@@ -1,22 +1,29 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { useId } from "react";
+import {
+	Field,
+	FieldContent,
+	FieldDescription,
+	FieldError,
+	FieldLabel,
+} from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
 	normalizeWorkingDays,
 	type PartTimeSchedule,
 	type Weekday,
 	WORKDAY_VALUES,
 } from "@/lib/reviewerAvailability";
-import { cn } from "@/lib/utils";
 
 interface PartTimeScheduleFieldsProps {
 	enabled: boolean;
 	workingDays: Weekday[];
 	onEnabledChange: (enabled: boolean) => void;
 	onWorkingDaysChange: (workingDays: Weekday[]) => void;
+	disabled?: boolean;
 }
 
 export function PartTimeScheduleFields({
@@ -24,60 +31,65 @@ export function PartTimeScheduleFields({
 	workingDays,
 	onEnabledChange,
 	onWorkingDaysChange,
+	disabled = false,
 }: PartTimeScheduleFieldsProps) {
 	const t = useTranslations();
-
-	const toggleWorkingDay = (day: Weekday) => {
-		const nextWorkingDays = workingDays.includes(day)
-			? workingDays.filter((value) => value !== day)
-			: normalizeWorkingDays([...workingDays, day]);
-		onWorkingDaysChange(nextWorkingDays);
-	};
+	const switchId = useId();
+	const daysInvalid = enabled && workingDays.length === 0;
 
 	return (
-		<div className="calm-subtle-panel flex flex-col gap-3 p-3">
-			<div className="flex items-center justify-between gap-3">
-				<div className="flex flex-col gap-1">
-					<Label>{t("partTime.title")}</Label>
-					<p className="text-xs text-muted-foreground">
-						{t("partTime.description")}
-					</p>
-				</div>
-				<Switch checked={enabled} onCheckedChange={onEnabledChange} />
-			</div>
+		<div className="flex flex-col gap-3">
+			<Field orientation="horizontal" data-disabled={disabled || undefined}>
+				<FieldContent>
+					<FieldLabel htmlFor={switchId}>{t("partTime.title")}</FieldLabel>
+					<FieldDescription>{t("partTime.description")}</FieldDescription>
+				</FieldContent>
+				<Switch
+					id={switchId}
+					className="shrink-0"
+					checked={enabled}
+					disabled={disabled}
+					onCheckedChange={onEnabledChange}
+				/>
+			</Field>
 
 			{enabled ? (
-				<div className="flex flex-col gap-2">
-					<div className="flex flex-wrap gap-2">
-						{WORKDAY_VALUES.map((day) => {
-							const selected = workingDays.includes(day);
-							return (
-								<Button
-									key={day}
-									type="button"
-									variant={selected ? "default" : "outline"}
-									size="sm"
-									aria-pressed={selected}
-									className={cn(
-										"capitalize",
-										!selected && "text-muted-foreground",
-									)}
-									onClick={() => toggleWorkingDay(day)}
-								>
-									{t(`weekdays.${day}`)}
-								</Button>
-							);
-						})}
-					</div>
-					<p className="text-xs text-muted-foreground">
-						{t("partTime.helper")}
-					</p>
-				</div>
-			) : (
-				<p className="text-xs text-muted-foreground">
-					{t("partTime.fullTimeHint")}
-				</p>
-			)}
+				<Field
+					data-invalid={daysInvalid || undefined}
+					data-disabled={disabled || undefined}
+				>
+					<ToggleGroup
+						type="multiple"
+						variant="outline"
+						size="sm"
+						spacing={1}
+						value={workingDays}
+						disabled={disabled}
+						onValueChange={(value) =>
+							onWorkingDaysChange(normalizeWorkingDays(value as Weekday[]))
+						}
+						className="w-full max-w-full"
+						aria-label={t("partTime.workingDaysLabel")}
+						aria-invalid={daysInvalid || undefined}
+					>
+						{WORKDAY_VALUES.map((day) => (
+							<ToggleGroupItem
+								key={day}
+								value={day}
+								className="min-w-0 flex-1 px-1.5 data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:data-[state=on]:bg-primary/95"
+								aria-label={t(`weekdays.${day}`)}
+							>
+								{t(`weekdays.${day}`)}
+							</ToggleGroupItem>
+						))}
+					</ToggleGroup>
+					{daysInvalid ? (
+						<FieldError>{t("partTime.pickDaysError")}</FieldError>
+					) : (
+						<FieldDescription>{t("partTime.helper")}</FieldDescription>
+					)}
+				</Field>
+			) : null}
 		</div>
 	);
 }

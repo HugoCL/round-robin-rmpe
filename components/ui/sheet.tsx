@@ -2,9 +2,11 @@
 
 import { Cancel01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { useTranslations } from "next-intl"
 import { Dialog as SheetPrimitive } from "radix-ui"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import { WithTooltip } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
@@ -45,6 +47,20 @@ function SheetOverlay({
   )
 }
 
+function SheetCloseButton() {
+  const t = useTranslations("common")
+
+  return (
+    <WithTooltip label={t("close")} className="absolute top-4 right-4">
+      <SheetPrimitive.Close data-slot="sheet-close" asChild>
+        <Button variant="ghost" size="icon-sm" aria-label={t("close")}>
+          <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
+        </Button>
+      </SheetPrimitive.Close>
+    </WithTooltip>
+  )
+}
+
 function SheetContent({
   className,
   children,
@@ -68,18 +84,7 @@ function SheetContent({
         {...props}
       >
         {children}
-        {showCloseButton && (
-          <SheetPrimitive.Close data-slot="sheet-close" asChild>
-            <Button
-              variant="ghost"
-              className="absolute top-4 right-4"
-              size="icon-sm"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
-              <span className="sr-only">Close</span>
-            </Button>
-          </SheetPrimitive.Close>
-        )}
+        {showCloseButton ? <SheetCloseButton /> : null}
       </SheetPrimitive.Content>
     </SheetPortal>
   )

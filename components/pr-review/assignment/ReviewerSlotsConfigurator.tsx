@@ -12,6 +12,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { WithTooltip } from "@/components/ui/tooltip";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import type { Reviewer } from "@/lib/types";
@@ -93,46 +94,50 @@ export function ReviewerSlotsConfigurator({
 					id="reviewer-slots-count"
 					aria-label={t("pr.reviewersToAssign")}
 				>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-						onClick={() =>
-							onReviewerCountChange(
-								Math.max(minReviewerCount, reviewerCount - 1),
-							)
-						}
-						disabled={
-							!allowReviewerCountChange || reviewerCount <= minReviewerCount
-						}
-						aria-label={t("pr.decreaseReviewerCount")}
-					>
-						<Minus className="h-4 w-4" aria-hidden="true" />
-					</Button>
+					<WithTooltip label={t("pr.decreaseReviewerCount")}>
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+							onClick={() =>
+								onReviewerCountChange(
+									Math.max(minReviewerCount, reviewerCount - 1),
+								)
+							}
+							disabled={
+								!allowReviewerCountChange || reviewerCount <= minReviewerCount
+							}
+							aria-label={t("pr.decreaseReviewerCount")}
+						>
+							<Minus className="h-4 w-4" aria-hidden="true" />
+						</Button>
+					</WithTooltip>
 					<span
 						className="min-w-8 text-center text-sm font-medium"
 						aria-live="polite"
 					>
 						{reviewerCount}
 					</span>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-						onClick={() =>
-							onReviewerCountChange(
-								Math.min(MAX_BATCH_SLOTS, reviewerCount + 1),
-							)
-						}
-						disabled={
-							!allowReviewerCountChange || reviewerCount >= MAX_BATCH_SLOTS
-						}
-						aria-label={t("pr.increaseReviewerCount")}
-					>
-						<Plus className="h-4 w-4" aria-hidden="true" />
-					</Button>
+					<WithTooltip label={t("pr.increaseReviewerCount")}>
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+							onClick={() =>
+								onReviewerCountChange(
+									Math.min(MAX_BATCH_SLOTS, reviewerCount + 1),
+								)
+							}
+							disabled={
+								!allowReviewerCountChange || reviewerCount >= MAX_BATCH_SLOTS
+							}
+							aria-label={t("pr.increaseReviewerCount")}
+						>
+							<Plus className="h-4 w-4" aria-hidden="true" />
+						</Button>
+					</WithTooltip>
 				</div>
 			</div>
 

@@ -4,7 +4,14 @@ import {
 	ThemeProvider as NextThemesProvider,
 	type ThemeProviderProps,
 } from "next-themes";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-	return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+	return (
+		<NextThemesProvider {...props}>
+			<TooltipProvider delayDuration={200} skipDelayDuration={300}>
+				{children}
+			</TooltipProvider>
+		</NextThemesProvider>
+	);
 }

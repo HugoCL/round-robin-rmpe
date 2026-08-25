@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useMutation } from "convex/react";
-import { Calendar, Clock, Globe, Plus } from "lucide-react";
+import { Calendar, CalendarPlus, Clock, Globe, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { IconActionButton } from "@/components/ui/icon-action-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -30,6 +31,7 @@ import { usePRReview } from "../PRReviewContext";
 
 interface CreateEventDialogProps {
 	trigger?: React.ReactNode;
+	iconOnly?: boolean;
 }
 
 // Get user's timezone name
@@ -66,7 +68,10 @@ function isUserInChile(): boolean {
 	return tz === "America/Santiago" || tz.includes("Chile");
 }
 
-export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
+export function CreateEventDialog({
+	trigger,
+	iconOnly,
+}: CreateEventDialogProps) {
 	const t = useTranslations();
 	const locale = useLocale();
 	const { teamSlug, userInfo } = usePRReview();
@@ -218,6 +223,12 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 					}),
 				);
 				setOpen(false);
+			} else {
+				toast({
+					title: t("common.error"),
+					description: result.error || t("events.createFailed"),
+					variant: "destructive",
+				});
 			}
 		} catch (error) {
 			console.error("Error creating event:", error);
@@ -241,131 +252,146 @@ export function CreateEventDialog({ trigger }: CreateEventDialogProps) {
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				{trigger || (
-					<Button variant="outline" size="sm">
-						<Plus className="h-4 w-4 mr-2" />
-						{t("events.createEvent")}
-					</Button>
+		<>
+			{iconOnly ? (
+				<IconActionButton
+					label={t("events.createEvent")}
+					tooltip={t("events.createEventTooltip")}
+					onClick={() => setOpen(true)}
+				>
+					<CalendarPlus />
+				</IconActionButton>
+			) : null}
+			<Dialog open={open} onOpenChange={setOpen}>
+				{iconOnly ? null : (
+					<DialogTrigger asChild>
+						{trigger || (
+							<Button variant="outline" size="sm">
+								<Plus className="h-4 w-4 mr-2" />
+								{t("events.createEvent")}
+							</Button>
+						)}
+					</DialogTrigger>
 				)}
-			</DialogTrigger>
-			<DialogContent className="sm:max-w-[425px]">
-				<DialogHeader>
-					<DialogTitle>{t("events.createEvent")}</DialogTitle>
-					<DialogDescription>{t("events.createDescription")}</DialogDescription>
-				</DialogHeader>
+				<DialogContent className="sm:max-w-[425px]">
+					<DialogHeader>
+						<DialogTitle>{t("events.createEvent")}</DialogTitle>
+						<DialogDescription>
+							{t("events.createDescription")}
+						</DialogDescription>
+					</DialogHeader>
 
-				<div className="grid gap-4">
-					{/* Title */}
-					<div className="grid gap-2">
-						<Label htmlFor={titleId}>{t("events.title")}</Label>
-						<Input
-							id={titleId}
-							placeholder={t("events.titlePlaceholder")}
-							value={title}
-							onChange={(e) => setTitle(e.target.value)}
-						/>
-					</div>
-
-					{/* Description */}
-					<div className="grid gap-2">
-						<Label htmlFor={descriptionId}>
-							{t("events.description")}{" "}
-							<span className="text-muted-foreground text-xs">
-								({t("common.optional")})
-							</span>
-						</Label>
-						<Textarea
-							id={descriptionId}
-							placeholder={t("events.descriptionPlaceholder")}
-							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-							rows={3}
-						/>
-					</div>
-
-					{/* Date */}
-					<div className="grid gap-2">
-						<Label>{t("events.date")}</Label>
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className={cn(
-										"justify-start text-left font-normal",
-										!date && "text-muted-foreground",
-									)}
-								>
-									<Calendar className="mr-2 h-4 w-4" />
-									{date ? formatDate(date) : t("events.selectDate")}
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent className="w-auto p-0" align="start">
-								<CalendarComponent
-									mode="single"
-									selected={date}
-									onSelect={setDate}
-									autoFocus
-								/>
-							</PopoverContent>
-						</Popover>
-					</div>
-
-					{/* Time */}
-					<div className="grid gap-2">
-						<Label htmlFor={timeId}>{t("events.time")}</Label>
-						<div className="flex items-center gap-2">
-							<Clock className="h-4 w-4 text-muted-foreground" />
+					<div className="grid gap-4">
+						{/* Title */}
+						<div className="grid gap-2">
+							<Label htmlFor={titleId}>{t("events.title")}</Label>
 							<Input
-								id={timeId}
-								type="time"
-								value={time}
-								onChange={(e) => setTime(e.target.value)}
-								className="w-auto"
+								id={titleId}
+								placeholder={t("events.titlePlaceholder")}
+								value={title}
+								onChange={(e) => setTitle(e.target.value)}
 							/>
-							<span className="text-xs text-muted-foreground">
-								(
-								{userTimezone.split("/").pop()?.replace("_", " ") ||
-									t("events.yourTime")}
-								)
-							</span>
 						</div>
-						{/* Show Chile time conversion if user is not in Chile */}
-						{!userInChile && chileTimePreview && (
-							<div className="calm-subtle-panel flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground">
-								<Globe className="h-3.5 w-3.5" />
-								<span>
-									{t("events.chileTimePreview", { time: chileTimePreview })}
+
+						{/* Description */}
+						<div className="grid gap-2">
+							<Label htmlFor={descriptionId}>
+								{t("events.description")}{" "}
+								<span className="text-muted-foreground text-xs">
+									({t("common.optional")})
+								</span>
+							</Label>
+							<Textarea
+								id={descriptionId}
+								placeholder={t("events.descriptionPlaceholder")}
+								value={description}
+								onChange={(e) => setDescription(e.target.value)}
+								rows={3}
+							/>
+						</div>
+
+						{/* Date */}
+						<div className="grid gap-2">
+							<Label>{t("events.date")}</Label>
+							<Popover>
+								<PopoverTrigger asChild>
+									<Button
+										variant="outline"
+										className={cn(
+											"justify-start text-left font-normal",
+											!date && "text-muted-foreground",
+										)}
+									>
+										<Calendar className="mr-2 h-4 w-4" />
+										{date ? formatDate(date) : t("events.selectDate")}
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent className="w-auto p-0" align="start">
+									<CalendarComponent
+										mode="single"
+										selected={date}
+										onSelect={setDate}
+										autoFocus
+									/>
+								</PopoverContent>
+							</Popover>
+						</div>
+
+						{/* Time */}
+						<div className="grid gap-2">
+							<Label htmlFor={timeId}>{t("events.time")}</Label>
+							<div className="flex items-center gap-2">
+								<Clock className="h-4 w-4 text-muted-foreground" />
+								<Input
+									id={timeId}
+									type="time"
+									value={time}
+									onChange={(e) => setTime(e.target.value)}
+									className="w-auto"
+								/>
+								<span className="text-xs text-muted-foreground">
+									(
+									{userTimezone.split("/").pop()?.replace("_", " ") ||
+										t("events.yourTime")}
+									)
 								</span>
 							</div>
-						)}
+							{/* Show Chile time conversion if user is not in Chile */}
+							{!userInChile && chileTimePreview && (
+								<div className="calm-subtle-panel flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground">
+									<Globe className="h-3.5 w-3.5" />
+									<span>
+										{t("events.chileTimePreview", { time: chileTimePreview })}
+									</span>
+								</div>
+							)}
+						</div>
+
+						{/* Send invite toggle */}
+						<div className="flex items-center gap-2">
+							<input
+								type="checkbox"
+								id={sendInviteId}
+								checked={sendInvite}
+								onChange={(e) => setSendInvite(e.target.checked)}
+								className=""
+							/>
+							<Label htmlFor={sendInviteId} className="text-sm font-normal">
+								{t("events.sendInviteToChat")}
+							</Label>
+						</div>
 					</div>
 
-					{/* Send invite toggle */}
-					<div className="flex items-center gap-2">
-						<input
-							type="checkbox"
-							id={sendInviteId}
-							checked={sendInvite}
-							onChange={(e) => setSendInvite(e.target.checked)}
-							className=""
-						/>
-						<Label htmlFor={sendInviteId} className="text-sm font-normal">
-							{t("events.sendInviteToChat")}
-						</Label>
-					</div>
-				</div>
-
-				<DialogFooter>
-					<Button variant="outline" onClick={() => setOpen(false)}>
-						{t("common.cancel")}
-					</Button>
-					<Button onClick={handleSubmit} disabled={isSubmitting}>
-						{isSubmitting ? t("common.creating") : t("events.createEvent")}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setOpen(false)}>
+							{t("common.cancel")}
+						</Button>
+						<Button onClick={handleSubmit} disabled={isSubmitting}>
+							{isSubmitting ? t("common.creating") : t("events.createEvent")}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</>
 	);
 }
