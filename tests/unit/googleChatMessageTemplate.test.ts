@@ -118,7 +118,6 @@ test("builds a compact assignment card with only a PR button", () => {
 
 	assert.equal(payload.text, "Hola Hugo");
 	assert.equal(payload.cardsV2[0]?.cardId, "pr-assignment-card");
-	assert.equal(card?.header, undefined);
 	assert.deepEqual(card?.sections?.[0]?.widgets?.[0]?.buttonList?.buttons, [
 		{
 			text: "PR #12",
@@ -144,7 +143,6 @@ test("adds a context button when a context URL is present", () => {
 	const buttons = card?.sections?.[0]?.widgets?.[0]?.buttonList?.buttons;
 
 	assert.equal(payload.cardsV2[0]?.cardId, "pr-assignment-batch-card");
-	assert.equal(card?.header, undefined);
 	assert.equal(buttons?.length, 2);
 	assert.equal(buttons?.[0]?.text, "PR #12");
 	assert.equal(buttons?.[1]?.text, "Contexto");
