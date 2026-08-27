@@ -99,14 +99,14 @@ export function ReviewersPanel({
 				<section
 					className={cn(
 						"calm-section flex h-full w-full flex-col lg:max-h-[calc(100dvh-7.5rem)]",
-						open && "min-h-0 gap-0 overflow-hidden p-0!",
+						open && "min-h-0 gap-0 overflow-hidden",
 						!open && "overflow-hidden p-3 lg:items-center lg:p-2! 2xl:p-2!",
 					)}
 				>
 					<div
 						className={cn(
 							open
-								? "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-3 [scrollbar-gutter:stable] md:p-4 2xl:p-4"
+								? "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
 								: "contents",
 						)}
 					>
@@ -114,7 +114,7 @@ export function ReviewersPanel({
 							className={cn(
 								"calm-section-header",
 								open &&
-									"sticky top-0 z-10 flex-nowrap items-center gap-2 bg-background/90 pb-3 backdrop-blur-sm",
+									"sticky top-0 z-10 flex-nowrap items-center gap-2 bg-background/90 backdrop-blur-sm",
 								!open &&
 									"min-h-10 w-full items-center border-0 pb-0 lg:h-full lg:flex-col lg:flex-nowrap lg:justify-start",
 							)}
@@ -218,7 +218,7 @@ export function ReviewersPanel({
 							className="animation-duration-300 overflow-visible ease-in-out lg:data-closed:animate-none! lg:data-open:animate-none!"
 						>
 							{reviewers.length === 0 ? (
-								<Empty className="px-1 py-6">
+								<Empty className="py-6">
 									<EmptyHeader>
 										<EmptyDescription>
 											{t("reviewersPanel.emptyDescription")}
