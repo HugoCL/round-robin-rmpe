@@ -3,8 +3,10 @@ import test from "node:test";
 import {
 	buildPrAssignmentChatMessage,
 	formatGoogleChatPerson,
+	formatPrChatButtonLabel,
 	getDefaultPRChatMessageTemplate,
 	parsePrIdentity,
+	parsePrNumber,
 	REQUIRED_PR_CHAT_PLACEHOLDERS,
 	stripPrLinkPlaceholders,
 } from "../../lib/googleChatMessageTemplate";
@@ -92,7 +94,21 @@ test("parses PR identity from GitHub, GitLab, and unknown URLs", () => {
 	assert.equal(parsePrIdentity("not-a-url"), "not-a-url");
 });
 
-test("builds a localized assignment card with header and PR button", () => {
+test("labels the PR button with the pull request number", () => {
+	assert.equal(parsePrNumber("https://github.com/org/repo/pull/12"), "12");
+	assert.equal(
+		parsePrNumber("https://gitlab.com/group/project/-/merge_requests/45"),
+		"45",
+	);
+	assert.equal(parsePrNumber("https://example.com/reviews/99"), undefined);
+	assert.equal(
+		formatPrChatButtonLabel("https://github.com/org/repo/pull/12"),
+		"PR #12",
+	);
+	assert.equal(formatPrChatButtonLabel("https://example.com/docs"), "PR");
+});
+
+test("builds a compact assignment card with only a PR button", () => {
 	const payload = buildPrAssignmentChatMessage({
 		text: "Hola Hugo",
 		prUrl: "https://github.com/org/repo/pull/12",
@@ -102,11 +118,10 @@ test("builds a localized assignment card with header and PR button", () => {
 
 	assert.equal(payload.text, "Hola Hugo");
 	assert.equal(payload.cardsV2[0]?.cardId, "pr-assignment-card");
-	assert.equal(card?.header?.title, "Revisión asignada");
-	assert.equal(card?.header?.subtitle, "org/repo #12");
+	assert.equal(card?.header, undefined);
 	assert.deepEqual(card?.sections?.[0]?.widgets?.[0]?.buttonList?.buttons, [
 		{
-			text: "Ver PR",
+			text: "PR #12",
 			onClick: { openLink: { url: "https://github.com/org/repo/pull/12" } },
 		},
 	]);
@@ -116,12 +131,12 @@ test("builds a localized assignment card with header and PR button", () => {
 	);
 });
 
-test("adds a context button and urgent title when requested", () => {
+test("adds a context button when a context URL is present", () => {
 	const payload = buildPrAssignmentChatMessage({
-		text: "Hello Hugo",
+		text: "Hola Hugo",
 		prUrl: "https://github.com/org/repo/pull/12",
 		contextUrl: "https://docs.example.com/ticket",
-		locale: "en",
+		locale: "es",
 		urgent: true,
 		cardId: "pr-assignment-batch-card",
 	});
@@ -129,10 +144,10 @@ test("adds a context button and urgent title when requested", () => {
 	const buttons = card?.sections?.[0]?.widgets?.[0]?.buttonList?.buttons;
 
 	assert.equal(payload.cardsV2[0]?.cardId, "pr-assignment-batch-card");
-	assert.equal(card?.header?.title, "Urgent review");
+	assert.equal(card?.header, undefined);
 	assert.equal(buttons?.length, 2);
-	assert.equal(buttons?.[0]?.text, "View PR");
-	assert.equal(buttons?.[1]?.text, "View Context");
+	assert.equal(buttons?.[0]?.text, "PR #12");
+	assert.equal(buttons?.[1]?.text, "Contexto");
 	assert.equal(
 		buttons?.[1]?.onClick.openLink.url,
 		"https://docs.example.com/ticket",

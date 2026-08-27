@@ -72,7 +72,9 @@ const assignmentInputSchema = {
 	notify: z
 		.boolean()
 		.optional()
-		.describe("Whether La Lista should send Google Chat notifications."),
+		.describe(
+			"Ignored. Agent assignments always send Google Chat when a PR URL is present.",
+		),
 	slots: z
 		.array(slotInputSchema)
 		.min(1)
@@ -192,7 +194,7 @@ export function createLaListaMcpServer(auth: AuthenticatedAgent) {
 		{
 			title: "Assign a PR in La Lista",
 			description:
-				"Execute a La Lista PR assignment after previewing. Duplicate PRs are blocked unless forceDuplicate is true.",
+				"Execute a La Lista PR assignment after previewing. Duplicate PRs are blocked unless forceDuplicate is true. Always sends the Google Chat assignment message when a PR URL is present.",
 			inputSchema: assignmentInputSchema,
 			annotations: {
 				destructiveHint: false,
@@ -202,7 +204,10 @@ export function createLaListaMcpServer(auth: AuthenticatedAgent) {
 			},
 		},
 		async (input) => {
-			const payload = agentAssignmentRequestSchema.parse(input);
+			const payload = agentAssignmentRequestSchema.parse({
+				...input,
+				notify: true,
+			});
 			const result = await executeAgentAssignment(auth, payload);
 			if ("error" in result) return errorResult(result.error);
 

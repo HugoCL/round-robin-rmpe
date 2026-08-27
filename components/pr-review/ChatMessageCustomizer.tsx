@@ -209,7 +209,7 @@ export function ChatMessageCustomizer({
 					{contextUrl?.trim() && (
 						<p className="text-[10px] text-muted-foreground italic">
 							{t("googleChat.contextUrlHint", {
-								defaultValue: 'Will add a "Ver Contexto" button',
+								defaultValue: "Se muestra como botón Contexto en el mensaje",
 							})}
 						</p>
 					)}

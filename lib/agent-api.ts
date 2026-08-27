@@ -1,8 +1,12 @@
-import { fetchAction, fetchMutation, fetchQuery } from "convex/nextjs";
+import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { z } from "zod";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { hashAgentToken } from "@/lib/agent-token";
+import {
+	resolveAgentNotifyFlag,
+	shouldQueueAgentAssignmentChat,
+} from "@/lib/agentAssignmentChat";
 import {
 	type AssignmentFailureReason,
 	type AssignmentMode,
@@ -48,27 +52,6 @@ export type AuthenticatedAgent = {
 		slug: string;
 	}>;
 };
-
-async function resolveAgentAssignerName(
-	auth: AuthenticatedAgent,
-	teamSlug: string,
-	actionByReviewerId?: Id<"reviewers">,
-) {
-	const reviewers = await fetchQuery(api.queries.getReviewers, { teamSlug });
-	if (actionByReviewerId) {
-		const byId = reviewers.find(
-			(reviewer) => reviewer._id === actionByReviewerId,
-		);
-		if (byId?.name?.trim()) return byId.name.trim();
-	}
-	if (auth.email) {
-		const byEmail = reviewers.find(
-			(reviewer) => reviewer.email.toLowerCase() === auth.email?.toLowerCase(),
-		);
-		if (byEmail?.name?.trim()) return byEmail.name.trim();
-	}
-	return undefined;
-}
 
 type AgentWarning = {
 	code: string;
@@ -572,7 +555,7 @@ export async function previewAgentAssignment(
 		contextText: normalizeOptionalText(input.contextText),
 		urgent: input.urgent === true,
 		forceDuplicate: input.forceDuplicate === true,
-		notify: input.notify === true,
+		notify: resolveAgentNotifyFlag(input.notify),
 		slots: input.slots.map((slot) => ({
 			strategy: slot.strategy,
 			reviewerId: normalizeOptionalText(slot.reviewerId) as
@@ -713,6 +696,7 @@ export async function executeAgentAssignment(
 				batchId?: string;
 				forced: boolean;
 				source: "agent";
+				notificationQueued: boolean;
 			};
 	  }
 > {
@@ -834,54 +818,18 @@ export async function executeAgentAssignment(
 		}));
 	}
 
-	if (normalizedRequest.notify && normalizedRequest.prUrl) {
-		try {
-			const assignerName = await resolveAgentAssignerName(
-				auth,
-				body.selectedTeam.slug,
-				body.actionByReviewerId,
-			);
-			const notifyPayload = assignedReviewers.map((item) => ({
-				name: item.reviewer.name,
-				email: item.reviewer.email,
-				reviewerChatId:
-					typeof body.resolved.find(
-						(resolved) => resolved.slotIndex === item.slotIndex,
-					)?.reviewer.googleChatUserId === "string"
-						? (body.resolved.find(
-								(resolved) => resolved.slotIndex === item.slotIndex,
-							)?.reviewer.googleChatUserId as string)
-						: undefined,
-			}));
-
-			if (notifyPayload.length > 1) {
-				await fetchAction(api.actions.sendGoogleChatGroupMessage, {
-					reviewers: notifyPayload,
-					prUrl: normalizedRequest.prUrl,
-					contextUrl: normalizedRequest.contextUrl,
-					locale: "es",
-					assignerEmail: auth.email || undefined,
-					assignerName,
-					teamSlug: body.selectedTeam.slug,
-					urgent: normalizedRequest.urgent,
-				});
-			} else if (notifyPayload[0]) {
-				await fetchAction(api.actions.sendGoogleChatMessage, {
-					reviewerName: notifyPayload[0].name,
-					reviewerEmail: notifyPayload[0].email,
-					reviewerChatId: notifyPayload[0].reviewerChatId,
-					prUrl: normalizedRequest.prUrl,
-					contextUrl: normalizedRequest.contextUrl,
-					locale: "es",
-					assignerEmail: auth.email || undefined,
-					assignerName,
-					teamSlug: body.selectedTeam.slug,
-					urgent: normalizedRequest.urgent,
-				});
-			}
-		} catch (error) {
-			console.warn("Agent assignment notification failed:", error);
-		}
+	const notificationQueued = shouldQueueAgentAssignmentChat({
+		source: "agent",
+		prUrl: normalizedRequest.prUrl,
+		assignedCount: assignedReviewers.length,
+	});
+	const warnings = [...body.warnings];
+	if (!normalizedRequest.prUrl?.trim()) {
+		warnings.push({
+			code: "notification_skipped_missing_pr_url",
+			message:
+				"Google Chat was not queued because the assignment is missing a PR URL.",
+		});
 	}
 
 	await fetchMutation(api.agent.markAgentTokenUsed, { tokenId });
@@ -891,11 +839,12 @@ export async function executeAgentAssignment(
 			normalizedRequest,
 			selectedTeam: body.selectedTeam,
 			assigned: assignedReviewers,
-			warnings: body.warnings,
+			warnings,
 			duplicate: body.duplicate,
 			batchId,
 			forced,
 			source: "agent" as const,
+			notificationQueued,
 		},
 	};
 }

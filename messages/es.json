@@ -628,7 +628,7 @@
 		"addContext": "Añadir contexto",
 		"addContextShort": "Contexto",
 		"contextUrlLabel": "URL de contexto (opcional)",
-		"contextUrlHint": "Se mostrará como botón 'Ver Contexto' en el mensaje",
+		"contextUrlHint": "Se muestra como botón Contexto en el mensaje",
 		"customizeToggle": "Personalizar mensaje",
 		"customizeToggleDescription": "Edita el mensaje que enviaremos por Google Chat antes de asignar el PR.",
 		"urgentToggle": "Urgente",

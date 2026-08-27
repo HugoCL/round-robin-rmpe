@@ -6,7 +6,7 @@ import {
 } from "../lib/googleChatMessageTemplate";
 import type { Reviewer } from "../lib/types";
 import { api } from "./_generated/api";
-import { type ActionCtx, action } from "./_generated/server";
+import { type ActionCtx, action, internalAction } from "./_generated/server";
 
 function prependUrgentNotice(
 	message: string,
@@ -642,6 +642,79 @@ export const sendGoogleChatGroupMessage = action({
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	},
+});
+
+const agentAssignmentChatReviewerValidator = v.object({
+	name: v.string(),
+	email: v.string(),
+	reviewerChatId: v.optional(v.string()),
+});
+
+const agentAssignmentChatResultValidator = v.object({
+	success: v.boolean(),
+	error: v.optional(v.string()),
+});
+
+export const sendAgentAssignmentGoogleChat = internalAction({
+	args: {
+		reviewers: v.array(agentAssignmentChatReviewerValidator),
+		prUrl: v.string(),
+		contextUrl: v.optional(v.string()),
+		locale: v.optional(v.string()),
+		assignerEmail: v.optional(v.string()),
+		assignerName: v.optional(v.string()),
+		teamSlug: v.string(),
+		urgent: v.optional(v.boolean()),
+	},
+	returns: agentAssignmentChatResultValidator,
+	handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
+		try {
+			if (args.reviewers.length === 0) {
+				return { success: false, error: "No reviewers provided" };
+			}
+
+			if (args.reviewers.length === 1) {
+				const reviewer = args.reviewers[0];
+				if (!reviewer) {
+					return { success: false, error: "No reviewers provided" };
+				}
+				return await ctx.runAction(api.actions.sendGoogleChatMessage, {
+					reviewerName: reviewer.name,
+					reviewerEmail: reviewer.email,
+					prUrl: args.prUrl,
+					teamSlug: args.teamSlug,
+					...(reviewer.reviewerChatId
+						? { reviewerChatId: reviewer.reviewerChatId }
+						: {}),
+					...(args.contextUrl ? { contextUrl: args.contextUrl } : {}),
+					...(args.locale ? { locale: args.locale } : {}),
+					...(args.assignerEmail ? { assignerEmail: args.assignerEmail } : {}),
+					...(args.assignerName ? { assignerName: args.assignerName } : {}),
+					...(args.urgent ? { urgent: args.urgent } : {}),
+				});
+			}
+
+			return await ctx.runAction(api.actions.sendGoogleChatGroupMessage, {
+				reviewers: args.reviewers,
+				prUrl: args.prUrl,
+				teamSlug: args.teamSlug,
+				...(args.contextUrl ? { contextUrl: args.contextUrl } : {}),
+				...(args.locale ? { locale: args.locale } : {}),
+				...(args.assignerEmail ? { assignerEmail: args.assignerEmail } : {}),
+				...(args.assignerName ? { assignerName: args.assignerName } : {}),
+				...(args.urgent ? { urgent: args.urgent } : {}),
+			});
+		} catch (error) {
+			console.error("Agent assignment Google Chat failed:", error);
+			return {
+				success: false,
+				error:
+					error instanceof Error
+						? error.message
+						: "Google Chat notification failed",
 			};
 		}
 	},

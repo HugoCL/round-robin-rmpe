@@ -42,6 +42,20 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-08-27",
+		type: "improvement",
+		title: "Las cards de Google Chat ahora ocupan menos",
+		description:
+			"Sacamos el título y el subtítulo del card. Quedan solo dos botones: PR #número y, si lo añadiste, Contexto.",
+	},
+	{
+		date: "2026-08-27",
+		type: "fix",
+		title: "El agente MCP ya avisa siempre en Google Chat",
+		description:
+			"Si asignabas un PR desde Claude (u otro agente), a veces el revisor quedaba en La Lista y el mensaje no llegaba al espacio. Ahora cada asignación del MCP manda el aviso a Google Chat, igual que cuando lo haces tú a mano.",
+	},
+	{
 		date: "2026-08-25",
 		type: "improvement",
 		title: "La barra personal ahora te dice qué PR fue el último",

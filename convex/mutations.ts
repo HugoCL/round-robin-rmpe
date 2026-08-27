@@ -1,4 +1,8 @@
 import { v } from "convex/values";
+import {
+	AGENT_ASSIGNMENT_CHAT_LOCALE,
+	shouldQueueAgentAssignmentChat,
+} from "../lib/agentAssignmentChat";
 import { resolveAssignmentSlots } from "../lib/assignmentResolver";
 import { undoRemovesReviewedPR } from "../lib/historyUndo";
 import {
@@ -13,6 +17,7 @@ import {
 	isExcludedFromReviewPool,
 	isIncludedInTagRotations,
 } from "../lib/reviewerEligibility";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
 	internalMutation,
@@ -77,6 +82,97 @@ const partTimeScheduleValidator = v.optional(
 const assignmentSourceValidator = v.optional(
 	v.union(v.literal("ui"), v.literal("agent")),
 );
+
+async function resolveAgentAssignerForChat(
+	ctx: MutationCtx,
+	args: {
+		agentTokenHash?: string;
+		actionByReviewerId?: Id<"reviewers">;
+	},
+): Promise<{ assignerEmail?: string; assignerName?: string }> {
+	let assignerEmail: string | undefined;
+	let assignerName: string | undefined;
+
+	if (args.actionByReviewerId) {
+		const assigner = await ctx.db.get(args.actionByReviewerId);
+		assignerName = assigner?.name?.trim() || undefined;
+		assignerEmail = assigner?.email?.trim() || undefined;
+	}
+
+	if (!assignerEmail && args.agentTokenHash) {
+		const tokenHash = args.agentTokenHash;
+		const token = await ctx.db
+			.query("agentTokens")
+			.withIndex("by_token_hash", (q) => q.eq("tokenHash", tokenHash))
+			.first();
+		assignerEmail = token?.email?.trim() || undefined;
+	}
+
+	return { assignerEmail, assignerName };
+}
+
+async function maybeScheduleAgentAssignmentChat(
+	ctx: MutationCtx,
+	args: {
+		source?: AssignmentSource;
+		teamSlug?: string;
+		prUrl?: string;
+		contextUrl?: string;
+		urgent?: boolean;
+		reviewers: Array<{
+			name: string;
+			email: string;
+			reviewerChatId?: string;
+		}>;
+		agentTokenHash?: string;
+		actionByReviewerId?: Id<"reviewers">;
+	},
+) {
+	if (
+		!shouldQueueAgentAssignmentChat({
+			source: args.source,
+			prUrl: args.prUrl,
+			assignedCount: args.reviewers.length,
+		})
+	) {
+		return;
+	}
+
+	const teamSlug = args.teamSlug?.trim();
+	const prUrl = args.prUrl?.trim();
+	if (!teamSlug || !prUrl) {
+		return;
+	}
+
+	const assigner = await resolveAgentAssignerForChat(ctx, {
+		agentTokenHash: args.agentTokenHash,
+		actionByReviewerId: args.actionByReviewerId,
+	});
+	const contextUrl = args.contextUrl?.trim();
+
+	await ctx.scheduler.runAfter(
+		0,
+		internal.actions.sendAgentAssignmentGoogleChat,
+		{
+			reviewers: args.reviewers.map((reviewer) => ({
+				name: reviewer.name,
+				email: reviewer.email,
+				...(reviewer.reviewerChatId?.trim()
+					? { reviewerChatId: reviewer.reviewerChatId.trim() }
+					: {}),
+			})),
+			prUrl,
+			...(contextUrl ? { contextUrl } : {}),
+			locale: AGENT_ASSIGNMENT_CHAT_LOCALE,
+			...(assigner.assignerEmail
+				? { assignerEmail: assigner.assignerEmail }
+				: {}),
+			...(assigner.assignerName ? { assignerName: assigner.assignerName } : {}),
+			teamSlug,
+			urgent: args.urgent === true,
+		},
+	);
+}
 
 function resolvePreferencePatch(
 	patch: UserPreferencePatch,
@@ -1622,10 +1718,33 @@ export const assignPRBatch = mutation({
 		} else {
 			await assertCanAssignFromAnyTeam(ctx);
 		}
-		return await executeAssignPRBatch(ctx, {
+		const result = await executeAssignPRBatch(ctx, {
 			teamSlug,
 			...internalArgs,
 		});
+		if (internalArgs.source === "agent") {
+			const chatReviewers = await Promise.all(
+				result.assigned.map(async (item) => {
+					const reviewer = await ctx.db.get(item.reviewer.id);
+					return {
+						name: item.reviewer.name,
+						email: item.reviewer.email,
+						reviewerChatId: reviewer?.googleChatUserId,
+					};
+				}),
+			);
+			await maybeScheduleAgentAssignmentChat(ctx, {
+				source: internalArgs.source,
+				teamSlug,
+				prUrl: internalArgs.prUrl,
+				contextUrl: internalArgs.contextUrl,
+				urgent: internalArgs.urgent,
+				reviewers: chatReviewers,
+				agentTokenHash,
+				actionByReviewerId: internalArgs.actionByReviewerId,
+			});
+		}
+		return result;
 	},
 });
 
@@ -1820,7 +1939,30 @@ export const assignPR = mutation({
 		} else {
 			await assertCanAssignFromAnyTeam(ctx);
 		}
-		return await executeAssignPR(ctx, internalArgs);
+		const result = await executeAssignPR(ctx, internalArgs);
+		if (internalArgs.source === "agent") {
+			const reviewer = await ctx.db.get(internalArgs.reviewerId);
+			const team = reviewer?.teamId ? await ctx.db.get(reviewer.teamId) : null;
+			await maybeScheduleAgentAssignmentChat(ctx, {
+				source: internalArgs.source,
+				teamSlug: team?.slug,
+				prUrl: internalArgs.prUrl,
+				contextUrl: internalArgs.contextUrl,
+				urgent: internalArgs.urgent,
+				reviewers: reviewer
+					? [
+							{
+								name: reviewer.name,
+								email: reviewer.email,
+								reviewerChatId: reviewer.googleChatUserId,
+							},
+						]
+					: [],
+				agentTokenHash,
+				actionByReviewerId: internalArgs.actionByReviewerId,
+			});
+		}
+		return result;
 	},
 });
 

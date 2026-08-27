@@ -70,6 +70,23 @@ export function parsePrIdentity(prUrl: string): string {
 	}
 }
 
+export function parsePrNumber(prUrl: string): string | undefined {
+	try {
+		const path = new URL(prUrl.trim()).pathname;
+		const match = path.match(
+			/\/(?:pull|pulls|merge_requests)\/(\d+)(?:[/?#]|$)/i,
+		);
+		return match?.[1];
+	} catch {
+		return undefined;
+	}
+}
+
+export function formatPrChatButtonLabel(prUrl: string): string {
+	const prNumber = parsePrNumber(prUrl);
+	return prNumber ? `PR #${prNumber}` : "PR";
+}
+
 type ChatOpenLinkButton = {
 	text: string;
 	onClick: {
@@ -88,17 +105,9 @@ export function buildPrAssignmentChatMessage(options: {
 	cardId?: string;
 }) {
 	const isSpanish = options.locale.toLowerCase().startsWith("es");
-	const title = options.urgent
-		? isSpanish
-			? "Revisión urgente"
-			: "Urgent review"
-		: isSpanish
-			? "Revisión asignada"
-			: "Review assigned";
-
 	const buttons: ChatOpenLinkButton[] = [
 		{
-			text: isSpanish ? "Ver PR" : "View PR",
+			text: formatPrChatButtonLabel(options.prUrl),
 			onClick: {
 				openLink: {
 					url: options.prUrl,
@@ -110,7 +119,7 @@ export function buildPrAssignmentChatMessage(options: {
 	const contextUrl = options.contextUrl?.trim();
 	if (contextUrl) {
 		buttons.push({
-			text: isSpanish ? "Ver Contexto" : "View Context",
+			text: isSpanish ? "Contexto" : "Context",
 			onClick: {
 				openLink: {
 					url: contextUrl,
@@ -125,10 +134,6 @@ export function buildPrAssignmentChatMessage(options: {
 			{
 				cardId: options.cardId ?? "pr-assignment-card",
 				card: {
-					header: {
-						title,
-						subtitle: parsePrIdentity(options.prUrl),
-					},
 					sections: [
 						{
 							widgets: [

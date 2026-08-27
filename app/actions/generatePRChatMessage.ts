@@ -54,7 +54,7 @@ export async function generatePRChatMessage({
 	REQUISITOS ESTRICTOS (NO LOS ROMPAS):
 	1. Siempre debes incluir EXACTAMENTE estos placeholders una sola vez cada uno: ${GOOGLE_CHAT_REVIEWER_PLACEHOLDER} ${GOOGLE_CHAT_REQUESTER_PLACEHOLDER}
 	2. No reemplaces ni traduzcas los placeholders.
-	3. No incluyas URLs ni el placeholder de PR. El botón Ver PR se añade aparte.
+	3. No incluyas URLs ni el placeholder de PR. El botón PR #número se añade aparte.
 	4. Mensaje de 1 o 2 líneas, máximo 280 caracteres (límite duro 400). Tono amistoso, divertido, español latino neutral (a menos que se te diga lo contrario).
 	5. Puedes usar emojis moderados. Sin comillas ni markdown.
 	6. No inventes datos; sólo placeholders.
