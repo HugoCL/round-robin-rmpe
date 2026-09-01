@@ -14,8 +14,8 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { resolveAssignerDisplayName } from "@/lib/assignerDisplayName";
+import { resolveBroadcastTeamSlugs } from "@/lib/chatBroadcast";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
-import type { Reviewer } from "@/lib/types";
 import { AssignmentActionsRow } from "./assignment/AssignmentActionsRow";
 import { AssignmentControlsPanel } from "./assignment/AssignmentControlsPanel";
 import { AssignmentHeroPanel } from "./assignment/AssignmentHeroPanel";
@@ -337,24 +337,45 @@ export function AssignmentCard() {
 		setShowDuplicateAlert(false);
 	};
 
-	const sendAssignmentMessage = async (targetReviewer: Reviewer) => {
+	// Cross-team assignments must reach both the requesting team channel and the
+	// channel of every team a reviewer was actually taken from, so broadcast
+	// targets come from the assigned reviewers rather than the candidate pool.
+	const broadcastTeamSlugsFor = (
+		assignedItems: AssignPRBatchAssignedItem[],
+	) => {
+		const slugs = resolveBroadcastTeamSlugs({
+			sourceTeamSlug: teamSlug,
+			reviewerTeamSlugs: assignedItems.map((item) => item.reviewer.teamSlug),
+		});
+		return slugs.length > 0 ? slugs : undefined;
+	};
+
+	const notifyChatFailure = (error?: string) => {
+		console.error("Failed to send Google Chat message:", error);
+		toast({
+			title: t("common.warning"),
+			description: t("messages.chatNotificationFailed"),
+			variant: "destructive",
+		});
+	};
+
+	const sendAssignmentMessage = async (
+		assignedItem: AssignPRBatchAssignedItem,
+	) => {
 		if (!(prUrl.trim() && teamSlug)) return;
+		const targetReviewer = assignedItem.reviewer;
 		try {
 			const result = await sendGoogleChatAction({
 				reviewerName: targetReviewer.name,
 				reviewerEmail: targetReviewer.email,
-				reviewerChatId:
-					(targetReviewer as unknown as { googleChatUserId?: string })
-						.googleChatUserId || undefined,
+				reviewerChatId: targetReviewer.googleChatUserId || undefined,
 				prUrl,
 				contextUrl: contextUrl.trim() || undefined,
 				locale: "es",
 				assignerEmail: user?.email,
 				assignerName: getAssignerName(),
 				teamSlug,
-				broadcastTeamSlugs: crossTeamReview
-					? selectedCrossTeamSlugs
-					: undefined,
+				broadcastTeamSlugs: broadcastTeamSlugsFor([assignedItem]),
 				sendOnlyNames: false,
 				urgent,
 				customMessage:
@@ -363,10 +384,12 @@ export function AssignmentCard() {
 						: undefined,
 			});
 			if (!result.success) {
-				console.error("Failed to send Google Chat message:", result.error);
+				notifyChatFailure(result.error);
 			}
 		} catch (error) {
-			console.error("Failed to send Google Chat message:", error);
+			notifyChatFailure(
+				error instanceof Error ? error.message : "Unknown error",
+			);
 		}
 	};
 
@@ -407,16 +430,11 @@ export function AssignmentCard() {
 				if (result.assignedCount > 1) {
 					const groupResult = await sendGoogleChatGroupAction({
 						reviewers: result.assigned.map(
-							(item: AssignPRBatchAssignedItem) => {
-								const reviewer = reviewers.find(
-									(r) => String(r._id) === String(item.reviewer.id),
-								);
-								return {
-									name: item.reviewer.name,
-									email: item.reviewer.email,
-									reviewerChatId: reviewer?.googleChatUserId,
-								};
-							},
+							(item: AssignPRBatchAssignedItem) => ({
+								name: item.reviewer.name,
+								email: item.reviewer.email,
+								reviewerChatId: item.reviewer.googleChatUserId,
+							}),
 						),
 						prUrl: prUrl.trim(),
 						contextUrl: contextUrl.trim() || undefined,
@@ -424,9 +442,7 @@ export function AssignmentCard() {
 						assignerEmail: user?.email,
 						assignerName: getAssignerName(),
 						teamSlug,
-						broadcastTeamSlugs: crossTeamReview
-							? selectedCrossTeamSlugs
-							: undefined,
+						broadcastTeamSlugs: broadcastTeamSlugsFor(result.assigned),
 						urgent,
 						customMessage:
 							enableCustomMessage && customMessage.trim().length > 0
@@ -434,19 +450,10 @@ export function AssignmentCard() {
 								: undefined,
 					});
 					if (!groupResult.success) {
-						console.error(
-							"Failed to send group Google Chat message:",
-							groupResult.error,
-						);
+						notifyChatFailure(groupResult.error);
 					}
 				} else {
-					const first = result.assigned[0];
-					const target = reviewers.find(
-						(reviewer) => String(reviewer._id) === String(first.reviewer.id),
-					);
-					if (target) {
-						await sendAssignmentMessage(target);
-					}
+					await sendAssignmentMessage(result.assigned[0]);
 				}
 			}
 

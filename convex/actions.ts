@@ -1,5 +1,14 @@
 import { v } from "convex/values";
 import {
+	type ChatWebhookTarget,
+	deliverChatMessageToTargets,
+	describeChatDeliveryProblems,
+	describePartialChatDelivery,
+	type GoogleChatWebhookResponse,
+	prependUrgentNotice,
+	toGoogleChatThreadUrl,
+} from "../lib/chatBroadcast";
+import {
 	buildPrAssignmentChatMessage,
 	formatGoogleChatPerson,
 	stripPrLinkPlaceholders,
@@ -7,77 +16,6 @@ import {
 import type { Reviewer } from "../lib/types";
 import { api } from "./_generated/api";
 import { type ActionCtx, action, internalAction } from "./_generated/server";
-
-function prependUrgentNotice(
-	message: string,
-	locale: string,
-	urgent?: boolean,
-) {
-	if (!urgent) return message;
-	const urgentNotice = locale.startsWith("es")
-		? "🚨 URGENTE: este PR debe revisarse lo antes posible."
-		: "🚨 URGENT: this PR should be reviewed as soon as possible.";
-	return `${urgentNotice}\n${message}`;
-}
-
-function prependOriginTeamNotice(
-	message: string,
-	locale: string,
-	sourceTeamName: string,
-	isExternalTarget: boolean,
-) {
-	if (!isExternalTarget) return message;
-	const notice = locale.startsWith("es")
-		? `🔁 Esta solicitud de revisión viene del equipo ${sourceTeamName}.`
-		: `🔁 This review request comes from team ${sourceTeamName}.`;
-	return `${notice}\n${message}`;
-}
-
-type ChatWebhookTarget = {
-	slug: string;
-	name: string;
-	webhookUrl: string;
-	isExternalTarget: boolean;
-};
-
-type GoogleChatWebhookResponse = {
-	thread?: {
-		name?: string;
-	};
-	name?: string;
-	messageLink?: string;
-};
-
-function toGoogleChatThreadUrl(
-	response: GoogleChatWebhookResponse | null,
-): string | undefined {
-	const directLink = response?.messageLink?.trim();
-	if (directLink?.startsWith("http")) {
-		return directLink;
-	}
-
-	const threadName = response?.thread?.name?.trim();
-	if (threadName) {
-		const threadMatch = threadName.match(/^spaces\/([^/]+)\/threads\/([^/]+)$/);
-		if (threadMatch) {
-			const [, spaceId, threadId] = threadMatch;
-			return `https://chat.google.com/room/${encodeURIComponent(spaceId)}/${encodeURIComponent(threadId)}`;
-		}
-	}
-
-	const messageName = response?.name?.trim();
-	if (messageName) {
-		const messageMatch = messageName.match(
-			/^spaces\/([^/]+)\/messages\/([^/]+)$/,
-		);
-		if (messageMatch) {
-			const [, spaceId, messageId] = messageMatch;
-			return `https://chat.google.com/room/${encodeURIComponent(spaceId)}/${encodeURIComponent(messageId)}`;
-		}
-	}
-
-	return undefined;
-}
 
 async function resolveWebhookTargets(
 	ctx: ActionCtx,
@@ -98,10 +36,12 @@ async function resolveWebhookTargets(
 	);
 
 	const targetByWebhook = new Map<string, ChatWebhookTarget>();
+	const missingWebhookSlugs: string[] = [];
 	for (const [index, team] of teams.entries()) {
 		const requestedSlug = requestedSlugs[index];
 		const webhookUrl = team?.googleChatWebhookUrl?.trim();
 		if (!webhookUrl) {
+			missingWebhookSlugs.push(requestedSlug);
 			continue;
 		}
 		if (targetByWebhook.has(webhookUrl)) {
@@ -115,7 +55,10 @@ async function resolveWebhookTargets(
 		});
 	}
 
-	return Array.from(targetByWebhook.values());
+	return {
+		targets: Array.from(targetByWebhook.values()),
+		missingWebhookSlugs,
+	};
 }
 
 async function resolveAssignerDisplayNameForChat(
@@ -198,11 +141,8 @@ export const sendGoogleChatMessage = action({
 		reviewerChatId = reviewerChatId?.trim() || undefined;
 		assignerChatId = assignerChatId?.trim() || undefined;
 
-		const webhookTargets = await resolveWebhookTargets(
-			ctx,
-			teamSlug,
-			broadcastTeamSlugs,
-		);
+		const { targets: webhookTargets, missingWebhookSlugs } =
+			await resolveWebhookTargets(ctx, teamSlug, broadcastTeamSlugs);
 		const sourceTeamName =
 			webhookTargets.find((target) => target.slug === teamSlug)?.name ||
 			teamSlug;
@@ -210,7 +150,9 @@ export const sendGoogleChatMessage = action({
 		if (webhookTargets.length === 0) {
 			return {
 				success: false,
-				error: "Google Chat webhook URL not configured for this team",
+				error:
+					describeChatDeliveryProblems([], missingWebhookSlugs) ||
+					"Google Chat webhook URL not configured for this team",
 			};
 		}
 
@@ -322,45 +264,29 @@ export const sendGoogleChatMessage = action({
 				urgent,
 			);
 
-			let googleChatThreadUrl: string | undefined;
-			for (const target of webhookTargets) {
-				const targetMessage = prependOriginTeamNotice(
-					builtMessage,
-					locale,
-					sourceTeamName,
-					target.isExternalTarget,
-				);
-				const message = buildPrAssignmentChatMessage({
-					text: targetMessage,
-					prUrl,
-					contextUrl,
-					locale,
-					urgent,
-					cardId: "pr-assignment-card",
-				});
+			const delivery = await deliverChatMessageToTargets({
+				targets: webhookTargets,
+				baseMessage: builtMessage,
+				sourceTeamName,
+				locale,
+				prUrl,
+				contextUrl,
+				urgent,
+				cardId: "pr-assignment-card",
+			});
+			const { googleChatThreadUrl } = delivery;
 
-				const response = await fetch(target.webhookUrl, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify(message),
-				});
+			const deliveryProblems = describeChatDeliveryProblems(
+				delivery.failures,
+				missingWebhookSlugs,
+			);
 
-				if (!response.ok) {
-					return {
-						success: false,
-						error: `HTTP ${response.status}: ${response.statusText}`,
-					};
-				}
-
-				if (!googleChatThreadUrl) {
-					const responseBody = (await response
-						.clone()
-						.json()
-						.catch(() => null)) as GoogleChatWebhookResponse | null;
-					googleChatThreadUrl = toGoogleChatThreadUrl(responseBody);
-				}
+			if (delivery.deliveredSlugs.length === 0) {
+				return {
+					success: false,
+					error:
+						deliveryProblems || "Google Chat message could not be delivered",
+				};
 			}
 
 			if (googleChatThreadUrl && reviewerEmail.trim()) {
@@ -409,6 +335,16 @@ export const sendGoogleChatMessage = action({
 				});
 			} catch (e) {
 				console.warn("Failed to send PWA push notification", e);
+			}
+
+			if (deliveryProblems) {
+				return {
+					success: false,
+					error: describePartialChatDelivery(
+						delivery.deliveredSlugs,
+						deliveryProblems,
+					),
+				};
 			}
 
 			return { success: true };
@@ -469,11 +405,8 @@ export const sendGoogleChatGroupMessage = action({
 			reviewerChatId: reviewer.reviewerChatId?.trim() || undefined,
 		}));
 
-		const webhookTargets = await resolveWebhookTargets(
-			ctx,
-			teamSlug,
-			broadcastTeamSlugs,
-		);
+		const { targets: webhookTargets, missingWebhookSlugs } =
+			await resolveWebhookTargets(ctx, teamSlug, broadcastTeamSlugs);
 		const sourceTeamName =
 			webhookTargets.find((target) => target.slug === teamSlug)?.name ||
 			teamSlug;
@@ -481,7 +414,9 @@ export const sendGoogleChatGroupMessage = action({
 		if (webhookTargets.length === 0) {
 			return {
 				success: false,
-				error: "Google Chat webhook URL not configured for this team",
+				error:
+					describeChatDeliveryProblems([], missingWebhookSlugs) ||
+					"Google Chat webhook URL not configured for this team",
 			};
 		}
 
@@ -539,44 +474,28 @@ export const sendGoogleChatGroupMessage = action({
 				urgent,
 			);
 
-			let googleChatThreadUrl: string | undefined;
-			for (const target of webhookTargets) {
-				const targetMessage = prependOriginTeamNotice(
-					builtMessage,
-					locale,
-					sourceTeamName,
-					target.isExternalTarget,
-				);
-				const message = buildPrAssignmentChatMessage({
-					text: targetMessage,
-					prUrl,
-					contextUrl,
-					locale,
-					urgent,
-					cardId: "pr-assignment-batch-card",
-				});
+			const delivery = await deliverChatMessageToTargets({
+				targets: webhookTargets,
+				baseMessage: builtMessage,
+				sourceTeamName,
+				locale,
+				prUrl,
+				contextUrl,
+				urgent,
+				cardId: "pr-assignment-batch-card",
+			});
+			const { googleChatThreadUrl } = delivery;
+			const deliveryProblems = describeChatDeliveryProblems(
+				delivery.failures,
+				missingWebhookSlugs,
+			);
 
-				const response = await fetch(target.webhookUrl, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify(message),
-				});
-				if (!response.ok) {
-					const text = await response.text().catch(() => "");
-					throw new Error(
-						`Google Chat webhook failed: ${response.status} ${response.statusText} ${text}`,
-					);
-				}
-
-				if (!googleChatThreadUrl) {
-					const responseBody = (await response
-						.clone()
-						.json()
-						.catch(() => null)) as GoogleChatWebhookResponse | null;
-					googleChatThreadUrl = toGoogleChatThreadUrl(responseBody);
-				}
+			if (delivery.deliveredSlugs.length === 0) {
+				return {
+					success: false,
+					error:
+						deliveryProblems || "Google Chat message could not be delivered",
+				};
 			}
 
 			if (googleChatThreadUrl) {
@@ -636,6 +555,16 @@ export const sendGoogleChatGroupMessage = action({
 				console.warn("Failed to send PWA batch push notification", e);
 			}
 
+			if (deliveryProblems) {
+				return {
+					success: false,
+					error: describePartialChatDelivery(
+						delivery.deliveredSlugs,
+						deliveryProblems,
+					),
+				};
+			}
+
 			return { success: true };
 		} catch (error) {
 			console.error("Error sending Google Chat group message:", error);
@@ -667,6 +596,7 @@ export const sendAgentAssignmentGoogleChat = internalAction({
 		assignerEmail: v.optional(v.string()),
 		assignerName: v.optional(v.string()),
 		teamSlug: v.string(),
+		broadcastTeamSlugs: v.optional(v.array(v.string())),
 		urgent: v.optional(v.boolean()),
 	},
 	returns: agentAssignmentChatResultValidator,
@@ -693,6 +623,9 @@ export const sendAgentAssignmentGoogleChat = internalAction({
 					...(args.locale ? { locale: args.locale } : {}),
 					...(args.assignerEmail ? { assignerEmail: args.assignerEmail } : {}),
 					...(args.assignerName ? { assignerName: args.assignerName } : {}),
+					...(args.broadcastTeamSlugs?.length
+						? { broadcastTeamSlugs: args.broadcastTeamSlugs }
+						: {}),
 					...(args.urgent ? { urgent: args.urgent } : {}),
 				});
 			}
@@ -705,6 +638,9 @@ export const sendAgentAssignmentGoogleChat = internalAction({
 				...(args.locale ? { locale: args.locale } : {}),
 				...(args.assignerEmail ? { assignerEmail: args.assignerEmail } : {}),
 				...(args.assignerName ? { assignerName: args.assignerName } : {}),
+				...(args.broadcastTeamSlugs?.length
+					? { broadcastTeamSlugs: args.broadcastTeamSlugs }
+					: {}),
 				...(args.urgent ? { urgent: args.urgent } : {}),
 			});
 		} catch (error) {

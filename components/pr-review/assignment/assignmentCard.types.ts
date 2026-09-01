@@ -49,6 +49,8 @@ export type AssignPRBatchAssignedItem = {
 		effectiveIsAbsent: boolean;
 		createdAt: number;
 		tags: Id<"tags">[];
+		teamSlug?: string;
+		googleChatUserId?: string;
 	};
 	tagId?: string;
 };

@@ -13,6 +13,11 @@ import {
 	type AssignmentSlotInput,
 	resolveAssignmentSlots,
 } from "@/lib/assignmentResolver";
+import {
+	resolveBroadcastTeamSlugs,
+	resolveNotifiedTeamSlugs,
+} from "@/lib/chatBroadcast";
+import { buildCrossTeamReviewerPool } from "@/lib/crossTeamPool";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 
 const slotSchema = z.object({
@@ -28,6 +33,9 @@ const slotSchema = z.object({
 
 export const agentAssignmentRequestSchema = z.object({
 	teamSlug: z.string().trim().min(1).optional(),
+	additionalTeamSlugs: z.array(z.string().trim().min(1)).optional(),
+	crossTeamReview: z.boolean().optional(),
+	excludeTeammates: z.boolean().optional(),
 	selectedTagId: z.string().trim().min(1).optional(),
 	prUrl: z.string().trim().min(1).optional(),
 	contextUrl: z.string().trim().min(1).optional(),
@@ -385,6 +393,45 @@ export function resolveAgentTeam(
 	};
 }
 
+// Reviewers of the other teams a cross-team request points at, tagged with the
+// team each one belongs to. Unknown slugs are reported instead of throwing so a
+// single bad slug cannot block the whole assignment.
+async function fetchCrossTeamReviewers(additionalTeamSlugs: string[]): Promise<{
+	reviewersByTeamSlug: Array<{
+		teamSlug: string;
+		reviewers: Awaited<ReturnType<typeof fetchReviewersForTeam>>;
+	}>;
+	unknownTeamSlugs: string[];
+}> {
+	const results = await Promise.all(
+		additionalTeamSlugs.map(async (teamSlug) => {
+			try {
+				return { teamSlug, reviewers: await fetchReviewersForTeam(teamSlug) };
+			} catch (_error) {
+				return { teamSlug, reviewers: null };
+			}
+		}),
+	);
+
+	return {
+		reviewersByTeamSlug: results.filter(
+			(
+				entry,
+			): entry is {
+				teamSlug: string;
+				reviewers: NonNullable<typeof entry.reviewers>;
+			} => entry.reviewers !== null,
+		),
+		unknownTeamSlugs: results
+			.filter((entry) => entry.reviewers === null)
+			.map((entry) => entry.teamSlug),
+	};
+}
+
+function fetchReviewersForTeam(teamSlug: string) {
+	return fetchQuery(api.queries.getReviewers, { teamSlug });
+}
+
 async function fetchSelectedTeamData(selectedTeamSlug: string, prUrl?: string) {
 	const [reviewers, tags, assignmentFeed, duplicate] = await Promise.all([
 		fetchQuery(api.queries.getReviewers, { teamSlug: selectedTeamSlug }),
@@ -415,6 +462,7 @@ export async function buildAgentContextResponse(
 		accessibleTeams: AgentTeamSummary[];
 		defaultTeamSlug?: string;
 		selectedTeam: AgentTeamSummary | null;
+		crossTeamTargets: AgentTeamSummary[];
 		reviewers: AgentReviewerSummary[];
 		tags: AgentTagSummary[];
 		nextReviewerHints: {
@@ -442,6 +490,7 @@ export async function buildAgentContextResponse(
 				accessibleTeams: auth.teams.map(summarizeTeam),
 				defaultTeamSlug: teamResolution.defaultTeamSlug,
 				selectedTeam: null,
+				crossTeamTargets: [],
 				reviewers: [],
 				tags: [],
 				nextReviewerHints: {
@@ -457,8 +506,20 @@ export async function buildAgentContextResponse(
 	}
 
 	const selectedTeamSlug = teamResolution.selectedTeam.slug;
-	const { reviewers, tags, assignmentFeed, duplicate } =
-		await fetchSelectedTeamData(selectedTeamSlug, query.prUrl);
+	const [{ reviewers, tags, assignmentFeed, duplicate }, allTeams] =
+		await Promise.all([
+			fetchSelectedTeamData(selectedTeamSlug, query.prUrl),
+			fetchQuery(api.queries.getTeams, {}),
+		]);
+	const crossTeamTargets = allTeams
+		.filter((team) => team.slug !== selectedTeamSlug)
+		.map((team) =>
+			summarizeTeam({
+				id: team._id,
+				name: team.name,
+				slug: team.slug,
+			}),
+		);
 	const summarizedTags = tags.map((tag) =>
 		summarizeTag({
 			_id: String(tag._id),
@@ -479,6 +540,7 @@ export async function buildAgentContextResponse(
 			accessibleTeams: auth.teams.map(summarizeTeam),
 			defaultTeamSlug: teamResolution.defaultTeamSlug,
 			selectedTeam: summarizeTeam(teamResolution.selectedTeam),
+			crossTeamTargets,
 			reviewers: normalizedReviewers.map(summarizeReviewer),
 			tags: summarizedTags,
 			nextReviewerHints: {
@@ -512,6 +574,9 @@ export async function previewAgentAssignment(
 	AgentResult<{
 		normalizedRequest: {
 			teamSlug?: string;
+			additionalTeamSlugs: string[];
+			crossTeamReview: boolean;
+			excludeTeammates: boolean;
 			selectedTagId?: string;
 			prUrl?: string;
 			contextUrl?: string;
@@ -529,6 +594,7 @@ export async function previewAgentAssignment(
 		resolved: Array<{
 			slotIndex: number;
 			reviewer: Record<string, unknown> & { _id: Id<"reviewers"> };
+			teamSlug?: string;
 			tagId?: string;
 		}>;
 		failed: Array<{ slotIndex: number; reason: AssignmentFailureReason }>;
@@ -547,8 +613,23 @@ export async function previewAgentAssignment(
 		return { error: teamResolution.error };
 	}
 
+	const crossTeamReview = input.crossTeamReview === true;
+	const requestedAdditionalTeamSlugs = crossTeamReview
+		? resolveBroadcastTeamSlugs({
+				sourceTeamSlug: teamResolution.selectedTeam?.slug,
+				reviewerTeamSlugs: input.additionalTeamSlugs ?? [],
+			})
+		: [];
+	const excludeTeammates =
+		crossTeamReview &&
+		input.excludeTeammates === true &&
+		requestedAdditionalTeamSlugs.length > 0;
+
 	const normalizedInput = {
 		teamSlug: teamResolution.selectedTeam?.slug,
+		additionalTeamSlugs: requestedAdditionalTeamSlugs,
+		crossTeamReview,
+		excludeTeammates,
 		selectedTagId: normalizeOptionalText(input.selectedTagId),
 		prUrl: undefined as string | undefined,
 		contextUrl: normalizeOptionalText(input.contextUrl),
@@ -591,6 +672,19 @@ export async function previewAgentAssignment(
 		teamResolution.selectedTeam.slug,
 		normalizedInput.prUrl,
 	);
+	const { reviewersByTeamSlug, unknownTeamSlugs } =
+		requestedAdditionalTeamSlugs.length > 0
+			? await fetchCrossTeamReviewers(requestedAdditionalTeamSlugs)
+			: { reviewersByTeamSlug: [], unknownTeamSlugs: [] };
+	const { reviewers: reviewerPool, teamSlugByReviewerId } =
+		buildCrossTeamReviewerPool({
+			sourceTeamSlug: teamResolution.selectedTeam.slug,
+			sourceReviewers: reviewers,
+			additionalTeams: reviewersByTeamSlug,
+			excludeTeammates,
+		});
+	// The assigner is always looked up in their own team, even when their
+	// teammates are excluded from the reviewer pool.
 	const actorReviewer = auth.email
 		? reviewers.find(
 				(reviewer) =>
@@ -605,12 +699,25 @@ export async function previewAgentAssignment(
 			Id<"reviewers">,
 			Id<"tags">
 		>[],
-		reviewers,
+		reviewers: reviewerPool,
 		excludedReviewerId: actorReviewer?._id,
 	});
 
 	const warnings = [
 		...teamResolution.warnings,
+		...(crossTeamReview && requestedAdditionalTeamSlugs.length === 0
+			? [
+					{
+						code: "cross_team_without_targets",
+						message:
+							"crossTeamReview was requested without any other team in additionalTeamSlugs, so only the requesting team's reviewers were considered.",
+					},
+				]
+			: []),
+		...unknownTeamSlugs.map((slug) => ({
+			code: "unknown_team",
+			message: `Team "${slug}" was not found and was excluded from the cross-team reviewer pool.`,
+		})),
 		...resolution.failed.map((failure) => ({
 			code: failure.reason,
 			message: buildFailureMessage(failure.reason),
@@ -649,6 +756,7 @@ export async function previewAgentAssignment(
 			resolved: resolution.resolved.map((item) => ({
 				slotIndex: item.slotIndex,
 				reviewer: item.reviewer,
+				teamSlug: teamSlugByReviewerId.get(String(item.reviewer._id)),
 				tagId: item.tagId ? String(item.tagId) : undefined,
 			})),
 			failed: resolution.failed,
@@ -688,6 +796,7 @@ export async function executeAgentAssignment(
 						effectiveIsAbsent: boolean;
 						createdAt: number;
 						tags: string[];
+						teamSlug?: string;
 					};
 					tagId?: string;
 				}>;
@@ -697,6 +806,7 @@ export async function executeAgentAssignment(
 				forced: boolean;
 				source: "agent";
 				notificationQueued: boolean;
+				notifiedTeamSlugs: string[];
 			};
 	  }
 > {
@@ -728,13 +838,14 @@ export async function executeAgentAssignment(
 			effectiveIsAbsent: boolean;
 			createdAt: number;
 			tags: string[];
+			teamSlug?: string;
 		};
 		tagId?: string;
 	}> = [];
 	let batchId: string | undefined;
 	let forced = false;
 
-	if (body.resolved.length === 1) {
+	if (body.resolved.length === 1 && !normalizedRequest.crossTeamReview) {
 		const [resolved] = body.resolved;
 		const [slot] = normalizedRequest.slots;
 		forced = slot?.strategy === "specific";
@@ -762,6 +873,7 @@ export async function executeAgentAssignment(
 					effectiveIsAbsent: result.reviewer.effectiveIsAbsent,
 					createdAt: result.reviewer.createdAt,
 					tags: result.reviewer.tags.map((tagId) => String(tagId)),
+					teamSlug: resolved.teamSlug ?? body.selectedTeam.slug,
 				},
 				tagId: resolved.tagId,
 			},
@@ -787,6 +899,9 @@ export async function executeAgentAssignment(
 		const batchResult = await fetchMutation(api.mutations.assignPRBatch, {
 			agentTokenHash: auth.tokenHash,
 			teamSlug: body.selectedTeam.slug,
+			additionalTeamSlugs: normalizedRequest.additionalTeamSlugs,
+			crossTeamReview: normalizedRequest.crossTeamReview,
+			excludeTeammates: normalizedRequest.excludeTeammates,
 			mode: body.mode,
 			selectedTagId: normalizedRequest.selectedTagId as Id<"tags"> | undefined,
 			slots: normalizedRequest.slots.map((slot) => ({
@@ -813,6 +928,7 @@ export async function executeAgentAssignment(
 				effectiveIsAbsent: item.reviewer.effectiveIsAbsent,
 				createdAt: item.reviewer.createdAt,
 				tags: item.reviewer.tags.map((tagId) => String(tagId)),
+				teamSlug: item.reviewer.teamSlug,
 			},
 			tagId: item.tagId,
 		}));
@@ -823,6 +939,16 @@ export async function executeAgentAssignment(
 		prUrl: normalizedRequest.prUrl,
 		assignedCount: assignedReviewers.length,
 	});
+	// The requesting team's channel always gets the message; every team a
+	// reviewer was assigned from gets it too.
+	const notifiedTeamSlugs = notificationQueued
+		? resolveNotifiedTeamSlugs({
+				sourceTeamSlug: body.selectedTeam.slug,
+				reviewerTeamSlugs: assignedReviewers.map(
+					(item) => item.reviewer.teamSlug,
+				),
+			})
+		: [];
 	const warnings = [...body.warnings];
 	if (!normalizedRequest.prUrl?.trim()) {
 		warnings.push({
@@ -845,6 +971,7 @@ export async function executeAgentAssignment(
 			forced,
 			source: "agent" as const,
 			notificationQueued,
+			notifiedTeamSlugs,
 		},
 	};
 }

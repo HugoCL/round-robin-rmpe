@@ -340,6 +340,7 @@
 		"batchAssignSingleSuccess": "PR asignado a {reviewer}.",
 		"batchAssignPartial": "Se asignaron {assigned} de {requested} revisores solicitados.",
 		"batchAssignFailed": "No se pudo resolver ningún revisor para esta asignación.",
+		"chatNotificationFailed": "El PR se asignó, pero no pudimos entregar el mensaje de Google Chat en todos los canales.",
 		"duplicatePRAssigned": "Este PR ya fue asignado a {reviewer} el {date}.",
 		"assignFailedTitle": "Error",
 		"assignFailedDescription": "Falló al asignar el PR. Por favor intenta de nuevo.",
@@ -534,6 +535,11 @@
 				"label": "Por tag",
 				"user": "Asigna este PR a alguien de backend.",
 				"agent": "Le tocó a Valentina, de backend. La rotación sigue pareja."
+			},
+			"crossTeam": {
+				"label": "A otro equipo",
+				"user": "Este PR lo tiene que revisar el equipo de Pagos.",
+				"agent": "Le tocó a Martina, de Pagos. Avisé en el Chat de ellos y en el nuestro."
 			}
 		}
 	},

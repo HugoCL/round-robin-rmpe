@@ -4,6 +4,7 @@ import {
 	shouldQueueAgentAssignmentChat,
 } from "../lib/agentAssignmentChat";
 import { resolveAssignmentSlots } from "../lib/assignmentResolver";
+import { resolveBroadcastTeamSlugs } from "../lib/chatBroadcast";
 import { undoRemovesReviewedPR } from "../lib/historyUndo";
 import {
 	DEFAULT_TEAM_TIMEZONE,
@@ -124,6 +125,7 @@ async function maybeScheduleAgentAssignmentChat(
 			email: string;
 			reviewerChatId?: string;
 		}>;
+		reviewerTeamSlugs?: Array<string | undefined>;
 		agentTokenHash?: string;
 		actionByReviewerId?: Id<"reviewers">;
 	},
@@ -149,6 +151,10 @@ async function maybeScheduleAgentAssignmentChat(
 		actionByReviewerId: args.actionByReviewerId,
 	});
 	const contextUrl = args.contextUrl?.trim();
+	const broadcastTeamSlugs = resolveBroadcastTeamSlugs({
+		sourceTeamSlug: teamSlug,
+		reviewerTeamSlugs: args.reviewerTeamSlugs ?? [],
+	});
 
 	await ctx.scheduler.runAfter(
 		0,
@@ -169,6 +175,7 @@ async function maybeScheduleAgentAssignmentChat(
 				: {}),
 			...(assigner.assignerName ? { assignerName: assigner.assignerName } : {}),
 			teamSlug,
+			...(broadcastTeamSlugs.length > 0 ? { broadcastTeamSlugs } : {}),
 			urgent: args.urgent === true,
 		},
 	);
@@ -1465,6 +1472,9 @@ async function executeAssignPRBatch(
 	);
 
 	const reviewers = reviewersByTeam.flatMap((entry) => entry.reviewersForTeam);
+	const teamSlugByTeamId = new Map<Id<"teams">, string>(
+		reviewerPoolTeams.map((poolTeam) => [poolTeam._id, poolTeam.slug]),
+	);
 	const reviewerTeamById = new Map<Id<"reviewers">, Id<"teams">>();
 	const reviewerTimezoneTeamById = new Map<
 		Id<"reviewers">,
@@ -1583,8 +1593,13 @@ async function executeAssignPRBatch(
 
 	const now = availabilityNow;
 	const batchId = `batch_${now}_${Math.random().toString(36).slice(2, 10)}`;
+	// With excludeTeammates the requester's own team is not part of the reviewer
+	// pool, so fall back to a direct lookup to keep "assigned by" and the active
+	// assignment record intact on cross-team requests.
 	const assigner = actionByReviewerId
-		? byId.get(actionByReviewerId)
+		? (byId.get(actionByReviewerId) ??
+			(await ctx.db.get(actionByReviewerId)) ??
+			undefined)
 		: undefined;
 	const feedEntries: Array<{
 		reviewerId: string;
@@ -1670,6 +1685,7 @@ async function executeAssignPRBatch(
 			actionByName: assigner?.name,
 		});
 
+		const reviewerTeamId = reviewerTeamById.get(reviewer._id);
 		assigned.push({
 			slotIndex: item.slotIndex,
 			reviewer: {
@@ -1681,6 +1697,10 @@ async function executeAssignPRBatch(
 				effectiveIsAbsent: item.reviewer.effectiveIsAbsent,
 				createdAt: reviewer.createdAt,
 				tags: reviewer.tags,
+				teamSlug: reviewerTeamId
+					? teamSlugByTeamId.get(reviewerTeamId)
+					: undefined,
+				googleChatUserId: reviewer.googleChatUserId,
 			},
 			tagId: item.tagId ? String(item.tagId) : undefined,
 		});
@@ -1723,16 +1743,11 @@ export const assignPRBatch = mutation({
 			...internalArgs,
 		});
 		if (internalArgs.source === "agent") {
-			const chatReviewers = await Promise.all(
-				result.assigned.map(async (item) => {
-					const reviewer = await ctx.db.get(item.reviewer.id);
-					return {
-						name: item.reviewer.name,
-						email: item.reviewer.email,
-						reviewerChatId: reviewer?.googleChatUserId,
-					};
-				}),
-			);
+			const chatReviewers = result.assigned.map((item) => ({
+				name: item.reviewer.name,
+				email: item.reviewer.email,
+				reviewerChatId: item.reviewer.googleChatUserId,
+			}));
 			await maybeScheduleAgentAssignmentChat(ctx, {
 				source: internalArgs.source,
 				teamSlug,
@@ -1740,6 +1755,9 @@ export const assignPRBatch = mutation({
 				contextUrl: internalArgs.contextUrl,
 				urgent: internalArgs.urgent,
 				reviewers: chatReviewers,
+				reviewerTeamSlugs: result.assigned.map(
+					(item) => item.reviewer.teamSlug,
+				),
 				agentTokenHash,
 				actionByReviewerId: internalArgs.actionByReviewerId,
 			});

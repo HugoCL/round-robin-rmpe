@@ -32,6 +32,7 @@
 		"loading": "Loading…",
 		"error": "Error",
 		"success": "Success",
+		"warning": "Warning",
 		"notices": "Notices",
 		"confirm": "Confirm",
 		"close": "Close",
@@ -295,6 +296,7 @@
 		"batchAssignSingleSuccess": "PR assigned to {reviewer}.",
 		"batchAssignPartial": "Assigned {assigned} of {requested} requested reviewers.",
 		"batchAssignFailed": "No reviewer could be resolved for this assignment.",
+		"chatNotificationFailed": "The PR was assigned, but the Google Chat message could not be delivered to every team channel.",
 		"duplicatePRAssigned": "This PR was already assigned to {reviewer} on {date}.",
 		"assignFailedTitle": "Error",
 		"assignFailedDescription": "Failed to assign PR. Please try again.",
@@ -489,6 +491,11 @@
 				"label": "By tag",
 				"user": "Assign this PR to someone on backend.",
 				"agent": "It went to Valentina, from backend. The rotation stays even."
+			},
+			"crossTeam": {
+				"label": "To another team",
+				"user": "This PR needs a review from the Payments team.",
+				"agent": "It went to Martina, from Payments. I pinged their Chat space and ours."
 			}
 		}
 	},

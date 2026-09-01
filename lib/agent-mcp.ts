@@ -36,6 +36,24 @@ const assignmentInputSchema = {
 		.describe(
 			"Team slug. Defaults to the token owner's default team when set.",
 		),
+	additionalTeamSlugs: z
+		.array(z.string().trim().min(1))
+		.optional()
+		.describe(
+			"Other team slugs whose reviewers can take this PR. Requires crossTeamReview. The Google Chat message is sent to the requesting team's channel and to the channel of every team a reviewer is assigned from. Use la_lista_get_context crossTeamTargets to discover slugs.",
+		),
+	crossTeamReview: z
+		.boolean()
+		.optional()
+		.describe(
+			"Set to true when the PR should be reviewed by another team. Must be paired with additionalTeamSlugs.",
+		),
+	excludeTeammates: z
+		.boolean()
+		.optional()
+		.describe(
+			"With crossTeamReview, restrict the reviewer pool to the teams in additionalTeamSlugs, excluding the requesting team's own members.",
+		),
 	selectedTagId: z
 		.string()
 		.trim()
@@ -144,7 +162,7 @@ export function createLaListaMcpServer(auth: AuthenticatedAgent) {
 		{
 			title: "Get La Lista assignment context",
 			description:
-				"Load accessible teams, selected/default team, reviewers, tags, next-reviewer hints, recent assignments, and duplicate information.",
+				"Load accessible teams, selected/default team, cross-team targets, reviewers, tags, next-reviewer hints, recent assignments, and duplicate information.",
 			inputSchema: contextInputSchema,
 		},
 		async (input) => {
@@ -194,7 +212,7 @@ export function createLaListaMcpServer(auth: AuthenticatedAgent) {
 		{
 			title: "Assign a PR in La Lista",
 			description:
-				"Execute a La Lista PR assignment after previewing. Duplicate PRs are blocked unless forceDuplicate is true. Always sends the Google Chat assignment message when a PR URL is present.",
+				"Execute a La Lista PR assignment after previewing. Duplicate PRs are blocked unless forceDuplicate is true. Always sends the Google Chat assignment message when a PR URL is present; for cross-team assignments it reaches both the requesting team's channel and every receiving team's channel (see notifiedTeamSlugs in the result).",
 			inputSchema: assignmentInputSchema,
 			annotations: {
 				destructiveHint: false,

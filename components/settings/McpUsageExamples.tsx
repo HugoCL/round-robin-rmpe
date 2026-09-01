@@ -49,6 +49,12 @@ function useMcpUsageExampleCopy(id: McpUsageExampleId): UsageExampleCopy {
 				user: t("usageExample.backendTag.user"),
 				agent: t("usageExample.backendTag.agent"),
 			};
+		case "crossTeam":
+			return {
+				label: t("usageExample.crossTeam.label"),
+				user: t("usageExample.crossTeam.user"),
+				agent: t("usageExample.crossTeam.agent"),
+			};
 		default: {
 			const _exhaustive: never = id;
 			return _exhaustive;

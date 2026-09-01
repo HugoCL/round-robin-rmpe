@@ -42,9 +42,17 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-09-01",
+		type: "fix",
+		title: "Pedirle revisión a otro equipo ya avisa en los dos espacios",
+		description:
+			"Cuando le asignabas un PR a alguien de otro equipo, el mensaje de Google Chat a veces no salía. Ahora llega siempre al espacio del equipo que recibe el PR y al del equipo que lo pide, y si alguno de los dos falla te lo decimos en vez de dejarlo pasar en silencio. También puedes pedirlo desde Claude con el agente MCP.",
+		suggestedBy: "Nicolás Guzmán",
+	},
+	{
 		date: "2026-08-27",
 		type: "improvement",
-		title: "Las cards de Google Chat ahora ocupan menos",
+		title: "Las cards de Google Chat ahora ocupan menos espacio",
 		description:
 			"Sacamos el título y el subtítulo del card. Quedan solo dos botones: PR #número y, si lo añadiste, Contexto.",
 	},

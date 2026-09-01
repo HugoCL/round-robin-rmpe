@@ -3,6 +3,7 @@ export const MCP_USAGE_EXAMPLE_IDS = [
 	"ghUrgent",
 	"nextUp",
 	"backendTag",
+	"crossTeam",
 ] as const;
 
 export type McpUsageExampleId = (typeof MCP_USAGE_EXAMPLE_IDS)[number];
