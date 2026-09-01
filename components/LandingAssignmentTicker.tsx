@@ -144,14 +144,19 @@ export function LandingAssignmentTicker() {
 		);
 	}
 
+	const repeats = Math.max(1, Math.ceil(4 / items.length));
+	const trackItems = Array.from({ length: repeats }, (_, pass) =>
+		items.map((item) => ({ item, passKey: `${pass}-${item.id}` })),
+	).flat();
+
 	const renderItems = (clone = false) => (
 		<div aria-hidden={clone} className="flex shrink-0 items-center gap-3 pr-3">
-			{items.map((item) => {
+			{trackItems.map(({ item, passKey }) => {
 				const isHighlighted = !clone && highlightedId === item.id;
 
 				return (
 					<div
-						key={`${clone ? "clone" : "primary"}-${item.id}`}
+						key={`${clone ? "clone" : "primary"}-${passKey}`}
 						className={cn(
 							"relative isolate flex shrink-0 items-center overflow-visible rounded-full border border-border/70 bg-background/90 px-4 py-2 text-sm shadow-[0_10px_30px_-24px_rgba(15,23,42,0.65)] transition-colors duration-300",
 							isHighlighted &&
@@ -197,15 +202,6 @@ export function LandingAssignmentTicker() {
 				data-paused={isPausedForUpdate}
 				data-updating={highlightedItem ? "true" : "false"}
 			>
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background via-background/85 to-transparent"
-				/>
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background via-background/85 to-transparent"
-				/>
-
 				{highlightedItem ? (
 					<div className="landing-ticker-overlay pointer-events-none absolute inset-0 z-20 flex items-center justify-center overflow-hidden px-4">
 						<span
@@ -241,13 +237,13 @@ export function LandingAssignmentTicker() {
 				) : null}
 
 				{prefersReducedMotion ? (
-					<div className="flex h-full items-center overflow-x-auto px-3">
+					<div className="landing-ticker-mask flex h-full items-center overflow-x-auto px-3">
 						<div className="flex min-w-max items-center gap-3">
 							{renderItems()}
 						</div>
 					</div>
 				) : (
-					<div className="flex h-full items-center overflow-hidden">
+					<div className="landing-ticker-mask flex h-full items-center overflow-hidden">
 						<div
 							className="landing-ticker-track flex w-max items-center"
 							style={

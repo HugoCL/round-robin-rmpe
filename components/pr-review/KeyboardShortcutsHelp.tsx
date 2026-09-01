@@ -2,7 +2,7 @@
 
 import { Keyboard } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -15,6 +15,7 @@ import {
 import { IconActionButton } from "@/components/ui/icon-action-button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { WithTooltip } from "@/components/ui/tooltip";
+import { isTypingTarget } from "@/lib/assignmentFocus";
 
 export function KeyboardShortcutsHelp({
 	iconOnly = false,
@@ -24,21 +25,44 @@ export function KeyboardShortcutsHelp({
 	const t = useTranslations();
 	const [open, setOpen] = useState(false);
 
+	// "?" opens this dialog, matching the shortcut it documents.
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.ctrlKey || event.metaKey || event.altKey) return;
+			if (event.key !== "?") return;
+			if (isTypingTarget(event.target)) return;
+			event.preventDefault();
+			setOpen(true);
+		};
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
+	}, []);
+
 	const shortcuts = [
 		{
-			key: "Ctrl/Cmd + A",
+			key: "/",
+			description: t("shortcuts.focusPrUrl"),
+			note: t("shortcuts.anywhere"),
+		},
+		{
+			key: "A",
 			description: t("shortcuts.assignPR"),
 			note: t("shortcuts.onlyAvailable"),
 		},
 		{
-			key: "Ctrl/Cmd + S",
+			key: "S",
 			description: t("shortcuts.skipReviewer"),
 			note: t("shortcuts.onlyAvailable"),
 		},
 		{
-			key: "Ctrl/Cmd + Z",
+			key: "U",
 			description: t("shortcuts.undoAssignment"),
 			note: t("shortcuts.alwaysAvailable"),
+		},
+		{
+			key: "?",
+			description: t("shortcuts.showHelp"),
+			note: t("shortcuts.anywhere"),
 		},
 	];
 

@@ -8,13 +8,13 @@ import {
 	CardContent,
 	CardFooter,
 	CardHeader,
-	CardTitle,
 } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { resolveAssignerDisplayName } from "@/lib/assignerDisplayName";
 import { resolveBroadcastTeamSlugs } from "@/lib/chatBroadcast";
+import { parsePrUrl } from "@/lib/prUrl";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import { AssignmentActionsRow } from "./assignment/AssignmentActionsRow";
 import { AssignmentControlsPanel } from "./assignment/AssignmentControlsPanel";
@@ -511,18 +511,39 @@ export function AssignmentCard() {
 			) || null
 		: null;
 
+	// A pasted PR link is the one required input, so it is validated as you type
+	// instead of after the assignment has already notified someone.
+	const parsedPrUrl = useMemo(() => parsePrUrl(prUrl), [prUrl]);
+	const hasPrUrlError = prUrl.trim().length > 0 && parsedPrUrl === null;
+
 	const isAssignDisabled =
 		isAssigning ||
-		!prUrl.trim() ||
+		!parsedPrUrl ||
+		(mode === "tag" && !selectedTagId) ||
 		(crossTeamReview && selectedCrossTeamSlugs.length === 0) ||
 		resolvedPreview.resolved.length === 0;
+
+	// A disabled primary action always says what is missing.
+	const assignBlockedReason = (() => {
+		if (isAssigning || !isAssignDisabled) return null;
+		if (!prUrl.trim()) return t("pr.assignDisabledNeedsUrl");
+		// The field already shows the format error in place; repeating it above the
+		// button would say the same thing twice.
+		if (hasPrUrlError) return null;
+		if (mode === "tag" && !selectedTagId) return t("pr.assignDisabledNeedsTag");
+		if (crossTeamReview && selectedCrossTeamSlugs.length === 0)
+			return t("pr.assignDisabledNeedsTeams");
+		if (resolvedPreview.resolved.length === 0)
+			return t("pr.assignDisabledNoReviewer");
+		return null;
+	})();
 
 	return (
 		<Card className="calm-shell flex flex-col gap-0 overflow-hidden py-0 ring-0">
 			<CardHeader className="sr-only">
-				<CardTitle>{t("pr.nextReviewer")}</CardTitle>
+				<h2 data-slot="card-title">{t("pr.nextReviewer")}</h2>
 			</CardHeader>
-			<CardContent className="flex flex-1 items-center justify-center px-3 pt-1 sm:px-5 sm:pt-3 md:px-6 md:pt-4 2xl:px-8">
+			<CardContent className="flex flex-1 items-stretch justify-center px-3 pt-1 sm:px-5 sm:pt-3 md:px-6 md:pt-4 lg:min-h-0 lg:overflow-y-auto 2xl:px-8">
 				<AssignmentHeroPanel
 					mode={mode}
 					lastAssignedReviewer={lastAssignedReviewer}
@@ -535,7 +556,7 @@ export function AssignmentCard() {
 					isLoadingTagReviewer={isLoadingTagReviewer}
 				/>
 			</CardContent>
-			<CardFooter className="flex-shrink-0 border-t border-border/60 px-3 py-2 sm:px-5 sm:py-4 md:px-6 2xl:px-8">
+			<CardFooter className="flex-shrink-0 border-t border-border/60 bg-card px-3 py-2 sm:px-5 sm:py-4 md:px-6 2xl:px-8">
 				<div className="calm-subtle-panel flex w-full flex-col gap-3 p-1.5 sm:p-3 lg:gap-4 lg:p-4">
 					<AssignmentControlsPanel
 						tags={tags}
@@ -609,11 +630,14 @@ export function AssignmentCard() {
 						activeNextReviewer={activeNextReviewer}
 						showDuplicateAlert={showDuplicateAlert}
 						duplicateAssignment={duplicateAssignment}
+						parsedPrUrl={parsedPrUrl}
+						hasPrUrlError={hasPrUrlError}
 					/>
 
 					<AssignmentActionsRow
 						isAssigning={isAssigning}
 						isAssignDisabled={isAssignDisabled}
+						blockedReason={assignBlockedReason}
 						liveSummary={liveSummary}
 						onAssign={handleAssignPR}
 						onUndoAssignment={onUndoAssignment}

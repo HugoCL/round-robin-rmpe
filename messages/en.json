@@ -20,7 +20,10 @@
 		"viaAgent": "Assigned via agent",
 		"urgent": "Urgent",
 		"crossTeam": "Cross-team",
-		"scopeNote": "The historical total comes from appMetrics. Recent activity uses the 7 days of assignment history retained by La Lista."
+		"scopeNote": "The historical total covers every PR coordinated since day one. Recent activity uses the 7 days of assignment history La Lista keeps.",
+		"emptyWeekTitle": "No assignments yet this week",
+		"emptyWeekDescription": "As soon as someone assigns a PR, the last 7 days of activity show up here.",
+		"breakdownLabel": "Breakdown"
 	},
 	"common": {
 		"save": "Save",
@@ -198,7 +201,14 @@
 		"noPrLink": "No PR link provided",
 		"unknownUser": "Unknown",
 		"teamPrsThisWeek": "Team PRs this week",
-		"teamPrsThisWeekAria": "Team PRs this week: {count}"
+		"teamPrsThisWeekAria": "Team PRs this week: {count}",
+		"assignDisabledNeedsUrl": "Paste the PR URL to assign.",
+		"assignDisabledNeedsTag": "Pick a tag to assign.",
+		"assignDisabledNeedsTeams": "Pick at least one target team.",
+		"assignDisabledNoReviewer": "No reviewers available to assign.",
+		"prUrlInvalid": "That URL doesn't look like a pull request. Paste the full link, for example https://github.com/team/repo/pull/123",
+		"prUrlRecognized": "{repo} · PR #{number}",
+		"assignmentsUnit": "PRs"
 	},
 	"tags": {
 		"title": "Tags",
@@ -230,7 +240,9 @@
 		"tagBasedAssignment": "Tag-Based Assignment",
 		"tagBasedDescription": "Select a tag to assign the PR to the next reviewer in that specific area.",
 		"next": "Next",
-		"assigning": "Assigning…"
+		"assigning": "Assigning…",
+		"heroNoTagTitle": "Pick a tag to see whose turn it is",
+		"heroNoTagHint": "Each tag keeps its own rotation, separate from the general one."
 	},
 	"reviewer": {
 		"addNew": "Add New Reviewer",
@@ -580,7 +592,9 @@
 		"changesAutoSaved": "Changes will be saved automatically as you make them",
 		"export": "Export",
 		"import": "Import",
-		"restore": "Restore"
+		"restore": "Restore",
+		"entryPrLabel": "PR #{number}",
+		"entryNoPr": "No PR linked"
 	},
 	"googleChat": {
 		"greeting": "Hello {reviewer} 👋",
@@ -633,7 +647,10 @@
 		"onlyAvailable": "Only works when a reviewer is available",
 		"alwaysAvailable": "Always available",
 		"note": "Note:",
-		"globalNote": "Keyboard shortcuts work globally when this page is active. Some shortcuts are only available when there's a next reviewer available."
+		"globalNote": "Shortcuts work while focus is outside a text field. Assign and skip are only available when there is a next reviewer.",
+		"focusPrUrl": "Jump to the PR URL field",
+		"showHelp": "Show these shortcuts",
+		"anywhere": "Works from anywhere on the page"
 	},
 	"language": {
 		"switch": "Switch Language",
@@ -1013,7 +1030,6 @@
 		"unavailable": "Unavailable",
 		"partTimeOff": "Off today (part-time schedule)",
 		"youAreNext": "You're up next",
-		"outOfPool": "Out of the general rotation",
 		"lastPrs": "Latest",
 		"lastReceived": "Last PR received",
 		"lastSent": "Last PR sent",
@@ -1127,6 +1143,8 @@
 			"unavailableTitle": "Results unavailable",
 			"unavailableDescription": "This survey isn’t published yet, or the link is invalid.",
 			"privacyNote": "Comments are anonymous. Individual identities are not shown on this page."
-		}
+		},
+		"adminOnlyDescription": "This section is for La Lista admins. Ask whoever coordinates the team for access.",
+		"adminUnauthorizedDescription": "This section is for La Lista admins. Ask whoever coordinates your team for access."
 	}
 }

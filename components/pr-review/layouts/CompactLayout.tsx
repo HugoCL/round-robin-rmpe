@@ -1,4 +1,5 @@
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import { AssignmentCard } from "../AssignmentCard";
 import { FeedHistory } from "../FeedHistory";
@@ -6,8 +7,12 @@ import { ForeignTeamAssignmentCard } from "../ForeignTeamAssignmentCard";
 import { usePRReview } from "../PRReviewContext";
 import { ReviewersPanel } from "../ReviewersPanel";
 
+/** Below this width the three columns can't all hold a usable measure. */
+const BOTH_PANELS_QUERY = "(min-width: 1500px)";
+
 export function CompactLayout() {
 	const { teamSlug, isForeignTeamView } = usePRReview();
+	const canShowBothPanels = useMediaQuery(BOTH_PANELS_QUERY);
 	const [historyOpen, setHistoryOpen] = useLocalStorage(
 		"la-lista-history-open",
 		false,
@@ -16,18 +21,22 @@ export function CompactLayout() {
 		"la-lista-reviewers-open",
 		false,
 	);
-	const historyExpanded = historyOpen && !reviewersOpen;
+	// Both panels can stay open on wide screens; narrower ones still trade one
+	// for the other so the assignment column keeps a readable width.
+	const bothOpen = reviewersOpen && historyOpen && canShowBothPanels;
+	const historyExpanded = historyOpen && (bothOpen || !reviewersOpen);
+	const reviewersExpanded = reviewersOpen;
 
 	const handleReviewersOpenChange = (open: boolean) => {
 		setReviewersOpen(open);
-		if (open) {
+		if (open && !canShowBothPanels) {
 			setHistoryOpen(false);
 		}
 	};
 
 	const handleHistoryOpenChange = (open: boolean) => {
 		setHistoryOpen(open);
-		if (open) {
+		if (open && !canShowBothPanels) {
 			setReviewersOpen(false);
 		}
 	};
@@ -37,24 +46,28 @@ export function CompactLayout() {
 			<div
 				className={cn(
 					"grid items-stretch gap-4 sm:gap-6 lg:min-h-0 lg:flex-1",
-					!reviewersOpen &&
+					!reviewersExpanded &&
 						!historyExpanded &&
 						"lg:grid-cols-[3.5rem_minmax(0,1fr)_3.5rem]",
-					reviewersOpen &&
+					reviewersExpanded &&
+						!historyExpanded &&
 						"lg:grid-cols-[minmax(340px,0.82fr)_minmax(0,1.18fr)_3.5rem] 2xl:grid-cols-[minmax(420px,0.72fr)_minmax(0,1.28fr)_3.5rem]",
-					!reviewersOpen &&
+					!reviewersExpanded &&
 						historyExpanded &&
 						"lg:grid-cols-[3.5rem_minmax(0,1.18fr)_minmax(340px,0.82fr)] 2xl:grid-cols-[3.5rem_minmax(0,1.28fr)_minmax(420px,0.72fr)]",
+					reviewersExpanded &&
+						historyExpanded &&
+						"lg:grid-cols-[minmax(320px,0.7fr)_minmax(0,1.6fr)_minmax(320px,0.7fr)]",
 				)}
 			>
 				<ReviewersPanel
 					teamSlug={teamSlug}
-					open={reviewersOpen}
+					open={reviewersExpanded}
 					onOpenChange={handleReviewersOpenChange}
 					className="order-2 lg:order-1"
 				/>
-				<div className="order-1 flex min-w-0 flex-col gap-4 sm:gap-6 lg:order-2 lg:h-full lg:min-h-0 lg:overflow-y-auto">
-					<section className="page-enter-soft lg:flex lg:flex-1 lg:flex-col lg:[&>[data-slot=card]]:flex-1">
+				<div className="order-1 flex min-w-0 flex-col gap-4 sm:gap-6 lg:order-2 lg:h-full lg:min-h-0 lg:overflow-hidden">
+					<section className="page-enter-soft lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:[&>[data-slot=card]]:min-h-0 lg:[&>[data-slot=card]]:flex-1">
 						{isForeignTeamView ? (
 							<ForeignTeamAssignmentCard />
 						) : (

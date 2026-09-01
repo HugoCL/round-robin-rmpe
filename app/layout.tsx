@@ -3,10 +3,12 @@ import type React from "react";
 import "@/app/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { getLocale } from "next-intl/server";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { routing } from "@/i18n/routing";
+import { clerkLocalization } from "@/lib/clerkAppearance";
 
 export const viewport: Viewport = {
 	themeColor: [
@@ -43,19 +45,23 @@ export function generateStaticParams() {
 	return routing.locales.map((locale) => ({ locale }));
 }
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
+	// The locale comes from the next-intl middleware, so `<html lang>` follows the
+	// URL instead of always claiming English.
+	const locale = await getLocale();
+
 	return (
 		<html
-			lang="en"
+			lang={locale}
 			suppressHydrationWarning
 			className={`${jetbrainsMono.variable} ${spaceGrotesk.variable}`}
 		>
 			<body className="min-h-screen antialiased">
-				<ClerkProvider>
+				<ClerkProvider localization={clerkLocalization(locale)}>
 					<ConvexClientProvider>
 						<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 							{children}

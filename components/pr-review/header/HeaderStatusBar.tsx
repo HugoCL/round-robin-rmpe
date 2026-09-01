@@ -177,7 +177,7 @@ export function HeaderStatusBar() {
 					) : null}
 					{outOfPool ? (
 						<Badge variant="outline" className="h-6 text-xs">
-							{t("headerStatus.outOfPool")}
+							{t("reviewer.outOfReviewPoolBadge")}
 						</Badge>
 					) : null}
 					{isNext ? (
@@ -297,7 +297,7 @@ export function HeaderStatusBar() {
 				</>
 			) : null}
 
-			<div className="ml-auto flex items-center">
+			<div className="ml-auto hidden items-center md:flex">
 				<KeyboardShortcutsHelp iconOnly />
 			</div>
 

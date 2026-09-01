@@ -20,6 +20,7 @@
 	"dependencies": {
 		"@ai-sdk/google": "^4.0.47",
 		"@base-ui/react": "^1.7.0",
+		"@clerk/localizations": "4.15.8",
 		"@clerk/nextjs": "^7.7.9",
 		"@convex-dev/migrations": "^0.3.6",
 		"@daypicker/react": "^10.0.1",

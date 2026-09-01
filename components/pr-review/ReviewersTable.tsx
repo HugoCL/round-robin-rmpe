@@ -208,9 +208,9 @@ export function ReviewersTable({
 								</div>
 								<div className="min-w-0 flex-1">
 									<div className="flex min-w-0 items-baseline gap-1.5">
-										<h4 className="min-w-0 truncate text-sm font-medium leading-none">
+										<h3 className="min-w-0 truncate text-sm font-medium leading-none">
 											{reviewer.name}
-										</h4>
+										</h3>
 										{isBirthdayToday ? (
 											<WithTooltip label={t("birthday.todayTooltip")}>
 												<span className="shrink-0 self-center text-xs leading-none">
@@ -284,7 +284,7 @@ export function ReviewersTable({
 											<button
 												type="button"
 												className={cn(
-													"min-w-7 rounded-md px-1.5 py-1 text-sm font-medium tabular-nums text-muted-foreground",
+													"group/count inline-flex items-baseline gap-1 rounded-md px-1.5 py-1 text-muted-foreground",
 													canEdit
 														? "hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 														: "cursor-default",
@@ -300,7 +300,12 @@ export function ReviewersTable({
 														: t("pr.assignmentsHeader")
 												}
 											>
-												{reviewer.assignmentCount}
+												<span className="text-sm font-medium tabular-nums">
+													{reviewer.assignmentCount}
+												</span>
+												<span className="text-[10px] font-normal text-muted-foreground/75">
+													{t("pr.assignmentsUnit")}
+												</span>
 											</button>
 										</WithTooltip>
 									)}

@@ -20,7 +20,10 @@
 		"viaAgent": "Asignados vía agente",
 		"urgent": "Urgentes",
 		"crossTeam": "Entre equipos",
-		"scopeNote": "El total histórico viene de appMetrics. La actividad reciente usa los 7 días de historial de asignaciones que conserva La Lista."
+		"scopeNote": "El total histórico incluye todos los PRs coordinados desde el inicio. La actividad reciente usa los 7 días de historial de asignaciones que conserva La Lista.",
+		"emptyWeekTitle": "Todavía no hay asignaciones esta semana",
+		"emptyWeekDescription": "En cuanto alguien asigne un PR, la actividad de los últimos 7 días aparece acá.",
+		"breakdownLabel": "Desglose"
 	},
 	"common": {
 		"save": "Guardar",
@@ -242,7 +245,14 @@
 		"noPrLink": "Sin enlace de PR",
 		"unknownUser": "Desconocido",
 		"teamPrsThisWeek": "PRs del equipo esta semana",
-		"teamPrsThisWeekAria": "PRs del equipo esta semana: {count}"
+		"teamPrsThisWeekAria": "PRs del equipo esta semana: {count}",
+		"assignDisabledNeedsUrl": "Pega la URL del PR para asignar.",
+		"assignDisabledNeedsTag": "Elige un tag para asignar.",
+		"assignDisabledNeedsTeams": "Elige al menos un equipo destino.",
+		"assignDisabledNoReviewer": "No hay revisores disponibles para asignar.",
+		"prUrlInvalid": "Esa URL no parece un pull request. Pega el enlace completo, por ejemplo https://github.com/equipo/repo/pull/123",
+		"prUrlRecognized": "{repo} · PR #{number}",
+		"assignmentsUnit": "PRs"
 	},
 	"tags": {
 		"title": "Tags",
@@ -274,7 +284,9 @@
 		"tagBasedAssignment": "Asignación Basada en Tags",
 		"tagBasedDescription": "Selecciona un tag para asignar el PR al siguiente revisor en esa área específica.",
 		"next": "Siguiente",
-		"assigning": "Asignando…"
+		"assigning": "Asignando…",
+		"heroNoTagTitle": "Elige un tag para ver a quién le toca",
+		"heroNoTagHint": "Cada tag lleva su propia rotación, aparte de la general."
 	},
 	"reviewer": {
 		"addNew": "Agregar Nuevo Revisor",
@@ -624,7 +636,9 @@
 		"changesAutoSaved": "Los cambios se guardarán automáticamente mientras los realices",
 		"export": "Exportar",
 		"import": "Importar",
-		"restore": "Restaurar"
+		"restore": "Restaurar",
+		"entryPrLabel": "PR #{number}",
+		"entryNoPr": "Sin PR enlazado"
 	},
 	"googleChat": {
 		"greeting": "Hola {reviewer} 👋",
@@ -677,7 +691,10 @@
 		"onlyAvailable": "Solo funciona cuando hay un revisor disponible",
 		"alwaysAvailable": "Siempre disponible",
 		"note": "Nota:",
-		"globalNote": "Los atajos de teclado funcionan globalmente cuando esta página está activa. Algunos atajos solo están disponibles cuando hay un siguiente revisor disponible."
+		"globalNote": "Los atajos funcionan cuando el foco no está dentro de un campo de texto. Asignar y omitir solo están disponibles cuando hay un siguiente revisor.",
+		"focusPrUrl": "Ir al campo de la URL del PR",
+		"showHelp": "Mostrar estos atajos",
+		"anywhere": "Funciona desde cualquier parte de la página"
 	},
 	"language": {
 		"switch": "Cambiar Idioma",
@@ -1057,7 +1074,6 @@
 		"unavailable": "No disponible",
 		"partTimeOff": "Hoy no te toca (horario parcial)",
 		"youAreNext": "Te toca el siguiente",
-		"outOfPool": "Fuera de la rotación general",
 		"lastPrs": "Último",
 		"lastReceived": "Último PR recibido",
 		"lastSent": "Último PR enviado",
@@ -1171,6 +1187,8 @@
 			"unavailableTitle": "Resultados no disponibles",
 			"unavailableDescription": "Esta encuesta aún no está publicada, o el link no es válido.",
 			"privacyNote": "Los comentarios son anónimos. En esta página no se muestran identidades."
-		}
+		},
+		"adminOnlyDescription": "Esta sección es para administradores de La Lista. Pide acceso a quien coordina el equipo.",
+		"adminUnauthorizedDescription": "Esta sección es para administradores de La Lista. Pide acceso a quien coordina tu equipo."
 	}
 }

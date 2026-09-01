@@ -250,14 +250,14 @@ export function FeedHistory({
 						)}
 					>
 						<History className="text-muted-foreground" aria-hidden="true" />
-						<h4
+						<h2
 							className={cn(
 								"text-lg font-semibold lg:text-xl",
 								!open && "lg:[writing-mode:vertical-rl] lg:text-sm",
 							)}
 						>
 							{t("pr.history")}
-						</h4>
+						</h2>
 						{!open ? (
 							<Badge
 								variant="secondary"
@@ -369,13 +369,20 @@ export function FeedHistory({
 											>
 												<div className="flex flex-wrap items-start justify-between gap-2">
 													<div className="min-w-0">
-														<h5 className="truncate text-base font-semibold text-primary">
+														<h3 className="truncate text-base font-semibold text-primary">
 															{item.reviewerCount === 1
 																? item.reviewers[0]?.reviewerName
 																: t("history.assigneesCount", {
 																		count: item.reviewerCount,
 																	})}
-														</h5>
+														</h3>
+														<p className="mt-0.5 font-mono text-xs text-muted-foreground">
+															{prNumber
+																? t("history.entryPrLabel", {
+																		number: prNumber,
+																	})
+																: t("history.entryNoPr")}
+														</p>
 														<p className="mt-0.5 text-xs text-muted-foreground">
 															{new Intl.DateTimeFormat(locale, {
 																day: "numeric",
@@ -486,7 +493,7 @@ export function FeedHistory({
 																		<Button
 																			variant="ghost"
 																			size="icon-xs"
-																			className="ml-auto text-muted-foreground hover:text-destructive"
+																			className="text-muted-foreground hover:text-destructive"
 																			aria-label={t("history.undoAction")}
 																		>
 																			<Undo2 aria-hidden="true" />

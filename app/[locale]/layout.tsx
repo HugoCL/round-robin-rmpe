@@ -14,7 +14,10 @@ export async function generateMetadata({ params }: Props) {
 	const t = await getTranslations({ locale });
 
 	return {
-		title: t("title"),
+		title: {
+			default: "La Lista",
+			template: "%s · La Lista",
+		},
 		description: t("description"),
 	};
 }

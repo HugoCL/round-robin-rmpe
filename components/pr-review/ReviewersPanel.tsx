@@ -126,14 +126,14 @@ export function ReviewersPanel({
 								)}
 							>
 								<Users className="text-muted-foreground" aria-hidden="true" />
-								<h4
+								<h2
 									className={cn(
 										"text-lg font-semibold lg:text-xl",
 										!open && "lg:[writing-mode:vertical-rl] lg:text-sm",
 									)}
 								>
 									{t("pr.reviewers")}
-								</h4>
+								</h2>
 								{open ? null : (
 									<Badge
 										variant="secondary"

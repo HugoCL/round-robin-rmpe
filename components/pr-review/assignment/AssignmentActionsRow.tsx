@@ -23,6 +23,8 @@ import {
 type AssignmentActionsRowProps = {
 	isAssigning: boolean;
 	isAssignDisabled: boolean;
+	/** Why the primary action is unavailable, shown next to the disabled button. */
+	blockedReason?: string | null;
 	liveSummary: string;
 	onAssign: () => Promise<void>;
 	onUndoAssignment: () => Promise<void>;
@@ -31,6 +33,7 @@ type AssignmentActionsRowProps = {
 export function AssignmentActionsRow({
 	isAssigning,
 	isAssignDisabled,
+	blockedReason,
 	liveSummary,
 	onAssign,
 	onUndoAssignment,
@@ -45,10 +48,23 @@ export function AssignmentActionsRow({
 				</p>
 			)}
 
+			{!liveSummary && blockedReason ? (
+				<p
+					id="assignment-blocked-reason"
+					className="text-sm text-muted-foreground"
+					aria-live="polite"
+				>
+					{blockedReason}
+				</p>
+			) : null}
+
 			<div className="flex items-center gap-3">
 				<Button
 					onClick={() => void onAssign()}
 					disabled={isAssignDisabled}
+					aria-describedby={
+						blockedReason ? "assignment-blocked-reason" : undefined
+					}
 					className="h-12 flex-1 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 					size="lg"
 				>

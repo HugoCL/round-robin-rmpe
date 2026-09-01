@@ -9,7 +9,7 @@ import {
 	Users,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,8 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
+import type { ParsedPrUrl } from "@/lib/prUrl";
 import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
@@ -108,7 +110,16 @@ type AssignmentControlsPanelProps = {
 		reviewerName: string;
 		timestamp: number;
 	} | null;
+	parsedPrUrl: ParsedPrUrl | null;
+	hasPrUrlError: boolean;
 };
+
+/**
+ * The selected mode is marked with a tinted surface, not a solid primary fill:
+ * "Assign PR" is the only primary action on the panel.
+ */
+const assignmentModeTabActive =
+	"border-primary/40 bg-primary/12 text-primary hover:bg-primary/16 hover:text-primary";
 
 const assignmentChipActivePrimary =
 	"aria-pressed:bg-primary aria-pressed:border-primary aria-pressed:text-primary-foreground hover:aria-pressed:bg-primary/95";
@@ -152,6 +163,8 @@ export function AssignmentControlsPanel({
 	activeNextReviewer,
 	showDuplicateAlert,
 	duplicateAssignment,
+	parsedPrUrl,
+	hasPrUrlError,
 }: AssignmentControlsPanelProps) {
 	const t = useTranslations();
 	const resolvedNamesForMessage = resolvedPreview.resolved
@@ -160,17 +173,36 @@ export function AssignmentControlsPanel({
 	const [showContextInput, setShowContextInput] = useState(
 		contextUrl.trim().length > 0,
 	);
+	const prUrlInputRef = useRef<HTMLInputElement>(null);
+
+	// Land keyboard focus on the one field the flow starts with, but only where
+	// there is a real pointer — on touch this would pop the keyboard on arrival.
+	useEffect(() => {
+		if (!window.matchMedia("(pointer: fine)").matches) return;
+		const active = document.activeElement;
+		if (active && active !== document.body) return;
+		prUrlInputRef.current?.focus();
+	}, []);
 
 	return (
-		<div className="flex flex-col gap-3 lg:gap-4">
+		<div className="@container flex flex-col gap-3 lg:gap-4">
 			{tags.length > 0 && (
 				<div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-muted/18 p-2 sm:gap-3 sm:p-3 lg:p-4">
-					<div className="grid grid-cols-2 gap-2">
+					<div
+						className="grid grid-cols-2 gap-2"
+						role="tablist"
+						aria-label={t("pr.assignmentModeRegular")}
+					>
 						<Button
-							variant={mode === "regular" ? "default" : "outline"}
+							variant="outline"
 							size="sm"
+							role="tab"
+							aria-selected={mode === "regular"}
 							onClick={() => onModeChange("regular")}
-							className="h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+							className={cn(
+								"h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+								mode === "regular" && assignmentModeTabActive,
+							)}
 						>
 							<span className="sm:hidden">
 								{t("pr.assignmentModeRegularShort")}
@@ -180,10 +212,15 @@ export function AssignmentControlsPanel({
 							</span>
 						</Button>
 						<Button
-							variant={mode === "tag" ? "default" : "outline"}
+							variant="outline"
 							size="sm"
+							role="tab"
+							aria-selected={mode === "tag"}
 							onClick={() => onModeChange("tag")}
-							className="h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+							className={cn(
+								"h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+								mode === "tag" && assignmentModeTabActive,
+							)}
 						>
 							<span className="sm:hidden">
 								{t("pr.assignmentModeWithTagsShort")}
@@ -227,21 +264,35 @@ export function AssignmentControlsPanel({
 			)}
 
 			<Field>
-				<FieldLabel htmlFor="assignment-pr-url" className="sr-only">
+				<FieldLabel htmlFor={PR_URL_INPUT_ID} className="sr-only">
 					{t("googleChat.prUrlLabel")}
 				</FieldLabel>
-				<InputGroup className="h-12 rounded-2xl bg-background/70">
+				<InputGroup
+					className={cn(
+						"h-12 rounded-2xl bg-background/70",
+						hasPrUrlError && "border-destructive",
+					)}
+				>
 					<InputGroupAddon align="inline-start">
 						<Link2 className="h-5 w-5" aria-hidden="true" />
 					</InputGroupAddon>
 					<InputGroupInput
-						id="assignment-pr-url"
+						id={PR_URL_INPUT_ID}
+						ref={prUrlInputRef}
 						placeholder={t("placeholders.pastePrUrl")}
 						value={prUrl}
 						onChange={(event) => onPrUrlChange(event.target.value)}
 						onBlur={() => void onPrUrlBlur()}
 						required
 						aria-required="true"
+						aria-invalid={hasPrUrlError || undefined}
+						aria-describedby={
+							hasPrUrlError
+								? "assignment-pr-url-error"
+								: parsedPrUrl
+									? "assignment-pr-url-parsed"
+									: undefined
+						}
 						autoComplete="off"
 						inputMode="url"
 						spellCheck={false}
@@ -268,6 +319,24 @@ export function AssignmentControlsPanel({
 						</InputGroupButton>
 					</InputGroupAddon>
 				</InputGroup>
+				{hasPrUrlError ? (
+					<p
+						id="assignment-pr-url-error"
+						className="text-xs text-destructive lg:text-sm"
+					>
+						{t("pr.prUrlInvalid")}
+					</p>
+				) : parsedPrUrl ? (
+					<p
+						id="assignment-pr-url-parsed"
+						className="font-mono text-xs text-muted-foreground"
+					>
+						{t("pr.prUrlRecognized", {
+							repo: parsedPrUrl.repo,
+							number: parsedPrUrl.number,
+						})}
+					</p>
+				) : null}
 			</Field>
 
 			{showContextInput && (
@@ -292,7 +361,14 @@ export function AssignmentControlsPanel({
 				</Field>
 			)}
 
-			<div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:gap-3 2xl:gap-4">
+			<div
+				className={cn(
+					"grid grid-cols-2 gap-2 lg:gap-3 2xl:gap-4",
+					hideMultiAssignmentSection
+						? "@[34rem]:grid-cols-4"
+						: "@[34rem]:grid-cols-3 @[54rem]:grid-cols-5",
+				)}
+			>
 				{!hideMultiAssignmentSection && (
 					<TooltipProvider>
 						<Tooltip>
@@ -306,25 +382,25 @@ export function AssignmentControlsPanel({
 									onValueChange={(value) =>
 										onMultiAssignmentToggle(value.includes("multi-assignment"))
 									}
-									className="inline-flex w-full max-w-full sm:w-auto"
+									className="inline-flex w-full max-w-full"
 								>
 									<ToggleGroupItem
 										value="multi-assignment"
 										aria-label={t("pr.multipleAssignmentToggleLabel")}
 										className={cn(
-											"h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:w-auto sm:px-3 lg:h-11 lg:px-4 lg:text-sm",
+											"h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:px-3 lg:h-11 lg:px-4 lg:text-sm",
 											isMultiAssignmentEnabled &&
 												assignmentGroupItemActivePrimary,
 										)}
 									>
-										<div className="inline-flex items-center gap-2.5">
+										<div className="inline-flex min-w-0 items-center gap-2.5">
 											<span className="inline-flex size-4 items-center justify-center">
 												<Users
 													className="h-4 w-4 shrink-0"
 													aria-hidden="true"
 												/>
 											</span>
-											<span className="leading-none">
+											<span className="truncate leading-none">
 												{t("pr.multipleAssignmentToggleShort")}
 											</span>
 										</div>
@@ -338,7 +414,7 @@ export function AssignmentControlsPanel({
 					</TooltipProvider>
 				)}
 
-				<section className="w-full max-w-full sm:w-auto">
+				<section className="w-full max-w-full">
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
@@ -348,16 +424,16 @@ export function AssignmentControlsPanel({
 											<Button
 												variant="outline"
 												size="sm"
-												className="h-10 w-full max-w-full rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:w-auto sm:px-3 lg:h-11 lg:px-4 lg:text-sm"
+												className="h-10 w-full max-w-full rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:px-3 lg:h-11 lg:px-4 lg:text-sm"
 											>
-												<div className="inline-flex items-center gap-2.5">
+												<div className="inline-flex min-w-0 items-center gap-2.5">
 													<span className="inline-flex size-4 items-center justify-center">
 														<UserCheck
 															className="h-4 w-4 shrink-0"
 															aria-hidden="true"
 														/>
 													</span>
-													<span className="leading-none">
+													<span className="truncate leading-none">
 														{t("pr.forceAssignShort")}
 													</span>
 												</div>
@@ -387,12 +463,14 @@ export function AssignmentControlsPanel({
 								size="sm"
 								aria-label={t("googleChat.customizeToggle")}
 								className={cn(
-									"col-span-2 h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-colors duration-150 sm:w-auto lg:h-11 lg:px-4 lg:text-sm",
+									"h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm",
 									enableCustomMessage && assignmentChipActivePrimary,
 								)}
 							>
 								<MessageSquare data-icon="inline-start" />
-								{t("googleChat.customizeToggle")}
+								<span className="truncate leading-none">
+									{t("googleChat.customizeToggle")}
+								</span>
 							</Toggle>
 						</TooltipTrigger>
 						<TooltipContent className="max-w-64 text-xs">
@@ -401,7 +479,7 @@ export function AssignmentControlsPanel({
 					</Tooltip>
 				</TooltipProvider>
 
-				<section className="w-full max-w-full sm:w-auto">
+				<section className="w-full max-w-full">
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
@@ -413,18 +491,18 @@ export function AssignmentControlsPanel({
 									size="sm"
 									aria-label={t("googleChat.urgentToggle")}
 									className={cn(
-										"h-10 w-full max-w-full cursor-pointer rounded-full border-red-200/80 bg-transparent px-2 text-xs text-red-700 transition-colors duration-150 sm:w-auto sm:px-3 lg:h-11 lg:px-4 lg:text-sm dark:border-red-900/50 dark:text-red-300",
+										"h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:px-3 lg:h-11 lg:px-4 lg:text-sm",
 										urgent && assignmentChipActiveUrgent,
 									)}
 								>
-									<div className="inline-flex items-center gap-2.5">
+									<div className="inline-flex min-w-0 items-center gap-2.5">
 										<span className="inline-flex size-4 items-center justify-center">
 											<AlertTriangle
 												className="h-4 w-4 shrink-0"
 												aria-hidden="true"
 											/>
 										</span>
-										<span className="leading-none">
+										<span className="truncate leading-none">
 											{t("googleChat.urgentToggle")}
 										</span>
 									</div>
@@ -437,7 +515,7 @@ export function AssignmentControlsPanel({
 					</TooltipProvider>
 				</section>
 
-				<section className="w-full max-w-full sm:w-auto">
+				<section className="w-full max-w-full">
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
@@ -449,15 +527,15 @@ export function AssignmentControlsPanel({
 									size="sm"
 									aria-label={t("googleChat.crossTeamToggle")}
 									className={cn(
-										"h-10 w-full max-w-full cursor-pointer rounded-full border-sky-200/80 bg-transparent px-2 text-xs text-sky-700 transition-colors duration-150 sm:w-auto sm:px-3 lg:h-11 lg:px-4 lg:text-sm dark:border-sky-900/50 dark:text-sky-300",
+										"h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:px-3 lg:h-11 lg:px-4 lg:text-sm",
 										crossTeamReview && assignmentChipActiveCrossTeam,
 									)}
 								>
-									<div className="inline-flex items-center gap-2.5">
+									<div className="inline-flex min-w-0 items-center gap-2.5">
 										<span className="inline-flex size-4 items-center justify-center">
 											<Globe2 className="h-4 w-4 shrink-0" aria-hidden="true" />
 										</span>
-										<span className="leading-none">
+										<span className="truncate leading-none">
 											{t("googleChat.crossTeamToggleShort")}
 										</span>
 									</div>

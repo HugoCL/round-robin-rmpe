@@ -103,11 +103,11 @@ export default function Page() {
 								)}
 							</div>
 
-							<div className="flex flex-wrap items-center gap-3">
+							<div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
 								<Button
 									asChild
 									size="lg"
-									className="min-h-11 rounded-full px-5"
+									className="min-h-11 w-full rounded-full px-5 sm:w-auto"
 								>
 									<Link href={`/${locale}/create-team`}>
 										<Plus className="h-4 w-4" />
@@ -118,7 +118,7 @@ export default function Page() {
 									asChild
 									variant="outline"
 									size="lg"
-									className="min-h-11 rounded-full border-border/70 bg-background/70 px-5"
+									className="min-h-11 w-full rounded-full border-border/70 bg-background/70 px-5 sm:w-auto"
 								>
 									<Link href={`/${locale}/suggestions`}>
 										<Lightbulb className="h-4 w-4" />

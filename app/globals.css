@@ -273,6 +273,24 @@
 	will-change: transform;
 }
 
+.landing-ticker-mask {
+	/* Fixed-width fade so the edge reads the same on a phone and a wide monitor. */
+	-webkit-mask-image: linear-gradient(
+		90deg,
+		transparent 0,
+		#000 3rem,
+		#000 calc(100% - 3rem),
+		transparent 100%
+	);
+	mask-image: linear-gradient(
+		90deg,
+		transparent 0,
+		#000 3rem,
+		#000 calc(100% - 3rem),
+		transparent 100%
+	);
+}
+
 .landing-ticker[data-paused="true"] .landing-ticker-track,
 .landing-ticker:hover .landing-ticker-track {
 	animation-play-state: paused;

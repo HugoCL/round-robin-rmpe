@@ -31,8 +31,8 @@ export function PageHeader({ teamSlug }: PageHeaderProps) {
 	const agentSetupOpen = useAgentSetupDialogOpen();
 
 	return (
-		<header className="sticky top-0 z-40">
-			<div className="bg-background/95 py-4 backdrop-blur-sm">
+		<header className="sticky top-0 z-40 bg-background/95 pb-px backdrop-blur-sm">
+			<div className="py-4">
 				<div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
 					<div className="flex flex-wrap items-center gap-2 sm:gap-3">
 						<div className="mr-auto flex w-full min-w-0 items-center gap-2 sm:w-auto sm:gap-3">

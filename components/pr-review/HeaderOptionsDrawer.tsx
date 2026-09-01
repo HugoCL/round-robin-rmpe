@@ -110,7 +110,7 @@ export function HeaderOptionsDrawer() {
 			</section>
 
 			<section className="calm-subtle-panel p-4">
-				<div className="grid items-start gap-4 sm:grid-cols-2">
+				<div className="grid items-start gap-5">
 					<div className="flex flex-col gap-3">
 						<h3 className="flex items-center gap-2 text-sm font-semibold">
 							<Clock className="h-4 w-4 text-primary" />
@@ -253,15 +253,17 @@ export function HeaderOptionsDrawer() {
 		<>
 			{triggerButton}
 			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent className="max-h-[85vh] overflow-y-auto overscroll-contain sm:max-w-5xl">
-					<DialogHeader>
+				<DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl">
+					<DialogHeader className="shrink-0 border-b border-border/60 pb-4">
 						<DialogTitle>{t("common.options")}</DialogTitle>
 						<DialogDescription>
 							{t("common.optionsDescription")}
 						</DialogDescription>
 					</DialogHeader>
-					{bodyContent}
-					<DialogFooter>
+					<div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 py-1">
+						{bodyContent}
+					</div>
+					<DialogFooter className="shrink-0 border-t border-border/60 pt-4">
 						<DialogClose asChild>{footerAction}</DialogClose>
 					</DialogFooter>
 				</DialogContent>

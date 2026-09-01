@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { focusPrUrlInput, isTypingTarget } from "@/lib/assignmentFocus";
 
 interface KeyboardShortcutsProps {
 	onAssignPR: (opts?: {
@@ -27,6 +28,12 @@ interface KeyboardShortcutsProps {
 	) => void;
 }
 
+/**
+ * Single-key shortcuts, active only while focus is outside a field.
+ *
+ * They deliberately avoid Ctrl/Cmd combinations: the previous bindings shadowed
+ * select-all, save and undo, including undo inside the PR URL field itself.
+ */
 export function useKeyboardShortcuts({
 	onAssignPR,
 	onSkipReviewer,
@@ -36,13 +43,20 @@ export function useKeyboardShortcuts({
 }: KeyboardShortcutsProps) {
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
-			// Check if Ctrl (Windows/Linux) or Cmd (Mac) is pressed
-			const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+			if (event.ctrlKey || event.metaKey || event.altKey) return;
 
-			if (!isCtrlOrCmd) return;
+			const key = event.key.toLowerCase();
 
-			// Prevent default browser behavior for our shortcuts
-			switch (event.key.toLowerCase()) {
+			// "/" jumps to the PR URL field from anywhere outside a field: it is the
+			// first step of the flow and used to take half a dozen tabs to reach.
+			if (key === "/" && !isTypingTarget(event.target)) {
+				if (focusPrUrlInput()) event.preventDefault();
+				return;
+			}
+
+			if (isTypingTarget(event.target)) return;
+
+			switch (key) {
 				case "a":
 					if (isNextReviewerAvailable) {
 						event.preventDefault();
@@ -71,7 +85,7 @@ export function useKeyboardShortcuts({
 						void run();
 					}
 					break;
-				case "z": {
+				case "u": {
 					event.preventDefault();
 					const runUndo = () => {
 						return onUndoAssignment();

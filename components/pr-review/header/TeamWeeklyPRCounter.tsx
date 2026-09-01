@@ -92,14 +92,14 @@ export function TeamWeeklyPRCounter({ teamSlug }: { teamSlug?: string }) {
 
 	return (
 		<span
-			className="inline-flex items-center gap-2 text-sm text-muted-foreground"
+			className="hidden items-center gap-2 text-sm text-muted-foreground sm:inline-flex"
 			aria-live="polite"
 			aria-label={t("pr.teamPrsThisWeekAria", {
 				count: formattedCount,
 			})}
 		>
 			<CalendarDays className="h-5 w-5 shrink-0" aria-hidden="true" />
-			<span className="hidden sm:inline">{t("pr.teamPrsThisWeek")}</span>
+			<span>{t("pr.teamPrsThisWeek")}</span>
 			<span className="font-semibold text-foreground tabular-nums" aria-hidden>
 				{formattedCharacters.map((item) => {
 					const character = item.character;

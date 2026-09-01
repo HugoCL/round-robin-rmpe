@@ -63,7 +63,7 @@ export default function CreateTeamForm() {
 
 	return (
 		<section className="calm-shell w-full max-w-3xl overflow-hidden">
-			<div className="grid gap-0 lg:grid-cols-[0.82fr_minmax(0,1.18fr)]">
+			<div className="grid gap-0 lg:grid-cols-[0.75fr_minmax(0,1.25fr)]">
 				<div className="bg-muted/25 px-6 py-8 md:px-8 md:py-10">
 					<p className="calm-kicker">La Lista</p>
 					<h1 className="mt-3 text-3xl font-semibold tracking-tight">
@@ -72,14 +72,6 @@ export default function CreateTeamForm() {
 					<p className="mt-3 max-w-sm text-sm leading-7 text-muted-foreground">
 						{t("team.formDescription")}
 					</p>
-					<div className="mt-8 rounded-2xl border border-border/60 bg-background/72 px-4 py-4">
-						<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-							{t("team.slugLabel")}
-						</p>
-						<p className="mt-2 font-mono text-sm text-foreground">
-							/{derivedSlug || "..."}
-						</p>
-					</div>
 				</div>
 				<div className="px-6 py-8 md:px-8 md:py-10">
 					<form onSubmit={onSubmit} className="space-y-5">
@@ -102,12 +94,14 @@ export default function CreateTeamForm() {
 								onChange={(e) => setSlug(e.target.value)}
 								className="calm-input-surface h-12"
 							/>
-							<p className="text-xs text-muted-foreground">
-								{t("team.slugWillUsePrefix")}{" "}
-								<span className="font-mono text-foreground">
-									{derivedSlug || ""}
-								</span>
-							</p>
+							{derivedSlug ? (
+								<p className="text-xs text-muted-foreground">
+									{t("team.slugWillUsePrefix")}{" "}
+									<span className="font-mono text-foreground">
+										/{derivedSlug}
+									</span>
+								</p>
+							) : null}
 						</div>
 						{error && (
 							<p className="text-sm text-destructive" role="alert">

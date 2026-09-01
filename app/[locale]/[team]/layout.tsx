@@ -17,14 +17,14 @@ export async function generateMetadata({ params }: Props) {
 
 	if (team?.name) {
 		return {
-			title: `${team.name} ${t("pr.title")}`,
+			title: team.name,
 			description: t("description"),
 		};
 	}
 
-	// Fallback: just "PR Review" / "Revisión PR" without team prefix
+	// Fallback when the team can't be resolved: the brand alone.
 	return {
-		title: t("pr.title"),
+		title: { absolute: "La Lista" },
 		description: t("description"),
 	};
 }

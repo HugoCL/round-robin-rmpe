@@ -3,6 +3,7 @@ import { List } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { generateMotivationalQuote } from "@/app/actions/generateMotivationalQuote";
+import { clerkAppearance } from "@/lib/clerkAppearance";
 import { getRandomPhoto } from "@/lib/unsplash";
 
 export default async function LoginPage({
@@ -78,33 +79,7 @@ export default async function LoginPage({
 					<div className="w-full max-w-sm">
 						<SignIn
 							signUpUrl={`/${locale}/sign-up`}
-							appearance={{
-								variables: {
-									colorBackground: "transparent",
-									colorPrimary: "var(--primary)",
-									colorPrimaryForeground: "var(--primary-foreground)",
-									colorForeground: "var(--foreground)",
-									colorMutedForeground: "var(--muted-foreground)",
-									colorInput: "var(--muted)",
-									colorInputForeground: "var(--foreground)",
-									colorBorder: "var(--border)",
-									colorRing: "var(--ring)",
-									borderRadius: "0.75rem",
-								},
-								elements: {
-									rootBox: "w-full",
-									cardBox:
-										"w-full rounded-3xl !shadow-[0_24px_80px_-40px_rgba(15,23,42,0.45)] dark:!shadow-[0_24px_80px_-36px_rgba(0,0,0,0.75)]",
-									card: "w-full border-0 !bg-transparent p-0 !shadow-none",
-									header: "items-start text-left",
-									headerTitle:
-										"font-display text-2xl font-semibold tracking-tight",
-									headerSubtitle: "text-left",
-									socialButtonsBlockButton: "!shadow-none",
-									formButtonPrimary: "rounded-full !shadow-none",
-									footer: "!bg-none !bg-transparent",
-								},
-							}}
+							appearance={clerkAppearance}
 						/>
 					</div>
 				</div>

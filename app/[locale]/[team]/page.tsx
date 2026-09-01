@@ -32,7 +32,7 @@ export default function TeamPage() {
 		return (
 			<div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4 py-10">
 				<div className="calm-section page-enter max-w-xl text-center">
-					<p className="calm-kicker">{t("pr.title")}</p>
+					<p className="calm-kicker">La Lista</p>
 					<h2 className="text-xl font-semibold">{t("common.loading")}</h2>
 					<p className="text-muted-foreground">{t("pr.loadingPleaseWait")}</p>
 				</div>
@@ -48,7 +48,7 @@ export default function TeamPage() {
 		return (
 			<div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4 py-10">
 				<div className="calm-section page-enter max-w-xl text-center space-y-3">
-					<p className="calm-kicker">{t("pr.title")}</p>
+					<p className="calm-kicker">La Lista</p>
 					<h1 className="text-2xl font-semibold">{t("onboarding.title")}</h1>
 					<p className="text-muted-foreground">
 						{t("onboarding.teamRequiredDescription")}
@@ -76,7 +76,7 @@ export default function TeamPage() {
 		return (
 			<div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4 py-10">
 				<div className="calm-section page-enter max-w-xl text-center">
-					<p className="calm-kicker">{t("pr.title")}</p>
+					<p className="calm-kicker">La Lista</p>
 					<h1 className="text-3xl font-bold">{t("team.notFoundTitle")}</h1>
 					<p className="text-muted-foreground">
 						{t.rich("team.notFoundDescription", {

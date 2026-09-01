@@ -62,7 +62,7 @@ export default function OnboardingPage() {
 		return (
 			<div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4 py-10">
 				<div className="calm-section page-enter max-w-xl text-center">
-					<p className="calm-kicker">{t("pr.title")}</p>
+					<p className="calm-kicker">La Lista</p>
 					<h2 className="text-xl font-semibold">{t("common.loading")}</h2>
 					<p className="text-muted-foreground">{t("pr.loadingPleaseWait")}</p>
 				</div>

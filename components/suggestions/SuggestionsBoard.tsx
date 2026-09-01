@@ -1,10 +1,10 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Lightbulb } from "lucide-react";
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { SecondaryPageNav } from "@/components/SecondaryPageNav";
 import { SuggestionCard } from "@/components/suggestions/SuggestionCard";
 import { SuggestionComposer } from "@/components/suggestions/SuggestionComposer";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 type SuggestionStatus = "open" | "planned" | "completed";
 type SuggestionSort = "top" | "new";
 
 const statuses: SuggestionStatus[] = ["open", "planned", "completed"];
+
+/** Selected sort is marked with a tint, not a solid primary fill. */
+const sortActive =
+	"border-primary/40 bg-primary/12 text-primary hover:bg-primary/16 hover:text-primary";
 
 export function SuggestionsBoard() {
 	const t = useTranslations();
@@ -27,10 +32,13 @@ export function SuggestionsBoard() {
 		null,
 	);
 
-	const suggestionsBoard = useQuery(api.suggestions.listSuggestionsBoard, {
-		sort,
-		limitPerStatus: 50,
-	});
+	// The board requires an identity, so it waits for Clerk's token rather than
+	// firing unauthenticated on a cold page load.
+	const { isAuthenticated } = useConvexAuth();
+	const suggestionsBoard = useQuery(
+		api.suggestions.listSuggestionsBoard,
+		isAuthenticated ? { sort, limitPerStatus: 50 } : "skip",
+	);
 
 	const handleToggleVote = async (suggestionId: Id<"suggestions">) => {
 		setVotingSuggestionId(suggestionId);
@@ -47,109 +55,115 @@ export function SuggestionsBoard() {
 	};
 
 	return (
-		<div className="container mx-auto max-w-6xl px-4 py-8">
-			<div className="space-y-6">
-				<section className="page-enter-soft calm-shell px-5 py-7 md:px-7 md:py-8">
-					<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] lg:items-end">
-						<div className="space-y-3">
-							<div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-								<Lightbulb className="h-4 w-4" />
-								{t("suggestions.title")}
+		<>
+			<SecondaryPageNav />
+			<div className="container mx-auto max-w-6xl px-4 py-8">
+				<div className="space-y-6">
+					<section className="page-enter-soft calm-shell px-5 py-7 md:px-7 md:py-8">
+						<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] lg:items-end">
+							<div className="space-y-3">
+								<div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
+									<Lightbulb className="h-4 w-4" />
+									{t("suggestions.title")}
+								</div>
+								<h1 className="text-3xl font-semibold tracking-tight md:text-5xl">
+									{t("suggestions.heading")}
+								</h1>
+								<p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
+									{t("suggestions.description")}
+								</p>
 							</div>
-							<h1 className="text-3xl font-semibold tracking-tight md:text-5xl">
-								{t("suggestions.heading")}
-							</h1>
-							<p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-								{t("suggestions.description")}
-							</p>
-						</div>
-						<div className="flex flex-wrap items-center gap-2 lg:justify-end">
-							<Button
-								type="button"
-								variant={sort === "top" ? "default" : "outline"}
-								onClick={() => setSort("top")}
-								className="rounded-full px-5"
+							<div
+								className="flex flex-wrap items-center gap-2 lg:justify-end"
+								role="group"
+								aria-label={t("suggestions.sort.top")}
 							>
-								{t("suggestions.sort.top")}
-							</Button>
-							<Button
-								type="button"
-								variant={sort === "new" ? "default" : "outline"}
-								onClick={() => setSort("new")}
-								className="rounded-full px-5"
-							>
-								{t("suggestions.sort.new")}
-							</Button>
-							<Button asChild variant="outline" className="rounded-full px-5">
-								<Link href={`/${locale}`}>{t("suggestions.backHome")}</Link>
-							</Button>
-						</div>
-					</div>
-				</section>
-
-				<section className="page-enter">
-					<SuggestionComposer />
-				</section>
-
-				<section className="page-enter space-y-4">
-					<div className="space-y-1">
-						<p className="calm-kicker">{t("suggestions.title")}</p>
-						<h2 className="text-2xl font-semibold tracking-tight">
-							{t("suggestions.heading")}
-						</h2>
-					</div>
-					{suggestionsBoard === undefined ? (
-						<SuggestionsBoardSkeleton />
-					) : (
-						<div className="grid gap-4 lg:grid-cols-3 lg:items-start">
-							{statuses.map((status) => (
-								<section key={status} className="calm-section">
-									<div className="calm-section-header pb-3">
-										<div>
-											<h3 className="text-base font-semibold">
-												{t(`suggestions.status.${status}`)}
-											</h3>
-										</div>
-										<div className="rounded-full border border-border/70 bg-background/75 px-2.5 py-1 text-sm font-medium">
-											{suggestionsBoard[status].length}
-										</div>
-									</div>
-
-									{suggestionsBoard[status].length === 0 ? (
-										<div className="rounded-2xl border border-dashed border-border/70 bg-muted/16 p-4 space-y-1">
-											<p className="font-medium">
-												{t("suggestions.emptyTitle")}
-											</p>
-											<p className="text-sm text-muted-foreground">
-												{t("suggestions.emptyDescription")}
-											</p>
-										</div>
-									) : (
-										<div className="calm-list">
-											{suggestionsBoard[status].map((suggestion) => (
-												<SuggestionCard
-													key={suggestion._id}
-													suggestion={suggestion}
-													locale={locale}
-													voting={votingSuggestionId === suggestion._id}
-													onToggleVote={handleToggleVote}
-												/>
-											))}
-										</div>
+								<Button
+									type="button"
+									variant="outline"
+									aria-pressed={sort === "top"}
+									onClick={() => setSort("top")}
+									className={cn(
+										"rounded-full px-5",
+										sort === "top" && sortActive,
 									)}
-								</section>
-							))}
+								>
+									{t("suggestions.sort.top")}
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									aria-pressed={sort === "new"}
+									onClick={() => setSort("new")}
+									className={cn(
+										"rounded-full px-5",
+										sort === "new" && sortActive,
+									)}
+								>
+									{t("suggestions.sort.new")}
+								</Button>
+							</div>
 						</div>
-					)}
-				</section>
+					</section>
+
+					<section className="page-enter">
+						<SuggestionComposer />
+					</section>
+
+					<section className="page-enter space-y-4">
+						{suggestionsBoard === undefined ? (
+							<SuggestionsBoardSkeleton />
+						) : (
+							<div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
+								{statuses.map((status) => (
+									<section key={status} className="calm-section flex flex-col">
+										<div className="calm-section-header pb-3">
+											<div>
+												<h3 className="text-base font-semibold">
+													{t(`suggestions.status.${status}`)}
+												</h3>
+											</div>
+											<div className="rounded-full border border-border/70 bg-background/75 px-2.5 py-1 text-sm font-medium">
+												{suggestionsBoard[status].length}
+											</div>
+										</div>
+
+										{suggestionsBoard[status].length === 0 ? (
+											<div className="rounded-2xl border border-dashed border-border/70 bg-muted/16 p-4 space-y-1">
+												<p className="font-medium">
+													{t("suggestions.emptyTitle")}
+												</p>
+												<p className="text-sm text-muted-foreground">
+													{t("suggestions.emptyDescription")}
+												</p>
+											</div>
+										) : (
+											<div className="calm-list">
+												{suggestionsBoard[status].map((suggestion) => (
+													<SuggestionCard
+														key={suggestion._id}
+														suggestion={suggestion}
+														locale={locale}
+														voting={votingSuggestionId === suggestion._id}
+														onToggleVote={handleToggleVote}
+													/>
+												))}
+											</div>
+										)}
+									</section>
+								))}
+							</div>
+						)}
+					</section>
+				</div>
 			</div>
-		</div>
+		</>
 	);
 }
 
 function SuggestionsBoardSkeleton() {
 	return (
-		<div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+		<div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
 			{statuses.map((status) => (
 				<div key={status} className="calm-section">
 					<div className="calm-section-header pb-3">
