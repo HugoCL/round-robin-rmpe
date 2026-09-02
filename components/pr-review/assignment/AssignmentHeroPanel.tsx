@@ -88,7 +88,7 @@ export function AssignmentHeroPanel({
 		<div className="flex min-h-full w-full flex-col py-1 text-center sm:py-3 md:py-4 2xl:py-5">
 			<div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 2xl:gap-4">
 				{mode === "regular" && lastAssignedReviewer && (
-					<div className="flex flex-wrap items-center justify-center gap-2 text-center">
+					<div className="hero-secondary flex flex-wrap items-center justify-center gap-2 text-center">
 						<Clock3
 							className="h-4 w-4 text-muted-foreground"
 							aria-hidden="true"
@@ -112,7 +112,7 @@ export function AssignmentHeroPanel({
 				{/* The frame stretches to the height the card actually has, so the
 				    turn, the name and what follows sit at the top, middle and bottom
 				    of the space instead of huddling in the centre of an empty box. */}
-				<div className="relative mx-auto flex min-h-44 w-full min-w-0 flex-1 flex-col items-center justify-between gap-4 px-4 py-4 sm:min-h-56 sm:gap-6 sm:px-8 sm:py-6 md:px-12 lg:py-8 2xl:px-16">
+				<div className="hero-frame relative mx-auto flex min-h-44 w-full min-w-0 flex-1 flex-col items-center justify-between gap-4 px-4 py-4 sm:min-h-56 sm:gap-6 sm:px-8 sm:py-6 md:px-12 lg:py-6 2xl:px-16">
 					<span
 						className="pointer-events-none absolute left-0 top-0 h-8 w-8 rounded-tl-xl border-l-2 border-t-2 border-primary lg:h-10 lg:w-10"
 						aria-hidden="true"
@@ -179,7 +179,7 @@ export function AssignmentHeroPanel({
 					</div>
 
 					{upcomingReviewer && (
-						<div className="relative flex shrink-0 flex-col items-center gap-0.5 sm:gap-1">
+						<div className="hero-secondary relative flex shrink-0 flex-col items-center gap-0.5 sm:gap-1">
 							<span className="h-3 w-px bg-border sm:h-5" aria-hidden="true" />
 							<span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground lg:text-xs">
 								{t("pr.upNext")}

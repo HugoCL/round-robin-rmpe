@@ -543,7 +543,7 @@ export function AssignmentCard() {
 			<CardHeader className="sr-only">
 				<h2 data-slot="card-title">{t("pr.nextReviewer")}</h2>
 			</CardHeader>
-			<CardContent className="flex flex-1 items-stretch justify-center px-3 pt-1 sm:px-5 sm:pt-3 md:px-6 md:pt-4 lg:min-h-0 lg:overflow-y-auto 2xl:px-8">
+			<CardContent className="flex flex-1 items-stretch justify-center px-3 pt-1 sm:px-5 sm:pt-3 md:px-6 md:pt-4 lg:hero-viewport lg:min-h-[40%] lg:overflow-y-auto 2xl:px-8">
 				<AssignmentHeroPanel
 					mode={mode}
 					lastAssignedReviewer={lastAssignedReviewer}
@@ -556,92 +556,96 @@ export function AssignmentCard() {
 					isLoadingTagReviewer={isLoadingTagReviewer}
 				/>
 			</CardContent>
-			<CardFooter className="flex-shrink-0 border-t border-border/60 bg-card px-3 py-2 sm:px-5 sm:py-4 md:px-6 2xl:px-8">
-				<div className="calm-subtle-panel flex w-full flex-col gap-3 p-1.5 sm:p-3 lg:gap-4 lg:p-4">
-					<AssignmentControlsPanel
-						tags={tags}
-						mode={mode}
-						selectedTagId={selectedTagId}
-						onModeChange={(nextMode) => {
-							if (nextMode === "regular") {
-								setMode("regular");
-								setSelectedTagId(undefined);
-								return;
-							}
-							setMode("tag");
-						}}
-						onTagChange={(tagId) => setSelectedTagId(tagId as Id<"tags">)}
-						getTagStats={getTagStats}
-						hideMultiAssignmentSection={hideMultiAssignmentSection}
-						isMultiAssignmentEnabled={isMultiAssignmentEnabled}
-						reviewerCount={reviewerCount}
-						onMultiAssignmentToggle={(enabled) => {
-							setIsMultiAssignmentEnabled(enabled);
-							if (enabled) {
-								if (reviewerCount < 2) {
-									setReviewerCount(2);
+			<CardFooter className="border-t border-border/60 bg-card px-3 py-2 sm:px-5 sm:py-4 md:px-6 lg:min-h-0 lg:items-stretch 2xl:px-8">
+				<div className="calm-subtle-panel flex w-full flex-col gap-3 p-1.5 sm:p-3 lg:min-h-0 lg:gap-4 lg:p-4">
+					<div className="min-w-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overflow-x-hidden lg:px-1">
+						<AssignmentControlsPanel
+							tags={tags}
+							mode={mode}
+							selectedTagId={selectedTagId}
+							onModeChange={(nextMode) => {
+								if (nextMode === "regular") {
+									setMode("regular");
+									setSelectedTagId(undefined);
+									return;
 								}
-								return;
+								setMode("tag");
+							}}
+							onTagChange={(tagId) => setSelectedTagId(tagId as Id<"tags">)}
+							getTagStats={getTagStats}
+							hideMultiAssignmentSection={hideMultiAssignmentSection}
+							isMultiAssignmentEnabled={isMultiAssignmentEnabled}
+							reviewerCount={reviewerCount}
+							onMultiAssignmentToggle={(enabled) => {
+								setIsMultiAssignmentEnabled(enabled);
+								if (enabled) {
+									if (reviewerCount < 2) {
+										setReviewerCount(2);
+									}
+									return;
+								}
+								setReviewerCount(1);
+								setSlotConfigs([defaultSlotForMode(mode)]);
+							}}
+							urgent={urgent}
+							onUrgentChange={setUrgent}
+							crossTeamReview={crossTeamReview}
+							onCrossTeamReviewChange={setCrossTeamReview}
+							availableCrossTeamTargets={availableCrossTeamTargets}
+							selectedCrossTeamSlugs={selectedCrossTeamSlugs}
+							onSelectedCrossTeamSlugsChange={setSelectedCrossTeamSlugs}
+							excludeTeammates={excludeTeammates}
+							onExcludeTeammatesChange={setExcludeTeammates}
+							showReviewerSlots={
+								!hideMultiAssignmentSection && isMultiAssignmentEnabled
 							}
-							setReviewerCount(1);
-							setSlotConfigs([defaultSlotForMode(mode)]);
-						}}
-						urgent={urgent}
-						onUrgentChange={setUrgent}
-						crossTeamReview={crossTeamReview}
-						onCrossTeamReviewChange={setCrossTeamReview}
-						availableCrossTeamTargets={availableCrossTeamTargets}
-						selectedCrossTeamSlugs={selectedCrossTeamSlugs}
-						onSelectedCrossTeamSlugsChange={setSelectedCrossTeamSlugs}
-						excludeTeammates={excludeTeammates}
-						onExcludeTeammatesChange={setExcludeTeammates}
-						showReviewerSlots={
-							!hideMultiAssignmentSection && isMultiAssignmentEnabled
-						}
-						reviewers={reviewers}
-						slotConfigs={slotConfigs}
-						reviewerSlotPreviews={resolvedPreview.slots}
-						onReviewerCountChange={setReviewerCount}
-						onSlotChange={(index, patch) => {
-							setSlotConfigs((prev) =>
-								prev.map((slot, slotIndex) =>
-									slotIndex === index
-										? normalizeSlotForMode({ ...slot, ...patch }, mode)
-										: slot,
-								),
-							);
-						}}
-						prUrl={prUrl}
-						onPrUrlChange={(value) => {
-							setPrUrl(value);
-							if (showDuplicateAlert) setShowDuplicateAlert(false);
-						}}
-						onPrUrlBlur={handlePrUrlBlur}
-						contextUrl={contextUrl}
-						onContextUrlChange={setContextUrl}
-						enableCustomMessage={enableCustomMessage}
-						onEnableCustomMessageChange={(value) => {
-							setEnableCustomMessage(value);
-							if (!value) setCustomMessage("");
-						}}
-						customMessage={customMessage}
-						onCustomMessageChange={setCustomMessage}
-						resolvedPreview={resolvedPreview}
-						activeNextReviewer={activeNextReviewer}
-						showDuplicateAlert={showDuplicateAlert}
-						duplicateAssignment={duplicateAssignment}
-						parsedPrUrl={parsedPrUrl}
-						hasPrUrlError={hasPrUrlError}
-					/>
+							reviewers={reviewers}
+							slotConfigs={slotConfigs}
+							reviewerSlotPreviews={resolvedPreview.slots}
+							onReviewerCountChange={setReviewerCount}
+							onSlotChange={(index, patch) => {
+								setSlotConfigs((prev) =>
+									prev.map((slot, slotIndex) =>
+										slotIndex === index
+											? normalizeSlotForMode({ ...slot, ...patch }, mode)
+											: slot,
+									),
+								);
+							}}
+							prUrl={prUrl}
+							onPrUrlChange={(value) => {
+								setPrUrl(value);
+								if (showDuplicateAlert) setShowDuplicateAlert(false);
+							}}
+							onPrUrlBlur={handlePrUrlBlur}
+							contextUrl={contextUrl}
+							onContextUrlChange={setContextUrl}
+							enableCustomMessage={enableCustomMessage}
+							onEnableCustomMessageChange={(value) => {
+								setEnableCustomMessage(value);
+								if (!value) setCustomMessage("");
+							}}
+							customMessage={customMessage}
+							onCustomMessageChange={setCustomMessage}
+							resolvedPreview={resolvedPreview}
+							activeNextReviewer={activeNextReviewer}
+							showDuplicateAlert={showDuplicateAlert}
+							duplicateAssignment={duplicateAssignment}
+							parsedPrUrl={parsedPrUrl}
+							hasPrUrlError={hasPrUrlError}
+						/>
+					</div>
 
-					<AssignmentActionsRow
-						isAssigning={isAssigning}
-						isAssignDisabled={isAssignDisabled}
-						blockedReason={assignBlockedReason}
-						liveSummary={liveSummary}
-						onAssign={handleAssignPR}
-						onUndoAssignment={onUndoAssignment}
-					/>
+					<div className="lg:shrink-0">
+						<AssignmentActionsRow
+							isAssigning={isAssigning}
+							isAssignDisabled={isAssignDisabled}
+							blockedReason={assignBlockedReason}
+							liveSummary={liveSummary}
+							onAssign={handleAssignPR}
+							onUndoAssignment={onUndoAssignment}
+						/>
+					</div>
 				</div>
 			</CardFooter>
 		</Card>

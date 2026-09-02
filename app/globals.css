@@ -181,6 +181,26 @@
 	@apply rounded-2xl border border-border/70 bg-background/70;
 }
 
+/* The assignment card is a fixed-height cockpit: an expanded options panel can
+   leave the hero very little room. Making the hero's box a size container lets
+   it drop its secondary lines before the reviewer's name gets clipped. */
+@utility hero-viewport {
+	container-type: size;
+	container-name: hero;
+}
+
+@container hero (height < 19rem) {
+	.hero-frame {
+		min-height: 0;
+		padding-block: 0.75rem;
+		gap: 0.5rem;
+	}
+
+	.hero-secondary {
+		display: none;
+	}
+}
+
 .notice-stack {
 	@apply flex flex-col gap-3;
 }
