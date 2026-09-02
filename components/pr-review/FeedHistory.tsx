@@ -6,7 +6,6 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	ChevronUp,
-	ExternalLink,
 	FileText,
 	History,
 	MessageSquare,
@@ -447,20 +446,6 @@ export function FeedHistory({
 												) : null}
 
 												<div className="mt-3 flex flex-wrap items-center gap-1">
-													{item.prUrl ? (
-														<Button variant="ghost" size="xs" asChild>
-															<Link
-																href={item.prUrl}
-																target="_blank"
-																rel="noreferrer noopener"
-															>
-																<ExternalLink aria-hidden="true" />
-																{prNumber
-																	? `PR #${prNumber}`
-																	: t("common.viewPR")}
-															</Link>
-														</Button>
-													) : null}
 													{item.contextUrl ? (
 														<Button variant="ghost" size="xs" asChild>
 															<Link
