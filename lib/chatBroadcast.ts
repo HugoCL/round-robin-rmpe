@@ -9,7 +9,11 @@
  * pool, so teams that were only considered are not notified.
  */
 
-import { buildPrAssignmentChatMessage } from "./googleChatMessageTemplate";
+import { type ChatThreadLink, mergeChatThreadLinks } from "./assignmentHistory";
+import {
+	buildPrAssignmentChatMessage,
+	GOOGLE_CHAT_MESSAGE_REPLY_OPTION,
+} from "./googleChatMessageTemplate";
 
 /** Extra team channels to notify besides the requesting team's own channel. */
 export function resolveBroadcastTeamSlugs(options: {
@@ -133,10 +137,26 @@ export function toGoogleChatThreadUrl(
 	return undefined;
 }
 
+export function withGoogleChatMessageReplyOption(webhookUrl: string): string {
+	try {
+		const url = new URL(webhookUrl);
+		if (!url.searchParams.has("messageReplyOption")) {
+			url.searchParams.set(
+				"messageReplyOption",
+				GOOGLE_CHAT_MESSAGE_REPLY_OPTION,
+			);
+		}
+		return url.toString();
+	} catch {
+		return webhookUrl;
+	}
+}
+
 export type ChatDelivery = {
 	deliveredSlugs: string[];
 	failures: string[];
 	googleChatThreadUrl?: string;
+	googleChatThreadUrls: ChatThreadLink[];
 };
 
 // Delivers the same assignment message to every resolved team channel.
@@ -154,7 +174,7 @@ export async function deliverChatMessageToTargets(options: {
 }): Promise<ChatDelivery> {
 	const deliveredSlugs: string[] = [];
 	const failures: string[] = [];
-	let googleChatThreadUrl: string | undefined;
+	const googleChatThreadUrls: ChatThreadLink[] = [];
 
 	for (const target of options.targets) {
 		const targetMessage = prependOriginTeamNotice(
@@ -173,13 +193,16 @@ export async function deliverChatMessageToTargets(options: {
 		});
 
 		try {
-			const response = await fetch(target.webhookUrl, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
+			const response = await fetch(
+				withGoogleChatMessageReplyOption(target.webhookUrl),
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(message),
 				},
-				body: JSON.stringify(message),
-			});
+			);
 
 			if (!response.ok) {
 				const text = await response.text().catch(() => "");
@@ -193,12 +216,17 @@ export async function deliverChatMessageToTargets(options: {
 
 			deliveredSlugs.push(target.slug);
 
-			if (!googleChatThreadUrl) {
-				const responseBody = (await response
-					.clone()
-					.json()
-					.catch(() => null)) as GoogleChatWebhookResponse | null;
-				googleChatThreadUrl = toGoogleChatThreadUrl(responseBody);
+			const responseBody = (await response
+				.clone()
+				.json()
+				.catch(() => null)) as GoogleChatWebhookResponse | null;
+			const threadUrl = toGoogleChatThreadUrl(responseBody);
+			if (threadUrl) {
+				googleChatThreadUrls.push({
+					teamSlug: target.slug,
+					teamName: target.name,
+					url: threadUrl,
+				});
 			}
 		} catch (error) {
 			failures.push(
@@ -209,5 +237,14 @@ export async function deliverChatMessageToTargets(options: {
 		}
 	}
 
-	return { deliveredSlugs, failures, googleChatThreadUrl };
+	const mergedThreadUrls = mergeChatThreadLinks(
+		undefined,
+		googleChatThreadUrls,
+	);
+	return {
+		deliveredSlugs,
+		failures,
+		googleChatThreadUrl: mergedThreadUrls[0]?.url,
+		googleChatThreadUrls: mergedThreadUrls,
+	};
 }

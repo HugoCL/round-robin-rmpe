@@ -14,7 +14,13 @@ const DEFAULT_TEMPLATE_ES =
 const DEFAULT_TEMPLATE_EN =
 	"Hi {{reviewer_name}} 👋\n{{requester_name}} assigned you this review";
 
-const REPLY_THREAD_KEY = "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD ";
+export const GOOGLE_CHAT_MESSAGE_REPLY_OPTION =
+	"REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD";
+
+export function assignmentChatThreadKey(prUrl: string): string {
+	const normalized = prUrl.trim().toLowerCase();
+	return normalized ? `la-lista:${normalized}` : "la-lista:assignment";
+}
 
 export function getDefaultPRChatMessageTemplate(locale?: string): string {
 	return locale?.toLowerCase().startsWith("es")
@@ -148,6 +154,6 @@ export function buildPrAssignmentChatMessage(options: {
 				},
 			},
 		],
-		thread: { threadKey: REPLY_THREAD_KEY },
+		thread: { threadKey: assignmentChatThreadKey(options.prUrl) },
 	};
 }

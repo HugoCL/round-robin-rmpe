@@ -42,6 +42,13 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-09-04",
+		type: "fix",
+		title: "El historial ya muestra quién asignó y los hilos de Chat",
+		description:
+			"Cuando asignabas un PR, el historial a veces no decía quién lo pidió — sobre todo si esa persona era de otro equipo — y el aviso de Google Chat no llegaba a los dos espacios. Ahora se guarda quién asignó aunque esté en otro roster, el mensaje sale al canal de quien pide y al de quien revisa, y en el historial aparecen los links a esos mensajes.",
+	},
+	{
 		date: "2026-09-01",
 		type: "fix",
 		title: "Pedirle revisión a otro equipo ya avisa en los dos espacios",

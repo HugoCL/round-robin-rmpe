@@ -8,6 +8,7 @@ import {
 	prependOriginTeamNotice,
 	resolveBroadcastTeamSlugs,
 	resolveNotifiedTeamSlugs,
+	withGoogleChatMessageReplyOption,
 } from "../../lib/chatBroadcast";
 
 const sourceTarget: ChatWebhookTarget = {
@@ -122,12 +123,14 @@ test("reports which team channels missed the message", () => {
 });
 
 test("sends the assignment to both the sending and the receiving channel", async () => {
-	const fetchStub = stubFetch(
-		() =>
-			new Response(JSON.stringify({ name: "spaces/AAA/messages/BBB" }), {
-				status: 200,
-			}),
-	);
+	const fetchStub = stubFetch((url) => {
+		const space = url.includes("/platform") ? "AAA" : "CCC";
+		const message = url.includes("/platform") ? "BBB" : "DDD";
+		return new Response(
+			JSON.stringify({ name: `spaces/${space}/messages/${message}` }),
+			{ status: 200 },
+		);
+	});
 	try {
 		const delivery = await deliver([sourceTarget, receivingTarget]);
 		assert.deepEqual(delivery.deliveredSlugs, ["platform", "payments"]);
@@ -135,14 +138,26 @@ test("sends the assignment to both the sending and the receiving channel", async
 		assert.deepEqual(
 			fetchStub.calls.map((call) => call.url),
 			[
-				"https://chat.example.com/platform",
-				"https://chat.example.com/payments",
+				"https://chat.example.com/platform?messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD",
+				"https://chat.example.com/payments?messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD",
 			],
 		);
 		assert.equal(
 			delivery.googleChatThreadUrl,
 			"https://chat.google.com/room/AAA/BBB",
 		);
+		assert.deepEqual(delivery.googleChatThreadUrls, [
+			{
+				teamSlug: "platform",
+				teamName: "Platform",
+				url: "https://chat.google.com/room/AAA/BBB",
+			},
+			{
+				teamSlug: "payments",
+				teamName: "Payments",
+				url: "https://chat.google.com/room/CCC/DDD",
+			},
+		]);
 	} finally {
 		fetchStub.restore();
 	}
@@ -150,7 +165,7 @@ test("sends the assignment to both the sending and the receiving channel", async
 
 test("keeps notifying the other channel when one webhook fails", async () => {
 	const fetchStub = stubFetch((url) =>
-		url.endsWith("/platform")
+		url.includes("/platform")
 			? new Response("boom", { status: 500, statusText: "Server Error" })
 			: new Response("{}", { status: 200 }),
 	);
@@ -167,7 +182,7 @@ test("keeps notifying the other channel when one webhook fails", async () => {
 
 test("records a network error per channel without aborting the rest", async () => {
 	const fetchStub = stubFetch((url) => {
-		if (url.endsWith("/payments")) {
+		if (url.includes("/payments")) {
 			throw new Error("network down");
 		}
 		return new Response("{}", { status: 200 });
@@ -201,5 +216,18 @@ test("only annotates the origin team on external channels", () => {
 	assert.equal(
 		prependOriginTeamNotice("Hello", "en", "Platform", true),
 		"🔁 This review request comes from team Platform.\nHello",
+	);
+});
+
+test("adds messageReplyOption so Chat can start a thread per PR", () => {
+	assert.equal(
+		withGoogleChatMessageReplyOption("https://chat.example.com/platform"),
+		"https://chat.example.com/platform?messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD",
+	);
+	assert.equal(
+		withGoogleChatMessageReplyOption(
+			"https://chat.example.com/platform?messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD",
+		),
+		"https://chat.example.com/platform?messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD",
 	);
 });

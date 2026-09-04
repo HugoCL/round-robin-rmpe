@@ -8,7 +8,6 @@ import {
 	ChevronUp,
 	FileText,
 	History,
-	MessageSquare,
 	Undo2,
 	UsersRound,
 } from "lucide-react";
@@ -47,6 +46,7 @@ import type { Doc } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import type { GroupedAssignmentHistoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { HistoryChatThreadLinks } from "./HistoryChatThreadLinks";
 import { usePRReview } from "./PRReviewContext";
 
 function getInitials(name?: string) {
@@ -389,12 +389,13 @@ export function FeedHistory({
 																hour: "2-digit",
 																minute: "2-digit",
 															}).format(item.timestamp)}
-															{item.actionByName || item.actionByEmail
-																? ` · ${t("history.assignedBy")} ${
-																		item.actionByName || item.actionByEmail
-																	}`
-																: ""}
 														</p>
+														{item.actionByName || item.actionByEmail ? (
+															<p className="mt-0.5 text-xs text-muted-foreground">
+																{t("history.assignedBy")}{" "}
+																{item.actionByName || item.actionByEmail}
+															</p>
+														) : null}
 													</div>
 													<div className="flex flex-wrap justify-end gap-1">
 														{item.urgent ? (
@@ -458,18 +459,7 @@ export function FeedHistory({
 															</Link>
 														</Button>
 													) : null}
-													{item.googleChatThreadUrl ? (
-														<Button variant="ghost" size="xs" asChild>
-															<Link
-																href={item.googleChatThreadUrl}
-																target="_blank"
-																rel="noreferrer noopener"
-															>
-																<MessageSquare aria-hidden="true" />
-																{t("common.viewChatThread")}
-															</Link>
-														</Button>
-													) : null}
+													<HistoryChatThreadLinks item={item} />
 													{canManageCurrentTeam ? (
 														<AlertDialog>
 															<Tooltip>
