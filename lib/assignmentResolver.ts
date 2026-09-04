@@ -48,7 +48,22 @@ export type AssignmentResolvedSlot<
 	slotIndex: number;
 	reviewer: Reviewer;
 	tagId?: TagId;
+	forced: boolean;
 };
+
+/** A slot that names a reviewer is a forced assignment, not round-robin. */
+export function isForcedAssignmentStrategy(
+	strategy: string | undefined,
+): boolean {
+	return strategy === "specific";
+}
+
+/** Matches the agent API `forced` flag: one explicitly chosen reviewer. */
+export function isSingleForcedAssignment(
+	slots: Array<{ strategy?: string }>,
+): boolean {
+	return slots.length === 1 && isForcedAssignmentStrategy(slots[0]?.strategy);
+}
 
 export type AssignmentFailedSlot = {
 	slotIndex: number;
@@ -158,6 +173,7 @@ export function resolveAssignmentSlots<
 				slotIndex,
 				reviewer,
 				tagId: slot.tagId,
+				forced: true,
 			});
 			continue;
 		}
@@ -221,6 +237,7 @@ export function resolveAssignmentSlots<
 			slotIndex,
 			reviewer: selected,
 			tagId: chosenTagId,
+			forced: false,
 		});
 	}
 

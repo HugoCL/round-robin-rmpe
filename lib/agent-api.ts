@@ -12,6 +12,7 @@ import {
 	type AssignmentFailureReason,
 	type AssignmentMode,
 	type AssignmentSlotInput,
+	isSingleForcedAssignment,
 	resolveAssignmentSlots,
 } from "@/lib/assignmentResolver";
 import { resolveNotifiedTeamSlugs } from "@/lib/chatBroadcast";
@@ -830,9 +831,7 @@ export async function executeAgentAssignment(
 	}
 
 	const { normalizedRequest } = body;
-	const forced =
-		normalizedRequest.slots.length === 1 &&
-		normalizedRequest.slots[0]?.strategy === "specific";
+	const forced = isSingleForcedAssignment(normalizedRequest.slots);
 
 	const batchResult = await fetchMutation(api.mutations.assignPRBatch, {
 		agentTokenHash: auth.tokenHash,

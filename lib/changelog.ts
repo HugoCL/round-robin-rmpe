@@ -46,7 +46,7 @@ export const changelogEntries: ChangelogEntry[] = [
 		type: "fix",
 		title: "El historial ya muestra quién asignó y los hilos de Chat",
 		description:
-			"Cuando asignabas un PR, el historial a veces no decía quién lo pidió — sobre todo si esa persona era de otro equipo — y el aviso de Google Chat no llegaba a los dos espacios. Ahora se guarda quién asignó aunque esté en otro roster, el mensaje sale al canal de quien pide y al de quien revisa, y en el historial aparecen los links a esos mensajes.",
+			"Cuando asignabas un PR, el historial a veces no decía quién lo pidió — sobre todo si esa persona era de otro equipo — y el aviso de Google Chat no llegaba a los dos espacios. Ahora se guarda quién asignó aunque esté en otro roster, el mensaje sale al canal de quien pide y al de quien revisa, y en el historial aparecen los links a esos mensajes. Si pedías un revisor concreto por el agente, también queda marcado como asignación forzada en vez de rotación.",
 	},
 	{
 		date: "2026-09-01",

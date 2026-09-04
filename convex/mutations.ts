@@ -1699,6 +1699,7 @@ async function executeAssignPRBatch(
 		const reviewer = byId.get(item.reviewer._id);
 		if (!reviewer) continue;
 		const nextCount = reviewer.assignmentCount + 1;
+		const forced = item.forced === true;
 
 		await ctx.db.patch(reviewer._id, {
 			assignmentCount: nextCount,
@@ -1712,7 +1713,7 @@ async function executeAssignPRBatch(
 			reviewerName: reviewer.name,
 			timestamp,
 			batchId,
-			forced: false,
+			forced,
 			skipped: false,
 			isAbsentSkip: false,
 			urgent,
@@ -1746,7 +1747,7 @@ async function executeAssignPRBatch(
 			reviewerName: reviewer.name,
 			timestamp,
 			batchId,
-			forced: false,
+			forced,
 			skipped: false,
 			isAbsentSkip: false,
 			urgent,
@@ -1777,6 +1778,7 @@ async function executeAssignPRBatch(
 				googleChatUserId: reviewer.googleChatUserId,
 			},
 			tagId: item.tagId ? String(item.tagId) : undefined,
+			forced,
 		});
 	}
 
