@@ -109,6 +109,7 @@
 		"viewPR": "Ver PR",
 		"viewContext": "Ver Contexto",
 		"viewChatThread": "Ver hilo de Chat",
+		"viewChatThreadForTeam": "Chat · {team}",
 		"signIn": "Iniciar Sesión",
 		"creating": "Creando…"
 	},

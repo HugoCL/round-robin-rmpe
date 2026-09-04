@@ -24,6 +24,22 @@ function isAssignableReviewer(r: {
 	return r.excludedFromReviewPool !== true && !r.effectiveIsAbsent;
 }
 
+function uniqueOtherTeamSlugs(
+	sourceTeamSlug: string | null,
+	slugs: Array<string | undefined | null>,
+): string[] {
+	const excluded = sourceTeamSlug?.trim();
+	return [
+		...new Set(
+			slugs
+				.map((slug) => slug?.trim())
+				.filter(
+					(slug): slug is string => Boolean(slug) && slug !== excluded,
+				),
+		),
+	];
+}
+
 const createSlotId = () =>
 	`slot-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -312,6 +328,9 @@ export function useAssignment(teamSlug: string | null) {
 								assignerName: opts.assignerName,
 								assignerEmail: opts.assignerEmail,
 								assignerChatId: opts.assignerChatId,
+								broadcastTeamSlugs: uniqueOtherTeamSlugs(teamSlug, [
+									result.reviewer?.teamSlug,
+								]),
 							});
 						} catch (chatErr) {
 							console.warn("Failed to send chat notification:", chatErr);
@@ -384,6 +403,13 @@ export function useAssignment(teamSlug: string | null) {
 					// Send Google Chat notification
 					if (opts.sendChat && opts.prUrl) {
 						try {
+							const broadcastTeamSlugs = uniqueOtherTeamSlugs(
+								teamSlug,
+								result.assigned.map(
+									(item: { reviewer?: { teamSlug?: string } }) =>
+										item.reviewer?.teamSlug,
+								),
+							);
 							if (result.assignedCount > 1) {
 								await sendChatGroupAction({
 									reviewers: result.assigned.map((a: any) => {
@@ -393,7 +419,9 @@ export function useAssignment(teamSlug: string | null) {
 										return {
 											name: a.reviewer.name,
 											email: a.reviewer.email,
-											reviewerChatId: reviewer?.googleChatUserId,
+											reviewerChatId:
+												a.reviewer.googleChatUserId ??
+												reviewer?.googleChatUserId,
 										};
 									}),
 									prUrl: opts.prUrl,
@@ -401,6 +429,7 @@ export function useAssignment(teamSlug: string | null) {
 									assignerName: opts.assignerName,
 									assignerEmail: opts.assignerEmail,
 									assignerChatId: opts.assignerChatId,
+									broadcastTeamSlugs,
 								});
 							} else if (result.assigned[0]) {
 								const first = result.assigned[0];
@@ -410,12 +439,15 @@ export function useAssignment(teamSlug: string | null) {
 								await sendChatAction({
 									reviewerName: first.reviewer.name,
 									reviewerEmail: first.reviewer.email,
-									reviewerChatId: reviewer?.googleChatUserId,
+									reviewerChatId:
+										first.reviewer.googleChatUserId ??
+										reviewer?.googleChatUserId,
 									prUrl: opts.prUrl,
 									teamSlug,
 									assignerName: opts.assignerName,
 									assignerEmail: opts.assignerEmail,
 									assignerChatId: opts.assignerChatId,
+									broadcastTeamSlugs,
 								});
 							}
 						} catch (chatErr) {

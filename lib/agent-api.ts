@@ -4,6 +4,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { hashAgentToken } from "@/lib/agent-token";
 import {
+	resolveAgentCrossTeamFlags,
 	resolveAgentNotifyFlag,
 	shouldQueueAgentAssignmentChat,
 } from "@/lib/agentAssignmentChat";
@@ -11,12 +12,10 @@ import {
 	type AssignmentFailureReason,
 	type AssignmentMode,
 	type AssignmentSlotInput,
+	isSingleForcedAssignment,
 	resolveAssignmentSlots,
 } from "@/lib/assignmentResolver";
-import {
-	resolveBroadcastTeamSlugs,
-	resolveNotifiedTeamSlugs,
-} from "@/lib/chatBroadcast";
+import { resolveNotifiedTeamSlugs } from "@/lib/chatBroadcast";
 import { buildCrossTeamReviewerPool } from "@/lib/crossTeamPool";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 
@@ -613,13 +612,13 @@ export async function previewAgentAssignment(
 		return { error: teamResolution.error };
 	}
 
-	const crossTeamReview = input.crossTeamReview === true;
-	const requestedAdditionalTeamSlugs = crossTeamReview
-		? resolveBroadcastTeamSlugs({
-				sourceTeamSlug: teamResolution.selectedTeam?.slug,
-				reviewerTeamSlugs: input.additionalTeamSlugs ?? [],
-			})
-		: [];
+	const teamFlags = resolveAgentCrossTeamFlags({
+		sourceTeamSlug: teamResolution.selectedTeam?.slug,
+		crossTeamReview: input.crossTeamReview,
+		additionalTeamSlugs: input.additionalTeamSlugs,
+	});
+	const crossTeamReview = teamFlags.crossTeamReview;
+	const requestedAdditionalTeamSlugs = teamFlags.additionalTeamSlugs;
 	const excludeTeammates =
 		crossTeamReview &&
 		input.excludeTeammates === true &&
@@ -686,10 +685,14 @@ export async function previewAgentAssignment(
 	// The assigner is always looked up in their own team, even when their
 	// teammates are excluded from the reviewer pool.
 	const actorReviewer = auth.email
-		? reviewers.find(
+		? (reviewers.find(
 				(reviewer) =>
 					reviewer.email.toLowerCase() === auth.email?.toLowerCase(),
-			)
+			) ??
+			reviewerPool.find(
+				(reviewer) =>
+					reviewer.email.toLowerCase() === auth.email?.toLowerCase(),
+			))
 		: undefined;
 	const mode = inferModeFromRequest(input);
 	const resolution = resolveAssignmentSlots({
@@ -705,7 +708,8 @@ export async function previewAgentAssignment(
 
 	const warnings = [
 		...teamResolution.warnings,
-		...(crossTeamReview && requestedAdditionalTeamSlugs.length === 0
+		...(input.crossTeamReview === true &&
+		requestedAdditionalTeamSlugs.length === 0
 			? [
 					{
 						code: "cross_team_without_targets",
@@ -827,112 +831,44 @@ export async function executeAgentAssignment(
 	}
 
 	const { normalizedRequest } = body;
-	let assignedReviewers: Array<{
-		slotIndex: number;
+	const forced = isSingleForcedAssignment(normalizedRequest.slots);
+
+	const batchResult = await fetchMutation(api.mutations.assignPRBatch, {
+		agentTokenHash: auth.tokenHash,
+		teamSlug: body.selectedTeam.slug,
+		additionalTeamSlugs: normalizedRequest.additionalTeamSlugs,
+		crossTeamReview: normalizedRequest.crossTeamReview,
+		excludeTeammates: normalizedRequest.excludeTeammates,
+		mode: body.mode,
+		selectedTagId: normalizedRequest.selectedTagId as Id<"tags"> | undefined,
+		slots: normalizedRequest.slots.map((slot) => ({
+			strategy: slot.strategy,
+			reviewerId: slot.reviewerId,
+			tagId: slot.tagId,
+		})),
+		prUrl: normalizedRequest.prUrl,
+		contextUrl: normalizedRequest.contextUrl,
+		urgent: normalizedRequest.urgent,
+		actionByReviewerId: body.actionByReviewerId,
+		source: "agent",
+	});
+
+	const batchId = batchResult.batchId;
+	const assignedReviewers = batchResult.assigned.map((item) => ({
+		slotIndex: item.slotIndex,
 		reviewer: {
-			id: string;
-			name: string;
-			email: string;
-			assignmentCount: number;
-			isAbsent: boolean;
-			effectiveIsAbsent: boolean;
-			createdAt: number;
-			tags: string[];
-			teamSlug?: string;
-		};
-		tagId?: string;
-	}> = [];
-	let batchId: string | undefined;
-	let forced = false;
-
-	if (body.resolved.length === 1 && !normalizedRequest.crossTeamReview) {
-		const [resolved] = body.resolved;
-		const [slot] = normalizedRequest.slots;
-		forced = slot?.strategy === "specific";
-		const result = await fetchMutation(api.mutations.assignPR, {
-			agentTokenHash: auth.tokenHash,
-			reviewerId: resolved.reviewer._id,
-			forced,
-			urgent: normalizedRequest.urgent,
-			source: "agent",
-			prUrl: normalizedRequest.prUrl,
-			contextUrl: normalizedRequest.contextUrl,
-			tagId: resolved.tagId as Id<"tags"> | undefined,
-			actionByReviewerId: body.actionByReviewerId,
-		});
-
-		assignedReviewers = [
-			{
-				slotIndex: resolved.slotIndex,
-				reviewer: {
-					id: String(result.reviewer.id),
-					name: result.reviewer.name,
-					email: result.reviewer.email,
-					assignmentCount: result.reviewer.assignmentCount,
-					isAbsent: result.reviewer.isAbsent,
-					effectiveIsAbsent: result.reviewer.effectiveIsAbsent,
-					createdAt: result.reviewer.createdAt,
-					tags: result.reviewer.tags.map((tagId) => String(tagId)),
-					teamSlug: resolved.teamSlug ?? body.selectedTeam.slug,
-				},
-				tagId: resolved.tagId,
-			},
-		];
-
-		if (body.actionByReviewerId) {
-			try {
-				await fetchMutation(api.mutations.createActivePRAssignment, {
-					teamSlug: body.selectedTeam.slug,
-					assigneeId: resolved.reviewer._id,
-					assignerId: body.actionByReviewerId,
-					prUrl: normalizedRequest.prUrl,
-					urgent: normalizedRequest.urgent,
-				});
-			} catch (error) {
-				console.warn(
-					"Failed to create active assignment for agent flow:",
-					error,
-				);
-			}
-		}
-	} else {
-		const batchResult = await fetchMutation(api.mutations.assignPRBatch, {
-			agentTokenHash: auth.tokenHash,
-			teamSlug: body.selectedTeam.slug,
-			additionalTeamSlugs: normalizedRequest.additionalTeamSlugs,
-			crossTeamReview: normalizedRequest.crossTeamReview,
-			excludeTeammates: normalizedRequest.excludeTeammates,
-			mode: body.mode,
-			selectedTagId: normalizedRequest.selectedTagId as Id<"tags"> | undefined,
-			slots: normalizedRequest.slots.map((slot) => ({
-				strategy: slot.strategy,
-				reviewerId: slot.reviewerId,
-				tagId: slot.tagId,
-			})),
-			prUrl: normalizedRequest.prUrl,
-			contextUrl: normalizedRequest.contextUrl,
-			urgent: normalizedRequest.urgent,
-			actionByReviewerId: body.actionByReviewerId,
-			source: "agent",
-		});
-
-		batchId = batchResult.batchId;
-		assignedReviewers = batchResult.assigned.map((item) => ({
-			slotIndex: item.slotIndex,
-			reviewer: {
-				id: String(item.reviewer.id),
-				name: item.reviewer.name,
-				email: item.reviewer.email,
-				assignmentCount: item.reviewer.assignmentCount,
-				isAbsent: item.reviewer.isAbsent,
-				effectiveIsAbsent: item.reviewer.effectiveIsAbsent,
-				createdAt: item.reviewer.createdAt,
-				tags: item.reviewer.tags.map((tagId) => String(tagId)),
-				teamSlug: item.reviewer.teamSlug,
-			},
-			tagId: item.tagId,
-		}));
-	}
+			id: String(item.reviewer.id),
+			name: item.reviewer.name,
+			email: item.reviewer.email,
+			assignmentCount: item.reviewer.assignmentCount,
+			isAbsent: item.reviewer.isAbsent,
+			effectiveIsAbsent: item.reviewer.effectiveIsAbsent,
+			createdAt: item.reviewer.createdAt,
+			tags: item.reviewer.tags.map((tagId) => String(tagId)),
+			teamSlug: item.reviewer.teamSlug,
+		},
+		tagId: item.tagId,
+	}));
 
 	const notificationQueued = shouldQueueAgentAssignmentChat({
 		source: "agent",

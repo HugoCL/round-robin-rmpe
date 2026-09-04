@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
 import type { GroupedAssignmentHistoryItem } from "@/lib/types";
+import { HistoryChatThreadLinks } from "./HistoryChatThreadLinks";
 
 export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 	const t = useTranslations();
@@ -67,8 +68,11 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 											{item.actionByName || item.actionByEmail}
 										</p>
 									)}
-									{(item.prUrl || item.googleChatThreadUrl) && (
-										<p className="text-xs mt-1 flex gap-2 flex-wrap">
+									{(item.prUrl ||
+										item.googleChatThreadUrl ||
+										(item.googleChatThreadUrls &&
+											item.googleChatThreadUrls.length > 0)) && (
+										<div className="text-xs mt-1 flex gap-2 flex-wrap">
 											{item.prUrl && (
 												<Link
 													href={item.prUrl}
@@ -86,24 +90,8 @@ export function RecentAssignments({ teamSlug }: { teamSlug?: string }) {
 													</Badge>
 												</Link>
 											)}
-											{item.googleChatThreadUrl && (
-												<Link
-													href={item.googleChatThreadUrl}
-													target="_blank"
-													rel="noreferrer noopener"
-													aria-label={t("common.viewChatThread")}
-													className="inline-flex items-center gap-1"
-												>
-													<Badge
-														variant="outline"
-														className="cursor-pointer hover:bg-primary/10 transition-colors"
-													>
-														{t("common.viewChatThread")}
-														<ExternalLink className="h-3 w-3 ml-1" />
-													</Badge>
-												</Link>
-											)}
-										</p>
+											<HistoryChatThreadLinks item={item} />
+										</div>
 									)}
 								</div>
 								<div>

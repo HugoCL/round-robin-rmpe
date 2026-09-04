@@ -1,20 +1,18 @@
 import { v } from "convex/values";
 import {
+	type ChatDelivery,
 	type ChatWebhookTarget,
 	deliverChatMessageToTargets,
 	describeChatDeliveryProblems,
 	describePartialChatDelivery,
-	type GoogleChatWebhookResponse,
 	prependUrgentNotice,
-	toGoogleChatThreadUrl,
 } from "../lib/chatBroadcast";
 import {
-	buildPrAssignmentChatMessage,
 	formatGoogleChatPerson,
 	stripPrLinkPlaceholders,
 } from "../lib/googleChatMessageTemplate";
 import type { Reviewer } from "../lib/types";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { type ActionCtx, action, internalAction } from "./_generated/server";
 
 async function resolveWebhookTargets(
@@ -68,20 +66,23 @@ async function resolveAssignerDisplayNameForChat(
 		assignerEmail?: string;
 		teamSlug: string;
 	},
-): Promise<string | undefined> {
+): Promise<{ name?: string; chatId?: string }> {
 	const { assignerName, assignerEmail, teamSlug } = options;
 
 	if (assignerEmail?.trim()) {
 		try {
-			const reviewers = await ctx.runQuery(api.queries.getReviewers, {
-				teamSlug,
-			});
-			const assigner = reviewers.find(
-				(reviewer) =>
-					reviewer.email.toLowerCase() === assignerEmail.trim().toLowerCase(),
+			const assigner = await ctx.runQuery(
+				internal.queries.getReviewerByEmailAnyTeam,
+				{
+					email: assignerEmail,
+					preferredTeamSlug: teamSlug,
+				},
 			);
-			if (assigner?.name?.trim()) {
-				return assigner.name.trim();
+			if (assigner) {
+				return {
+					name: assigner.name.trim() || assignerName?.trim() || undefined,
+					chatId: assigner.googleChatUserId?.trim() || undefined,
+				};
 			}
 		} catch (error) {
 			console.warn(
@@ -93,10 +94,47 @@ async function resolveAssignerDisplayNameForChat(
 
 	const trimmedName = assignerName?.trim();
 	if (trimmedName && !trimmedName.includes("@") && trimmedName !== "Unknown") {
-		return trimmedName;
+		return { name: trimmedName };
 	}
 
-	return undefined;
+	return {};
+}
+
+async function persistAssignmentChatThreadLinks(
+	ctx: ActionCtx,
+	args: {
+		teamSlug: string;
+		prUrl: string;
+		reviewerEmails: string[];
+		delivery: ChatDelivery;
+	},
+) {
+	if (
+		args.reviewerEmails.length === 0 ||
+		(args.delivery.googleChatThreadUrls.length === 0 &&
+			!args.delivery.googleChatThreadUrl)
+	) {
+		return;
+	}
+
+	try {
+		await ctx.runMutation(
+			api.mutations.attachGoogleChatThreadUrlToAssignmentHistory,
+			{
+				teamSlug: args.teamSlug,
+				prUrl: args.prUrl,
+				reviewerEmails: args.reviewerEmails,
+				...(args.delivery.googleChatThreadUrl
+					? { googleChatThreadUrl: args.delivery.googleChatThreadUrl }
+					: {}),
+				...(args.delivery.googleChatThreadUrls.length > 0
+					? { googleChatThreadUrls: args.delivery.googleChatThreadUrls }
+					: {}),
+			},
+		);
+	} catch (error) {
+		console.warn("Failed to persist Google Chat thread URL", error);
+	}
 }
 
 // Google Chat integration action
@@ -158,28 +196,13 @@ export const sendGoogleChatMessage = action({
 
 		try {
 			const normalizedPrUrl = prUrl.trim();
-			// If no assignerChatId provided by client but we have email + teamSlug, attempt server-side lookup
-			if (!assignerChatId && assignerEmail && teamSlug) {
-				try {
-					const reviewers = await ctx.runQuery(api.queries.getReviewers, {
-						teamSlug,
-					});
-					const assigner = reviewers.find(
-						(r) => r.email.toLowerCase() === assignerEmail.toLowerCase(),
-					);
-					assignerChatId = assigner?.googleChatUserId?.trim() || undefined;
-				} catch (e) {
-					console.warn("Failed to lookup assignerChatId server-side", e);
-				}
-			}
-			const resolvedAssignerName = await resolveAssignerDisplayNameForChat(
-				ctx,
-				{
-					assignerName,
-					assignerEmail,
-					teamSlug,
-				},
-			);
+			const resolvedAssigner = await resolveAssignerDisplayNameForChat(ctx, {
+				assignerName,
+				assignerEmail,
+				teamSlug,
+			});
+			const resolvedAssignerName = resolvedAssigner.name;
+			assignerChatId = assignerChatId || resolvedAssigner.chatId;
 			let builtMessage = ""; // init to satisfy TS definite assignment
 
 			const formatPerson = (
@@ -274,7 +297,6 @@ export const sendGoogleChatMessage = action({
 				urgent,
 				cardId: "pr-assignment-card",
 			});
-			const { googleChatThreadUrl } = delivery;
 
 			const deliveryProblems = describeChatDeliveryProblems(
 				delivery.failures,
@@ -289,20 +311,13 @@ export const sendGoogleChatMessage = action({
 				};
 			}
 
-			if (googleChatThreadUrl && reviewerEmail.trim()) {
-				try {
-					await ctx.runMutation(
-						api.mutations.attachGoogleChatThreadUrlToAssignmentHistory,
-						{
-							teamSlug,
-							prUrl: normalizedPrUrl,
-							reviewerEmails: [reviewerEmail],
-							googleChatThreadUrl,
-						},
-					);
-				} catch (e) {
-					console.warn("Failed to persist Google Chat thread URL", e);
-				}
+			if (reviewerEmail.trim()) {
+				await persistAssignmentChatThreadLinks(ctx, {
+					teamSlug,
+					prUrl: normalizedPrUrl,
+					reviewerEmails: [reviewerEmail],
+					delivery,
+				});
 			}
 
 			// Fire and forget logging of the message (keep last 3)
@@ -422,27 +437,13 @@ export const sendGoogleChatGroupMessage = action({
 
 		try {
 			const normalizedPrUrl = prUrl.trim();
-			if (!assignerChatId && assignerEmail && teamSlug) {
-				try {
-					const teamReviewers = await ctx.runQuery(api.queries.getReviewers, {
-						teamSlug,
-					});
-					const assigner = teamReviewers.find(
-						(r) => r.email.toLowerCase() === assignerEmail.toLowerCase(),
-					);
-					assignerChatId = assigner?.googleChatUserId?.trim() || undefined;
-				} catch (e) {
-					console.warn("Failed to lookup assignerChatId server-side", e);
-				}
-			}
-			const resolvedAssignerName = await resolveAssignerDisplayNameForChat(
-				ctx,
-				{
-					assignerName,
-					assignerEmail,
-					teamSlug,
-				},
-			);
+			const resolvedAssigner = await resolveAssignerDisplayNameForChat(ctx, {
+				assignerName,
+				assignerEmail,
+				teamSlug,
+			});
+			const resolvedAssignerName = resolvedAssigner.name;
+			assignerChatId = assignerChatId || resolvedAssigner.chatId;
 
 			const reviewerList = normalizedReviewers
 				.map((reviewer) =>
@@ -484,7 +485,6 @@ export const sendGoogleChatGroupMessage = action({
 				urgent,
 				cardId: "pr-assignment-batch-card",
 			});
-			const { googleChatThreadUrl } = delivery;
 			const deliveryProblems = describeChatDeliveryProblems(
 				delivery.failures,
 				missingWebhookSlugs,
@@ -498,23 +498,12 @@ export const sendGoogleChatGroupMessage = action({
 				};
 			}
 
-			if (googleChatThreadUrl) {
-				try {
-					await ctx.runMutation(
-						api.mutations.attachGoogleChatThreadUrlToAssignmentHistory,
-						{
-							teamSlug,
-							prUrl: normalizedPrUrl,
-							reviewerEmails: normalizedReviewers.map(
-								(reviewer) => reviewer.email,
-							),
-							googleChatThreadUrl,
-						},
-					);
-				} catch (e) {
-					console.warn("Failed to persist Google Chat thread URL", e);
-				}
-			}
+			await persistAssignmentChatThreadLinks(ctx, {
+				teamSlug,
+				prUrl: normalizedPrUrl,
+				reviewerEmails: normalizedReviewers.map((reviewer) => reviewer.email),
+				delivery,
+			});
 
 			try {
 				await ctx.runMutation(api.mutations.logSentMessage, {
@@ -595,6 +584,7 @@ export const sendAgentAssignmentGoogleChat = internalAction({
 		locale: v.optional(v.string()),
 		assignerEmail: v.optional(v.string()),
 		assignerName: v.optional(v.string()),
+		assignerChatId: v.optional(v.string()),
 		teamSlug: v.string(),
 		broadcastTeamSlugs: v.optional(v.array(v.string())),
 		urgent: v.optional(v.boolean()),
@@ -623,6 +613,9 @@ export const sendAgentAssignmentGoogleChat = internalAction({
 					...(args.locale ? { locale: args.locale } : {}),
 					...(args.assignerEmail ? { assignerEmail: args.assignerEmail } : {}),
 					...(args.assignerName ? { assignerName: args.assignerName } : {}),
+					...(args.assignerChatId
+						? { assignerChatId: args.assignerChatId }
+						: {}),
 					...(args.broadcastTeamSlugs?.length
 						? { broadcastTeamSlugs: args.broadcastTeamSlugs }
 						: {}),
@@ -638,6 +631,7 @@ export const sendAgentAssignmentGoogleChat = internalAction({
 				...(args.locale ? { locale: args.locale } : {}),
 				...(args.assignerEmail ? { assignerEmail: args.assignerEmail } : {}),
 				...(args.assignerName ? { assignerName: args.assignerName } : {}),
+				...(args.assignerChatId ? { assignerChatId: args.assignerChatId } : {}),
 				...(args.broadcastTeamSlugs?.length
 					? { broadcastTeamSlugs: args.broadcastTeamSlugs }
 					: {}),
@@ -1093,12 +1087,13 @@ export const flashAssign = action({
 			return { success: false, error: "No hay revisores disponibles" };
 		}
 
-		// 4. Find the assigner's reviewer record
-		const reviewers = (await ctx.runQuery(api.queries.getReviewers, {
-			teamSlug,
-		})) as Reviewer[];
-		const assigner = reviewers.find(
-			(r) => r.email.toLowerCase() === assignerEmail.toLowerCase(),
+		// 4. Find the assigner's reviewer record across teams
+		const assigner = await ctx.runQuery(
+			internal.queries.getReviewerByEmailAnyTeam,
+			{
+				email: assignerEmail,
+				preferredTeamSlug: teamSlug,
+			},
 		);
 
 		// 5. Assign the PR
@@ -1124,9 +1119,7 @@ export const flashAssign = action({
 		}
 
 		// 7. Send Google Chat notification
-		const team = (await ctx.runQuery(api.queries.getTeam, { teamSlug })) as {
-			googleChatWebhookUrl?: string;
-		} | null;
+		const team = await ctx.runQuery(api.queries.getTeam, { teamSlug });
 		const webhookUrl = team?.googleChatWebhookUrl?.trim();
 
 		if (webhookUrl) {
@@ -1160,49 +1153,36 @@ export const flashAssign = action({
 					`${greetingText}\n${assignmentText}`,
 				);
 
-				const message = buildPrAssignmentChatMessage({
-					text: builtMessage,
-					prUrl,
+				const delivery = await deliverChatMessageToTargets({
+					targets: [
+						{
+							slug: teamSlug,
+							name: team?.name?.trim() || teamSlug,
+							webhookUrl,
+							isExternalTarget: false,
+						},
+					],
+					baseMessage: builtMessage,
+					sourceTeamName: team?.name?.trim() || teamSlug,
 					locale: "es",
+					prUrl,
+					urgent: false,
 					cardId: "pr-assignment-card",
 				});
 
-				const response = await fetch(webhookUrl, {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify(message),
-				});
-
-				if (!response.ok) {
+				if (delivery.failures.length > 0) {
 					console.warn(
-						`Google Chat webhook failed: ${response.status} ${response.statusText}`,
+						`Google Chat webhook failed: ${delivery.failures.join("; ")}`,
 					);
 				}
 
-				if (response.ok && prUrl.trim() && nextReviewer.email.trim()) {
-					const responseBody = (await response
-						.clone()
-						.json()
-						.catch(() => null)) as GoogleChatWebhookResponse | null;
-					const googleChatThreadUrl = toGoogleChatThreadUrl(responseBody);
-					if (googleChatThreadUrl) {
-						try {
-							await ctx.runMutation(
-								api.mutations.attachGoogleChatThreadUrlToAssignmentHistory,
-								{
-									teamSlug,
-									prUrl: prUrl.trim(),
-									reviewerEmails: [nextReviewer.email],
-									googleChatThreadUrl,
-								},
-							);
-						} catch (persistError) {
-							console.warn(
-								"Failed to persist Google Chat thread URL for flash assignment",
-								persistError,
-							);
-						}
-					}
+				if (prUrl.trim() && nextReviewer.email.trim()) {
+					await persistAssignmentChatThreadLinks(ctx, {
+						teamSlug,
+						prUrl: prUrl.trim(),
+						reviewerEmails: [nextReviewer.email],
+						delivery,
+					});
 				}
 
 				// Log the sent message (fire and forget)
