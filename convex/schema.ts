@@ -80,6 +80,13 @@ export default defineSchema({
 		lastBirthdayNotifiedLocalDateKey: v.optional(v.string()),
 		createdAt: v.number(),
 		tags: v.array(v.id("tags")),
+		/**
+		 * Optional because every deployed row predates roles. Always read it
+		 * through resolveReviewerRole(), which treats `undefined` as "member";
+		 * comparing `role === "owner"` directly would lock legacy teams out of
+		 * the owner-gated mutations.
+		 */
+		role: v.optional(v.union(v.literal("owner"), v.literal("member"))),
 	})
 		.index("by_email", ["email"]) // legacy/simple lookups
 		.index("by_team", ["teamId"]) // team-scoped listing
@@ -386,4 +393,124 @@ export default defineSchema({
 	})
 		.index("by_survey_user", ["surveyId", "userTokenIdentifier"])
 		.index("by_survey", ["surveyId"]),
+
+	/**
+	 * App-wide configuration. Exactly one row, addressed by the literal key
+	 * "singleton" so the lookup is indexed rather than a table scan: this is
+	 * read on nearly every mutation via the authorization helpers.
+	 *
+	 * Every field is optional; an instance with no row falls back to the
+	 * defaults in lib/appSettings.ts, which reproduce the previous hardcoded
+	 * behaviour.
+	 */
+	appSettings: defineTable({
+		key: v.literal("singleton"),
+		emailAccess: v.optional(
+			v.object({
+				mode: v.union(
+					v.literal("open"),
+					v.literal("domains"),
+					v.literal("pattern"),
+				),
+				allowedDomains: v.optional(v.array(v.string())),
+				allowedEmailPattern: v.optional(v.string()),
+				allowClerkTestEmails: v.optional(v.boolean()),
+			}),
+		),
+		/** Keys are validated against the registry in lib/appFeatures.ts on write. */
+		featureToggles: v.optional(v.record(v.string(), v.boolean())),
+		ops: v.optional(
+			v.object({
+				retentionDays: v.optional(v.number()),
+				assignmentFeedLength: v.optional(v.number()),
+				backupsPerTeam: v.optional(v.number()),
+				debugMessageLimit: v.optional(v.number()),
+				defaultEventDurationMinutes: v.optional(v.number()),
+				birthdayNotifyLocalHour: v.optional(v.number()),
+				defaultTeamTimezone: v.optional(v.string()),
+			}),
+		),
+		updatedAt: v.number(),
+		updatedByEmail: v.optional(v.string()),
+	}).index("by_key", ["key"]),
+
+	/**
+	 * Admins granted from the console. ADMIN_ALLOWLIST_EMAILS stays as the
+	 * bootstrap seed and permanent break-glass, and is checked before this
+	 * table, so an empty or damaged roster can never lock an operator out.
+	 */
+	appAdmins: defineTable({
+		/** Normalized lowercase; uniqueness enforced at write-time. */
+		email: v.string(),
+		note: v.optional(v.string()),
+		source: v.union(v.literal("manual"), v.literal("bootstrap")),
+		createdAt: v.number(),
+		createdByEmail: v.optional(v.string()),
+	}).index("by_email", ["email"]),
+
+	/**
+	 * Product announcements shown above the board.
+	 *
+	 * Replaces a hardcoded array that needed a deploy to change. Built-in
+	 * banners keep pointing at messages/*.json through `translationKey`;
+	 * console-authored ones carry their copy inline in both locales.
+	 */
+	announcements: defineTable({
+		/** Stable slug. Doubles as the dismissal key, so renaming it un-dismisses. */
+		key: v.string(),
+		status: v.union(
+			v.literal("draft"),
+			v.literal("published"),
+			v.literal("archived"),
+		),
+		variant: v.union(v.literal("default"), v.literal("destructive")),
+		bodyEs: v.optional(v.string()),
+		bodyEn: v.optional(v.string()),
+		translationKey: v.optional(v.string()),
+		linkUrl: v.optional(v.string()),
+		linkLabelEs: v.optional(v.string()),
+		linkLabelEn: v.optional(v.string()),
+		audience: v.union(
+			v.literal("everyone"),
+			v.literal("admins"),
+			v.literal("teams"),
+		),
+		teamIds: v.optional(v.array(v.id("teams"))),
+		requiresTeamEvents: v.optional(v.boolean()),
+		startsAt: v.optional(v.number()),
+		endsAt: v.optional(v.number()),
+		dismissible: v.boolean(),
+		order: v.optional(v.number()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+		createdByEmail: v.optional(v.string()),
+	})
+		.index("by_status_order", ["status", "order"])
+		.index("by_key", ["key"]),
+
+	/** Per-user dismissals. Previously localStorage, so they did not sync across devices. */
+	announcementDismissals: defineTable({
+		userTokenIdentifier: v.string(),
+		announcementKey: v.string(),
+		createdAt: v.number(),
+	})
+		.index("by_user_key", ["userTokenIdentifier", "announcementKey"])
+		.index("by_user", ["userTokenIdentifier"]),
+
+	/** Audit trail for maintenance tasks that used to need `npx convex run`. */
+	maintenanceRuns: defineTable({
+		task: v.string(),
+		dryRun: v.boolean(),
+		status: v.union(
+			v.literal("running"),
+			v.literal("succeeded"),
+			v.literal("failed"),
+		),
+		startedAt: v.number(),
+		finishedAt: v.optional(v.number()),
+		triggeredByEmail: v.string(),
+		/** Serialized so the row does not need a validator per task shape. */
+		resultJson: v.optional(v.string()),
+		error: v.optional(v.string()),
+	}).index("by_started_at", ["startedAt"]),
 });

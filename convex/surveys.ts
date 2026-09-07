@@ -18,6 +18,7 @@ import {
 	type QueryCtx,
 	query,
 } from "./_generated/server";
+import { assertFeatureEnabled } from "./appConfig";
 import { isAdminEmail, requireIdentity } from "./authz";
 
 const questionTypeValidator = v.union(
@@ -39,8 +40,11 @@ const questionInputValidator = v.object({
 	required: v.boolean(),
 });
 
-function assertAdmin(email: string | null | undefined) {
-	if (!isAdminEmail(email)) {
+async function assertAdmin(
+	ctx: QueryCtx | MutationCtx,
+	email: string | null | undefined,
+) {
+	if (!(await isAdminEmail(ctx, email))) {
 		throw new Error("Unauthorized");
 	}
 }
@@ -388,7 +392,7 @@ export const listSurveys = query({
 	args: {},
 	handler: async (ctx) => {
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		const surveys = await ctx.db.query("surveys").order("desc").collect();
 		const withCounts = await Promise.all(
@@ -414,7 +418,7 @@ export const getSurvey = query({
 	},
 	handler: async (ctx, { surveyId }) => {
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		const survey = await ctx.db.get(surveyId);
 		if (!survey) return null;
@@ -435,7 +439,7 @@ export const getSurveyResults = query({
 	},
 	handler: async (ctx, { surveyId }) => {
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		const survey = await ctx.db.get(surveyId);
 		if (!survey) return null;
@@ -502,8 +506,9 @@ export const createSurvey = mutation({
 		usePmfTemplate: v.optional(v.boolean()),
 	},
 	handler: async (ctx, { title, description, deadlineAt, usePmfTemplate }) => {
+		await assertFeatureEnabled(ctx, "surveys");
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		if (!Number.isFinite(deadlineAt)) {
 			throw new Error("Invalid deadline");
@@ -540,7 +545,7 @@ export const updateSurvey = mutation({
 	},
 	handler: async (ctx, { surveyId, title, description, deadlineAt }) => {
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		const survey = await ctx.db.get(surveyId);
 		if (!survey) {
@@ -574,7 +579,7 @@ export const setSurveyQuestions = mutation({
 	},
 	handler: async (ctx, { surveyId, questions }) => {
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		const survey = await ctx.db.get(surveyId);
 		if (!survey) {
@@ -596,8 +601,9 @@ export const activateSurvey = mutation({
 		surveyId: v.id("surveys"),
 	},
 	handler: async (ctx, { surveyId }) => {
+		await assertFeatureEnabled(ctx, "surveys");
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		const survey = await ctx.db.get(surveyId);
 		if (!survey) {
@@ -646,7 +652,7 @@ export const closeSurvey = mutation({
 	},
 	handler: async (ctx, { surveyId }) => {
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		const survey = await ctx.db.get(surveyId);
 		if (!survey) {
@@ -679,7 +685,7 @@ export const isSurveyAdmin = query({
 		}
 		return {
 			isAuthenticated: true,
-			isAdmin: isAdminEmail(identity.email),
+			isAdmin: await isAdminEmail(ctx, identity.email),
 		};
 	},
 });

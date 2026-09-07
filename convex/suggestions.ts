@@ -6,8 +6,9 @@ import {
 	type QueryCtx,
 	query,
 } from "./_generated/server";
+import { assertFeatureEnabled } from "./appConfig";
+import { isAdminEmail } from "./authz";
 
-const ADMIN_EMAIL_REGEX = /^.+@buk\.[a-zA-Z0-9-]+$/;
 const MAX_LIST_LIMIT = 100;
 const DEFAULT_LIST_LIMIT = 50;
 
@@ -26,13 +27,23 @@ async function requireIdentity(ctx: QueryCtx | MutationCtx) {
 	return identity;
 }
 
-function isAdmin(email: string | undefined | null): boolean {
-	if (!email) return false;
-	return ADMIN_EMAIL_REGEX.test(email);
+/**
+ * Moderation used to key off a hardcoded `@buk.*` regex, which made it
+ * unreachable on any self-hosted instance no matter how the admin allowlist
+ * was configured. It now shares the single definition in ./authz.
+ */
+async function isAdmin(
+	ctx: QueryCtx | MutationCtx,
+	email: string | undefined | null,
+): Promise<boolean> {
+	return isAdminEmail(ctx, email);
 }
 
-function assertAdmin(email: string | undefined | null) {
-	if (!isAdmin(email)) {
+async function assertAdmin(
+	ctx: QueryCtx | MutationCtx,
+	email: string | undefined | null,
+) {
+	if (!(await isAdmin(ctx, email))) {
 		throw new Error("Unauthorized");
 	}
 }
@@ -134,7 +145,7 @@ export const listSuggestions = query({
 		const votedSuggestionIds = new Set<Id<"suggestions">>(
 			myVotes.map((vote) => vote.suggestionId),
 		);
-		const canModerate = isAdmin(identity.email);
+		const canModerate = await isAdmin(ctx, identity.email);
 
 		return withViewerSuggestionState(suggestions, {
 			votedSuggestionIds,
@@ -180,7 +191,7 @@ export const listSuggestionsBoard = query({
 		const votedSuggestionIds = new Set<Id<"suggestions">>(
 			myVotes.map((vote) => vote.suggestionId),
 		);
-		const canModerate = isAdmin(identity.email);
+		const canModerate = await isAdmin(ctx, identity.email);
 
 		return {
 			open: withViewerSuggestionState(openSuggestions, {
@@ -237,7 +248,7 @@ export const getSuggestionDetail = query({
 			},
 			comments,
 			viewerHasUpvoted,
-			canModerate: isAdmin(identity.email),
+			canModerate: await isAdmin(ctx, identity.email),
 		};
 	},
 });
@@ -248,6 +259,7 @@ export const createSuggestion = mutation({
 		description: v.string(),
 	},
 	handler: async (ctx, { title, description }) => {
+		await assertFeatureEnabled(ctx, "suggestionsBoard");
 		const identity = await requireIdentity(ctx);
 		const normalizedTitle = normalizeText(title, {
 			min: 3,
@@ -283,6 +295,7 @@ export const toggleSuggestionVote = mutation({
 		suggestionId: v.id("suggestions"),
 	},
 	handler: async (ctx, { suggestionId }) => {
+		await assertFeatureEnabled(ctx, "suggestionsBoard");
 		const identity = await requireIdentity(ctx);
 		const suggestion = await ctx.db.get(suggestionId);
 		if (!suggestion) {
@@ -335,6 +348,7 @@ export const addSuggestionComment = mutation({
 		body: v.string(),
 	},
 	handler: async (ctx, { suggestionId, body }) => {
+		await assertFeatureEnabled(ctx, "suggestionsBoard");
 		const identity = await requireIdentity(ctx);
 		const suggestion = await ctx.db.get(suggestionId);
 		if (!suggestion) {
@@ -372,7 +386,7 @@ export const updateSuggestionStatus = mutation({
 	},
 	handler: async (ctx, { suggestionId, status }) => {
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		const suggestion = await ctx.db.get(suggestionId);
 		if (!suggestion) {
@@ -394,7 +408,7 @@ export const deleteSuggestion = mutation({
 	},
 	handler: async (ctx, { suggestionId }) => {
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		const suggestion = await ctx.db.get(suggestionId);
 		if (!suggestion) {
@@ -432,7 +446,7 @@ export const deleteSuggestionComment = mutation({
 	},
 	handler: async (ctx, { commentId }) => {
 		const identity = await requireIdentity(ctx);
-		assertAdmin(identity.email);
+		await assertAdmin(ctx, identity.email);
 
 		const comment = await ctx.db.get(commentId);
 		if (!comment) {

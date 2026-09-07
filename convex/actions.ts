@@ -29,7 +29,7 @@ async function resolveWebhookTargets(
 
 	const teams = await Promise.all(
 		requestedSlugs.map((slug) =>
-			ctx.runQuery(api.queries.getTeam, { teamSlug: slug }),
+			ctx.runQuery(internal.queries.getTeamWithSecrets, { teamSlug: slug }),
 		),
 	);
 
@@ -797,7 +797,9 @@ export const sendEventInvite = action({
 		}
 
 		// Get team for webhook URL
-		const team = await ctx.runQuery(api.queries.getTeam, { teamSlug });
+		const team = await ctx.runQuery(internal.queries.getTeamWithSecrets, {
+			teamSlug,
+		});
 		const webhookUrl = team?.googleChatWebhookUrl?.trim();
 
 		if (!webhookUrl) {
@@ -905,7 +907,9 @@ export const sendEventStartNotification = action({
 		}
 
 		// Get team for webhook URL
-		const team = await ctx.runQuery(api.queries.getTeam, { teamSlug });
+		const team = await ctx.runQuery(internal.queries.getTeamWithSecrets, {
+			teamSlug,
+		});
 		const webhookUrl = team?.googleChatWebhookUrl?.trim();
 
 		let notificationError: string | undefined;
@@ -1119,7 +1123,9 @@ export const flashAssign = action({
 		}
 
 		// 7. Send Google Chat notification
-		const team = await ctx.runQuery(api.queries.getTeam, { teamSlug });
+		const team = await ctx.runQuery(internal.queries.getTeamWithSecrets, {
+			teamSlug,
+		});
 		const webhookUrl = team?.googleChatWebhookUrl?.trim();
 
 		if (webhookUrl) {

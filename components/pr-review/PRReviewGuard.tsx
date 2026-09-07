@@ -2,8 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { useAppConfig } from "@/components/AppConfigProvider";
 import { Button } from "@/components/ui/button";
-import { isAllowedAppEmail } from "@/lib/emailAccess";
 
 type PRReviewGuardProps = {
 	isLoading: boolean;
@@ -27,8 +27,15 @@ export function PRReviewGuard({
 	children,
 }: PRReviewGuardProps) {
 	const t = useTranslations();
+	const appConfig = useAppConfig();
 
-	if (isLoading || !isLoaded || !isUserPreferencesReady || !hasAccessContext) {
+	if (
+		isLoading ||
+		!isLoaded ||
+		!isUserPreferencesReady ||
+		!hasAccessContext ||
+		!appConfig.isReady
+	) {
 		return (
 			<div className="container mx-auto flex h-[50vh] items-center justify-center px-4 py-6">
 				<div className="calm-section max-w-xl text-center">
@@ -54,13 +61,9 @@ export function PRReviewGuard({
 		);
 	}
 
-	if (
-		userEmail &&
-		!isAllowedAppEmail(
-			userEmail,
-			process.env.NEXT_PUBLIC_ALLOW_CLERK_TEST_EMAILS === "true",
-		)
-	) {
+	// The rule lives in the appSettings singleton and is resolved server-side,
+	// so the console can widen access without a redeploy. Admins always pass.
+	if (userEmail && !appConfig.canAccessApp) {
 		return (
 			<div className="container mx-auto flex h-[50vh] items-center justify-center px-4 py-6">
 				<div className="calm-section max-w-xl text-center">

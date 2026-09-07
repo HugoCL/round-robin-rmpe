@@ -21,6 +21,12 @@ test("keeps only the intended routes public", () => {
 		"/api/admin",
 		"/api/agent-admin",
 		"/es/surveys/weekly",
+		// The admin console must never be reachable without a session.
+		"/es/admin",
+		"/en/admin",
+		"/es/admin/",
+		// Reports which server-side API keys are configured.
+		"/api/admin/runtime-status",
 	]) {
 		assert.equal(isPublicRoute(pathname), false, pathname);
 	}

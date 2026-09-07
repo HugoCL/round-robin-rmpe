@@ -13,8 +13,9 @@ import {
 	internalMutation,
 	internalQuery,
 } from "./_generated/server";
+import { getResolvedAppSettings } from "./appSettings";
 
-/** Local hour (0–23) when birthday notifications are sent for a team. */
+/** Fallback local hour (0-23) when no appSettings row overrides it. */
 export const BIRTHDAY_NOTIFY_LOCAL_HOUR = 9;
 
 type DueBirthdayRow = {
@@ -31,6 +32,8 @@ type DueBirthdayRow = {
 export const scanDueBirthdays = internalQuery({
 	args: {},
 	handler: async (ctx): Promise<DueBirthdayRow[]> => {
+		const { ops } = await getResolvedAppSettings(ctx);
+		const notifyHour = ops.birthdayNotifyLocalHour;
 		const teams = await ctx.db.query("teams").collect();
 		const now = Date.now();
 		const out: DueBirthdayRow[] = [];
@@ -38,7 +41,7 @@ export const scanDueBirthdays = internalQuery({
 		for (const team of teams) {
 			const timeZone = resolveTeamTimezone(team.timezone);
 			const localHour = getLocalHourInTimeZone(now, timeZone);
-			if (localHour < BIRTHDAY_NOTIFY_LOCAL_HOUR) continue;
+			if (localHour < notifyHour) continue;
 
 			const { month: lm, day: ld } = getMonthDayInTimeZone(now, timeZone);
 			const localDateKey = getLocalDateKeyYYYYMMDD(now, timeZone);

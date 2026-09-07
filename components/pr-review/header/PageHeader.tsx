@@ -1,6 +1,7 @@
-import { Bot, ClipboardList, Lightbulb } from "lucide-react";
+import { Bot, ClipboardList, Lightbulb, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { useFeatureEnabled } from "@/components/AppConfigProvider";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { TeamSwitcher } from "@/components/TeamSwitcher";
 import { IconActionButton } from "@/components/ui/icon-action-button";
@@ -29,6 +30,10 @@ export function PageHeader({ teamSlug }: PageHeaderProps) {
 		usePRReview();
 	const locale = useLocale();
 	const agentSetupOpen = useAgentSetupDialogOpen();
+	const eventsEnabled = useFeatureEnabled("events");
+	const surveysEnabled = useFeatureEnabled("surveys");
+	const suggestionsEnabled = useFeatureEnabled("suggestionsBoard");
+	const pushEnabled = useFeatureEnabled("pushNotifications");
 
 	return (
 		<header className="sticky top-0 z-40 bg-background/95 pb-px backdrop-blur-sm">
@@ -58,23 +63,34 @@ export function PageHeader({ teamSlug }: PageHeaderProps) {
 							>
 								<Bot />
 							</IconActionButton>
-							<IconActionButton asChild label={t("suggestions.shortcut")}>
-								<Link href={`/${locale}/suggestions`}>
-									<Lightbulb />
-								</Link>
-							</IconActionButton>
-							{isAdmin ? (
+							{suggestionsEnabled ? (
+								<IconActionButton asChild label={t("suggestions.shortcut")}>
+									<Link href={`/${locale}/suggestions`}>
+										<Lightbulb />
+									</Link>
+								</IconActionButton>
+							) : null}
+							{isAdmin && surveysEnabled ? (
 								<IconActionButton asChild label={t("survey.shortcut")}>
 									<Link href={`/${locale}/surveys`}>
 										<ClipboardList />
 									</Link>
 								</IconActionButton>
 							) : null}
-							{canManageCurrentTeam ? <CreateEventDialog iconOnly /> : null}
+							{isAdmin ? (
+								<IconActionButton asChild label={t("admin.shortcut")}>
+									<Link href={`/${locale}/admin`}>
+										<ShieldCheck />
+									</Link>
+								</IconActionButton>
+							) : null}
+							{canManageCurrentTeam && eventsEnabled ? (
+								<CreateEventDialog iconOnly />
+							) : null}
 							<ChangelogDialog iconOnly />
-							{userInfo?.email && (
+							{userInfo?.email && pushEnabled ? (
 								<PushNotificationManager userEmail={userInfo.email} iconOnly />
-							)}
+							) : null}
 							<ThemeToggle />
 							<HeaderOptionsDrawer />
 						</nav>

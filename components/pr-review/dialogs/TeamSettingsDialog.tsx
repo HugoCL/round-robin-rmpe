@@ -41,7 +41,12 @@ export function TeamSettingsDialog({
 	const [timezone, setTimezone] = useState(DEFAULT_TEAM_TIMEZONE);
 	const [isSaving, setIsSaving] = useState(false);
 
-	const team = useQuery(api.queries.getTeam, teamSlug ? { teamSlug } : "skip");
+	// getTeam no longer returns the webhook URL: it is a credential. This
+	// owner-gated query is the only place it reaches the client.
+	const team = useQuery(
+		api.queries.getTeamAdminSettings,
+		teamSlug ? { teamSlug } : "skip",
+	);
 	const updateTeamSettings = useMutation(api.mutations.updateTeamSettings);
 
 	// Initialize webhook URL when team data loads

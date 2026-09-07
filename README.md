@@ -1,3 +1,16 @@
+# La Lista
+
+Round-robin PR reviewer assignment for teams. Next.js + Convex + Clerk, with
+Google Chat notifications, an MCP server for agents, and a Chrome extension.
+
+- **Self-hosting:** see [DEPLOYMENT.md](DEPLOYMENT.md) for the Docker + Postgres
+  setup, and its "First admin and access control" section for getting into the
+  admin console at `/{locale}/admin` the first time.
+- **Working on the code:** see [AGENTS.md](AGENTS.md) for the architecture,
+  commands and conventions, and [DESIGN.md](DESIGN.md) for the design system.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

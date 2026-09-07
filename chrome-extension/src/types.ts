@@ -36,7 +36,6 @@ export interface TeamInfo {
 	_id: string;
 	name: string;
 	slug: string;
-	googleChatWebhookUrl?: string;
 }
 
 export interface AssignmentResult {

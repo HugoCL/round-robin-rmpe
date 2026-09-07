@@ -39,6 +39,104 @@ Postgres and the Convex backend, mints an admin key, pushes the backend
 environment variables, deploys everything in `convex/` (schema, indexes, crons,
 HTTP actions), then builds and starts the web app on <http://localhost:3000>.
 
+## First admin and access control
+
+Everything below is configured from the admin console at `/{locale}/admin`, not
+from environment variables. You only need one env var to get in the first time.
+
+### Bootstrapping the first admin
+
+Set your own address in `.env` before (or after) bootstrapping:
+
+```bash
+ADMIN_ALLOWLIST_EMAILS=you@yourcompany.com
+./scripts/selfhost.sh push-env
+```
+
+`ADMIN_ALLOWLIST_EMAILS` is a comma-separated list, checked **before** the
+database. It is the break-glass: an emptied or damaged admin table can never
+lock you out, and it cannot be edited from the console. Everything else is
+managed in the UI.
+
+Sign in, open `/es/admin` (or `/en/admin`), and use **Access** to:
+
+- add further admins, who are stored in the database and take effect
+  immediately, with no `push-env` and no restart;
+- click **Import from the environment** to copy the allowlist into that list so
+  it is visible alongside the rest.
+
+### Who can sign in
+
+Access to the app is a stored policy, not a code constant:
+
+| Mode | Effect |
+| --- | --- |
+| Open (default) | Any account your Clerk instance lets sign up |
+| By domain | Only listed domains, matched exactly |
+| By pattern | Only addresses matching a regular expression |
+
+Admins bypass the policy unconditionally, which is what makes a mistyped domain
+list recoverable rather than a lockout. The form previews whether a given
+address would be allowed before you save.
+
+**To deploy an instance closed**, set the rule in the environment. It applies
+from the first request, so there is no window where the Open default is in
+force:
+
+```bash
+EMAIL_ACCESS_ALLOWED_DOMAINS=yourcompany.com
+# or, for something a domain list cannot express:
+EMAIL_ACCESS_ALLOWED_PATTERN=^.+@yourcompany\.[a-z0-9-]+$
+./scripts/selfhost.sh push-env
+```
+
+Only one applies, the pattern first. The console shows which source is in
+force, and saving a policy there writes it to the database, which from then on
+takes precedence over the variable. A variable that cannot be parsed denies
+everyone rather than opening the instance, and since admins bypass the policy
+you can still sign in and fix it.
+
+> **Upgrading an existing instance.** The default is Open, so an instance whose
+> access rule used to live in code needs `EMAIL_ACCESS_ALLOWED_DOMAINS` or
+> `EMAIL_ACCESS_ALLOWED_PATTERN` set in the same deploy that ships this version.
+> The console shows a warning whenever nothing has decided the policy.
+
+### Teams and roles
+
+Teams have owners and members. Whoever creates a team owns it; anyone joining
+through onboarding is a member. Owners are required for the destructive and
+team-wide operations: team settings (including the Google Chat webhook),
+removing a reviewer, deleting a tag, resetting counts, importing a roster and
+restoring a backup. Everything else stays open to any member.
+
+An instance upgrading from before roles existed has teams with no owner. Those
+teams keep working exactly as they did: while a team has no owner, its members
+retain the access they had before roles existed, and the owner requirement
+switches on for that team by itself once it has one. The one exception is
+granting the role, which only an existing owner or a global admin can do, so
+nobody can claim a team the backfill has not reached.
+
+To assign owners, open **Teams**, click **Preview**, review the choice per team,
+then **Apply**. A team can never afterwards be left with zero owners.
+
+### The rest of the console
+
+- **People** lists every account the instance knows about, with teams, roles and
+  active agent tokens.
+- **Announcements** replaces the banners that used to be hardcoded. Bilingual
+  copy, scheduling, per-team targeting, and a way to show a dismissed
+  announcement again.
+- **Features** turns optional modules on and off for the whole instance. A
+  feature that also needs an API key reports which one is missing instead of
+  silently doing nothing.
+- **Settings** holds retention, feed length, backup count, default event
+  duration, birthday notification hour and the default time zone for new teams.
+- **Maintenance** runs the cleanup tasks and database migrations that previously
+  required `npx convex run` plus a deployment admin key, with dry runs and a
+  record of what was run and by whom.
+
+---
+
 ### Day-to-day
 
 ```bash

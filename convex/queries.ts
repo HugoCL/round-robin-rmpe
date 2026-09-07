@@ -11,8 +11,10 @@ import {
 	type Weekday,
 } from "../lib/reviewerAvailability";
 import { isEligibleForAssignment } from "../lib/reviewerEligibility";
+import { toPublicTeam, toPublicTeams } from "../lib/teamPublicView";
 import { summarizeRecentAssignments } from "../lib/websiteMetrics";
 import {
+	assertCanAdministerTeamById,
 	getMemberTeamsForEmail,
 	isAdminEmail,
 	normalizeEmail,
@@ -536,14 +538,15 @@ export const getTeams = query({
 	args: {},
 	handler: async (ctx) => {
 		const teams = await ctx.db.query("teams").order("desc").collect();
-		return teams;
+		// Unauthenticated: powers the landing page and the Chrome extension.
+		return toPublicTeams(teams);
 	},
 });
 
 export const getTeamsForUserEmail = query({
 	args: { email: v.string() },
 	handler: async (ctx, { email }) => {
-		return await getMemberTeamsForEmail(ctx, email);
+		return toPublicTeams(await getMemberTeamsForEmail(ctx, email));
 	},
 });
 
@@ -568,7 +571,7 @@ export const getMyTeamAccess = query({
 		const memberTeamSlugs = memberTeams
 			.map((team) => team.slug)
 			.filter((slug): slug is string => typeof slug === "string");
-		const isAdmin = isAdminEmail(identity.email);
+		const isAdmin = await isAdminEmail(ctx, identity.email);
 		const isMemberOfCurrentTeam =
 			typeof teamSlug === "string" ? memberTeamSlugs.includes(teamSlug) : false;
 
@@ -613,10 +616,10 @@ export const getMyOnboardingState = query({
 
 		return {
 			isAuthenticated: true,
-			isAdmin: isAdminEmail(identity.email),
+			isAdmin: await isAdminEmail(ctx, identity.email),
 			hasTeams: memberTeamSlugs.length > 0,
 			memberTeamSlugs,
-			joinableTeams,
+			joinableTeams: toPublicTeams(joinableTeams),
 		};
 	},
 });
@@ -820,10 +823,13 @@ export const getTeam = query({
 			.withIndex("by_slug", (q) => q.eq("slug", teamSlug))
 			.first();
 		if (!team) return null;
-		return {
+		// The webhook URL is a credential and never leaves through this query.
+		// Actions read it via internal.queries.getTeamWithSecrets; the settings
+		// dialog reads it via getTeamAdminSettings.
+		return toPublicTeam({
 			...team,
 			timezone: resolveTeamTimezone(team.timezone),
-		};
+		});
 	},
 });
 
@@ -1610,5 +1616,43 @@ export const getEventsNeedingStartNotification = query({
 			.collect();
 
 		return events;
+	},
+});
+
+/**
+ * Full team document including the Google Chat webhook URL.
+ *
+ * Internal because the webhook is a credential. Actions call this instead of
+ * the public getTeam; if this is ever made public the leak comes straight
+ * back.
+ */
+export const getTeamWithSecrets = internalQuery({
+	args: { teamSlug: v.string() },
+	handler: async (ctx, { teamSlug }) => {
+		const team = await ctx.db
+			.query("teams")
+			.withIndex("by_slug", (q) => q.eq("slug", teamSlug))
+			.first();
+		if (!team) return null;
+		return { ...team, timezone: resolveTeamTimezone(team.timezone) };
+	},
+});
+
+/** The webhook URL for the team settings dialog. Owner or global admin only. */
+export const getTeamAdminSettings = query({
+	args: { teamSlug: v.string() },
+	handler: async (ctx, { teamSlug }) => {
+		const team = await ctx.db
+			.query("teams")
+			.withIndex("by_slug", (q) => q.eq("slug", teamSlug))
+			.first();
+		if (!team) return null;
+		await assertCanAdministerTeamById(ctx, team._id);
+		return {
+			slug: team.slug,
+			name: team.name,
+			timezone: resolveTeamTimezone(team.timezone),
+			googleChatWebhookUrl: team.googleChatWebhookUrl ?? "",
+		};
 	},
 });

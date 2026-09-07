@@ -186,7 +186,7 @@ async function resolveCanManageTeam(
 	teamId: Id<"teams">,
 	identity: { email?: string | null },
 ): Promise<boolean> {
-	if (isAdminEmail(identity.email)) {
+	if (await isAdminEmail(ctx, identity.email)) {
 		return true;
 	}
 	const normalizedEmail = normalizeEmail(identity.email);

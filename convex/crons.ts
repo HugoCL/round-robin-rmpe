@@ -14,21 +14,21 @@ crons.interval(
 crons.interval(
 	"auto-complete-events",
 	{ minutes: 1 },
-	api.mutations.autoCompleteExpiredEvents,
+	internal.mutations.autoCompleteExpiredEvents,
 );
 
 // Auto-mark reviewers as available when their absentUntil time has passed
 crons.interval(
 	"process-absent-returns",
 	{ minutes: 5 },
-	api.mutations.processAbsentReturns,
+	internal.mutations.processAbsentReturns,
 );
 
 // Clean up old prAssignments and assignmentHistory records daily at midnight UTC
 crons.daily(
 	"cleanup-old-records",
 	{ hourUTC: 0, minuteUTC: 0 },
-	api.mutations.cleanupOldRecords,
+	internal.mutations.cleanupOldRecords,
 );
 
 // Birthday notifications (Google Chat + push), once local hour reached per team TZ

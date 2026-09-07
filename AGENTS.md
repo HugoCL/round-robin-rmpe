@@ -124,6 +124,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Learned Workspace Facts
 
 - The repository includes a `chrome-extension/` package alongside the Next.js web app.
-- Team-scoped FF Repository (`featureFlags` in Convex, route `/{locale}/{team}/feature-flags`) registers flags and tracks age; agent MCP exposes feature-flag tools.
+- Team-scoped FF Repository (`featureFlags` in Convex) registers flags and tracks age. It has a full authorized CRUD backend but **no UI and no readers** in the app; the route `/{locale}/{team}/feature-flags` referenced by older notes does not exist.
+- Admin console at `/{locale}/admin` (`components/admin/`, tabs: access, teams, users, announcements, features, settings, maintenance). Admin identity is `ADMIN_ALLOWLIST_EMAILS` (break-glass, checked first) OR the `appAdmins` table. App-wide configuration lives in the `appSettings` singleton; read it through `getResolvedAppSettings` and the pure helpers in `lib/appSettings.ts`.
+- `isAdminEmail(ctx, email)` is async and takes `ctx` first, deliberately: an un-awaited async predicate is always truthy, so the extra parameter turns a missed call site into a compile error.
+- Reviewers have `role: "owner" | "member"`, optional because deployed rows predate it. Always read it via `resolveReviewerRole()`; a direct `role === "owner"` check treats every legacy row as a member.
+- `assertCanAdministerTeamById` grandfathers teams with zero owners down to member level, so the owner requirement activates per team as the backfill reaches it rather than all at once on deploy. Pass `grandfatherOwnerlessTeams: false` for anything that must not be reachable that way; granting a role is the one such case.
+- The email access policy falls back to `EMAIL_ACCESS_ALLOWED_PATTERN` / `EMAIL_ACCESS_ALLOWED_DOMAINS` while no policy is stored, so an instance can deploy closed without a seeding step. A stored policy always wins, and an unparseable variable denies everyone but admins rather than opening the instance.
+- Do not hold Convex `FunctionReference` values in a module-level const inside a `convex/` module: it makes the generated `api` type circular and silently degrades inference across the app to `any`. Resolve refs inside the handler (see `convex/adminOps.ts`).
 - Agent MCP is served at `/api/mcp` with personal Bearer tokens; settings documents install via a single copyable `claude mcp add --transport http` one-liner (not manual `settings.json` JSON).
 - Daily `cleanupOldRecords` cron deletes completed/cancelled events and other old assignment records after 7 days.

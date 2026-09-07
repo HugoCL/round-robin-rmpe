@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import type React from "react";
+import { AppConfigProvider } from "@/components/AppConfigProvider";
 import { routing } from "@/i18n/routing";
 
 type Props = {
@@ -36,7 +37,7 @@ export default async function LocaleLayout({ children, params }: Props) {
 
 	return (
 		<NextIntlClientProvider messages={messages}>
-			{children}
+			<AppConfigProvider>{children}</AppConfigProvider>
 		</NextIntlClientProvider>
 	);
 }

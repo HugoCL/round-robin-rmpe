@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { ChevronDown, Info, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import {
 	Alert,
@@ -19,152 +19,174 @@ import {
 } from "@/components/ui/collapsible";
 import { WithTooltip } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
+import { resolveAnnouncementBody } from "@/lib/announcementVisibility";
 import { cn } from "@/lib/utils";
 import { usePRReview } from "./PRReviewContext";
 
-interface Announcement {
-	id: string;
-	translationKey: string;
-	variant?: "default" | "destructive";
-	requiresTeamEvents?: boolean;
-	href?: string;
-}
-
-const COORD_LA_LISTA_CHAT_URL =
-	"https://chat.google.com/room/AAQA237JK9g?cls=7";
-
-const ANNOUNCEMENTS: Announcement[] = [
-	{
-		id: "coord-la-lista-v1",
-		translationKey: "announcements.coordChannel",
-		variant: "default",
-		href: COORD_LA_LISTA_CHAT_URL,
-	},
-	{
-		id: "create-event-navbar-v1",
-		translationKey: "announcements.createEventMoved",
-		variant: "default",
-		requiresTeamEvents: true,
-	},
-	{
-		id: "reviewers-panel-v1",
-		translationKey: "announcements.reviewersPanelMoved",
-		variant: "default",
-	},
-	{
-		id: "mcp-setup-wizard-v1",
-		translationKey: "announcements.mcpSetupWizard",
-		variant: "default",
-	},
+/**
+ * Keys that were dismissed into localStorage before dismissals moved to
+ * Convex. Imported once per browser so nobody sees four retired banners come
+ * back the day this ships.
+ */
+const LEGACY_DISMISSAL_KEYS = [
+	"coord-la-lista-v1",
+	"create-event-navbar-v1",
+	"reviewers-panel-v1",
+	"mcp-setup-wizard-v1",
 ];
+const LEGACY_IMPORT_FLAG = "la-lista-announcement-dismissals-imported";
 
-function getStorageKey(id: string): string {
-	return `dismissed_announcement_${id}`;
-}
-
-function isDismissed(id: string): boolean {
-	if (typeof window === "undefined") return false;
+function readLegacyDismissals(): string[] {
+	if (typeof window === "undefined") return [];
 	try {
-		return localStorage.getItem(getStorageKey(id)) === "true";
+		if (localStorage.getItem(LEGACY_IMPORT_FLAG) === "true") return [];
+		return LEGACY_DISMISSAL_KEYS.filter(
+			(key) => localStorage.getItem(`dismissed_announcement_${key}`) === "true",
+		);
 	} catch {
-		return false;
+		return [];
 	}
 }
 
-function dismissAnnouncement(id: string): void {
+function markLegacyImported(): void {
 	try {
-		localStorage.setItem(getStorageKey(id), "true");
+		localStorage.setItem(LEGACY_IMPORT_FLAG, "true");
+		for (const key of LEGACY_DISMISSAL_KEYS) {
+			localStorage.removeItem(`dismissed_announcement_${key}`);
+		}
 	} catch {
-		// no-op
+		// Private mode: the import simply runs again next time.
 	}
 }
 
 export function AnnouncementBanner() {
 	const t = useTranslations();
+	const locale = useLocale();
 	const { teamSlug } = usePRReview();
-	const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
-	const [mounted, setMounted] = useState(false);
-	const teamHasEvents = useQuery(
-		api.queries.teamHasEvents,
-		teamSlug ? { teamSlug } : "skip",
+
+	const announcements = useQuery(api.announcements.listForMe, { teamSlug });
+	const dismiss = useMutation(api.announcements.dismiss);
+	const importLegacyDismissals = useMutation(
+		api.announcements.importLegacyDismissals,
+	);
+
+	// Dismissals live in Convex now, so they sync across devices. This set only
+	// covers the gap between the click and the query updating.
+	const [optimisticDismissed, setOptimisticDismissed] = useState<Set<string>>(
+		new Set(),
 	);
 
 	useEffect(() => {
-		const dismissed = new Set<string>();
-		for (const announcement of ANNOUNCEMENTS) {
-			if (isDismissed(announcement.id)) {
-				dismissed.add(announcement.id);
-			}
+		const legacy = readLegacyDismissals();
+		if (legacy.length === 0) {
+			markLegacyImported();
+			return;
 		}
-		setDismissedIds(dismissed);
-		setMounted(true);
-	}, []);
+		void importLegacyDismissals({ keys: legacy })
+			.then(() => markLegacyImported())
+			.catch((error) => console.error(error));
+	}, [importLegacyDismissals]);
 
-	const handleDismiss = (id: string) => {
-		dismissAnnouncement(id);
-		setDismissedIds((prev) => new Set([...prev, id]));
+	const handleDismiss = async (key: string) => {
+		setOptimisticDismissed((prev) => new Set([...prev, key]));
+		try {
+			await dismiss({ key });
+		} catch (error) {
+			console.error(error);
+			setOptimisticDismissed((prev) => {
+				const next = new Set(prev);
+				next.delete(key);
+				return next;
+			});
+		}
 	};
 
-	if (!mounted) return null;
+	if (announcements === undefined) return null;
 
-	const visibleAnnouncements = ANNOUNCEMENTS.filter((announcement) => {
-		if (dismissedIds.has(announcement.id)) {
-			return false;
-		}
-		if (announcement.requiresTeamEvents) {
-			return teamHasEvents === true;
-		}
-		return true;
+	const visible = announcements.filter(
+		(announcement) => !optimisticDismissed.has(announcement.key),
+	);
+	if (visible.length === 0) return null;
+
+	const grouped = visible.length > 1;
+
+	const alerts = visible.map((announcement) => {
+		const body = announcement.translationKey
+			? null
+			: resolveAnnouncementBody(announcement, locale);
+		const linkLabel =
+			locale === "en"
+				? (announcement.linkLabelEn ?? announcement.linkLabelEs)
+				: (announcement.linkLabelEs ?? announcement.linkLabelEn);
+
+		return (
+			<Alert
+				key={announcement._id}
+				data-notice={grouped ? undefined : true}
+				variant={announcement.variant}
+				className={cn(
+					"flex min-h-11 items-center gap-2.5 py-2.5 pr-12 shadow-none",
+					grouped
+						? "rounded-none border-0 bg-transparent"
+						: "rounded-xl border-border/70 bg-background/72",
+				)}
+			>
+				<Info className="shrink-0 text-muted-foreground" aria-hidden="true" />
+				<AlertTitle className="sr-only">{t("common.info")}</AlertTitle>
+				<AlertDescription className="text-pretty text-xs sm:text-sm">
+					{announcement.translationKey ? (
+						// Built-in banners keep their rich-text chunks from messages/*.json.
+						announcement.linkUrl ? (
+							t.rich(announcement.translationKey, {
+								channel: (chunks) => (
+									<a
+										href={announcement.linkUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										{chunks}
+									</a>
+								),
+							})
+						) : (
+							t(announcement.translationKey)
+						)
+					) : (
+						<>
+							{body}
+							{announcement.linkUrl ? (
+								<>
+									{" "}
+									<a
+										href={announcement.linkUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										{linkLabel ?? announcement.linkUrl}
+									</a>
+								</>
+							) : null}
+						</>
+					)}
+				</AlertDescription>
+				{announcement.dismissible ? (
+					<AlertAction>
+						<WithTooltip label={t("announcements.dismiss")}>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-8"
+								onClick={() => void handleDismiss(announcement.key)}
+								aria-label={t("announcements.dismiss")}
+							>
+								<X aria-hidden="true" />
+							</Button>
+						</WithTooltip>
+					</AlertAction>
+				) : null}
+			</Alert>
+		);
 	});
-
-	if (visibleAnnouncements.length === 0) return null;
-
-	const grouped = visibleAnnouncements.length > 1;
-
-	const alerts = visibleAnnouncements.map((announcement) => (
-		<Alert
-			key={announcement.id}
-			data-notice={grouped ? undefined : true}
-			variant={announcement.variant}
-			className={cn(
-				"flex min-h-11 items-center gap-2.5 py-2.5 pr-12 shadow-none",
-				grouped
-					? "rounded-none border-0 bg-transparent"
-					: "rounded-xl border-border/70 bg-background/72",
-			)}
-		>
-			<Info className="shrink-0 text-muted-foreground" aria-hidden="true" />
-			<AlertTitle className="sr-only">{t("common.info")}</AlertTitle>
-			<AlertDescription className="text-pretty text-xs sm:text-sm">
-				{announcement.href
-					? t.rich(announcement.translationKey, {
-							channel: (chunks) => (
-								<a
-									href={announcement.href}
-									target="_blank"
-									rel="noopener noreferrer"
-								>
-									{chunks}
-								</a>
-							),
-						})
-					: t(announcement.translationKey)}
-			</AlertDescription>
-			<AlertAction>
-				<WithTooltip label={t("announcements.dismiss")}>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="size-8"
-						onClick={() => handleDismiss(announcement.id)}
-						aria-label={t("announcements.dismiss")}
-					>
-						<X aria-hidden="true" />
-					</Button>
-				</WithTooltip>
-			</AlertAction>
-		</Alert>
-	));
 
 	if (!grouped) {
 		return alerts;
@@ -184,7 +206,7 @@ export function AnnouncementBanner() {
 					<Info aria-hidden="true" />
 					<span>{t("announcements.title")}</span>
 					<Badge variant="secondary" className="ml-auto">
-						{visibleAnnouncements.length}
+						{visible.length}
 					</Badge>
 					<ChevronDown
 						className="transition-transform duration-200 motion-reduce:transition-none group-data-[state=open]/avisos:rotate-180"

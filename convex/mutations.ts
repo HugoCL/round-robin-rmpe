@@ -22,6 +22,7 @@ import {
 	isExcludedFromReviewPool,
 	isIncludedInTagRotations,
 } from "../lib/reviewerEligibility";
+import { pickTeamOwnerCandidate, resolveReviewerRole } from "../lib/teamRoles";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -30,9 +31,13 @@ import {
 	mutation,
 	type QueryCtx,
 } from "./_generated/server";
+import { assertFeatureEnabled } from "./appConfig";
+import { getResolvedAppSettings } from "./appSettings";
 import {
 	assertAgentTokenCanAccessTeamId,
+	assertCanAdministerTeamById,
 	assertCanMutateTeamById,
+	assertTeamRetainsOwner,
 	getMemberTeamsForEmail,
 	isAdminEmail,
 	normalizeEmail,
@@ -267,15 +272,56 @@ async function getTeamBySlugOrThrow(
 	return team;
 }
 
+/**
+ * Last-resort owner recovery after a mutation that replaces a whole roster.
+ *
+ * Neither the import payload nor a backup snapshot carries a role, so if none
+ * of the previous owners survived, the person who ran the operation becomes
+ * the owner. Falls back to the oldest row when they are a global admin who is
+ * not on the team.
+ */
+async function ensureTeamHasOwner(
+	ctx: MutationCtx,
+	teamId: Id<"teams">,
+	actorEmail: string | null,
+) {
+	const reviewers = await ctx.db
+		.query("reviewers")
+		.withIndex("by_team", (q) => q.eq("teamId", teamId))
+		.collect();
+	if (reviewers.length === 0) return;
+	if (reviewers.some((reviewer) => resolveReviewerRole(reviewer) === "owner")) {
+		return;
+	}
+
+	const actorRow = actorEmail
+		? reviewers.find((reviewer) => reviewer.email === actorEmail)
+		: undefined;
+	const fallback = actorRow ?? pickTeamOwnerCandidate(reviewers).owner;
+	if (fallback) {
+		await ctx.db.patch(fallback._id, { role: "owner" });
+	}
+}
+
 async function assertCanMutateTeamBySlug(ctx: MutationCtx, teamSlug: string) {
 	const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 	await assertCanMutateTeamById(ctx, team._id);
 	return team;
 }
 
+/** Owner-level counterpart, for destructive or team-wide configuration changes. */
+async function assertCanAdministerTeamBySlug(
+	ctx: MutationCtx,
+	teamSlug: string,
+) {
+	const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+	await assertCanAdministerTeamById(ctx, team._id);
+	return team;
+}
+
 async function assertCanAssignFromAnyTeam(ctx: MutationCtx) {
 	const identity = await requireIdentity(ctx);
-	if (isAdminEmail(identity.email)) {
+	if (await isAdminEmail(ctx, identity.email)) {
 		return;
 	}
 
@@ -436,11 +482,12 @@ export const createTeam = mutation({
 			identity.name?.trim().length && identity.name.trim().length > 0
 				? identity.name.trim()
 				: fallbackName;
+		const { ops: teamOps } = await getResolvedAppSettings(ctx);
 		const teamId = await ctx.db.insert("teams", {
 			name: name.trim(),
 			slug: slug.trim(),
 			createdAt: now,
-			timezone: DEFAULT_TEAM_TIMEZONE,
+			timezone: teamOps.defaultTeamTimezone ?? DEFAULT_TEAM_TIMEZONE,
 		});
 
 		await ctx.db.insert("reviewers", {
@@ -451,6 +498,8 @@ export const createTeam = mutation({
 			isAbsent: false,
 			createdAt: now,
 			tags: [],
+			// Whoever creates a team administers it.
+			role: "owner",
 		});
 
 		// Create empty feed row for team
@@ -512,6 +561,8 @@ export const joinMyselfToTeam = mutation({
 			isAbsent: false,
 			createdAt: Date.now(),
 			tags: [],
+			// Self-service join never grants administration.
+			role: "member",
 		});
 
 		await createSnapshot(
@@ -537,7 +588,7 @@ export const updateTeamSettings = mutation({
 		timezone: v.optional(v.string()),
 	},
 	handler: async (ctx, { teamSlug, googleChatWebhookUrl, timezone }) => {
-		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
+		const team = await assertCanAdministerTeamBySlug(ctx, teamSlug);
 		const normalizedTimezone = timezone?.trim() || DEFAULT_TEAM_TIMEZONE;
 		if (!isValidTimezone(normalizedTimezone)) {
 			throw new Error("Invalid timezone");
@@ -649,7 +700,7 @@ export const updateMyUserPreferences = mutation({
 export const initializeData = mutation({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
-		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
+		const team = await assertCanAdministerTeamBySlug(ctx, teamSlug);
 		// Check if we already have data for this team
 		const existingReviewers = await ctx.db
 			.query("reviewers")
@@ -841,6 +892,7 @@ export const setReviewerBirthday = mutation({
 		day: v.number(),
 	},
 	handler: async (ctx, { reviewerId, month, day }) => {
+		await assertFeatureEnabled(ctx, "birthdays");
 		const reviewer = await ctx.db.get(reviewerId);
 		if (!reviewer) {
 			throw new Error("Reviewer not found");
@@ -887,7 +939,8 @@ export const removeReviewer = mutation({
 		if (!reviewer.teamId) {
 			throw new Error("Reviewer is missing team assignment");
 		}
-		await assertCanMutateTeamById(ctx, reviewer.teamId);
+		await assertCanAdministerTeamById(ctx, reviewer.teamId);
+		await assertTeamRetainsOwner(ctx, reviewer.teamId, { excluding: id });
 
 		await ctx.db.delete(id);
 
@@ -1081,7 +1134,7 @@ export const setReviewerExcludedFromReviewPool = mutation({
 });
 
 // Auto-mark reviewers as available when their absentUntil time has passed
-export const processAbsentReturns = mutation({
+export const processAbsentReturns = internalMutation({
 	args: {},
 	handler: async (ctx) => {
 		const now = Date.now();
@@ -1167,7 +1220,7 @@ export const updateAssignmentCount = mutation({
 export const resetAllCounts = mutation({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
-		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
+		const team = await assertCanAdministerTeamBySlug(ctx, teamSlug);
 		const allReviewers = await ctx.db
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
@@ -1348,12 +1401,14 @@ async function updateAssignmentFeed(
 		.withIndex("by_team", (q) => q.eq("teamId", teamId))
 		.first();
 
+	const { ops: feedOps } = await getResolvedAppSettings(ctx);
+
 	if (existingFeed) {
 		// Update existing feed
 		const updatedItems = sanitizeAssignmentFeedItems([
 			newAssignment,
 			...(existingFeed.items || []),
-		]).slice(0, 5); // Keep only last 5 assignments
+		]).slice(0, feedOps.assignmentFeedLength);
 
 		await ctx.db.patch(existingFeed._id, {
 			items: updatedItems,
@@ -2273,7 +2328,7 @@ export const completePRAssignment = mutation({
 });
 
 // Remove legacy `status` field from historical prAssignments rows.
-export const cleanupLegacyPRAssignmentStatus = mutation({
+export const cleanupLegacyPRAssignmentStatus = internalMutation({
 	args: {},
 	handler: async (ctx) => {
 		const rows = await ctx.db.query("prAssignments").collect();
@@ -2476,7 +2531,7 @@ export const removeTag = mutation({
 		if (!tag.teamId) {
 			throw new Error("Tag is missing team assignment");
 		}
-		await assertCanMutateTeamById(ctx, tag.teamId);
+		await assertCanAdministerTeamById(ctx, tag.teamId);
 
 		// Remove tag from all reviewers
 		const allReviewers = await ctx.db
@@ -2578,12 +2633,23 @@ export const importReviewersData = mutation({
 		),
 	},
 	handler: async (ctx, { teamSlug, reviewersData }) => {
-		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const { normalizedEmail: actorEmail } = await assertCanAdministerTeamById(
+			ctx,
+			team._id,
+		);
 		// Clear existing reviewers
 		const existingReviewers = await ctx.db
 			.query("reviewers")
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
+		// The import payload has no role field, so remember who owned the team
+		// and re-apply it below. Without this an import silently orphans a team.
+		const previousOwnerEmails = new Set(
+			existingReviewers
+				.filter((reviewer) => resolveReviewerRole(reviewer) === "owner")
+				.map((reviewer) => reviewer.email),
+		);
 		for (const reviewer of existingReviewers) {
 			await ctx.db.delete(reviewer._id);
 		}
@@ -2615,9 +2681,14 @@ export const importReviewersData = mutation({
 				),
 				createdAt: reviewerData.createdAt || Date.now(),
 				tags: [], // We'll handle tag migration separately
+				role: previousOwnerEmails.has(reviewerData.email) ? "owner" : "member",
 				...birthdayPatch,
 			});
 		}
+
+		// If no previous owner survived the import, promote the person running
+		// it rather than leaving the team with nobody able to administer it.
+		await ensureTeamHasOwner(ctx, team._id, actorEmail);
 
 		// Create backup snapshot
 		await createSnapshot(ctx, team._id, "Imported reviewers data");
@@ -2626,7 +2697,7 @@ export const importReviewersData = mutation({
 	},
 });
 
-export const auditReviewerTeamAssignments = mutation({
+export const auditReviewerTeamAssignments = internalMutation({
 	args: {},
 	handler: async (ctx) => {
 		const reviewers = await ctx.db.query("reviewers").collect();
@@ -2646,7 +2717,7 @@ export const auditReviewerTeamAssignments = mutation({
 	},
 });
 
-export const assertReviewerTeamsBackfillReady = mutation({
+export const assertReviewerTeamsBackfillReady = internalMutation({
 	args: {},
 	handler: async (ctx) => {
 		const reviewers = await ctx.db.query("reviewers").collect();
@@ -2673,7 +2744,7 @@ export const backfillUserPreferenceDefaultTeamSlug = mutation({
 	},
 	handler: async (ctx, { dryRun = true }) => {
 		const identity = await requireIdentity(ctx);
-		if (!isAdminEmail(identity.email)) {
+		if (!(await isAdminEmail(ctx, identity.email))) {
 			throw new Error("Unauthorized");
 		}
 
@@ -2820,8 +2891,9 @@ async function createSnapshot(
 		.order("desc")
 		.collect();
 
-	if (allBackups.length > 20) {
-		const backupsToDelete = allBackups.slice(20);
+	const { ops: snapshotOps } = await getResolvedAppSettings(ctx);
+	if (allBackups.length > snapshotOps.backupsPerTeam) {
+		const backupsToDelete = allBackups.slice(snapshotOps.backupsPerTeam);
 		for (const backup of backupsToDelete) {
 			await ctx.db.delete(backup._id);
 		}
@@ -2841,11 +2913,13 @@ async function updateAssignmentFeedBatch(
 		.withIndex("by_team", (q) => q.eq("teamId", teamId))
 		.first();
 
+	const { ops: batchFeedOps } = await getResolvedAppSettings(ctx);
+
 	if (existingFeed) {
 		const updatedItems = sanitizeAssignmentFeedItems([
 			...newAssignments,
 			...(existingFeed.items || []),
-		]).slice(0, 5);
+		]).slice(0, batchFeedOps.assignmentFeedLength);
 		await ctx.db.patch(existingFeed._id, {
 			items: updatedItems,
 			lastAssigned: newAssignments[0].reviewerId,
@@ -2855,12 +2929,15 @@ async function updateAssignmentFeedBatch(
 
 	await ctx.db.insert("assignmentFeed", {
 		teamId,
-		items: sanitizeAssignmentFeedItems(newAssignments).slice(0, 5),
+		items: sanitizeAssignmentFeedItems(newAssignments).slice(
+			0,
+			batchFeedOps.assignmentFeedLength,
+		),
 		lastAssigned: newAssignments[0].reviewerId,
 	});
 }
 
-export const cleanupAssignmentFeedSchemaDrift = mutation({
+export const cleanupAssignmentFeedSchemaDrift = internalMutation({
 	args: {},
 	handler: async (ctx) => {
 		const feeds = await ctx.db.query("assignmentFeed").collect();
@@ -2962,7 +3039,11 @@ export const restoreFromBackup = mutation({
 	args: { teamSlug: v.string(), backupId: v.id("backups") },
 	handler: async (ctx, { teamSlug, backupId }) => {
 		try {
-			const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
+			const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+			const { normalizedEmail: actorEmail } = await assertCanAdministerTeamById(
+				ctx,
+				team._id,
+			);
 			// Get the backup data
 			const backup = await ctx.db.get(backupId);
 			if (!backup) {
@@ -2977,6 +3058,13 @@ export const restoreFromBackup = mutation({
 				.query("reviewers")
 				.withIndex("by_team", (q) => q.eq("teamId", team._id))
 				.collect();
+			// Snapshots predate roles and carry none, so preserve the current
+			// owners by email rather than restoring a roster nobody can manage.
+			const previousOwnerEmails = new Set(
+				existingReviewers
+					.filter((reviewer) => resolveReviewerRole(reviewer) === "owner")
+					.map((reviewer) => reviewer.email),
+			);
 			for (const reviewer of existingReviewers) {
 				await ctx.db.delete(reviewer._id);
 			}
@@ -3008,8 +3096,13 @@ export const restoreFromBackup = mutation({
 						reviewerData.lastBirthdayNotifiedLocalDateKey,
 					createdAt: reviewerData.createdAt,
 					tags: reviewerData.tags,
+					role: previousOwnerEmails.has(reviewerData.email)
+						? "owner"
+						: "member",
 				});
 			}
+
+			await ensureTeamHasOwner(ctx, team._id, actorEmail);
 
 			// Create initial assignment feed
 			await ctx.db.insert("assignmentFeed", {
@@ -3037,6 +3130,7 @@ export const restoreFromBackup = mutation({
 // EVENT MUTATIONS
 // ============================================
 
+/** Fallback when no appSettings row overrides it. */
 const DEFAULT_EVENT_DURATION_MINUTES = 20;
 const MINUTE_IN_MS = 60 * 1000;
 
@@ -3093,6 +3187,7 @@ export const createEvent = mutation({
 		ctx,
 		{ teamSlug, title, description, scheduledAt, createdBy },
 	) => {
+		await assertFeatureEnabled(ctx, "events");
 		const team = await assertCanMutateTeamBySlug(ctx, teamSlug);
 		const createdByEmail = createdBy.email.toLowerCase().trim();
 		const createdByReviewer = await findReviewerByEmail(
@@ -3111,11 +3206,15 @@ export const createEvent = mutation({
 			joinedAt: Date.now(),
 		};
 
+		const { ops: eventOps } = await getResolvedAppSettings(ctx);
 		const eventId = await ctx.db.insert("events", {
 			teamId: team._id,
 			title: title.trim(),
 			description: description?.trim(),
 			scheduledAt,
+			// Stamped at creation so getEventExpectedEndTime can stay a pure
+			// function called in loops and in tests.
+			durationMinutes: eventOps.defaultEventDurationMinutes,
 			createdAt: Date.now(),
 			createdBy: createdByRecord,
 			// Add the creator as the initial participant so they appear joined by default
@@ -3135,6 +3234,7 @@ export const updateEventSchedule = mutation({
 		durationMinutes: v.optional(v.number()),
 	},
 	handler: async (ctx, { eventId, scheduledAt, durationMinutes }) => {
+		await assertFeatureEnabled(ctx, "events");
 		const event = await ctx.db.get(eventId);
 		if (!event) {
 			return { success: false, error: "Event not found" };
@@ -3187,6 +3287,7 @@ export const joinEvent = mutation({
 		}),
 	},
 	handler: async (ctx, { eventId, participant }) => {
+		await assertFeatureEnabled(ctx, "events");
 		const event = await ctx.db.get(eventId);
 		if (!event) {
 			return { success: false, error: "Event not found" };
@@ -3294,11 +3395,14 @@ export const cancelEvent = mutation({
 	},
 });
 
-export const cleanupOldRecords = mutation({
+export const cleanupOldRecords = internalMutation({
 	args: {},
 	handler: async (ctx) => {
-		const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-		const cutoffTimestamp = Date.now() - SEVEN_DAYS_MS;
+		const { ops } = await getResolvedAppSettings(ctx);
+		const cutoffTimestamp =
+			Date.now() - ops.retentionDays * 24 * 60 * 60 * 1000;
+		// Not a product knob: this is the transaction-size safety limit, and
+		// raising it would blow the mutation's read budget.
 		const CLEANUP_BATCH_SIZE = 200;
 
 		// Clean up old prAssignments (based on createdAt)
@@ -3413,7 +3517,7 @@ export const completeEvent = mutation({
 });
 
 // Auto-complete events that have exceeded their duration (called by cron)
-export const autoCompleteExpiredEvents = mutation({
+export const autoCompleteExpiredEvents = internalMutation({
 	args: {},
 	handler: async (ctx) => {
 		const now = Date.now();
@@ -3568,8 +3672,9 @@ export const logSentMessage = mutation({
 			.order("desc")
 			.collect();
 
-		if (all.length > 3) {
-			const toDelete = all.slice(3); // keep first 3
+		const { ops: messageOps } = await getResolvedAppSettings(ctx);
+		if (all.length > messageOps.debugMessageLimit) {
+			const toDelete = all.slice(messageOps.debugMessageLimit);
 			for (const doc of toDelete) {
 				await ctx.db.delete(doc._id);
 			}
@@ -3595,6 +3700,7 @@ export const savePushSubscription = mutation({
 		}),
 	},
 	handler: async (ctx, { email, subscription }) => {
+		await assertFeatureEnabled(ctx, "pushNotifications");
 		const normalizedEmail = email.toLowerCase().trim();
 
 		// Check if this endpoint already exists
@@ -3658,7 +3764,7 @@ export const getPushSubscriptionsByEmail = mutation({
 });
 
 // One-time backfill: populate reviewerName for existing assignmentHistory records
-export const backfillAssignmentHistoryNames = mutation({
+export const backfillAssignmentHistoryNames = internalMutation({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
