@@ -1296,6 +1296,10 @@
 			"members": "{count} people",
 			"roleOwner": "Owner",
 			"roleMember": "Member",
+			"assignOwner": "Assign an owner",
+			"makeOwner": "Make owner",
+			"removeOwner": "Remove the role",
+			"lastOwnerHint": "This is the only owner. Name another one before removing the role.",
 			"roleUpdated": "Role updated"
 		},
 		"users": {

@@ -1340,6 +1340,10 @@
 			"members": "{count} personas",
 			"roleOwner": "Propietaria",
 			"roleMember": "Integrante",
+			"assignOwner": "Asignar propietaria",
+			"makeOwner": "Hacer propietaria",
+			"removeOwner": "Quitar el rol",
+			"lastOwnerHint": "Es la única persona propietaria. Nombra a otra antes de quitarle el rol.",
 			"roleUpdated": "Rol actualizado"
 		},
 		"users": {

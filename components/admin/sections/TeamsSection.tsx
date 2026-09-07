@@ -47,6 +47,17 @@ export function TeamsSection() {
 	const [preview, setPreview] = useState<BackfillReport | null>(null);
 	const [isRunning, setIsRunning] = useState(false);
 	const [pendingId, setPendingId] = useState<string | null>(null);
+	// Controlled so "Assign an owner" can open the roster it refers to.
+	const [openTeams, setOpenTeams] = useState<ReadonlySet<string>>(new Set());
+
+	const setTeamOpen = (teamId: string, open: boolean) => {
+		setOpenTeams((current) => {
+			const next = new Set(current);
+			if (open) next.add(teamId);
+			else next.delete(teamId);
+			return next;
+		});
+	};
 
 	const runBackfill = async (dryRun: boolean) => {
 		setIsRunning(true);
@@ -170,7 +181,10 @@ export function TeamsSection() {
 				<ul className="divide-y divide-border/60 rounded-xl border border-border/70">
 					{teams.map((team) => (
 						<li key={team._id}>
-							<Collapsible>
+							<Collapsible
+								open={openTeams.has(team._id)}
+								onOpenChange={(open) => setTeamOpen(team._id, open)}
+							>
 								<div className="flex min-h-14 flex-wrap items-center gap-2 px-4 py-3">
 									<div className="min-w-0 flex-1">
 										<p className="truncate text-sm font-medium">{team.name}</p>
@@ -179,7 +193,22 @@ export function TeamsSection() {
 										</p>
 									</div>
 									{team.owners.length === 0 ? (
-										<Badge variant="secondary">{t("teams.noOwner")}</Badge>
+										<>
+											<Badge variant="secondary">{t("teams.noOwner")}</Badge>
+											{/* The backfill handles these in bulk. This is the way
+											    out when its pick is wrong, or for one team. */}
+											{team.memberCount > 0 ? (
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													onClick={() => setTeamOpen(team._id, true)}
+												>
+													<ShieldCheck aria-hidden="true" />
+													{t("teams.assignOwner")}
+												</Button>
+											) : null}
+										</>
 									) : (
 										<Badge
 											variant="secondary"
@@ -206,37 +235,61 @@ export function TeamsSection() {
 								</div>
 								<CollapsibleContent>
 									<ul className="divide-y divide-border/40 border-t border-border/40 bg-muted/20">
-										{team.members.map((member) => (
-											<li
-												key={member._id}
-												className="flex min-h-12 flex-wrap items-center gap-2 px-6 py-2"
-											>
-												<div className="min-w-0 flex-1">
-													<p className="truncate text-sm">{member.name}</p>
-													<p className="truncate font-mono text-xs text-muted-foreground">
-														{member.email}
-													</p>
-												</div>
-												<Button
-													type="button"
-													variant={
-														member.role === "owner" ? "secondary" : "ghost"
-													}
-													size="sm"
-													disabled={pendingId === member._id}
-													onClick={() =>
-														void changeRole(
-															member._id,
-															member.role === "owner" ? "member" : "owner",
-														)
-													}
+										{team.members.map((member) => {
+											const isOwner = member.role === "owner";
+											// The server refuses this too. Disabling it here just
+											// avoids offering a button that cannot work.
+											const isLastOwner = isOwner && team.owners.length === 1;
+											return (
+												<li
+													key={member._id}
+													className="flex min-h-12 flex-wrap items-center gap-2 px-6 py-2"
 												>
-													{member.role === "owner"
-														? t("teams.roleOwner")
-														: t("teams.roleMember")}
-												</Button>
-											</li>
-										))}
+													<div className="min-w-0 flex-1">
+														<p className="truncate text-sm">{member.name}</p>
+														<p className="truncate font-mono text-xs text-muted-foreground">
+															{member.email}
+														</p>
+													</div>
+													{isOwner ? (
+														<Badge variant="secondary" className="gap-1">
+															<ShieldCheck
+																className="size-3"
+																aria-hidden="true"
+															/>
+															{t("teams.roleOwner")}
+														</Badge>
+													) : null}
+													{/* The label is the action, not the current state: a
+															    button reading "Member" gives no clue what clicking
+															    it does. The hint sits on the wrapper because a
+															    disabled button shows no tooltip, and a title there
+															    would replace the label as the accessible name. */}
+													<span
+														title={
+															isLastOwner ? t("teams.lastOwnerHint") : undefined
+														}
+													>
+														<Button
+															type="button"
+															variant={isOwner ? "ghost" : "outline"}
+															size="sm"
+															disabled={pendingId === member._id || isLastOwner}
+															onClick={() =>
+																void changeRole(
+																	member._id,
+																	isOwner ? "member" : "owner",
+																)
+															}
+														>
+															{isOwner
+																? t("teams.removeOwner")
+																: t("teams.makeOwner")}
+														</Button>
+													</span>
+												</li>
+											);
+										})}
 									</ul>
 								</CollapsibleContent>
 							</Collapsible>
