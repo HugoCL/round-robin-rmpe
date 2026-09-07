@@ -1,10 +1,14 @@
+# `--no-errors-on-unmatched`: biome.json turns linting off for
+# chrome-extension/** and other paths, so a commit whose staged files are all
+# biome-ignored would otherwise fail the hook with "No files were processed".
+# Real lint errors still fail the commit.
 pre-commit:
   parallel: false
   commands:
     biome-fix:
       glob: "**/*.{js,jsx,ts,tsx,css,md,json}"
-      run: pnpm exec biome check --write {staged_files}
+      run: pnpm exec biome check --write --no-errors-on-unmatched {staged_files}
       stage_fixed: true
     biome-lint:
       glob: "**/*.{js,jsx,ts,tsx,css,md,json}"
-      run: pnpm exec biome lint {staged_files}
+      run: pnpm exec biome lint --no-errors-on-unmatched {staged_files}

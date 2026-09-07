@@ -2,8 +2,9 @@
 // Manages badge state based on whether the current tab is a GitHub PR page
 // and handles flash-assign requests from the content script.
 
+import { CONVEX_SITE_URL } from "./env";
+
 const PR_URL_PATTERN = /^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/;
-const CONVEX_SITE_URL = "https://admired-weasel-950.convex.site";
 
 // Update badge when tab changes
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {

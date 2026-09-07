@@ -2,6 +2,7 @@
 	"name": "my-v0-project",
 	"version": "0.1.0",
 	"private": true,
+	"packageManager": "pnpm@11.22.0",
 	"scripts": {
 		"dev": "next dev --turbopack",
 		"build": "next build",
@@ -12,7 +13,7 @@
 		"test:e2e": "playwright test",
 		"biome:fix": "biome check --write",
 		"biome:fix-unsafe": "biome check --unsafe --write",
-		"prepare": "lefthook install",
+		"prepare": "lefthook install || true",
 		"ext:dev": "pnpm --dir chrome-extension run dev",
 		"ext:build": "pnpm --dir chrome-extension run build",
 		"ext:pack": "cd chrome-extension && node scripts/pack.mjs"

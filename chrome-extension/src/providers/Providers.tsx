@@ -3,14 +3,7 @@ import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { type ReactNode, useEffect, useRef } from "react";
 
-const CONVEX_URL = "https://admired-weasel-950.convex.cloud";
-const CLERK_PUBLISHABLE_KEY =
-	"pk_test_dGlkeS1zdGluZ3JheS04MS5jbGVyay5hY2NvdW50cy5kZXYk";
-
-// Sync Host: the web app URL where the user authenticates with Google OAuth.
-// OAuth is not supported directly in Chrome Extension popups, so the extension
-// syncs its session with the web app via Clerk's Sync Host feature.
-const SYNC_HOST = "https://la-lista.vercel.app";
+import { CLERK_PUBLISHABLE_KEY, CONVEX_URL, SYNC_HOST } from "@/env";
 
 const convexClient = new ConvexReactClient(CONVEX_URL);
 
