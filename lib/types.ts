@@ -85,6 +85,11 @@ export interface GroupedAssignmentHistoryItem {
 	prUrl?: string;
 	contextUrl?: string;
 	googleChatThreadUrl?: string;
+	googleChatThreadUrls?: Array<{
+		teamSlug: string;
+		teamName: string;
+		url: string;
+	}>;
 	actionByReviewerId?: string;
 	actionByName?: string;
 	actionByEmail?: string;

@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+	assignmentChatThreadKey,
 	buildPrAssignmentChatMessage,
 	formatGoogleChatPerson,
 	formatPrChatButtonLabel,
+	GOOGLE_CHAT_MESSAGE_REPLY_OPTION,
 	getDefaultPRChatMessageTemplate,
 	parsePrIdentity,
 	parsePrNumber,
@@ -126,7 +128,15 @@ test("builds a compact assignment card with only a PR button", () => {
 	]);
 	assert.equal(
 		payload.thread.threadKey,
-		"REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD ",
+		assignmentChatThreadKey("https://github.com/org/repo/pull/12"),
+	);
+	assert.equal(
+		payload.thread.threadKey,
+		"la-lista:https://github.com/org/repo/pull/12",
+	);
+	assert.equal(
+		GOOGLE_CHAT_MESSAGE_REPLY_OPTION,
+		"REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD",
 	);
 });
 

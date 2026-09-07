@@ -111,13 +111,23 @@ export default defineSchema({
 		prUrl: v.optional(v.string()),
 		contextUrl: v.optional(v.string()),
 		googleChatThreadUrl: v.optional(v.string()),
+		googleChatThreadUrls: v.optional(
+			v.array(
+				v.object({
+					teamSlug: v.string(),
+					teamName: v.string(),
+					url: v.string(),
+				}),
+			),
+		),
 		tagId: v.optional(v.string()),
 		actionByReviewerId: v.optional(v.id("reviewers")),
 		actionByName: v.optional(v.string()),
 	})
 		.index("by_timestamp", ["timestamp"]) // legacy
 		.index("by_team_timestamp", ["teamId", "timestamp"])
-		.index("by_team_batch", ["teamId", "batchId"]),
+		.index("by_team_batch", ["teamId", "batchId"])
+		.index("by_reviewer_team_timestamp", ["reviewerTeamId", "timestamp"]),
 
 	assignmentFeed: defineTable({
 		teamId: v.optional(v.id("teams")),

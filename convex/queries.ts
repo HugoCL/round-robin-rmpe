@@ -1,5 +1,10 @@
 import { v } from "convex/values";
 import {
+	legacyChatThreadLinks,
+	mergeChatThreadLinks,
+	resolveHistoryAssigner,
+} from "../lib/assignmentHistory";
+import {
 	getReviewerAvailability,
 	normalizePartTimeSchedule,
 	resolveTeamTimezone,
@@ -13,6 +18,7 @@ import {
 	normalizeEmail,
 	requireIdentity,
 } from "./authz";
+import { findReviewerByEmailAnyTeam } from "./reviewerLookup";
 
 type EnrichedAssignment = {
 	_id: Id<"prAssignments">;
@@ -32,7 +38,7 @@ type EnrichedAssignment = {
 };
 
 import type { Doc, Id } from "./_generated/dataModel";
-import { type QueryCtx, query } from "./_generated/server";
+import { internalQuery, type QueryCtx, query } from "./_generated/server";
 
 // Helper: resolve team by slug and optionally create a default one for single-tenant upgrade
 async function getTeamBySlugOrThrow(ctx: QueryCtx, teamSlug: string) {
@@ -75,6 +81,11 @@ type GroupedAssignmentHistoryItem = {
 	prUrl?: string;
 	contextUrl?: string;
 	googleChatThreadUrl?: string;
+	googleChatThreadUrls?: Array<{
+		teamSlug: string;
+		teamName: string;
+		url: string;
+	}>;
 	actionByReviewerId?: string;
 	actionByName?: string;
 	actionByEmail?: string;
@@ -173,16 +184,18 @@ function resolveReviewerMeta(
 	byId: Map<Id<"reviewers">, ReviewerDoc>,
 	fallbackName?: string,
 ) {
-	if (!reviewerId) return {};
-	const reviewer = byId.get(reviewerId as Id<"reviewers">);
-	if (reviewer) {
-		return {
-			actionByName: reviewer.name,
-			actionByEmail: reviewer.email,
-		};
+	if (reviewerId) {
+		const reviewer = byId.get(reviewerId as Id<"reviewers">);
+		if (reviewer) {
+			return {
+				actionByName: reviewer.name,
+				actionByEmail: reviewer.email,
+			};
+		}
 	}
-	if (fallbackName) {
-		return { actionByName: fallbackName };
+	const name = fallbackName?.trim();
+	if (name) {
+		return { actionByName: name };
 	}
 	return {};
 }
@@ -252,6 +265,12 @@ function groupAssignmentHistory(
 	byId: Map<Id<"reviewers">, ReviewerDoc>,
 ): GroupedAssignmentHistoryItem[] {
 	const grouped = new Map<string, GroupedAssignmentHistoryItem>();
+	const reviewerById = new Map(
+		[...byId.entries()].map(([id, reviewer]) => [
+			String(id),
+			{ name: reviewer.name, email: reviewer.email },
+		]),
+	);
 
 	for (const item of history) {
 		const key = item.batchId ?? `single:${item._id}`;
@@ -260,7 +279,17 @@ function groupAssignmentHistory(
 			byId,
 			item.reviewerName,
 		);
-		const actionBy = resolveReviewerMeta(item.actionByReviewerId, byId);
+		const actionBy = resolveHistoryAssigner({
+			actionByReviewerId: item.actionByReviewerId
+				? String(item.actionByReviewerId)
+				: undefined,
+			actionByName: item.actionByName,
+			reviewerById,
+		});
+		const chatThreadUrls = legacyChatThreadLinks(
+			item.googleChatThreadUrl,
+			item.googleChatThreadUrls,
+		);
 
 		if (!grouped.has(key)) {
 			grouped.set(key, {
@@ -276,7 +305,8 @@ function groupAssignmentHistory(
 				source: item.source === "agent" ? "agent" : "ui",
 				prUrl: item.prUrl,
 				contextUrl: item.contextUrl,
-				googleChatThreadUrl: item.googleChatThreadUrl,
+				googleChatThreadUrl: chatThreadUrls[0]?.url,
+				googleChatThreadUrls: chatThreadUrls,
 				actionByReviewerId: item.actionByReviewerId
 					? String(item.actionByReviewerId)
 					: undefined,
@@ -300,7 +330,11 @@ function groupAssignmentHistory(
 			group.source === "agent" || item.source === "agent" ? "agent" : "ui";
 		group.prUrl ??= item.prUrl;
 		group.contextUrl ??= item.contextUrl;
-		group.googleChatThreadUrl ??= item.googleChatThreadUrl;
+		group.googleChatThreadUrls = mergeChatThreadLinks(
+			group.googleChatThreadUrls,
+			chatThreadUrls,
+		);
+		group.googleChatThreadUrl = group.googleChatThreadUrls[0]?.url;
 		group.actionByReviewerId ??= item.actionByReviewerId
 			? String(item.actionByReviewerId)
 			: undefined;
@@ -1025,6 +1059,46 @@ export const getReviewers = query({
 	},
 });
 
+export const getReviewerByEmailAnyTeam = internalQuery({
+	args: {
+		email: v.string(),
+		preferredTeamSlug: v.optional(v.string()),
+	},
+	returns: v.union(
+		v.object({
+			_id: v.id("reviewers"),
+			name: v.string(),
+			email: v.string(),
+			googleChatUserId: v.optional(v.string()),
+			teamId: v.optional(v.id("teams")),
+		}),
+		v.null(),
+	),
+	handler: async (ctx, { email, preferredTeamSlug }) => {
+		let preferredTeamId: Id<"teams"> | undefined;
+		if (preferredTeamSlug?.trim()) {
+			const team = await ctx.db
+				.query("teams")
+				.withIndex("by_slug", (q) => q.eq("slug", preferredTeamSlug.trim()))
+				.first();
+			preferredTeamId = team?._id;
+		}
+		const reviewer = await findReviewerByEmailAnyTeam(
+			ctx,
+			email,
+			preferredTeamId,
+		);
+		if (!reviewer) return null;
+		return {
+			_id: reviewer._id,
+			name: reviewer.name,
+			email: reviewer.email,
+			googleChatUserId: reviewer.googleChatUserId,
+			teamId: reviewer.teamId,
+		};
+	},
+});
+
 export const getTags = query({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
@@ -1050,6 +1124,26 @@ export const getAssignmentFeed = query({
 			.withIndex("by_team", (q) => q.eq("teamId", team._id))
 			.collect();
 		const { byId } = buildReviewerMaps(reviewers);
+		const missingAssignerIds = [
+			...new Set(
+				feed.items
+					.map((item) => item.actionByReviewerId)
+					.filter(
+						(id): id is NonNullable<typeof id> =>
+							Boolean(id) && !byId.has(id as Id<"reviewers">),
+					),
+			),
+		];
+		if (missingAssignerIds.length > 0) {
+			const extraAssigners = await Promise.all(
+				missingAssignerIds.map((id) => ctx.db.get(id)),
+			);
+			for (const assigner of extraAssigners) {
+				if (assigner) {
+					byId.set(assigner._id, assigner);
+				}
+			}
+		}
 
 		return {
 			...feed,
@@ -1078,16 +1172,46 @@ export const getAssignmentHistory = query({
 	args: { teamSlug: v.string() },
 	handler: async (ctx, { teamSlug }) => {
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
-		const history = await ctx.db
-			.query("assignmentHistory")
-			.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
-			.order("desc")
-			.take(30);
-		const reviewers = await ctx.db
-			.query("reviewers")
-			.withIndex("by_team", (q) => q.eq("teamId", team._id))
-			.collect();
-		const { byId } = buildReviewerMaps(reviewers);
+		const [outgoing, incoming] = await Promise.all([
+			ctx.db
+				.query("assignmentHistory")
+				.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
+				.order("desc")
+				.take(40),
+			ctx.db
+				.query("assignmentHistory")
+				.withIndex("by_reviewer_team_timestamp", (q) =>
+					q.eq("reviewerTeamId", team._id),
+				)
+				.order("desc")
+				.take(40),
+		]);
+		const history = [
+			...new Map(
+				[...outgoing, ...incoming].map(
+					(row) => [String(row._id), row] as const,
+				),
+			).values(),
+		]
+			.sort((a, b) => b.timestamp - a.timestamp)
+			.slice(0, 40);
+
+		const reviewerIds = new Set<Id<"reviewers">>();
+		for (const item of history) {
+			reviewerIds.add(item.reviewerId);
+			if (item.actionByReviewerId) {
+				reviewerIds.add(item.actionByReviewerId);
+			}
+		}
+		const reviewerDocs = await Promise.all(
+			[...reviewerIds].map((reviewerId) => ctx.db.get(reviewerId)),
+		);
+		const byId = new Map<Id<"reviewers">, ReviewerDoc>();
+		for (const reviewer of reviewerDocs) {
+			if (reviewer) {
+				byId.set(reviewer._id, reviewer);
+			}
+		}
 
 		return groupAssignmentHistory(history, byId);
 	},

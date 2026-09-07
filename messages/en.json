@@ -62,6 +62,7 @@
 		"viewPR": "View PR",
 		"viewContext": "View Context",
 		"viewChatThread": "View Chat Thread",
+		"viewChatThreadForTeam": "Chat · {team}",
 		"signIn": "Sign In",
 		"creating": "Creating…",
 		"info": "Info",

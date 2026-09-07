@@ -3,6 +3,8 @@ import test from "node:test";
 import {
 	type AssignmentResolverReviewer,
 	countRegularAssignmentsUntilReviewer,
+	isForcedAssignmentStrategy,
+	isSingleForcedAssignment,
 	resolveAssignmentSlots,
 } from "../../lib/assignmentResolver";
 
@@ -45,6 +47,42 @@ test("selects fairly while excluding absent, duplicate, and current reviewers", 
 		["next", "after"],
 	);
 	assert.deepEqual(result.failed, []);
+});
+
+test("marks an explicitly chosen reviewer as a forced assignment", () => {
+	const result = resolveAssignmentSlots({
+		mode: "regular",
+		slots: [
+			{ strategy: "specific", reviewerId: "hugo" },
+			{ strategy: "random" },
+		],
+		reviewers: [reviewer("hugo", 0, 1), reviewer("ana", 0, 2)],
+	});
+
+	assert.deepEqual(
+		result.resolved.map((item) => ({
+			id: item.reviewer._id,
+			forced: item.forced,
+		})),
+		[
+			{ id: "hugo", forced: true },
+			{ id: "ana", forced: false },
+		],
+	);
+});
+
+test("treats a single specific slot as a forced agent assignment", () => {
+	assert.equal(isSingleForcedAssignment([{ strategy: "specific" }]), true);
+	assert.equal(isSingleForcedAssignment([{ strategy: "random" }]), false);
+	assert.equal(
+		isSingleForcedAssignment([
+			{ strategy: "specific" },
+			{ strategy: "random" },
+		]),
+		false,
+	);
+	assert.equal(isForcedAssignmentStrategy("specific"), true);
+	assert.equal(isForcedAssignmentStrategy("random"), false);
 });
 
 test("resolves tag slots and reports missing tag candidates", () => {

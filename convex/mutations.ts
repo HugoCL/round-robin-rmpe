@@ -3,6 +3,10 @@ import {
 	AGENT_ASSIGNMENT_CHAT_LOCALE,
 	shouldQueueAgentAssignmentChat,
 } from "../lib/agentAssignmentChat";
+import {
+	type ChatThreadLink,
+	mergeChatThreadLinks,
+} from "../lib/assignmentHistory";
 import { resolveAssignmentSlots } from "../lib/assignmentResolver";
 import { resolveBroadcastTeamSlugs } from "../lib/chatBroadcast";
 import { undoRemovesReviewedPR } from "../lib/historyUndo";
@@ -34,6 +38,10 @@ import {
 	normalizeEmail,
 	requireIdentity,
 } from "./authz";
+import {
+	findReviewerByEmailAnyTeam,
+	resolveAssignmentActor,
+} from "./reviewerLookup";
 
 const GLOBAL_REVIEWED_PR_COUNTER_KEY = "reviewed_pr_total";
 type UserPreferenceFlags = {
@@ -84,20 +92,33 @@ const assignmentSourceValidator = v.optional(
 	v.union(v.literal("ui"), v.literal("agent")),
 );
 
+const chatThreadLinkValidator = v.object({
+	teamSlug: v.string(),
+	teamName: v.string(),
+	url: v.string(),
+});
+
 async function resolveAgentAssignerForChat(
 	ctx: MutationCtx,
 	args: {
 		agentTokenHash?: string;
 		actionByReviewerId?: Id<"reviewers">;
+		preferredTeamId?: Id<"teams">;
 	},
-): Promise<{ assignerEmail?: string; assignerName?: string }> {
+): Promise<{
+	assignerEmail?: string;
+	assignerName?: string;
+	assignerChatId?: string;
+}> {
 	let assignerEmail: string | undefined;
 	let assignerName: string | undefined;
+	let assignerChatId: string | undefined;
 
 	if (args.actionByReviewerId) {
 		const assigner = await ctx.db.get(args.actionByReviewerId);
 		assignerName = assigner?.name?.trim() || undefined;
 		assignerEmail = assigner?.email?.trim() || undefined;
+		assignerChatId = assigner?.googleChatUserId?.trim() || undefined;
 	}
 
 	if (!assignerEmail && args.agentTokenHash) {
@@ -109,7 +130,18 @@ async function resolveAgentAssignerForChat(
 		assignerEmail = token?.email?.trim() || undefined;
 	}
 
-	return { assignerEmail, assignerName };
+	if (assignerEmail && (!assignerName || !assignerChatId)) {
+		const assigner = await findReviewerByEmailAnyTeam(
+			ctx,
+			assignerEmail,
+			args.preferredTeamId,
+		);
+		assignerName = assignerName || assigner?.name?.trim() || undefined;
+		assignerChatId =
+			assignerChatId || assigner?.googleChatUserId?.trim() || undefined;
+	}
+
+	return { assignerEmail, assignerName, assignerChatId };
 }
 
 async function maybeScheduleAgentAssignmentChat(
@@ -128,6 +160,7 @@ async function maybeScheduleAgentAssignmentChat(
 		reviewerTeamSlugs?: Array<string | undefined>;
 		agentTokenHash?: string;
 		actionByReviewerId?: Id<"reviewers">;
+		preferredTeamId?: Id<"teams">;
 	},
 ) {
 	if (
@@ -149,6 +182,7 @@ async function maybeScheduleAgentAssignmentChat(
 	const assigner = await resolveAgentAssignerForChat(ctx, {
 		agentTokenHash: args.agentTokenHash,
 		actionByReviewerId: args.actionByReviewerId,
+		preferredTeamId: args.preferredTeamId,
 	});
 	const contextUrl = args.contextUrl?.trim();
 	const broadcastTeamSlugs = resolveBroadcastTeamSlugs({
@@ -174,6 +208,9 @@ async function maybeScheduleAgentAssignmentChat(
 				? { assignerEmail: assigner.assignerEmail }
 				: {}),
 			...(assigner.assignerName ? { assignerName: assigner.assignerName } : {}),
+			...(assigner.assignerChatId
+				? { assignerChatId: assigner.assignerChatId }
+				: {}),
 			teamSlug,
 			...(broadcastTeamSlugs.length > 0 ? { broadcastTeamSlugs } : {}),
 			urgent: args.urgent === true,
@@ -1222,6 +1259,7 @@ type AssignmentHistoryRecord = {
 	reviewerId: Id<"reviewers">;
 	reviewerTeamId?: Id<"teams">;
 	reviewerPoolTeamIds?: Id<"teams">[];
+	reviewerName?: string;
 	timestamp: number;
 	batchId?: string;
 	forced: boolean;
@@ -1233,9 +1271,38 @@ type AssignmentHistoryRecord = {
 	prUrl?: string;
 	contextUrl?: string;
 	googleChatThreadUrl?: string;
+	googleChatThreadUrls?: ChatThreadLink[];
 	tagId?: string;
 	actionByReviewerId?: Id<"reviewers">;
+	actionByName?: string;
 };
+
+function sanitizeChatThreadLinks(value: unknown): ChatThreadLink[] | undefined {
+	if (!Array.isArray(value)) return undefined;
+	const links = mergeChatThreadLinks(
+		undefined,
+		value.flatMap((item) => {
+			if (
+				typeof item !== "object" ||
+				item === null ||
+				typeof (item as ChatThreadLink).teamSlug !== "string" ||
+				typeof (item as ChatThreadLink).url !== "string"
+			) {
+				return [];
+			}
+			const link = item as ChatThreadLink;
+			return [
+				{
+					teamSlug: link.teamSlug,
+					teamName:
+						typeof link.teamName === "string" ? link.teamName : link.teamSlug,
+					url: link.url,
+				},
+			];
+		}),
+	);
+	return links.length > 0 ? links : undefined;
+}
 
 function sanitizeAssignmentHistoryRecord(
 	item: AssignmentHistoryRecord & Record<string, unknown>,
@@ -1245,6 +1312,8 @@ function sanitizeAssignmentHistoryRecord(
 		reviewerId: item.reviewerId,
 		reviewerTeamId: item.reviewerTeamId,
 		reviewerPoolTeamIds: item.reviewerPoolTeamIds,
+		reviewerName:
+			typeof item.reviewerName === "string" ? item.reviewerName : undefined,
 		timestamp: item.timestamp,
 		batchId: item.batchId,
 		forced: item.forced,
@@ -1259,8 +1328,11 @@ function sanitizeAssignmentHistoryRecord(
 			typeof item.googleChatThreadUrl === "string"
 				? item.googleChatThreadUrl
 				: undefined,
+		googleChatThreadUrls: sanitizeChatThreadLinks(item.googleChatThreadUrls),
 		tagId: item.tagId,
 		actionByReviewerId: item.actionByReviewerId,
+		actionByName:
+			typeof item.actionByName === "string" ? item.actionByName : undefined,
 	};
 }
 
@@ -1405,6 +1477,7 @@ async function executeAssignPRBatch(
 		excludeTeammates = false,
 		actionByReviewerId,
 		source = "ui",
+		agentTokenHash,
 	}: {
 		teamSlug: string;
 		additionalTeamSlugs?: string[];
@@ -1422,9 +1495,18 @@ async function executeAssignPRBatch(
 		excludeTeammates?: boolean;
 		actionByReviewerId?: Id<"reviewers">;
 		source?: "ui" | "agent";
+		agentTokenHash?: string;
 	},
 ) {
 	const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+	const actor = await resolveAssignmentActor(ctx, {
+		actionByReviewerId,
+		preferredTeamId: team._id,
+		agentTokenHash,
+	});
+	actionByReviewerId = actor.actionByReviewerId;
+	const actionByName = actor.actionByName;
+	const assigner = actor.assigner;
 	const normalizedAdditionalTeamSlugs = [
 		...new Set(
 			additionalTeamSlugs
@@ -1593,14 +1675,6 @@ async function executeAssignPRBatch(
 
 	const now = availabilityNow;
 	const batchId = `batch_${now}_${Math.random().toString(36).slice(2, 10)}`;
-	// With excludeTeammates the requester's own team is not part of the reviewer
-	// pool, so fall back to a direct lookup to keep "assigned by" and the active
-	// assignment record intact on cross-team requests.
-	const assigner = actionByReviewerId
-		? (byId.get(actionByReviewerId) ??
-			(await ctx.db.get(actionByReviewerId)) ??
-			undefined)
-		: undefined;
 	const feedEntries: Array<{
 		reviewerId: string;
 		reviewerName?: string;
@@ -1625,6 +1699,7 @@ async function executeAssignPRBatch(
 		const reviewer = byId.get(item.reviewer._id);
 		if (!reviewer) continue;
 		const nextCount = reviewer.assignmentCount + 1;
+		const forced = item.forced === true;
 
 		await ctx.db.patch(reviewer._id, {
 			assignmentCount: nextCount,
@@ -1638,7 +1713,7 @@ async function executeAssignPRBatch(
 			reviewerName: reviewer.name,
 			timestamp,
 			batchId,
-			forced: false,
+			forced,
 			skipped: false,
 			isAbsentSkip: false,
 			urgent,
@@ -1648,7 +1723,7 @@ async function executeAssignPRBatch(
 			contextUrl,
 			tagId: item.tagId ? String(item.tagId) : undefined,
 			actionByReviewerId,
-			actionByName: assigner?.name,
+			actionByName,
 		});
 
 		if (assigner) {
@@ -1672,7 +1747,7 @@ async function executeAssignPRBatch(
 			reviewerName: reviewer.name,
 			timestamp,
 			batchId,
-			forced: false,
+			forced,
 			skipped: false,
 			isAbsentSkip: false,
 			urgent,
@@ -1682,7 +1757,7 @@ async function executeAssignPRBatch(
 			contextUrl,
 			tagId: item.tagId ? String(item.tagId) : undefined,
 			actionByReviewerId,
-			actionByName: assigner?.name,
+			actionByName,
 		});
 
 		const reviewerTeamId = reviewerTeamById.get(reviewer._id);
@@ -1703,6 +1778,7 @@ async function executeAssignPRBatch(
 				googleChatUserId: reviewer.googleChatUserId,
 			},
 			tagId: item.tagId ? String(item.tagId) : undefined,
+			forced,
 		});
 	}
 
@@ -1725,6 +1801,8 @@ async function executeAssignPRBatch(
 		assignedCount: assigned.length,
 		failedCount: resolution.failed.length,
 		totalRequested: slots.length,
+		actionByReviewerId,
+		actionByName,
 	};
 }
 
@@ -1741,6 +1819,7 @@ export const assignPRBatch = mutation({
 		const result = await executeAssignPRBatch(ctx, {
 			teamSlug,
 			...internalArgs,
+			agentTokenHash,
 		});
 		if (internalArgs.source === "agent") {
 			const chatReviewers = result.assigned.map((item) => ({
@@ -1759,7 +1838,8 @@ export const assignPRBatch = mutation({
 					(item) => item.reviewer.teamSlug,
 				),
 				agentTokenHash,
-				actionByReviewerId: internalArgs.actionByReviewerId,
+				actionByReviewerId: result.actionByReviewerId,
+				preferredTeamId: team._id,
 			});
 		}
 		return result;
@@ -1815,6 +1895,7 @@ async function executeAssignPR(
 		contextUrl,
 		tagId,
 		actionByReviewerId,
+		agentTokenHash,
 	}: {
 		reviewerId: Id<"reviewers">;
 		forced?: boolean;
@@ -1827,12 +1908,20 @@ async function executeAssignPR(
 		contextUrl?: string;
 		tagId?: Id<"tags">;
 		actionByReviewerId?: Id<"reviewers">;
+		agentTokenHash?: string;
 	},
 ) {
 	const reviewer = await ctx.db.get(reviewerId);
 	if (!reviewer) {
 		throw new Error("Reviewer not found");
 	}
+	const actor = await resolveAssignmentActor(ctx, {
+		actionByReviewerId,
+		preferredTeamId: reviewer.teamId,
+		agentTokenHash,
+	});
+	actionByReviewerId = actor.actionByReviewerId;
+	const actionByName = actor.actionByName;
 	const includedByRotation = tagId
 		? isIncludedInTagRotations(reviewer) && reviewer.tags.includes(tagId)
 		: !isExcludedFromReviewPool(reviewer);
@@ -1866,9 +1955,7 @@ async function executeAssignPR(
 		contextUrl,
 		tagId,
 		actionByReviewerId,
-		actionByName: actionByReviewerId
-			? (await ctx.db.get(actionByReviewerId))?.name
-			: undefined,
+		actionByName,
 	});
 
 	// Increment global PR counter only for real assignments (exclude skips)
@@ -1894,9 +1981,7 @@ async function executeAssignPR(
 				contextUrl,
 				tagId,
 				actionByReviewerId,
-				actionByName: actionByReviewerId
-					? (await ctx.db.get(actionByReviewerId))?.name
-					: undefined,
+				actionByName,
 			},
 			reviewer.teamId,
 		);
@@ -1920,6 +2005,8 @@ async function executeAssignPR(
 
 	return {
 		success: true,
+		actionByReviewerId,
+		actionByName,
 		reviewer: {
 			id: reviewer._id,
 			name: reviewer.name,
@@ -1933,6 +2020,8 @@ async function executeAssignPR(
 			),
 			createdAt: reviewer.createdAt,
 			tags: reviewer.tags,
+			teamSlug: team?.slug,
+			googleChatUserId: reviewer.googleChatUserId,
 		},
 	};
 }
@@ -1957,7 +2046,10 @@ export const assignPR = mutation({
 		} else {
 			await assertCanAssignFromAnyTeam(ctx);
 		}
-		const result = await executeAssignPR(ctx, internalArgs);
+		const result = await executeAssignPR(ctx, {
+			...internalArgs,
+			agentTokenHash,
+		});
 		if (internalArgs.source === "agent") {
 			const reviewer = await ctx.db.get(internalArgs.reviewerId);
 			const team = reviewer?.teamId ? await ctx.db.get(reviewer.teamId) : null;
@@ -1977,7 +2069,8 @@ export const assignPR = mutation({
 						]
 					: [],
 				agentTokenHash,
-				actionByReviewerId: internalArgs.actionByReviewerId,
+				actionByReviewerId: result.actionByReviewerId,
+				preferredTeamId: reviewer?.teamId,
 			});
 		}
 		return result;
@@ -1989,14 +2082,20 @@ export const attachGoogleChatThreadUrlToAssignmentHistory = mutation({
 		teamSlug: v.string(),
 		prUrl: v.string(),
 		reviewerEmails: v.array(v.string()),
-		googleChatThreadUrl: v.string(),
+		googleChatThreadUrl: v.optional(v.string()),
+		googleChatThreadUrls: v.optional(v.array(chatThreadLinkValidator)),
 	},
 	handler: async (
 		ctx,
-		{ teamSlug, prUrl, reviewerEmails, googleChatThreadUrl },
+		{
+			teamSlug,
+			prUrl,
+			reviewerEmails,
+			googleChatThreadUrl,
+			googleChatThreadUrls,
+		},
 	) => {
 		const normalizedPrUrl = prUrl.trim().toLowerCase();
-		const normalizedThreadUrl = googleChatThreadUrl.trim();
 		const normalizedEmails = [
 			...new Set(
 				reviewerEmails
@@ -2004,10 +2103,22 @@ export const attachGoogleChatThreadUrlToAssignmentHistory = mutation({
 					.filter((email) => email.length > 0),
 			),
 		];
+		const incomingLinks = mergeChatThreadLinks(undefined, [
+			...(googleChatThreadUrls ?? []),
+			...(googleChatThreadUrl?.trim()
+				? [
+						{
+							teamSlug,
+							teamName: teamSlug,
+							url: googleChatThreadUrl.trim(),
+						},
+					]
+				: []),
+		]);
 
 		if (
 			normalizedPrUrl.length === 0 ||
-			normalizedThreadUrl.length === 0 ||
+			incomingLinks.length === 0 ||
 			normalizedEmails.length === 0
 		) {
 			return { success: true, updated: 0 };
@@ -2034,11 +2145,35 @@ export const attachGoogleChatThreadUrlToAssignmentHistory = mutation({
 			return { success: true, updated: 0 };
 		}
 
-		const recentHistory = await ctx.db
-			.query("assignmentHistory")
-			.withIndex("by_team_timestamp", (q) => q.eq("teamId", team._id))
-			.order("desc")
-			.take(200);
+		const teamIdsToScan = new Set<Id<"teams">>([team._id]);
+		for (const reviewer of reviewerRows) {
+			if (reviewer.teamId) {
+				teamIdsToScan.add(reviewer.teamId);
+			}
+		}
+
+		const historyChunks = await Promise.all(
+			[...teamIdsToScan].flatMap((teamId) => [
+				ctx.db
+					.query("assignmentHistory")
+					.withIndex("by_team_timestamp", (q) => q.eq("teamId", teamId))
+					.order("desc")
+					.take(200),
+				ctx.db
+					.query("assignmentHistory")
+					.withIndex("by_reviewer_team_timestamp", (q) =>
+						q.eq("reviewerTeamId", teamId),
+					)
+					.order("desc")
+					.take(200),
+			]),
+		);
+
+		const recentHistory = [
+			...new Map(
+				historyChunks.flat().map((row) => [String(row._id), row] as const),
+			).values(),
+		].sort((a, b) => b.timestamp - a.timestamp);
 
 		let updated = 0;
 		const updatedReviewers = new Set<Id<"reviewers">>();
@@ -2056,13 +2191,14 @@ export const attachGoogleChatThreadUrlToAssignmentHistory = mutation({
 			if ((row.prUrl?.trim().toLowerCase() || "") !== normalizedPrUrl) {
 				continue;
 			}
-			if (row.googleChatThreadUrl?.trim()) {
-				updatedReviewers.add(row.reviewerId);
-				continue;
-			}
 
+			const mergedLinks = mergeChatThreadLinks(
+				row.googleChatThreadUrls,
+				incomingLinks,
+			);
 			await ctx.db.patch(row._id, {
-				googleChatThreadUrl: normalizedThreadUrl,
+				googleChatThreadUrl: mergedLinks[0]?.url ?? row.googleChatThreadUrl,
+				googleChatThreadUrls: mergedLinks,
 			});
 			updated += 1;
 			updatedReviewers.add(row.reviewerId);
@@ -2772,8 +2908,32 @@ export const cleanupAssignmentFeedSchemaDrift = mutation({
 		}
 
 		for (const row of historyRows) {
-			const hasSchemaDrift = Object.keys(row).some((key) =>
-				["reviewerName", "actionByName", "actionByEmail"].includes(key),
+			const allowedHistoryKeys = new Set([
+				"_id",
+				"_creationTime",
+				"teamId",
+				"reviewerId",
+				"reviewerTeamId",
+				"reviewerPoolTeamIds",
+				"reviewerName",
+				"timestamp",
+				"batchId",
+				"forced",
+				"skipped",
+				"isAbsentSkip",
+				"urgent",
+				"crossTeamReview",
+				"source",
+				"prUrl",
+				"contextUrl",
+				"googleChatThreadUrl",
+				"googleChatThreadUrls",
+				"tagId",
+				"actionByReviewerId",
+				"actionByName",
+			]);
+			const hasSchemaDrift = Object.keys(row).some(
+				(key) => !allowedHistoryKeys.has(key),
 			);
 
 			if (!hasSchemaDrift) continue;
