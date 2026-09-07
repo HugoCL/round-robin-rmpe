@@ -62,6 +62,17 @@ const assignmentGroupItemActivePrimary =
 const assignmentChipActiveUrgent =
 	"aria-pressed:bg-red-600 aria-pressed:border-red-600 aria-pressed:text-white hover:aria-pressed:bg-red-600/90 dark:aria-pressed:bg-red-700 dark:aria-pressed:border-red-700";
 
+/**
+ * Option chips share one pill shape. They are 44px tall so they stay comfortable
+ * to tap, and their width comes from their own label — never from a fixed column
+ * that would clip it.
+ */
+const assignmentChipClass =
+	"inline-flex h-11 min-w-0 max-w-full cursor-pointer items-center justify-center gap-2.5 rounded-full border-border/70 bg-transparent px-3.5 text-xs text-foreground transition-colors duration-150 lg:px-4 lg:text-sm";
+
+/** Chips keep their own width and simply wrap onto the next row. */
+const assignmentChipSlot = "min-w-0 shrink-0 basis-auto";
+
 const assignmentChipActiveCrossTeam =
 	"aria-pressed:bg-sky-600 aria-pressed:border-sky-600 aria-pressed:text-white hover:aria-pressed:bg-sky-600/90 dark:aria-pressed:bg-sky-700 dark:aria-pressed:border-sky-700";
 
@@ -200,7 +211,7 @@ export function AssignmentControlsPanel({
 							aria-selected={mode === "regular"}
 							onClick={() => onModeChange("regular")}
 							className={cn(
-								"h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+								"h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
 								mode === "regular" && assignmentModeTabActive,
 							)}
 						>
@@ -218,7 +229,7 @@ export function AssignmentControlsPanel({
 							aria-selected={mode === "tag"}
 							onClick={() => onModeChange("tag")}
 							className={cn(
-								"h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+								"h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
 								mode === "tag" && assignmentModeTabActive,
 							)}
 						>
@@ -239,7 +250,7 @@ export function AssignmentControlsPanel({
 							<Select value={selectedTagId} onValueChange={onTagChange}>
 								<SelectTrigger
 									id="assignment-tag-global"
-									className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+									className="w-full min-w-0 data-[size=default]:h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:data-[size=default]:h-10"
 								>
 									<SelectValue placeholder={t("tags.chooseTag")} />
 								</SelectTrigger>
@@ -299,6 +310,8 @@ export function AssignmentControlsPanel({
 						data-form-autocomplete="off"
 					/>
 					<InputGroupAddon align="inline-end">
+						{/* Below `sm` the label would eat the URL field, so the button
+						    keeps only its icon and carries the name in aria-label. */}
 						<InputGroupButton
 							variant={showContextInput ? "secondary" : "ghost"}
 							size="sm"
@@ -308,12 +321,10 @@ export function AssignmentControlsPanel({
 								setShowContextInput(!showContextInput);
 								if (showContextInput) onContextUrlChange("");
 							}}
+							className="size-10 shrink-0 rounded-full p-0 sm:size-auto sm:rounded-md sm:px-2.5"
 						>
-							<Plus data-icon="inline-start" aria-hidden="true" />
-							<span className="sm:hidden">
-								{t("googleChat.addContextShort")}
-							</span>
-							<span className="hidden sm:inline">
+							<Plus aria-hidden="true" />
+							<span className="sr-only sm:not-sr-only">
 								{t("googleChat.addContext")}
 							</span>
 						</InputGroupButton>
@@ -361,14 +372,10 @@ export function AssignmentControlsPanel({
 				</Field>
 			)}
 
-			<div
-				className={cn(
-					"grid grid-cols-2 gap-2 lg:gap-3 2xl:gap-4",
-					hideMultiAssignmentSection
-						? "@[34rem]:grid-cols-4"
-						: "@[34rem]:grid-cols-3 @[54rem]:grid-cols-5",
-				)}
-			>
+			{/* Each chip is as wide as its own label and wraps onto the next row
+			    when it no longer fits, so a label is never squeezed into a column
+			    too narrow for it. */}
+			<div className="flex flex-wrap gap-2 lg:gap-3 2xl:gap-4">
 				{!hideMultiAssignmentSection && (
 					<TooltipProvider>
 						<Tooltip>
@@ -382,28 +389,22 @@ export function AssignmentControlsPanel({
 									onValueChange={(value) =>
 										onMultiAssignmentToggle(value.includes("multi-assignment"))
 									}
-									className="inline-flex w-full max-w-full"
+									className={cn("inline-flex", assignmentChipSlot)}
 								>
 									<ToggleGroupItem
 										value="multi-assignment"
 										aria-label={t("pr.multipleAssignmentToggleLabel")}
 										className={cn(
-											"h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:px-3 lg:h-11 lg:px-4 lg:text-sm",
+											assignmentChipClass,
+											"w-full",
 											isMultiAssignmentEnabled &&
 												assignmentGroupItemActivePrimary,
 										)}
 									>
-										<div className="inline-flex min-w-0 items-center gap-2.5">
-											<span className="inline-flex size-4 items-center justify-center">
-												<Users
-													className="h-4 w-4 shrink-0"
-													aria-hidden="true"
-												/>
-											</span>
-											<span className="truncate leading-none">
-												{t("pr.multipleAssignmentToggleShort")}
-											</span>
-										</div>
+										<Users className="size-4 shrink-0" aria-hidden="true" />
+										<span className="min-w-0 truncate leading-none">
+											{t("pr.multipleAssignmentToggleShort")}
+										</span>
 									</ToggleGroupItem>
 								</ToggleGroup>
 							</TooltipTrigger>
@@ -414,40 +415,34 @@ export function AssignmentControlsPanel({
 					</TooltipProvider>
 				)}
 
-				<section className="w-full max-w-full">
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<div className="w-full">
-									<ForceAssignDialog
-										trigger={
-											<Button
-												variant="outline"
-												size="sm"
-												className="h-10 w-full max-w-full rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:px-3 lg:h-11 lg:px-4 lg:text-sm"
-											>
-												<div className="inline-flex min-w-0 items-center gap-2.5">
-													<span className="inline-flex size-4 items-center justify-center">
-														<UserCheck
-															className="h-4 w-4 shrink-0"
-															aria-hidden="true"
-														/>
-													</span>
-													<span className="truncate leading-none">
-														{t("pr.forceAssignShort")}
-													</span>
-												</div>
-											</Button>
-										}
-									/>
-								</div>
-							</TooltipTrigger>
-							<TooltipContent className="max-w-64 text-xs">
-								<p>{t("reviewer.forceAssignDescription")}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				</section>
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<div className={cn("inline-flex", assignmentChipSlot)}>
+								<ForceAssignDialog
+									trigger={
+										<Button
+											variant="outline"
+											size="sm"
+											className={cn(assignmentChipClass, "w-full")}
+										>
+											<UserCheck
+												className="size-4 shrink-0"
+												aria-hidden="true"
+											/>
+											<span className="min-w-0 truncate leading-none">
+												{t("pr.forceAssignShort")}
+											</span>
+										</Button>
+									}
+								/>
+							</div>
+						</TooltipTrigger>
+						<TooltipContent className="max-w-64 text-xs">
+							<p>{t("reviewer.forceAssignDescription")}</p>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 
 				<TooltipProvider>
 					<Tooltip>
@@ -463,12 +458,13 @@ export function AssignmentControlsPanel({
 								size="sm"
 								aria-label={t("googleChat.customizeToggle")}
 								className={cn(
-									"h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-colors duration-150 lg:h-11 lg:px-4 lg:text-sm",
+									assignmentChipClass,
+									assignmentChipSlot,
 									enableCustomMessage && assignmentChipActivePrimary,
 								)}
 							>
-								<MessageSquare data-icon="inline-start" />
-								<span className="truncate leading-none">
+								<MessageSquare className="size-4 shrink-0" aria-hidden="true" />
+								<span className="min-w-0 truncate leading-none">
 									{t("googleChat.customizeToggle")}
 								</span>
 							</Toggle>
@@ -479,78 +475,65 @@ export function AssignmentControlsPanel({
 					</Tooltip>
 				</TooltipProvider>
 
-				<section className="w-full max-w-full">
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Toggle
-									id="assignment-urgent-toggle"
-									pressed={urgent}
-									onPressedChange={onUrgentChange}
-									variant="outline"
-									size="sm"
-									aria-label={t("googleChat.urgentToggle")}
-									className={cn(
-										"h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:px-3 lg:h-11 lg:px-4 lg:text-sm",
-										urgent && assignmentChipActiveUrgent,
-									)}
-								>
-									<div className="inline-flex min-w-0 items-center gap-2.5">
-										<span className="inline-flex size-4 items-center justify-center">
-											<AlertTriangle
-												className="h-4 w-4 shrink-0"
-												aria-hidden="true"
-											/>
-										</span>
-										<span className="truncate leading-none">
-											{t("googleChat.urgentToggle")}
-										</span>
-									</div>
-								</Toggle>
-							</TooltipTrigger>
-							<TooltipContent className="max-w-64 text-xs">
-								<p>{t("googleChat.urgentToggleDescription")}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				</section>
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Toggle
+								id="assignment-urgent-toggle"
+								pressed={urgent}
+								onPressedChange={onUrgentChange}
+								variant="outline"
+								size="sm"
+								aria-label={t("googleChat.urgentToggle")}
+								className={cn(
+									assignmentChipClass,
+									assignmentChipSlot,
+									urgent && assignmentChipActiveUrgent,
+								)}
+							>
+								<AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+								<span className="min-w-0 truncate leading-none">
+									{t("googleChat.urgentToggle")}
+								</span>
+							</Toggle>
+						</TooltipTrigger>
+						<TooltipContent className="max-w-64 text-xs">
+							<p>{t("googleChat.urgentToggleDescription")}</p>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 
-				<section className="w-full max-w-full">
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Toggle
-									id="assignment-cross-team-toggle"
-									pressed={crossTeamReview}
-									onPressedChange={onCrossTeamReviewChange}
-									variant="outline"
-									size="sm"
-									aria-label={t("googleChat.crossTeamToggle")}
-									className={cn(
-										"h-10 w-full max-w-full cursor-pointer rounded-full border-border/70 bg-transparent px-2 text-xs text-foreground transition-colors duration-150 sm:px-3 lg:h-11 lg:px-4 lg:text-sm",
-										crossTeamReview && assignmentChipActiveCrossTeam,
-									)}
-								>
-									<div className="inline-flex min-w-0 items-center gap-2.5">
-										<span className="inline-flex size-4 items-center justify-center">
-											<Globe2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-										</span>
-										<span className="truncate leading-none">
-											{t("googleChat.crossTeamToggleShort")}
-										</span>
-									</div>
-								</Toggle>
-							</TooltipTrigger>
-							<TooltipContent className="max-w-64 text-xs">
-								<p>{t("googleChat.crossTeamToggleDescription")}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				</section>
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Toggle
+								id="assignment-cross-team-toggle"
+								pressed={crossTeamReview}
+								onPressedChange={onCrossTeamReviewChange}
+								variant="outline"
+								size="sm"
+								aria-label={t("googleChat.crossTeamToggle")}
+								className={cn(
+									assignmentChipClass,
+									assignmentChipSlot,
+									crossTeamReview && assignmentChipActiveCrossTeam,
+								)}
+							>
+								<Globe2 className="size-4 shrink-0" aria-hidden="true" />
+								<span className="min-w-0 truncate leading-none">
+									{t("googleChat.crossTeamToggleShort")}
+								</span>
+							</Toggle>
+						</TooltipTrigger>
+						<TooltipContent className="max-w-64 text-xs">
+							<p>{t("googleChat.crossTeamToggleDescription")}</p>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 			</div>
 
 			{enableCustomMessage && (
-				<section className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-4 lg:p-5">
+				<section className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-3 sm:p-4 lg:p-5">
 					<ChatMessageCustomizer
 						prUrl={prUrl}
 						onPrUrlChange={onPrUrlChange}
@@ -573,7 +556,7 @@ export function AssignmentControlsPanel({
 			)}
 
 			{crossTeamReview && (
-				<section className="flex flex-col gap-3 rounded-2xl border border-sky-200/60 bg-sky-50/30 p-4 lg:p-5 dark:border-sky-900/40 dark:bg-sky-950/15">
+				<section className="flex flex-col gap-3 rounded-2xl border border-sky-200/60 bg-sky-50/30 p-3 sm:p-4 lg:p-5 dark:border-sky-900/40 dark:bg-sky-950/15">
 					<p className="text-xs text-sky-800 lg:text-sm dark:text-sky-200">
 						{t("googleChat.crossTeamSharePrompt")}
 					</p>
@@ -594,7 +577,7 @@ export function AssignmentControlsPanel({
 										key={teamOption._id}
 										value={teamOption.slug}
 										aria-label={teamOption.name}
-										className="h-8 rounded-full border-border/70 bg-transparent px-3 text-xs lg:h-9 lg:text-sm"
+										className="h-11 rounded-full border-border/70 bg-transparent px-3.5 text-xs sm:h-9 lg:text-sm"
 									>
 										{teamOption.name}
 									</ToggleGroupItem>
@@ -605,7 +588,7 @@ export function AssignmentControlsPanel({
 									{t("googleChat.crossTeamTargetTeamsRequired")}
 								</p>
 							)}
-							<div className="flex items-start gap-2 rounded-xl border border-sky-200/70 bg-background/70 p-3 dark:border-sky-900/40">
+							<div className="flex items-start gap-3 rounded-xl border border-sky-200/70 bg-background/70 p-3 dark:border-sky-900/40">
 								<Checkbox
 									id="cross-team-exclude-teammates"
 									checked={excludeTeammates}
@@ -635,7 +618,7 @@ export function AssignmentControlsPanel({
 			)}
 
 			{showReviewerSlots && (
-				<section className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-4 lg:p-5">
+				<section className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-3 sm:p-4 lg:p-5">
 					<div className="flex flex-wrap gap-2" aria-live="polite">
 						<Badge variant="secondary" className="max-w-full">
 							{t("pr.multipleAssignmentSummaryEnabled", {

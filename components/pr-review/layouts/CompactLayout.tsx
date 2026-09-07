@@ -42,10 +42,10 @@ export function CompactLayout() {
 	};
 
 	return (
-		<div className="mt-3 flex flex-col gap-4 sm:mt-5 sm:gap-6 lg:mt-6 lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+		<div className="mt-3 flex flex-col gap-4 sm:mt-5 sm:gap-6 lg:mt-6 cockpit:min-h-0 cockpit:flex-1 cockpit:overflow-hidden">
 			<div
 				className={cn(
-					"grid items-stretch gap-4 sm:gap-6 lg:min-h-0 lg:flex-1",
+					"grid items-stretch gap-4 sm:gap-6 cockpit:min-h-0 cockpit:flex-1",
 					!reviewersExpanded &&
 						!historyExpanded &&
 						"lg:grid-cols-[3.5rem_minmax(0,1fr)_3.5rem]",
@@ -66,8 +66,8 @@ export function CompactLayout() {
 					onOpenChange={handleReviewersOpenChange}
 					className="order-2 lg:order-1"
 				/>
-				<div className="order-1 flex min-w-0 flex-col gap-4 sm:gap-6 lg:order-2 lg:h-full lg:min-h-0 lg:overflow-hidden">
-					<section className="page-enter-soft lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:[&>[data-slot=card]]:min-h-0 lg:[&>[data-slot=card]]:flex-1">
+				<div className="order-1 flex min-w-0 flex-col gap-4 sm:gap-6 lg:order-2 cockpit:h-full cockpit:min-h-0 cockpit:overflow-hidden">
+					<section className="page-enter-soft cockpit:flex cockpit:min-h-0 cockpit:flex-1 cockpit:flex-col cockpit:[&>[data-slot=card]]:min-h-0 cockpit:[&>[data-slot=card]]:flex-1">
 						{isForeignTeamView ? (
 							<ForeignTeamAssignmentCard />
 						) : (

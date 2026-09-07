@@ -4,6 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* The fixed-height "cockpit" (hero on top, options scrolling underneath) only
+   pays off on a window tall enough to hold both. On short laptops it squeezed
+   the options into a ~150px scroller, so below that height the page scrolls
+   normally instead. */
+@custom-variant cockpit (@media (min-width: 1024px) and (min-height: 780px));
+
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);

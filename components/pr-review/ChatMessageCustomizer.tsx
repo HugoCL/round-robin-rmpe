@@ -241,7 +241,7 @@ export function ChatMessageCustomizer({
 			)}
 
 			{enabled && (
-				<div className="space-y-2 rounded-lg border border-muted bg-muted/20 p-3">
+				<div className="space-y-2 rounded-xl border border-muted bg-muted/20 p-2.5 sm:p-3">
 					<Textarea
 						className="min-h-28 text-sm"
 						value={message}
@@ -287,7 +287,7 @@ export function ChatMessageCustomizer({
 										<Badge
 											key={mod.id}
 											variant={isActive ? "default" : "outline"}
-											className="cursor-pointer hover:bg-primary/80 transition-colors text-xs"
+											className="inline-flex min-h-9 cursor-pointer items-center rounded-full px-3 text-xs transition-colors hover:bg-primary/80"
 											onClick={() => {
 												setSelectedMods((prev) =>
 													prev.includes(mod.id)
@@ -310,6 +310,7 @@ export function ChatMessageCustomizer({
 							type="button"
 							variant="outline"
 							size="sm"
+							className="h-11 sm:h-9"
 							disabled={isGenerating || !prUrl.trim() || !nextReviewerName}
 							onClick={() => {
 								setUserEdited(false);

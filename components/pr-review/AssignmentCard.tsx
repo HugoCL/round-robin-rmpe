@@ -543,7 +543,7 @@ export function AssignmentCard() {
 			<CardHeader className="sr-only">
 				<h2 data-slot="card-title">{t("pr.nextReviewer")}</h2>
 			</CardHeader>
-			<CardContent className="flex flex-1 items-stretch justify-center px-3 pt-1 sm:px-5 sm:pt-3 md:px-6 md:pt-4 lg:hero-viewport lg:min-h-[40%] lg:overflow-y-auto 2xl:px-8">
+			<CardContent className="flex flex-1 items-stretch justify-center px-3 pt-1 sm:px-5 sm:pt-3 md:px-6 md:pt-4 2xl:px-8 cockpit:hero-viewport cockpit:min-h-[40%] cockpit:overflow-y-auto">
 				<AssignmentHeroPanel
 					mode={mode}
 					lastAssignedReviewer={lastAssignedReviewer}
@@ -556,9 +556,9 @@ export function AssignmentCard() {
 					isLoadingTagReviewer={isLoadingTagReviewer}
 				/>
 			</CardContent>
-			<CardFooter className="border-t border-border/60 bg-card px-3 py-2 sm:px-5 sm:py-4 md:px-6 lg:min-h-0 lg:items-stretch 2xl:px-8">
-				<div className="calm-subtle-panel flex w-full flex-col gap-3 p-1.5 sm:p-3 lg:min-h-0 lg:gap-4 lg:p-4">
-					<div className="min-w-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overflow-x-hidden lg:px-1">
+			<CardFooter className="border-t border-border/60 bg-card px-3 py-2 sm:px-5 sm:py-4 md:px-6 2xl:px-8 cockpit:min-h-0 cockpit:items-stretch">
+				<div className="calm-subtle-panel flex w-full flex-col gap-3 p-1.5 sm:p-3 lg:gap-4 lg:p-4 cockpit:min-h-0">
+					<div className="min-w-0 lg:px-1 cockpit:min-h-0 cockpit:flex-1 cockpit:overflow-y-auto cockpit:overflow-x-hidden">
 						<AssignmentControlsPanel
 							tags={tags}
 							mode={mode}
@@ -636,7 +636,7 @@ export function AssignmentCard() {
 						/>
 					</div>
 
-					<div className="lg:shrink-0">
+					<div className="cockpit:shrink-0">
 						<AssignmentActionsRow
 							isAssigning={isAssigning}
 							isAssignDisabled={isAssignDisabled}

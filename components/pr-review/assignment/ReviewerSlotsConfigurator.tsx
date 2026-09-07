@@ -99,7 +99,7 @@ export function ReviewerSlotsConfigurator({
 							type="button"
 							variant="ghost"
 							size="icon"
-							className="h-8 w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+							className="size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"
 							onClick={() =>
 								onReviewerCountChange(
 									Math.max(minReviewerCount, reviewerCount - 1),
@@ -124,7 +124,7 @@ export function ReviewerSlotsConfigurator({
 							type="button"
 							variant="ghost"
 							size="icon"
-							className="h-8 w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+							className="size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"
 							onClick={() =>
 								onReviewerCountChange(
 									Math.min(MAX_BATCH_SLOTS, reviewerCount + 1),
@@ -175,14 +175,14 @@ export function ReviewerSlotsConfigurator({
 					return (
 						<fieldset
 							key={slot.id}
-							className="space-y-2 rounded-md border bg-card/70 px-3 pb-3 pt-2 md:px-4 md:pb-4 md:pt-3"
+							className="min-w-0 space-y-2 rounded-xl border bg-card/70 px-2.5 pb-3 pt-2 sm:px-3 md:px-4 md:pb-4 md:pt-3"
 						>
 							<legend className="ml-2 bg-card/70 px-2 text-sm font-semibold leading-none">
 								{t("pr.reviewerSlotLegend", { index: slotIndex + 1 })}
 							</legend>
 
-							<div className="flex flex-col gap-2 md:flex-row">
-								<div className="space-y-1 md:min-w-0 md:flex-1">
+							<div className="flex min-w-0 flex-col gap-2 md:flex-row">
+								<div className="min-w-0 space-y-1 md:flex-1">
 									<Label htmlFor={strategySelectId}>
 										{t("pr.slotTypeLabel")}
 									</Label>
@@ -198,7 +198,7 @@ export function ReviewerSlotsConfigurator({
 									>
 										<SelectTrigger
 											id={strategySelectId}
-											className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+											className="w-full min-w-0 data-[size=default]:h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:data-[size=default]:h-9"
 										>
 											<SelectValue placeholder={t("pr.slotTypePlaceholder")} />
 										</SelectTrigger>
@@ -213,7 +213,7 @@ export function ReviewerSlotsConfigurator({
 								</div>
 
 								{requiresTag && (
-									<div className="space-y-1 md:min-w-0 md:flex-1">
+									<div className="min-w-0 space-y-1 md:flex-1">
 										<Label htmlFor={tagSelectId}>{t("pr.slotTagLabel")}</Label>
 										<Select
 											value={slot.tagId}
@@ -223,7 +223,7 @@ export function ReviewerSlotsConfigurator({
 										>
 											<SelectTrigger
 												id={tagSelectId}
-												className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+												className="w-full min-w-0 data-[size=default]:h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:data-[size=default]:h-9"
 											>
 												<SelectValue placeholder={t("pr.slotTagPlaceholder")} />
 											</SelectTrigger>
@@ -241,7 +241,7 @@ export function ReviewerSlotsConfigurator({
 								)}
 
 								{requiresReviewer && (
-									<div className="space-y-1 md:min-w-0 md:flex-1">
+									<div className="min-w-0 space-y-1 md:flex-1">
 										<Label htmlFor={reviewerSelectId}>
 											{t("pr.slotReviewerLabel")}
 										</Label>
@@ -255,7 +255,7 @@ export function ReviewerSlotsConfigurator({
 										>
 											<SelectTrigger
 												id={reviewerSelectId}
-												className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+												className="w-full min-w-0 data-[size=default]:h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:data-[size=default]:h-9"
 											>
 												<SelectValue
 													placeholder={t("pr.slotReviewerPlaceholder")}

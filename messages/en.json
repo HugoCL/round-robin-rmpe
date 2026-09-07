@@ -602,7 +602,6 @@
 		"prUrlLabel": "PR URL",
 		"prUrlRequiredForAssignment": "Enter the PR URL. We'll use it for the Google Chat button.",
 		"addContext": "Add context",
-		"addContextShort": "Context",
 		"contextUrlLabel": "Context URL (optional)",
 		"contextUrlHint": "Will show up as a Context button in the message",
 		"customizeToggle": "Customize message",

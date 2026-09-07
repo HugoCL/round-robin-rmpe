@@ -646,7 +646,6 @@
 		"prUrlLabel": "PR URL",
 		"prUrlRequiredForAssignment": "Ingresa la URL del PR. La usaremos para el botón de Google Chat.",
 		"addContext": "Añadir contexto",
-		"addContextShort": "Contexto",
 		"contextUrlLabel": "URL de contexto (opcional)",
 		"contextUrlHint": "Se muestra como botón Contexto en el mensaje",
 		"customizeToggle": "Personalizar mensaje",
