@@ -328,7 +328,8 @@ export default function PRReviewAssignment({
 			isUserPreferencesReady={isUserPreferencesReady}
 			hasAccessContext={!!accessContext}
 			isAuthenticated={!!user}
-			userEmail={userInfo?.email}
+			// The server checks the primary address, which need not be the first one.
+			userEmail={user?.primaryEmailAddress?.emailAddress ?? userInfo?.email}
 			onSignOut={async () => {
 				await signOut();
 			}}
