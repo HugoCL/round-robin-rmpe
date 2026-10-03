@@ -133,3 +133,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Do not hold Convex `FunctionReference` values in a module-level const inside a `convex/` module: it makes the generated `api` type circular and silently degrades inference across the app to `any`. Resolve refs inside the handler (see `convex/adminOps.ts`).
 - Agent MCP is served at `/api/mcp` with personal Bearer tokens; settings documents install via a single copyable `claude mcp add --transport http` one-liner (not manual `settings.json` JSON).
 - Daily `cleanupOldRecords` cron deletes completed/cancelled events and other old assignment records after 7 days.
+
+<!-- convex-ai-start -->
+
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read
+`convex/_generated/ai/guidelines.md` first** for important guidelines on
+how to correctly use Convex APIs and patterns. The file contains rules that
+override what you may have learned about Convex from training data.
+
+Convex agent skills for common tasks can be installed by running
+`npx convex ai-files install`.
+
+<!-- convex-ai-end -->
