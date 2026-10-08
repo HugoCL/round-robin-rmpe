@@ -817,6 +817,8 @@
 		"planPreview": "Fuera del {start} al {end} ({days, plural, one {# día hábil} other {# días hábiles}})",
 		"planReturn": "Vuelves a la rotación el {date} a las 00:00 ({timeZone})",
 		"planReturnOther": "{name} vuelve a la rotación el {date} a las 00:00 ({timeZone})",
+		"planReturnLocal": "Vuelves a la rotación el {date} a las 00:00",
+		"planReturnOtherLocal": "{name} vuelve a la rotación el {date} a las 00:00",
 		"editTitle": "Editar ausencia planificada",
 		"cancelPlan": "Cancelar plan",
 		"endNow": "Terminar ausencia ahora",

@@ -5,14 +5,20 @@ import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsHelp";
+import { PlannedAbsenceChip } from "@/components/pr-review/PlannedAbsenceChip";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { WithTooltip } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import { countRegularAssignmentsUntilReviewer } from "@/lib/assignmentResolver";
+import { findNextAbsence } from "@/lib/plannedAbsences";
 import { cn } from "@/lib/utils";
-import { MarkAbsentDialog } from "../dialogs/MarkAbsentDialog";
+import {
+	type AbsenceDialogMode,
+	MarkAbsentDialog,
+} from "../dialogs/MarkAbsentDialog";
 import { usePRReview } from "../PRReviewContext";
 
 function getPrNumber(prUrl?: string | null) {
@@ -96,9 +102,12 @@ export function HeaderStatusBar() {
 		isForeignTeamView,
 		onMarkAbsent,
 		onMarkAvailable,
+		plannedAbsences,
 	} = usePRReview();
 	const [now] = useState(() => Date.now());
 	const [absentDialogOpen, setAbsentDialogOpen] = useState(false);
+	const [absentDialogMode, setAbsentDialogMode] =
+		useState<AbsenceDialogMode>("now");
 
 	const stats = useQuery(
 		api.queries.getMyWeeklyAssignmentStats,
@@ -121,6 +130,11 @@ export function HeaderStatusBar() {
 		currentReviewer && canManageCurrentTeam && !isForeignTeamView,
 	);
 	const outOfPool = currentReviewer?.excludedFromReviewPool === true;
+	const nextAbsence = currentReviewer
+		? findNextAbsence(plannedAbsences, currentReviewer._id)
+		: null;
+	const scheduledAbsence =
+		nextAbsence?.status === "scheduled" ? nextAbsence : null;
 	const prsUntilTurn = useMemo(() => {
 		if (!currentReviewer) return null;
 		return countRegularAssignmentsUntilReviewer(reviewers, currentReviewer._id);
@@ -151,6 +165,7 @@ export function HeaderStatusBar() {
 								aria-label={t("reviewer.availabilitySwitchLabel")}
 								onCheckedChange={(checked) => {
 									if (!checked) {
+										setAbsentDialogMode("now");
 										setAbsentDialogOpen(true);
 										return;
 									}
@@ -168,6 +183,28 @@ export function HeaderStatusBar() {
 						<span className="text-xs text-muted-foreground">
 							{returningLabel}
 						</span>
+					) : null}
+					{scheduledAbsence ? (
+						<PlannedAbsenceChip
+							absence={scheduledAbsence}
+							reviewer={currentReviewer}
+							variant="vacation"
+							canEdit={canToggleAvailability}
+						/>
+					) : null}
+					{canToggleAvailability ? (
+						<Button
+							type="button"
+							variant="ghost"
+							size="xs"
+							className="text-muted-foreground"
+							onClick={() => {
+								setAbsentDialogMode("plan");
+								setAbsentDialogOpen(true);
+							}}
+						>
+							{t("absent.planCta")}
+						</Button>
 					) : null}
 					{currentReviewer.isOffTodayBySchedule &&
 					!currentReviewer.manualIsAbsent ? (
@@ -307,6 +344,7 @@ export function HeaderStatusBar() {
 					onOpenChange={setAbsentDialogOpen}
 					reviewer={currentReviewer}
 					currentUser={userInfo}
+					initialMode={absentDialogMode}
 					onMarkAbsent={async (absentUntil) => {
 						await onMarkAbsent(currentReviewer._id, absentUntil);
 					}}

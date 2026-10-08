@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { Check, Settings, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
@@ -14,11 +14,13 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { useConvexTags } from "@/hooks/useConvexTags";
+import { findNextAbsence } from "@/lib/plannedAbsences";
 import { reviewerHasBirthdayToday } from "@/lib/reviewerAvailability";
 import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
 import { MarkAbsentDialog } from "./dialogs/MarkAbsentDialog";
+import { PlannedAbsenceChip } from "./PlannedAbsenceChip";
 import { usePRReview } from "./PRReviewContext";
 
 interface ReviewersTableProps {
@@ -54,6 +56,8 @@ export function ReviewersTable({
 		onDataUpdate,
 		updateReviewer,
 		canManageCurrentTeam,
+		plannedAbsences,
+		teamTimezone,
 	} = usePRReview();
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState<number>(0);
@@ -61,8 +65,6 @@ export function ReviewersTable({
 	const [selectedReviewer, setSelectedReviewer] = useState<Reviewer | null>(
 		null,
 	);
-	const team = useQuery(api.queries.getTeam, teamSlug ? { teamSlug } : "skip");
-	const teamTimezone = team?.timezone ?? "UTC";
 	const { tags } = useConvexTags(teamSlug);
 	const updateAssignmentCountMutation = useMutation(
 		api.mutations.updateAssignmentCount,
@@ -168,6 +170,9 @@ export function ReviewersTable({
 						.join(" · ");
 					const visibleTags =
 						showTags && reviewer.tags?.length > 0 ? reviewer.tags : [];
+					const nextAbsence = findNextAbsence(plannedAbsences, reviewer._id);
+					const scheduledAbsence =
+						nextAbsence?.status === "scheduled" ? nextAbsence : null;
 
 					return (
 						<article
@@ -224,12 +229,20 @@ export function ReviewersTable({
 											</span>
 										) : null}
 									</div>
-									{meta || visibleTags.length > 0 ? (
+									{meta || visibleTags.length > 0 || scheduledAbsence ? (
 										<div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1">
 											{meta ? (
 												<p className="min-w-0 truncate text-[11px] text-muted-foreground">
 													{meta}
 												</p>
+											) : null}
+											{scheduledAbsence ? (
+												<PlannedAbsenceChip
+													absence={scheduledAbsence}
+													reviewer={reviewer}
+													variant="short"
+													canEdit={canEdit}
+												/>
 											) : null}
 											{visibleTags.map((tagId) => getTagBadge(tagId))}
 										</div>

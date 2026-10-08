@@ -773,6 +773,8 @@
 		"planPreview": "Away from {start} to {end} ({days, plural, one {# working day} other {# working days}})",
 		"planReturn": "You'll rejoin the rotation on {date} at 00:00 ({timeZone})",
 		"planReturnOther": "{name} will rejoin the rotation on {date} at 00:00 ({timeZone})",
+		"planReturnLocal": "You'll rejoin the rotation on {date} at 00:00",
+		"planReturnOtherLocal": "{name} will rejoin the rotation on {date} at 00:00",
 		"editTitle": "Edit planned absence",
 		"cancelPlan": "Cancel plan",
 		"endNow": "End absence now",
