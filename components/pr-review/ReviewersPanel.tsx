@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	CalendarDays,
 	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
@@ -39,6 +40,7 @@ import { IconActionButton } from "@/components/ui/icon-action-button";
 import { cn } from "@/lib/utils";
 import { AddReviewerDialog } from "./dialogs/AddReviewerDialog";
 import { DeleteReviewerDialog } from "./dialogs/DeleteReviewerDialog";
+import { TeamAbsencesDialog } from "./dialogs/TeamAbsencesDialog";
 import { usePRReview } from "./PRReviewContext";
 import { ReviewersTable } from "./ReviewersTable";
 import { TagManager } from "./TagManager";
@@ -147,6 +149,13 @@ export function ReviewersPanel({
 							</div>
 							{open ? (
 								<div className="flex items-center gap-1">
+									<TeamAbsencesDialog
+										trigger={
+											<IconActionButton label={t("absenceTimeline.open")}>
+												<CalendarDays />
+											</IconActionButton>
+										}
+									/>
 									{canManageCurrentTeam ? (
 										<>
 											<AddReviewerDialog
