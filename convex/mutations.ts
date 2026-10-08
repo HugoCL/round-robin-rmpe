@@ -3060,8 +3060,23 @@ export const restoreFromBackup = mutation({
 					.filter((reviewer) => resolveReviewerRole(reviewer) === "owner")
 					.map((reviewer) => reviewer.email),
 			);
+			// Planned absences are not part of snapshots and must survive a restore.
+			// Reviewer ids change, so remember each open absence's reviewer email
+			// and re-point it once the roster is back.
+			const emailByOldReviewerId = new Map(
+				existingReviewers.map((reviewer) => [reviewer._id, reviewer.email]),
+			);
+			const openAbsences: Doc<"reviewerAbsences">[] = [];
+			for (const status of ["scheduled", "active"] as const) {
+				for await (const absence of ctx.db
+					.query("reviewerAbsences")
+					.withIndex("by_teamId_and_status", (q) =>
+						q.eq("teamId", team._id).eq("status", status),
+					)) {
+					openAbsences.push(absence);
+				}
+			}
 			for (const reviewer of existingReviewers) {
-				await deleteAbsencesForReviewer(ctx, reviewer._id);
 				await ctx.db.delete(reviewer._id);
 			}
 
@@ -3073,8 +3088,12 @@ export const restoreFromBackup = mutation({
 			if (existingFeed) await ctx.db.delete(existingFeed._id);
 
 			// Restore reviewers from backup
+			const restoredByEmail = new Map<
+				string,
+				{ id: Id<"reviewers">; isAbsent: boolean }
+			>();
 			for (const reviewerData of backup.reviewers) {
-				await ctx.db.insert("reviewers", {
+				const restoredId = await ctx.db.insert("reviewers", {
 					teamId: team._id,
 					name: reviewerData.name,
 					email: reviewerData.email,
@@ -3095,6 +3114,29 @@ export const restoreFromBackup = mutation({
 					role: previousOwnerEmails.has(reviewerData.email)
 						? "owner"
 						: "member",
+				});
+				restoredByEmail.set(reviewerData.email, {
+					id: restoredId,
+					isAbsent: reviewerData.isAbsent,
+				});
+			}
+
+			const restoredAt = Date.now();
+			for (const absence of openAbsences) {
+				const email = emailByOldReviewerId.get(absence.reviewerId);
+				const restored =
+					email === undefined ? undefined : restoredByEmail.get(email);
+				if (!restored) {
+					await ctx.db.delete(absence._id);
+					continue;
+				}
+				await ctx.db.patch(absence._id, {
+					reviewerId: restored.id,
+					updatedAt: restoredAt,
+					// An absence cannot be in progress for someone the snapshot has available.
+					...(absence.status === "active" && !restored.isAbsent
+						? { status: "completed" as const }
+						: {}),
 				});
 			}
 

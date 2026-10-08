@@ -9,9 +9,11 @@ import {
 	isValidDateKey,
 	MAX_ABSENCE_LENGTH_DAYS,
 	plannedAbsenceErrorMessage,
+	resolveUpdatedAbsentUntil,
 	validateAbsenceRange,
 } from "../lib/plannedAbsences";
 import { resolveTeamTimezone } from "../lib/reviewerAvailability";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
 	internalMutation,
@@ -23,31 +25,44 @@ import { activateAbsence } from "./absenceLifecycle";
 import { assertCanMutateTeamById } from "./authz";
 import { createSnapshot, returnReviewerToRotation } from "./mutations";
 
-/** Overlap is rejected, so a reviewer has very few open rows; this is a safety bound. */
-const MAX_OPEN_ABSENCES_PER_REVIEWER = 50;
 const MAX_TEAM_ABSENCES_PER_STATUS = 200;
-const MAX_ACTIVATIONS_PER_RUN = 100;
+/** Due activations (each with a snapshot) handled per run before continuing. */
+const MAX_ACTIVATIONS_PER_RUN = 25;
+const MAX_CLOSES_PER_RUN = 100;
 
-type OpenStatus = "scheduled" | "active";
-
-async function listOpenAbsencesForReviewer(
+/**
+ * Rows of the reviewer that could overlap a range ending on `endDate`.
+ *
+ * A reviewer's scheduled and active rows never overlap each other (every
+ * write path checks this), so within one status the rows are disjoint and
+ * ordered by startDate. Any row that overlaps the new range starts on or
+ * before `endDate`, and among those only the one with the greatest startDate
+ * can reach back to the range's start. Per status we therefore read the two
+ * latest rows starting on or before `endDate` (two so the row being updated
+ * can be skipped) and keep the first other row. The caller compares dates.
+ */
+async function findOverlapCandidates(
 	ctx: MutationCtx,
 	reviewerId: Id<"reviewers">,
+	endDate: string,
+	excludeAbsenceId?: Id<"reviewerAbsences">,
 ): Promise<Doc<"reviewerAbsences">[]> {
-	const open: Doc<"reviewerAbsences">[] = [];
-	for (const status of [
-		"scheduled",
-		"active",
-	] as const satisfies OpenStatus[]) {
-		const rows = await ctx.db
+	const candidates: Doc<"reviewerAbsences">[] = [];
+	for (const status of ["scheduled", "active"] as const) {
+		const latest = await ctx.db
 			.query("reviewerAbsences")
-			.withIndex("by_reviewerId_and_status", (q) =>
-				q.eq("reviewerId", reviewerId).eq("status", status),
+			.withIndex("by_reviewerId_and_status_and_startDate", (q) =>
+				q
+					.eq("reviewerId", reviewerId)
+					.eq("status", status)
+					.lte("startDate", endDate),
 			)
-			.take(MAX_OPEN_ABSENCES_PER_REVIEWER);
-		open.push(...rows);
+			.order("desc")
+			.take(2);
+		const candidate = latest.find((row) => row._id !== excludeAbsenceId);
+		if (candidate) candidates.push(candidate);
 	}
-	return open;
+	return candidates;
 }
 
 async function loadReviewerAndTimeZone(
@@ -88,7 +103,7 @@ export const scheduleAbsence = mutation({
 		const now = Date.now();
 		const todayKey = getTodayDateKey(now, timeZone);
 
-		const existing = await listOpenAbsencesForReviewer(ctx, reviewerId);
+		const existing = await findOverlapCandidates(ctx, reviewerId, endDate);
 		const error = validateAbsenceRange({
 			range: { startDate, endDate },
 			todayKey,
@@ -158,10 +173,6 @@ export const updateAbsence = mutation({
 		);
 		const now = Date.now();
 		const todayKey = getTodayDateKey(now, timeZone);
-		const others = (
-			await listOpenAbsencesForReviewer(ctx, absence.reviewerId)
-		).filter((other) => other._id !== absenceId);
-
 		if (absence.status === "active") {
 			// The absence already started: only the end date can move.
 			if (startDate !== absence.startDate) {
@@ -179,6 +190,12 @@ export const updateAbsence = mutation({
 			if (diffInDays(startDate, endDate) + 1 > MAX_ABSENCE_LENGTH_DAYS) {
 				throw new Error(plannedAbsenceErrorMessage("tooLong"));
 			}
+			const others = await findOverlapCandidates(
+				ctx,
+				absence.reviewerId,
+				endDate,
+				absenceId,
+			);
 			if (
 				others.some((other) =>
 					dateKeyRangesOverlap({ startDate, endDate }, other),
@@ -188,10 +205,14 @@ export const updateAbsence = mutation({
 			}
 
 			await ctx.db.patch(absenceId, { endDate, updatedAt: now });
-			if (reviewer.isAbsent && reviewer.absentUntil !== undefined) {
-				await ctx.db.patch(reviewer._id, {
-					absentUntil: getAbsenceReturnAt(endDate, timeZone),
-				});
+			const nextAbsentUntil = resolveUpdatedAbsentUntil({
+				isAbsent: reviewer.isAbsent,
+				absentUntil: reviewer.absentUntil,
+				previousReturnAt: getAbsenceReturnAt(absence.endDate, timeZone),
+				nextReturnAt: getAbsenceReturnAt(endDate, timeZone),
+			});
+			if (nextAbsentUntil !== null) {
+				await ctx.db.patch(reviewer._id, { absentUntil: nextAbsentUntil });
 			}
 			await createSnapshot(
 				ctx,
@@ -201,6 +222,12 @@ export const updateAbsence = mutation({
 			return { status: "active" as const };
 		}
 
+		const others = await findOverlapCandidates(
+			ctx,
+			absence.reviewerId,
+			endDate,
+			absenceId,
+		);
 		const error = validateAbsenceRange({
 			range: { startDate, endDate },
 			todayKey,
@@ -300,39 +327,56 @@ export const listTeamAbsences = query({
 	},
 });
 
-// Starts scheduled absences whose start date has arrived in their team's timezone
+// Starts scheduled absences whose start date has arrived in their team's
+// timezone, and closes active ones whose end has passed without the reviewer
+// being returned (indefinite or longer manual absence).
 export const processPlannedAbsences = internalMutation({
 	args: {},
 	handler: async (ctx) => {
 		const now = Date.now();
 		// Cheap superset: the earliest timezone on Earth reaches each date first.
 		const earliestToday = getTodayDateKey(now, EARLIEST_TODAY_TIMEZONE);
-		const due = await ctx.db
+
+		const teams = new Map<Id<"teams">, Doc<"teams"> | null>();
+		const getTimeZone = async (teamId: Id<"teams">) => {
+			let team = teams.get(teamId);
+			if (team === undefined) {
+				team = await ctx.db.get(teamId);
+				teams.set(teamId, team);
+			}
+			return resolveTeamTimezone(team?.timezone);
+		};
+
+		let activated = 0;
+		let expired = 0;
+		let handled = 0;
+
+		// Scanning past not-yet-due rows only costs reads, so they cannot starve
+		// due ones; the cap bounds writes and snapshots per transaction.
+		const due = ctx.db
 			.query("reviewerAbsences")
 			.withIndex("by_status_and_startDate", (q) =>
 				q.eq("status", "scheduled").lte("startDate", earliestToday),
-			)
-			.take(MAX_ACTIVATIONS_PER_RUN);
-
-		const teams = new Map<Id<"teams">, Doc<"teams"> | null>();
-		let activated = 0;
-		let expired = 0;
-
-		for (const absence of due) {
-			let team = teams.get(absence.teamId);
-			if (team === undefined) {
-				team = await ctx.db.get(absence.teamId);
-				teams.set(absence.teamId, team);
-			}
-			const timeZone = resolveTeamTimezone(team?.timezone);
+			);
+		for await (const absence of due) {
+			const timeZone = await getTimeZone(absence.teamId);
 			if (
 				compareDateKeys(getTodayDateKey(now, timeZone), absence.startDate) < 0
 			) {
 				continue;
 			}
+			if (handled >= MAX_ACTIVATIONS_PER_RUN) {
+				await ctx.scheduler.runAfter(
+					0,
+					internal.absences.processPlannedAbsences,
+					{},
+				);
+				break;
+			}
+			handled += 1;
 			const reviewer = await ctx.db.get(absence.reviewerId);
 			if (!reviewer) {
-				// Orphaned row; cancel so it cannot sit at the head of the queue.
+				// Orphaned row; cancel so it cannot linger.
 				await ctx.db.patch(absence._id, {
 					status: "cancelled",
 					updatedAt: now,
@@ -358,6 +402,22 @@ export const processPlannedAbsences = internalMutation({
 			);
 		}
 
-		return { activated, expired };
+		// Active rows whose range ended while the reviewer stayed absent never
+		// get completed by a return; close them so they stop reading as current.
+		let closed = 0;
+		const ended = await ctx.db
+			.query("reviewerAbsences")
+			.withIndex("by_status_and_endDate", (q) =>
+				q.eq("status", "active").lt("endDate", earliestToday),
+			)
+			.take(MAX_CLOSES_PER_RUN);
+		for (const absence of ended) {
+			const timeZone = await getTimeZone(absence.teamId);
+			if (getAbsenceReturnAt(absence.endDate, timeZone) > now) continue;
+			await ctx.db.patch(absence._id, { status: "completed", updatedAt: now });
+			closed += 1;
+		}
+
+		return { activated, expired, closed };
 	},
 });

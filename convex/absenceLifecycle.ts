@@ -5,9 +5,8 @@ import {
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 
-/** Upper bound on simultaneously active rows per reviewer (overlap is rejected, so ~1). */
-const MAX_ACTIVE_ABSENCES_PER_REVIEWER = 20;
-const MAX_ABSENCES_PER_REVIEWER_DELETE_BATCH = 200;
+/** Rows handled per transaction-safe batch when draining a reviewer's absences. */
+const DRAIN_BATCH_SIZE = 100;
 
 /**
  * Starts a scheduled absence: marks the reviewer absent until the end of the
@@ -46,16 +45,21 @@ export async function completeActiveAbsencesForReviewer(
 	reviewerId: Id<"reviewers">,
 	now: number,
 ): Promise<number> {
-	const active = await ctx.db
-		.query("reviewerAbsences")
-		.withIndex("by_reviewerId_and_status", (q) =>
-			q.eq("reviewerId", reviewerId).eq("status", "active"),
-		)
-		.take(MAX_ACTIVE_ABSENCES_PER_REVIEWER);
-	for (const absence of active) {
-		await ctx.db.patch(absence._id, { status: "completed", updatedAt: now });
+	let completed = 0;
+	// Completed rows leave the "active" range, so each pass sees fresh rows.
+	while (true) {
+		const batch = await ctx.db
+			.query("reviewerAbsences")
+			.withIndex("by_reviewerId_and_status_and_startDate", (q) =>
+				q.eq("reviewerId", reviewerId).eq("status", "active"),
+			)
+			.take(DRAIN_BATCH_SIZE);
+		for (const absence of batch) {
+			await ctx.db.patch(absence._id, { status: "completed", updatedAt: now });
+		}
+		completed += batch.length;
+		if (batch.length < DRAIN_BATCH_SIZE) return completed;
 	}
-	return active.length;
 }
 
 /** Deletes every absence row of a reviewer (used when the reviewer is removed). */
@@ -69,14 +73,17 @@ export async function deleteAbsencesForReviewer(
 		"completed",
 		"cancelled",
 	] as const) {
-		const rows = await ctx.db
-			.query("reviewerAbsences")
-			.withIndex("by_reviewerId_and_status", (q) =>
-				q.eq("reviewerId", reviewerId).eq("status", status),
-			)
-			.take(MAX_ABSENCES_PER_REVIEWER_DELETE_BATCH);
-		for (const row of rows) {
-			await ctx.db.delete(row._id);
+		while (true) {
+			const batch = await ctx.db
+				.query("reviewerAbsences")
+				.withIndex("by_reviewerId_and_status_and_startDate", (q) =>
+					q.eq("reviewerId", reviewerId).eq("status", status),
+				)
+				.take(DRAIN_BATCH_SIZE);
+			for (const row of batch) {
+				await ctx.db.delete(row._id);
+			}
+			if (batch.length < DRAIN_BATCH_SIZE) break;
 		}
 	}
 }

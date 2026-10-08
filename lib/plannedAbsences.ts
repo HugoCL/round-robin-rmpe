@@ -183,6 +183,23 @@ export function resolveActivatedAbsentUntil(args: {
 	};
 }
 
+/**
+ * New `absentUntil` after the end date of an active absence changed, or `null`
+ * to leave the reviewer untouched. The plan only moves a return time it owns
+ * (`absentUntil === previousReturnAt`); a longer manual absence is never
+ * shortened and an indefinite one is never given an end.
+ */
+export function resolveUpdatedAbsentUntil(args: {
+	isAbsent: boolean;
+	absentUntil: number | undefined;
+	previousReturnAt: number;
+	nextReturnAt: number;
+}): number | null {
+	if (!args.isAbsent || args.absentUntil === undefined) return null;
+	if (args.absentUntil === args.previousReturnAt) return args.nextReturnAt;
+	return Math.max(args.absentUntil, args.nextReturnAt);
+}
+
 export function getTodayDateKey(now: number, timeZone: string): DateKey {
 	return getLocalDateKeyYYYYMMDD(now, timeZone);
 }

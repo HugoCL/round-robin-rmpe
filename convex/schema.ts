@@ -115,8 +115,13 @@ export default defineSchema({
 		updatedAt: v.number(),
 	})
 		.index("by_teamId_and_status", ["teamId", "status"])
-		.index("by_reviewerId_and_status", ["reviewerId", "status"])
+		.index("by_reviewerId_and_status_and_startDate", [
+			"reviewerId",
+			"status",
+			"startDate",
+		])
 		.index("by_status_and_startDate", ["status", "startDate"])
+		.index("by_status_and_endDate", ["status", "endDate"])
 		.index("by_status_and_updatedAt", ["status", "updatedAt"]),
 
 	tags: defineTable({

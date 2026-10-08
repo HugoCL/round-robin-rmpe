@@ -16,6 +16,7 @@ import {
 	parsePlannedAbsenceError,
 	plannedAbsenceErrorMessage,
 	resolveActivatedAbsentUntil,
+	resolveUpdatedAbsentUntil,
 	validateAbsenceRange,
 	zonedDateKeyToUtcMs,
 } from "../../lib/plannedAbsences";
@@ -288,5 +289,75 @@ test("resolveActivatedAbsentUntil decides expiry and the stored return time", ()
 			now,
 		}),
 		{ kind: "activate", absentUntil: 5_000 },
+	);
+});
+
+test("resolveUpdatedAbsentUntil only moves a return time the plan governs", () => {
+	// Governed by the plan: follows the new end date.
+	assert.equal(
+		resolveUpdatedAbsentUntil({
+			isAbsent: true,
+			absentUntil: 5_000,
+			previousReturnAt: 5_000,
+			nextReturnAt: 8_000,
+		}),
+		8_000,
+	);
+	assert.equal(
+		resolveUpdatedAbsentUntil({
+			isAbsent: true,
+			absentUntil: 5_000,
+			previousReturnAt: 5_000,
+			nextReturnAt: 3_000,
+		}),
+		3_000,
+	);
+	// Longer manual absence: never shortened.
+	assert.equal(
+		resolveUpdatedAbsentUntil({
+			isAbsent: true,
+			absentUntil: 9_000,
+			previousReturnAt: 5_000,
+			nextReturnAt: 3_000,
+		}),
+		9_000,
+	);
+	assert.equal(
+		resolveUpdatedAbsentUntil({
+			isAbsent: true,
+			absentUntil: 9_000,
+			previousReturnAt: 5_000,
+			nextReturnAt: 12_000,
+		}),
+		12_000,
+	);
+	// Shorter than the plan (not normally reachable): still never shortened.
+	assert.equal(
+		resolveUpdatedAbsentUntil({
+			isAbsent: true,
+			absentUntil: 4_000,
+			previousReturnAt: 5_000,
+			nextReturnAt: 3_000,
+		}),
+		4_000,
+	);
+	// Indefinite or not absent: leave the reviewer alone.
+	assert.equal(
+		resolveUpdatedAbsentUntil({
+			isAbsent: true,
+			absentUntil: undefined,
+			previousReturnAt: 5_000,
+			nextReturnAt: 8_000,
+		}),
+		null,
+	);
+	assert.equal(
+		resolveUpdatedAbsentUntil({
+			isAbsent: false,
+			absentUntil: 5_000,
+			previousReturnAt: 5_000,
+			nextReturnAt: 8_000,
+		}),
+		null,
 	);
 });
