@@ -1,9 +1,11 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { ArrowLeft, List } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { api } from "@/convex/_generated/api";
 
 /**
  * Slim top bar for pages outside the team board (metrics, suggestions, surveys,
@@ -24,7 +26,11 @@ export function SecondaryPageNav() {
 	}, []);
 
 	const backHref = lastTeam ? `/${locale}/${lastTeam}` : `/${locale}`;
-	const backLabel = lastTeam ? lastTeam : t("team.backHome");
+	// Same public list the team switcher subscribes to; the slug is only a
+	// fallback while it loads or if the team was renamed away.
+	const teams = useQuery(api.queries.getTeams, lastTeam ? {} : "skip");
+	const lastTeamName = teams?.find((team) => team.slug === lastTeam)?.name;
+	const backLabel = lastTeam ? (lastTeamName ?? lastTeam) : t("team.backHome");
 
 	return (
 		<header className="border-b border-border/60 bg-background/95 backdrop-blur-sm">

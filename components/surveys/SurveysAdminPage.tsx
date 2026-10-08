@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { PageIntro } from "@/components/PageIntro";
 import { SecondaryPageNav } from "@/components/SecondaryPageNav";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -110,73 +111,69 @@ export function SurveysAdminPage() {
 	};
 
 	return (
-		<main className="container mx-auto max-w-5xl px-4 py-8 md:py-12">
-			<div className="space-y-6">
-				<header className="page-enter-soft flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-					<div className="space-y-2">
-						<p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-							<ClipboardList className="h-4 w-4" />
-							La Lista
-						</p>
-						<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-							{t("admin.title")}
-						</h1>
-						<p className="max-w-2xl text-muted-foreground">
-							{t("admin.subtitle")}
-						</p>
-					</div>
-					<div className="flex flex-wrap gap-2">
-						<Button
-							type="button"
-							variant="outline"
-							disabled={creating}
-							onClick={() => void create(false)}
-						>
-							{t("admin.create")}
-						</Button>
-						<Button
-							type="button"
-							disabled={creating}
-							onClick={() => void create(true)}
-						>
-							{t("admin.createWithTemplate")}
-						</Button>
-					</div>
-				</header>
+		<>
+			<SecondaryPageNav />
+			<main className="container mx-auto max-w-5xl px-4 py-8 md:py-12">
+				<div className="space-y-6">
+					<PageIntro
+						icon={<ClipboardList aria-hidden="true" />}
+						title={t("admin.title")}
+						description={t("admin.subtitle")}
+						actions={
+							<>
+								<Button
+									type="button"
+									variant="outline"
+									disabled={creating}
+									onClick={() => void create(false)}
+								>
+									{t("admin.create")}
+								</Button>
+								<Button
+									type="button"
+									disabled={creating}
+									onClick={() => void create(true)}
+								>
+									{t("admin.createWithTemplate")}
+								</Button>
+							</>
+						}
+					/>
 
-				{surveys === undefined ? (
-					<Skeleton className="h-48 w-full" />
-				) : surveys.length === 0 ? (
-					<p className="text-muted-foreground">{t("admin.empty")}</p>
-				) : (
-					<ul className="divide-y divide-border/60 rounded-xl border border-border/70">
-						{surveys.map((survey) => {
-							return (
-								<li key={survey._id}>
-									<Link
-										href={`/${locale}/surveys/${survey._id}`}
-										className="flex flex-col gap-1 px-4 py-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
-									>
-										<div className="space-y-1">
-											<p className="font-medium">{survey.title}</p>
+					{surveys === undefined ? (
+						<Skeleton className="h-48 w-full" />
+					) : surveys.length === 0 ? (
+						<p className="text-muted-foreground">{t("admin.empty")}</p>
+					) : (
+						<ul className="divide-y divide-border/60 rounded-xl border border-border/70">
+							{surveys.map((survey) => {
+								return (
+									<li key={survey._id}>
+										<Link
+											href={`/${locale}/surveys/${survey._id}`}
+											className="flex flex-col gap-1 px-4 py-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
+										>
+											<div className="space-y-1">
+												<p className="font-medium">{survey.title}</p>
+												<p className="text-sm text-muted-foreground">
+													{statusLabel(t, survey.status)} ·{" "}
+													{t("admin.responses", {
+														count: survey.responseCount,
+													})}
+												</p>
+											</div>
 											<p className="text-sm text-muted-foreground">
-												{statusLabel(t, survey.status)} ·{" "}
-												{t("admin.responses", {
-													count: survey.responseCount,
-												})}
+												{t("admin.deadline")}:{" "}
+												{new Date(survey.deadlineAt).toLocaleString(locale)}
 											</p>
-										</div>
-										<p className="text-sm text-muted-foreground">
-											{t("admin.deadline")}:{" "}
-											{new Date(survey.deadlineAt).toLocaleString(locale)}
-										</p>
-									</Link>
-								</li>
-							);
-						})}
-					</ul>
-				)}
-			</div>
-		</main>
+										</Link>
+									</li>
+								);
+							})}
+						</ul>
+					)}
+				</div>
+			</main>
+		</>
 	);
 }
