@@ -806,7 +806,49 @@
 		"markAvailableCta": "Volver a estar disponible",
 		"markAvailableCtaTooltip": "Quita el ausente sin cambiar tus rotaciones.",
 		"notAReviewerCta": "No participo en la rotación general",
-		"notAReviewerCtaTooltip": "Sales de la rotación general; las rotaciones por tag conservan su configuración."
+		"notAReviewerCtaTooltip": "Sales de la rotación general; las rotaciones por tag conservan su configuración.",
+		"modeNow": "Ausente ahora",
+		"modePlan": "Planificar",
+		"planSubmit": "Agendar ausencia",
+		"planSaved": "Listo, tu ausencia quedó agendada",
+		"planUpdated": "Fechas actualizadas. ¡Disfruta el descanso!",
+		"planCancelled": "Ausencia planificada cancelada",
+		"planEnded": "Ausencia terminada, ¡bienvenido de vuelta!",
+		"planPreview": "Fuera del {start} al {end} ({days, plural, one {# día hábil} other {# días hábiles}})",
+		"planReturn": "Vuelves a la rotación el {date} a las 00:00 ({timeZone})",
+		"planReturnOther": "{name} vuelve a la rotación el {date} a las 00:00 ({timeZone})",
+		"editTitle": "Editar ausencia planificada",
+		"cancelPlan": "Cancelar plan",
+		"endNow": "Terminar ausencia ahora",
+		"chipShort": "{range}",
+		"chipVacation": "Vacaciones {range}",
+		"planCta": "Planificar…",
+		"plan": {
+			"errors": {
+				"invalidDate": "Esa fecha no es válida.",
+				"invalidRange": "La fecha de término tiene que ser igual o posterior al inicio.",
+				"startInPast": "Elige una fecha desde hoy en adelante.",
+				"tooFarAhead": "Por ahora solo se puede planificar hasta un año hacia adelante.",
+				"tooLong": "Una ausencia puede durar hasta un año.",
+				"overlap": "Ya hay una ausencia planificada en esas fechas."
+			}
+		}
+	},
+	"absenceTimeline": {
+		"open": "Ausencias del equipo",
+		"title": "Ausencias del equipo",
+		"description": "Mira quién está fuera y cuándo, y planifica tus días libres con tiempo.",
+		"previous": "Fechas anteriores",
+		"next": "Fechas siguientes",
+		"rangeLabel": "{start} al {end}",
+		"available": "Disponibles",
+		"legendNow": "Ausente ahora",
+		"legendPlanned": "Ausencia planificada",
+		"legendPartTime": "No trabaja (part-time)",
+		"legendLow": "Pocas personas disponibles",
+		"barLabel": "{name}, ausente del {start} al {end}",
+		"cellLabel": "Planificar ausencia de {name} el {date}",
+		"empty": "Todavía no hay revisores en este equipo."
 	},
 	"birthday": {
 		"setupTitle": "¿Cuándo cumples años?",

@@ -3,16 +3,25 @@
 import { useMutation, useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
 import { toast } from "@/hooks/use-toast";
-import type { PartTimeSchedule } from "@/lib/reviewerAvailability";
+import {
+	type DateKeyRange,
+	parsePlannedAbsenceError,
+} from "@/lib/plannedAbsences";
+import {
+	type PartTimeSchedule,
+	resolveTeamTimezone,
+} from "@/lib/reviewerAvailability";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import { api } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
+import type { Doc, Id } from "../convex/_generated/dataModel";
 
 interface UserInfo {
 	email: string;
 	firstName?: string;
 	lastName?: string;
 }
+
+const EMPTY_ABSENCES: Doc<"reviewerAbsences">[] = [];
 
 export function useConvexPRReviewData(
 	user?: UserInfo | null,
@@ -34,6 +43,11 @@ export function useConvexPRReviewData(
 	) ?? { items: [], lastAssigned: null };
 	const backups =
 		useQuery(api.queries.getBackups, teamSlug ? { teamSlug } : "skip") ?? [];
+	const team = useQuery(api.queries.getTeam, teamSlug ? { teamSlug } : "skip");
+	const plannedAbsences =
+		useQuery(api.absences.listTeamAbsences, teamSlug ? { teamSlug } : "skip") ??
+		EMPTY_ABSENCES;
+	const teamTimezone = resolveTeamTimezone(team?.timezone);
 
 	// Mutations
 	const addReviewerMutation = useMutation(api.mutations.addReviewer);
@@ -53,6 +67,9 @@ export function useConvexPRReviewData(
 	const markAvailableMutation = useMutation(
 		api.mutations.markReviewerAvailable,
 	);
+	const scheduleAbsenceMutation = useMutation(api.absences.scheduleAbsence);
+	const updateAbsenceMutation = useMutation(api.absences.updateAbsence);
+	const cancelAbsenceMutation = useMutation(api.absences.cancelAbsence);
 	const setReviewerExcludedFromReviewPoolMutation = useMutation(
 		api.mutations.setReviewerExcludedFromReviewPool,
 	);
@@ -474,6 +491,62 @@ export function useConvexPRReviewData(
 		}
 	};
 
+	const notifyPlanFailure = (error: unknown) => {
+		const code = parsePlannedAbsenceError(error);
+		toast({
+			title: t("messages.statusUpdateFailedTitle"),
+			description: code
+				? t(`absent.plan.errors.${code}`)
+				: t("messages.statusUpdateFailedDescription"),
+			variant: "destructive",
+		});
+	};
+
+	const handleScheduleAbsence = async (
+		reviewerId: Id<"reviewers">,
+		range: DateKeyRange,
+	): Promise<boolean> => {
+		try {
+			await scheduleAbsenceMutation({ reviewerId, ...range });
+			toast({ title: t("absent.planSaved") });
+			return true;
+		} catch (error) {
+			notifyPlanFailure(error);
+			return false;
+		}
+	};
+
+	const handleUpdateAbsence = async (
+		absenceId: Id<"reviewerAbsences">,
+		range: DateKeyRange,
+	): Promise<boolean> => {
+		try {
+			await updateAbsenceMutation({ absenceId, ...range });
+			toast({ title: t("absent.planUpdated") });
+			return true;
+		} catch (error) {
+			notifyPlanFailure(error);
+			return false;
+		}
+	};
+
+	const handleCancelAbsence = async (
+		absenceId: Id<"reviewerAbsences">,
+	): Promise<boolean> => {
+		try {
+			const { status } = await cancelAbsenceMutation({ absenceId });
+			toast({
+				title: t(
+					status === "completed" ? "absent.planEnded" : "absent.planCancelled",
+				),
+			});
+			return true;
+		} catch (error) {
+			notifyPlanFailure(error);
+			return false;
+		}
+	};
+
 	const handleSetExcludedFromReviewPool = async (
 		id: string,
 		excluded: boolean,
@@ -796,6 +869,8 @@ export function useConvexPRReviewData(
 		assignmentFeed,
 		lastUpdated: new Date(), // Always current with Convex
 		backups,
+		plannedAbsences,
+		teamTimezone,
 
 		// Actions
 		assignPR,
@@ -809,6 +884,9 @@ export function useConvexPRReviewData(
 		handleToggleAbsence,
 		handleMarkAbsent,
 		handleMarkAvailable,
+		handleScheduleAbsence,
+		handleUpdateAbsence,
+		handleCancelAbsence,
 		handleSetExcludedFromReviewPool,
 		handleResetCounts,
 		exportData,
