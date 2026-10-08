@@ -43,6 +43,8 @@ const DATE_KEY_FORMAT = "yyyy-MM-dd";
 
 export type AbsenceDialogMode = "now" | "plan";
 
+type PlanValidationError = NonNullable<ReturnType<typeof validateAbsenceRange>>;
+
 /** `lun, 19 oct` for a date key, with the year only outside the current one. */
 export function formatDateKeyDay(key: string, locale: string): string {
 	const [year, month, day] = key.split("-").map(Number);
@@ -240,25 +242,26 @@ function MarkAbsentDialogBody({
 				endDate: format(planRange.to ?? planRange.from, DATE_KEY_FORMAT),
 			}
 		: null;
-	let planError: ReturnType<typeof validateAbsenceRange> = null;
-	if (keyRange) {
-		planError = isActiveEdit
+	const validatePlan = (
+		range: DateKeyRange,
+		today: string,
+	): PlanValidationError | null =>
+		isActiveEdit
 			? // The start already passed: only the end can change, and it can't be
 				// earlier than today.
 				(validateAbsenceRange({
-					range: keyRange,
-					todayKey: keyRange.startDate,
+					range,
+					todayKey: range.startDate,
 					existing: otherRanges,
 				}) ??
-				(compareDateKeys(keyRange.endDate, todayKey) < 0
-					? "startInPast"
-					: null))
-			: validateAbsenceRange({
-					range: keyRange,
-					todayKey,
-					existing: otherRanges,
-				});
-	}
+				(compareDateKeys(range.endDate, today) < 0 ? "startInPast" : null))
+			: validateAbsenceRange({ range, todayKey: today, existing: otherRanges });
+	const renderError = keyRange ? validatePlan(keyRange, todayKey) : null;
+	// Set when a submit-time check (against the real "today") fails.
+	const [submitError, setSubmitError] = useState<PlanValidationError | null>(
+		null,
+	);
+	const planError = renderError ?? submitError;
 	const canSubmitPlan = keyRange !== null && planError === null;
 
 	const isPlanDayDisabled = (date: Date) => {
@@ -276,6 +279,16 @@ function MarkAbsentDialogBody({
 
 	const handlePlanSubmit = async () => {
 		if (!keyRange || planError) return;
+		// The dialog may have been open across midnight: check against the real
+		// team "today" instead of the one captured on open.
+		const failure = validatePlan(
+			keyRange,
+			getTodayDateKey(Date.now(), teamTimezone),
+		);
+		if (failure) {
+			setSubmitError(failure);
+			return;
+		}
 		setIsSubmitting(true);
 		try {
 			const ok = absence
@@ -302,6 +315,7 @@ function MarkAbsentDialogBody({
 		if (!keyRange) return null;
 		const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		const returnKey = addDaysToDateKey(keyRange.endDate, 1);
+		const returnAt = getAbsenceReturnAt(keyRange.endDate, teamTimezone);
 		const returnDate = new Intl.DateTimeFormat(locale, {
 			timeZone: teamTimezone,
 			weekday: "short",
@@ -311,23 +325,36 @@ function MarkAbsentDialogBody({
 				Number(returnKey.slice(0, 4)) === new Date().getFullYear()
 					? undefined
 					: "numeric",
-		}).format(getAbsenceReturnAt(keyRange.endDate, teamTimezone));
+		}).format(returnAt);
+		// Usually 00:00; 01:00 when local midnight falls in a DST gap.
+		const returnTime = new Intl.DateTimeFormat(locale, {
+			timeZone: teamTimezone,
+			hour: "2-digit",
+			minute: "2-digit",
+			hourCycle: "h23",
+		}).format(returnAt);
 		const showTimeZone = teamTimezone !== browserTimeZone;
 		let returnText: string;
 		if (isSelf) {
 			returnText = showTimeZone
-				? t("absent.planReturn", { date: returnDate, timeZone: teamTimezone })
-				: t("absent.planReturnLocal", { date: returnDate });
+				? t("absent.planReturn", {
+						date: returnDate,
+						time: returnTime,
+						timeZone: teamTimezone,
+					})
+				: t("absent.planReturnLocal", { date: returnDate, time: returnTime });
 		} else {
 			returnText = showTimeZone
 				? t("absent.planReturnOther", {
 						name: reviewer.name,
 						date: returnDate,
+						time: returnTime,
 						timeZone: teamTimezone,
 					})
 				: t("absent.planReturnOtherLocal", {
 						name: reviewer.name,
 						date: returnDate,
+						time: returnTime,
 					});
 		}
 		return (
@@ -348,6 +375,7 @@ function MarkAbsentDialogBody({
 		range: DateRange | undefined,
 		triggerDate: Date,
 	) => {
+		setSubmitError(null);
 		if (isActiveEdit && absence) {
 			// The start is locked: whatever day is clicked becomes the new end.
 			setPlanRange({
