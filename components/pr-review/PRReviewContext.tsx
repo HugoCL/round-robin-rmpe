@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { Id } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { DateKeyRange } from "@/lib/plannedAbsences";
 import type { PartTimeSchedule } from "@/lib/reviewerAvailability";
 import type { Assignment, Reviewer, UserInfo } from "@/lib/types";
 
@@ -29,6 +30,9 @@ export interface PRReviewContextValue {
 	assignmentFeed: Assignment;
 	hasTags: boolean;
 	userInfo: UserInfo | null;
+	/** Scheduled + active planned absences of the team ([] while loading). */
+	plannedAbsences: Doc<"reviewerAbsences">[];
+	teamTimezone: string;
 
 	// Loading / refresh
 	isRefreshing: boolean;
@@ -56,6 +60,15 @@ export interface PRReviewContextValue {
 	onToggleAbsence: (id: Id<"reviewers">) => Promise<void>;
 	onMarkAbsent: (id: Id<"reviewers">, absentUntil?: number) => Promise<void>;
 	onMarkAvailable: (id: Id<"reviewers">) => Promise<void>;
+	onScheduleAbsence: (
+		reviewerId: Id<"reviewers">,
+		range: DateKeyRange,
+	) => Promise<boolean>;
+	onUpdateAbsence: (
+		absenceId: Id<"reviewerAbsences">,
+		range: DateKeyRange,
+	) => Promise<boolean>;
+	onCancelAbsence: (absenceId: Id<"reviewerAbsences">) => Promise<boolean>;
 	onSetExcludedFromReviewPool: (
 		id: Id<"reviewers">,
 		excluded: boolean,

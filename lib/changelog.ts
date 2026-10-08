@@ -42,6 +42,14 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-10-08",
+		type: "feature",
+		title: "Ya puedes planificar tus ausencias",
+		description:
+			"Marcar una ausencia ahora es un solo formulario: eliges desde y hasta cuándo, y si empieza otro día queda agendada. Ese día sales de la rotación solo y vuelves al terminar, sin que nadie tenga que acordarse. Las próximas ausencias aparecen junto al nombre de cada persona, y con el ícono de calendario del panel de revisores ves quién falta las próximas tres semanas y cuántos quedan disponibles cada día.",
+		suggestedBy: "Allan Baus",
+	},
+	{
 		date: "2026-09-04",
 		type: "fix",
 		title: "El historial ya muestra quién asignó y los hilos de Chat",

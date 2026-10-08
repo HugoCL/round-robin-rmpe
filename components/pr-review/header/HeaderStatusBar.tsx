@@ -5,12 +5,15 @@ import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsHelp";
+import { PlannedAbsenceChip } from "@/components/pr-review/PlannedAbsenceChip";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { WithTooltip } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import { countRegularAssignmentsUntilReviewer } from "@/lib/assignmentResolver";
+import { findNextScheduledAbsence } from "@/lib/plannedAbsences";
 import { cn } from "@/lib/utils";
 import { MarkAbsentDialog } from "../dialogs/MarkAbsentDialog";
 import { usePRReview } from "../PRReviewContext";
@@ -96,6 +99,7 @@ export function HeaderStatusBar() {
 		isForeignTeamView,
 		onMarkAbsent,
 		onMarkAvailable,
+		plannedAbsences,
 	} = usePRReview();
 	const [now] = useState(() => Date.now());
 	const [absentDialogOpen, setAbsentDialogOpen] = useState(false);
@@ -121,6 +125,9 @@ export function HeaderStatusBar() {
 		currentReviewer && canManageCurrentTeam && !isForeignTeamView,
 	);
 	const outOfPool = currentReviewer?.excludedFromReviewPool === true;
+	const scheduledAbsence = currentReviewer
+		? findNextScheduledAbsence(plannedAbsences, currentReviewer._id)
+		: null;
 	const prsUntilTurn = useMemo(() => {
 		if (!currentReviewer) return null;
 		return countRegularAssignmentsUntilReviewer(reviewers, currentReviewer._id);
@@ -168,6 +175,27 @@ export function HeaderStatusBar() {
 						<span className="text-xs text-muted-foreground">
 							{returningLabel}
 						</span>
+					) : null}
+					{scheduledAbsence ? (
+						<PlannedAbsenceChip
+							absence={scheduledAbsence}
+							reviewer={currentReviewer}
+							variant="labeled"
+							canEdit={canToggleAvailability}
+						/>
+					) : null}
+					{canToggleAvailability ? (
+						<Button
+							type="button"
+							variant="ghost"
+							size="xs"
+							className="text-muted-foreground"
+							onClick={() => {
+								setAbsentDialogOpen(true);
+							}}
+						>
+							{t("absent.planCta")}
+						</Button>
 					) : null}
 					{currentReviewer.isOffTodayBySchedule &&
 					!currentReviewer.manualIsAbsent ? (

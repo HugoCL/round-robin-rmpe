@@ -26,6 +26,7 @@ const MAINTENANCE_TASKS = [
 	{ key: "cleanup_feed_drift", destructive: false },
 	{ key: "cleanup_legacy_pr_status", destructive: false },
 	{ key: "process_absent_returns", destructive: false },
+	{ key: "process_planned_absences", destructive: false },
 	{ key: "auto_complete_expired_events", destructive: false },
 	{ key: "audit_reviewer_teams", destructive: false },
 	{ key: "assert_reviewer_teams_ready", destructive: false },
@@ -258,6 +259,8 @@ function resolveTaskRef(task: MaintenanceTaskKey) {
 			return internal.mutations.cleanupLegacyPRAssignmentStatus;
 		case "process_absent_returns":
 			return internal.mutations.processAbsentReturns;
+		case "process_planned_absences":
+			return internal.absences.processPlannedAbsences;
 		case "auto_complete_expired_events":
 			return internal.mutations.autoCompleteExpiredEvents;
 		case "audit_reviewer_teams":

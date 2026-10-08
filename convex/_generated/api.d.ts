@@ -14,6 +14,8 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as absenceLifecycle from "../absenceLifecycle.js";
+import type * as absences from "../absences.js";
 import type * as actions from "../actions.js";
 import type * as adminDirectory from "../adminDirectory.js";
 import type * as adminOps from "../adminOps.js";
@@ -39,6 +41,8 @@ import type * as surveys from "../surveys.js";
 import type * as teamRoles from "../teamRoles.js";
 
 declare const fullApi: ApiFromModules<{
+  absenceLifecycle: typeof absenceLifecycle;
+  absences: typeof absences;
   actions: typeof actions;
   adminDirectory: typeof adminDirectory;
   adminOps: typeof adminOps;

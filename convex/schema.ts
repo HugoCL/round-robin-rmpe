@@ -93,6 +93,37 @@ export default defineSchema({
 		.index("by_team_email", ["teamId", "email"])
 		.index("by_absent_until", ["isAbsent", "absentUntil"]), // Optimization: filter absent reviewers efficiently
 
+	/**
+	 * Planned whole-day absences. Dates are team-local calendar keys
+	 * (YYYY-MM-DD), inclusive on both ends. `scheduled` rows flip to `active`
+	 * when the start date arrives; the reviewer's own isAbsent/absentUntil
+	 * fields stay the source of truth for assignment.
+	 */
+	reviewerAbsences: defineTable({
+		teamId: v.id("teams"),
+		reviewerId: v.id("reviewers"),
+		startDate: v.string(),
+		endDate: v.string(),
+		status: v.union(
+			v.literal("scheduled"),
+			v.literal("active"),
+			v.literal("completed"),
+			v.literal("cancelled"),
+		),
+		createdByEmail: v.optional(v.string()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_teamId_and_status", ["teamId", "status"])
+		.index("by_reviewerId_and_status_and_startDate", [
+			"reviewerId",
+			"status",
+			"startDate",
+		])
+		.index("by_status_and_startDate", ["status", "startDate"])
+		.index("by_status_and_endDate", ["status", "endDate"])
+		.index("by_status_and_updatedAt", ["status", "updatedAt"]),
+
 	tags: defineTable({
 		teamId: v.optional(v.id("teams")),
 		name: v.string(),
@@ -223,6 +254,7 @@ export default defineSchema({
 				birthdayMonth: v.optional(v.number()),
 				birthdayDay: v.optional(v.number()),
 				lastBirthdayNotifiedLocalDateKey: v.optional(v.string()),
+				absentUntil: v.optional(v.number()),
 				createdAt: v.number(),
 				tags: v.array(v.id("tags")),
 			}),
