@@ -4,7 +4,7 @@ import type { DateRange } from "@daypicker/react";
 import { format, parse } from "date-fns";
 import { enUS, es } from "date-fns/locale";
 import { useLocale, useTranslations } from "next-intl";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -106,7 +106,12 @@ function MarkAbsentDialogBody({
 	const isEdit = absence !== undefined;
 	const isActiveEdit = absence?.status === "active";
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [now] = useState(() => Date.now());
+	const [now, setNow] = useState(() => Date.now());
+	// Keeps "that time already passed" honest while the dialog stays open.
+	useEffect(() => {
+		const id = window.setInterval(() => setNow(Date.now()), 30_000);
+		return () => window.clearInterval(id);
+	}, []);
 	const todayKey = getTodayDateKey(now, teamTimezone);
 	const [range, setRange] = useState<DateRange | undefined>(() => {
 		const initial = absence ??
