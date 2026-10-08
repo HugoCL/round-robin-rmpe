@@ -62,6 +62,23 @@ test("zonedDateKeyToUtcMs resolves local midnight across offsets and DST", () =>
 	assert.equal(zonedDateKeyToUtcMs("2026-01-10", "UTC"), Date.UTC(2026, 0, 10));
 });
 
+test("zonedDateKeyToUtcMs lands on the first instant of a day whose midnight is skipped", () => {
+	// Santiago springs forward on 2026-09-06: 00:00 jumps straight to 01:00.
+	const ms = zonedDateKeyToUtcMs("2026-09-06", "America/Santiago");
+	assert.equal(ms, Date.UTC(2026, 8, 6, 4));
+	assert.equal(getTodayDateKey(ms, "America/Santiago"), "2026-09-06");
+	assert.equal(getTodayDateKey(ms - 1, "America/Santiago"), "2026-09-05");
+});
+
+test("zonedDateKeyToUtcMs lands on the first instant of a fall-back day", () => {
+	// Santiago falls back on 2026-04-04 at 24:00 (23:00 repeats), so the clock
+	// reads 23:00 twice on 04-04; midnight of 04-05 happens once, at UTC-4.
+	const ms = zonedDateKeyToUtcMs("2026-04-05", "America/Santiago");
+	assert.equal(ms, Date.UTC(2026, 3, 5, 4));
+	assert.equal(getTodayDateKey(ms, "America/Santiago"), "2026-04-05");
+	assert.equal(getTodayDateKey(ms - 1, "America/Santiago"), "2026-04-04");
+});
+
 test("getAbsenceReturnAt is local midnight the day after the last absent day", () => {
 	assert.equal(
 		getAbsenceReturnAt("2026-10-23", "America/Santiago"),

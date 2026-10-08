@@ -135,14 +135,24 @@ function getWallClockAsUtcMs(utcMs: number, timeZone: string): number {
 	);
 }
 
-/** UTC instant (ms) of 00:00 on `key` in `timeZone`. */
+/**
+ * UTC instant (ms) of 00:00 on `key` in `timeZone`. When local midnight does
+ * not exist (a DST gap), this is the first instant of that local day.
+ */
 export function zonedDateKeyToUtcMs(key: DateKey, timeZone: string): number {
 	const guess = parseDateKeyToUtcMs(key);
 	const firstOffset = getWallClockAsUtcMs(guess, timeZone) - guess;
 	const first = guess - firstOffset;
 	// The offset can differ at `first` when a DST change falls in between.
 	const secondOffset = getWallClockAsUtcMs(first, timeZone) - first;
-	return secondOffset === firstOffset ? first : guess - secondOffset;
+	if (secondOffset === firstOffset) return first;
+	// Keep the earliest candidate that is not on a previous local day.
+	const candidates = [first, guess - secondOffset].sort((a, b) => a - b);
+	return (
+		candidates.find(
+			(ms) => compareDateKeys(getLocalDateKeyYYYYMMDD(ms, timeZone), key) >= 0,
+		) ?? first
+	);
 }
 
 /** The instant a reviewer is back: 00:00 the day after `endDate` in `timeZone`. */
