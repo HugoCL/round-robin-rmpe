@@ -16,6 +16,7 @@ import {
 	isValidDateKey,
 	parsePlannedAbsenceError,
 	plannedAbsenceErrorMessage,
+	resolveAbsenceSubmit,
 	resolveActivatedAbsentUntil,
 	resolveUpdatedAbsentUntil,
 	validateAbsenceRange,
@@ -438,5 +439,102 @@ test("resolveUpdatedAbsentUntil only moves a return time the plan governs", () =
 			nextReturnAt: 8_000,
 		}),
 		null,
+	);
+});
+
+test("resolveAbsenceSubmit marks absent without a return date when indefinite", () => {
+	const now = Date.parse("2026-10-19T15:00:00Z");
+	const range = { startDate: "2026-10-19", endDate: "2026-10-19" };
+	assert.deepEqual(
+		resolveAbsenceSubmit({
+			range,
+			todayKey: "2026-10-19",
+			indefinite: true,
+			teamTimezone: "America/Santiago",
+			now,
+		}),
+		{ kind: "now", absentUntil: undefined },
+	);
+});
+
+test("resolveAbsenceSubmit returns today at the team-timezone wall clock time", () => {
+	// 2026-10-19 12:00 in Santiago (UTC-3 in October).
+	const now = Date.parse("2026-10-19T15:00:00Z");
+	const range = { startDate: "2026-10-19", endDate: "2026-10-19" };
+	assert.deepEqual(
+		resolveAbsenceSubmit({
+			range,
+			todayKey: "2026-10-19",
+			indefinite: false,
+			returnTodayAt: "18:30",
+			teamTimezone: "America/Santiago",
+			now,
+		}),
+		{ kind: "now", absentUntil: Date.parse("2026-10-19T21:30:00Z") },
+	);
+});
+
+test("resolveAbsenceSubmit rejects a return time that already passed", () => {
+	const now = Date.parse("2026-10-19T15:00:00Z");
+	const range = { startDate: "2026-10-19", endDate: "2026-10-19" };
+	const base = {
+		range,
+		todayKey: "2026-10-19",
+		indefinite: false,
+		teamTimezone: "America/Santiago",
+		now,
+	};
+	assert.deepEqual(resolveAbsenceSubmit({ ...base, returnTodayAt: "11:59" }), {
+		kind: "error",
+		code: "returnTimePassed",
+	});
+	assert.deepEqual(resolveAbsenceSubmit({ ...base, returnTodayAt: "12:00" }), {
+		kind: "error",
+		code: "returnTimePassed",
+	});
+	assert.deepEqual(resolveAbsenceSubmit({ ...base, returnTodayAt: "" }), {
+		kind: "error",
+		code: "returnTimeMissing",
+	});
+});
+
+test("resolveAbsenceSubmit only returns later today for a single-day range", () => {
+	const now = Date.parse("2026-10-19T15:00:00Z");
+	assert.deepEqual(
+		resolveAbsenceSubmit({
+			range: { startDate: "2026-10-19", endDate: "2026-10-21" },
+			todayKey: "2026-10-19",
+			indefinite: false,
+			returnTodayAt: "18:30",
+			teamTimezone: "America/Santiago",
+			now,
+		}),
+		{ kind: "error", code: "returnNotToday" },
+	);
+});
+
+test("resolveAbsenceSubmit plans any other range, including one starting today", () => {
+	const now = Date.parse("2026-10-19T15:00:00Z");
+	const today = { startDate: "2026-10-19", endDate: "2026-10-23" };
+	const future = { startDate: "2026-10-26", endDate: "2026-10-30" };
+	const base = {
+		todayKey: "2026-10-19",
+		indefinite: false,
+		teamTimezone: "America/Santiago",
+		now,
+	};
+	assert.deepEqual(resolveAbsenceSubmit({ ...base, range: today }), {
+		kind: "plan",
+		range: today,
+	});
+	// Options never apply to a future start, even if stale state says so.
+	assert.deepEqual(
+		resolveAbsenceSubmit({
+			...base,
+			range: future,
+			indefinite: true,
+			returnTodayAt: "18:30",
+		}),
+		{ kind: "plan", range: future },
 	);
 });

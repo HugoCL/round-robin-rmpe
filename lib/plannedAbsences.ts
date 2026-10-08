@@ -315,6 +315,51 @@ export function validateAbsenceRange(args: {
 	return null;
 }
 
+export type AbsenceSubmitErrorCode =
+	| "returnTimeMissing"
+	| "returnTimePassed"
+	| "returnNotToday";
+
+export type AbsenceSubmitResolution =
+	| { kind: "now"; absentUntil: number | undefined }
+	| { kind: "plan"; range: DateKeyRange }
+	| { kind: "error"; code: AbsenceSubmitErrorCode };
+
+const TIME_OF_DAY_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/**
+ * Decides how the absence form is saved. A range that starts today with
+ * "don't know when I'm back" or "back later today" marks the reviewer absent
+ * right away; any other range is saved as a planned absence (the backend
+ * activates it immediately when it starts today).
+ */
+export function resolveAbsenceSubmit(args: {
+	range: DateKeyRange;
+	todayKey: DateKey;
+	indefinite: boolean;
+	/** `HH:MM` in `teamTimezone`, for a return later today. */
+	returnTodayAt?: string;
+	teamTimezone: string;
+	now: number;
+}): AbsenceSubmitResolution {
+	const { range, todayKey, indefinite, returnTodayAt, teamTimezone, now } =
+		args;
+	if (range.startDate !== todayKey) return { kind: "plan", range };
+	if (indefinite) return { kind: "now", absentUntil: undefined };
+	if (returnTodayAt === undefined) return { kind: "plan", range };
+	if (range.endDate !== todayKey) {
+		return { kind: "error", code: "returnNotToday" };
+	}
+	const match = TIME_OF_DAY_PATTERN.exec(returnTodayAt);
+	if (!match) return { kind: "error", code: "returnTimeMissing" };
+	const absentUntil =
+		zonedDateKeyToUtcMs(todayKey, teamTimezone) +
+		Number(match[1]) * 3_600_000 +
+		Number(match[2]) * 60_000;
+	if (absentUntil <= now) return { kind: "error", code: "returnTimePassed" };
+	return { kind: "now", absentUntil };
+}
+
 export function plannedAbsenceErrorMessage(
 	code: AbsenceValidationError,
 ): string {

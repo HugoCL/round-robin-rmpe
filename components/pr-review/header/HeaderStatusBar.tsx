@@ -15,10 +15,7 @@ import { api } from "@/convex/_generated/api";
 import { countRegularAssignmentsUntilReviewer } from "@/lib/assignmentResolver";
 import { findNextScheduledAbsence } from "@/lib/plannedAbsences";
 import { cn } from "@/lib/utils";
-import {
-	type AbsenceDialogMode,
-	MarkAbsentDialog,
-} from "../dialogs/MarkAbsentDialog";
+import { MarkAbsentDialog } from "../dialogs/MarkAbsentDialog";
 import { usePRReview } from "../PRReviewContext";
 
 function getPrNumber(prUrl?: string | null) {
@@ -106,8 +103,6 @@ export function HeaderStatusBar() {
 	} = usePRReview();
 	const [now] = useState(() => Date.now());
 	const [absentDialogOpen, setAbsentDialogOpen] = useState(false);
-	const [absentDialogMode, setAbsentDialogMode] =
-		useState<AbsenceDialogMode>("now");
 
 	const stats = useQuery(
 		api.queries.getMyWeeklyAssignmentStats,
@@ -163,7 +158,6 @@ export function HeaderStatusBar() {
 								aria-label={t("reviewer.availabilitySwitchLabel")}
 								onCheckedChange={(checked) => {
 									if (!checked) {
-										setAbsentDialogMode("now");
 										setAbsentDialogOpen(true);
 										return;
 									}
@@ -197,7 +191,6 @@ export function HeaderStatusBar() {
 							size="xs"
 							className="text-muted-foreground"
 							onClick={() => {
-								setAbsentDialogMode("plan");
 								setAbsentDialogOpen(true);
 							}}
 						>
@@ -342,7 +335,6 @@ export function HeaderStatusBar() {
 					onOpenChange={setAbsentDialogOpen}
 					reviewer={currentReviewer}
 					currentUser={userInfo}
-					initialMode={absentDialogMode}
 					onMarkAbsent={async (absentUntil) => {
 						await onMarkAbsent(currentReviewer._id, absentUntil);
 					}}

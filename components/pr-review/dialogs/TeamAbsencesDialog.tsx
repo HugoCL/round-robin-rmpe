@@ -374,7 +374,6 @@ function TeamAbsencesTimeline() {
 						await onMarkAbsent(selected.reviewer._id, absentUntil);
 					}}
 					absence={selected.absence}
-					initialMode={selected.initialRange ? "plan" : undefined}
 					initialRange={selected.initialRange}
 				/>
 			) : null}
