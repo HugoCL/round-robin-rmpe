@@ -189,7 +189,7 @@ export function HeaderStatusBar() {
 							type="button"
 							variant="ghost"
 							size="xs"
-							className="text-muted-foreground"
+							className="px-0 text-muted-foreground underline-offset-4 hover:bg-transparent hover:text-foreground hover:underline"
 							onClick={() => {
 								setAbsentDialogOpen(true);
 							}}
@@ -222,7 +222,7 @@ export function HeaderStatusBar() {
 			{currentReviewer ? (
 				<Separator
 					orientation="vertical"
-					className="my-1 hidden self-stretch sm:block"
+					className="my-1 hidden self-stretch lg:block"
 				/>
 			) : null}
 
@@ -273,13 +273,14 @@ export function HeaderStatusBar() {
 				<>
 					<Separator
 						orientation="vertical"
-						className="my-1 hidden self-stretch sm:block"
+						className="my-1 hidden self-stretch lg:block"
 					/>
 					<div className="flex h-3.5 shrink-0 flex-nowrap items-center gap-x-3 self-center whitespace-nowrap text-xs leading-none text-muted-foreground">
-						<span className="inline-flex h-3.5 items-center font-medium text-foreground">
+						{/* Last-PR links are a desktop nicety; on a phone they cost a row. */}
+						<span className="hidden h-3.5 items-center font-medium text-foreground sm:inline-flex">
 							{t("headerStatus.lastPrs")}
 						</span>
-						<div className="flex h-3.5 items-center gap-x-3">
+						<div className="hidden h-3.5 items-center gap-x-3 sm:flex">
 							<LastPrStat
 								label={t("headerStatus.lastReceived")}
 								hoverLabel={
