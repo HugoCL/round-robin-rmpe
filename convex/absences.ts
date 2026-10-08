@@ -338,11 +338,17 @@ export const listTeamAbsences = query({
 // schedules itself with the page cursor. The cron starts without a cursor and
 // only that first run closes ended active rows.
 export const processPlannedAbsences = internalMutation({
-	args: { cursor: v.optional(v.union(v.string(), v.null())) },
-	handler: async (ctx, { cursor }) => {
+	args: {
+		cursor: v.optional(v.union(v.string(), v.null())),
+		// Fixed by the first run: a cursor is only valid for the exact index
+		// range that produced it, so continuations must not recompute it.
+		cutoff: v.optional(v.string()),
+	},
+	handler: async (ctx, { cursor, cutoff }) => {
 		const now = Date.now();
 		// Cheap superset: the earliest timezone on Earth reaches each date first.
-		const earliestToday = getTodayDateKey(now, EARLIEST_TODAY_TIMEZONE);
+		const earliestToday =
+			cutoff ?? getTodayDateKey(now, EARLIEST_TODAY_TIMEZONE);
 
 		const teams = new Map<Id<"teams">, Doc<"teams"> | null>();
 		const getTimeZone = async (teamId: Id<"teams">) => {
@@ -406,7 +412,7 @@ export const processPlannedAbsences = internalMutation({
 			await ctx.scheduler.runAfter(
 				0,
 				internal.absences.processPlannedAbsences,
-				{ cursor: dueRows.continueCursor },
+				{ cursor: dueRows.continueCursor, cutoff: earliestToday },
 			);
 		}
 
