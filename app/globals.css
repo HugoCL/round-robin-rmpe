@@ -207,6 +207,14 @@
 	}
 }
 
+/* With an option panel open on a short window the hero gets ~9rem: the
+   reviewer's name is the answer, so the badge above it goes first. */
+@container hero (height < 10rem) {
+	.hero-badge {
+		display: none;
+	}
+}
+
 .notice-stack {
 	@apply flex flex-col gap-3;
 }

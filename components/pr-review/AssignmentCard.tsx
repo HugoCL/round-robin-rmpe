@@ -543,7 +543,7 @@ export function AssignmentCard() {
 			<CardHeader className="sr-only">
 				<h2 data-slot="card-title">{t("pr.nextReviewer")}</h2>
 			</CardHeader>
-			<CardContent className="flex flex-1 items-stretch justify-center px-3 pt-1 sm:px-5 sm:pt-3 md:px-6 md:pt-4 2xl:px-8 cockpit:hero-viewport cockpit:min-h-48 cockpit:overflow-y-auto">
+			<CardContent className="flex flex-1 items-stretch justify-center px-3 pt-1 sm:px-5 sm:pt-3 md:px-6 md:pt-4 2xl:px-8 cockpit:hero-viewport cockpit:min-h-36 cockpit:overflow-y-auto">
 				<AssignmentHeroPanel
 					mode={mode}
 					lastAssignedReviewer={lastAssignedReviewer}
@@ -556,9 +556,9 @@ export function AssignmentCard() {
 					isLoadingTagReviewer={isLoadingTagReviewer}
 				/>
 			</CardContent>
-			<CardFooter className="border-t border-border/60 bg-card px-3 py-2 sm:px-5 sm:py-4 md:px-6 2xl:px-8 cockpit:items-stretch">
+			<CardFooter className="border-t border-border/60 bg-card px-3 py-2 sm:px-5 sm:py-4 md:px-6 2xl:px-8 cockpit:items-stretch cockpit:has-[[data-assignment-extras]:not(:empty)]:grow-[3]">
 				<div className="calm-subtle-panel flex w-full flex-col gap-3 p-1.5 sm:p-3 lg:gap-4 lg:p-4">
-					<div className="min-w-0 lg:px-1 cockpit:max-h-[max(22rem,40dvh)] cockpit:overflow-y-auto cockpit:overflow-x-hidden">
+					<div className="min-w-0 lg:px-1 cockpit:flex cockpit:flex-1 cockpit:flex-col">
 						<AssignmentControlsPanel
 							tags={tags}
 							mode={mode}

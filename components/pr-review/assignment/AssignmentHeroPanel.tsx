@@ -130,7 +130,7 @@ export function AssignmentHeroPanel({
 						aria-hidden="true"
 					/>
 
-					<span className="relative inline-flex shrink-0 items-center rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 lg:text-sm">
+					<span className="hero-badge relative inline-flex shrink-0 items-center rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 lg:text-sm">
 						{mode === "tag" ? t("tags.nextReviewer") : t("pr.nextReviewer")}
 					</span>
 
