@@ -318,7 +318,7 @@ export function CreateEventDialog({
 									<Button
 										variant="outline"
 										className={cn(
-											"justify-start text-left font-normal",
+											"w-full justify-start text-left font-normal",
 											!date && "text-muted-foreground",
 										)}
 									>
@@ -340,20 +340,27 @@ export function CreateEventDialog({
 						{/* Time */}
 						<div className="grid gap-2">
 							<Label htmlFor={timeId}>{t("events.time")}</Label>
-							<div className="flex items-center gap-2">
-								<Clock className="h-4 w-4 text-muted-foreground" />
+							<div className="relative">
+								<Clock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 								<Input
 									id={timeId}
 									type="time"
 									value={time}
 									onChange={(e) => setTime(e.target.value)}
-									className="w-auto"
+									// The native picker icon is hidden to match Fecha, so the
+									// field itself opens the picker.
+									onClick={(e) => {
+										try {
+											e.currentTarget.showPicker?.();
+										} catch {
+											// Not allowed in this context; typing still works.
+										}
+									}}
+									className="w-full pr-28 pl-9 [&::-webkit-calendar-picker-indicator]:hidden"
 								/>
-								<span className="text-xs text-muted-foreground">
-									(
+								<span className="pointer-events-none absolute top-1/2 right-4 max-w-24 -translate-y-1/2 truncate text-xs text-muted-foreground">
 									{userTimezone.split("/").pop()?.replace("_", " ") ||
 										t("events.yourTime")}
-									)
 								</span>
 							</div>
 							{/* Show Chile time conversion if user is not in Chile */}

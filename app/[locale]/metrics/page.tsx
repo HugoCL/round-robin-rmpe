@@ -2,6 +2,7 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
+import { PageIntro } from "@/components/PageIntro";
 import { SecondaryPageNav } from "@/components/SecondaryPageNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
@@ -37,21 +38,16 @@ export default function MetricsPage() {
 			<SecondaryPageNav />
 			<main className="container mx-auto max-w-5xl px-4 py-8 md:py-12">
 				<div className="space-y-6">
-					<header className="page-enter-soft max-w-3xl space-y-3">
-						<p className="calm-kicker">La Lista</p>
-						<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-							{t("title")}
-						</h1>
-						<p className="text-pretty text-lg leading-8 text-muted-foreground md:text-xl">
-							{t.rich("headline", {
-								count: () => (
-									<strong className="font-semibold text-foreground tabular-nums">
-										{metrics.reviewedPRs.toLocaleString(locale)}
-									</strong>
-								),
-							})}
-						</p>
-					</header>
+					<PageIntro
+						title={t("title")}
+						description={t.rich("headline", {
+							count: () => (
+								<strong className="font-semibold text-foreground tabular-nums">
+									{metrics.reviewedPRs.toLocaleString(locale)}
+								</strong>
+							),
+						})}
+					/>
 
 					<section className="page-enter calm-shell overflow-hidden">
 						<h2 className="sr-only">{t("overview")}</h2>

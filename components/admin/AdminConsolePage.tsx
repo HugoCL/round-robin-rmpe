@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 import { useAppConfig } from "@/components/AppConfigProvider";
+import { PageIntro } from "@/components/PageIntro";
 import { SecondaryPageNav } from "@/components/SecondaryPageNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminGate } from "./AdminGate";
@@ -53,33 +54,38 @@ function AdminConsoleContent() {
 			<SecondaryPageNav />
 			<main className="container mx-auto max-w-5xl px-4 py-8 md:py-12">
 				<div className="space-y-6">
-					<header className="page-enter-soft space-y-2">
-						<p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-							<ShieldCheck className="h-4 w-4" aria-hidden="true" />
-							La Lista
-						</p>
-						<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-							{t("title")}
-						</h1>
-						<p className="max-w-2xl text-pretty text-muted-foreground">
-							{t("subtitle")}
-						</p>
-					</header>
+					<PageIntro
+						icon={<ShieldCheck aria-hidden="true" />}
+						title={t("title")}
+						description={t("subtitle")}
+					/>
 
 					<Tabs value={activeTab} onValueChange={handleTabChange}>
-						<TabsList>
-							<TabsTrigger value="access">{t("tabs.access")}</TabsTrigger>
-							<TabsTrigger value="teams">{t("tabs.teams")}</TabsTrigger>
-							<TabsTrigger value="users">{t("tabs.users")}</TabsTrigger>
-							<TabsTrigger value="announcements">
-								{t("tabs.announcements")}
-							</TabsTrigger>
-							<TabsTrigger value="features">{t("tabs.features")}</TabsTrigger>
-							<TabsTrigger value="ops">{t("tabs.ops")}</TabsTrigger>
-							<TabsTrigger value="maintenance">
-								{t("tabs.maintenance")}
-							</TabsTrigger>
-						</TabsList>
+						<div className="max-w-full min-w-0 overflow-x-auto px-1 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+							<TabsList>
+								<TabsTrigger className="shrink-0" value="access">
+									{t("tabs.access")}
+								</TabsTrigger>
+								<TabsTrigger className="shrink-0" value="teams">
+									{t("tabs.teams")}
+								</TabsTrigger>
+								<TabsTrigger className="shrink-0" value="users">
+									{t("tabs.users")}
+								</TabsTrigger>
+								<TabsTrigger className="shrink-0" value="announcements">
+									{t("tabs.announcements")}
+								</TabsTrigger>
+								<TabsTrigger className="shrink-0" value="features">
+									{t("tabs.features")}
+								</TabsTrigger>
+								<TabsTrigger className="shrink-0" value="ops">
+									{t("tabs.ops")}
+								</TabsTrigger>
+								<TabsTrigger className="shrink-0" value="maintenance">
+									{t("tabs.maintenance")}
+								</TabsTrigger>
+							</TabsList>
+						</div>
 						<TabsContent value="access" className="pt-4">
 							<AccessSection />
 						</TabsContent>

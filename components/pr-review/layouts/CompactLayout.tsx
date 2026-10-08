@@ -41,11 +41,15 @@ export function CompactLayout() {
 		}
 	};
 
+	// The cockpit fills whatever the notices above leave, but its floor is the
+	// assignment card's own minimum (hero + collapsed controls): when notices
+	// take more, the shell scrolls instead of clipping the PR field. The side
+	// panels opt out of sizing the row so a long history can't stretch it.
 	return (
-		<div className="mt-3 flex flex-col gap-4 sm:mt-5 sm:gap-6 lg:mt-6 cockpit:min-h-0 cockpit:flex-1 cockpit:overflow-hidden">
+		<div className="mt-3 flex flex-col gap-4 sm:mt-5 sm:gap-6 lg:mt-6 cockpit:flex-1">
 			<div
 				className={cn(
-					"grid items-stretch gap-4 sm:gap-6 cockpit:min-h-0 cockpit:flex-1",
+					"grid items-stretch gap-4 sm:gap-6 cockpit:flex-1",
 					!reviewersExpanded &&
 						!historyExpanded &&
 						"lg:grid-cols-[3.5rem_minmax(0,1fr)_3.5rem]",
@@ -64,10 +68,10 @@ export function CompactLayout() {
 					teamSlug={teamSlug}
 					open={reviewersExpanded}
 					onOpenChange={handleReviewersOpenChange}
-					className="order-2 lg:order-1"
+					className="order-2 lg:order-1 cockpit:contain-size"
 				/>
-				<div className="order-1 flex min-w-0 flex-col gap-4 sm:gap-6 lg:order-2 cockpit:h-full cockpit:min-h-0 cockpit:overflow-hidden">
-					<section className="page-enter-soft cockpit:flex cockpit:min-h-0 cockpit:flex-1 cockpit:flex-col cockpit:[&>[data-slot=card]]:min-h-0 cockpit:[&>[data-slot=card]]:flex-1">
+				<div className="order-1 flex min-w-0 flex-col gap-4 sm:gap-6 lg:order-2 cockpit:h-full">
+					<section className="page-enter-soft cockpit:flex cockpit:flex-1 cockpit:flex-col cockpit:[&>[data-slot=card]]:flex-1">
 						{isForeignTeamView ? (
 							<ForeignTeamAssignmentCard />
 						) : (
@@ -79,7 +83,7 @@ export function CompactLayout() {
 					teamSlug={teamSlug}
 					open={historyExpanded}
 					onOpenChange={handleHistoryOpenChange}
-					className="order-3"
+					className="order-3 cockpit:contain-size"
 				/>
 			</div>
 		</div>

@@ -69,7 +69,7 @@ export default function CreateTeamForm() {
 					<h1 className="mt-3 text-3xl font-semibold tracking-tight">
 						{t("team.formTitle")}
 					</h1>
-					<p className="mt-3 max-w-sm text-sm leading-7 text-muted-foreground">
+					<p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
 						{t("team.formDescription")}
 					</p>
 				</div>

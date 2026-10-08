@@ -67,12 +67,12 @@ export function SuggestionComposer({ onCreated }: SuggestionComposerProps) {
 
 	return (
 		<section className="calm-shell px-5 py-6 md:px-7">
-			<div className="mx-auto flex max-w-2xl flex-col gap-5">
+			<div className="flex max-w-2xl flex-col gap-5">
 				<div className="space-y-1.5">
 					<h2 className="text-2xl font-semibold tracking-tight">
 						{t("suggestions.composeTitle")}
 					</h2>
-					<p className="text-sm leading-6 text-muted-foreground">
+					<p className="text-sm leading-relaxed text-muted-foreground">
 						{t("suggestions.composeDescription")}
 					</p>
 				</div>

@@ -63,7 +63,7 @@ export default async function SignUpPage({
 				)}
 			</section>
 
-			<section className="flex min-h-svh flex-col gap-4 p-6 md:p-10">
+			<section className="flex min-h-svh min-w-0 flex-col gap-4 p-6 md:p-10">
 				<div className="flex justify-center gap-2 md:justify-start">
 					<Link
 						href={`/${locale}`}

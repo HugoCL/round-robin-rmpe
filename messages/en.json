@@ -940,7 +940,8 @@
 		},
 		"sort": {
 			"top": "Top",
-			"new": "Newest"
+			"new": "Newest",
+			"label": "Sort suggestions"
 		},
 		"emptyTitle": "No suggestions in this status yet",
 		"emptyDescription": "Be the first person to propose one.",

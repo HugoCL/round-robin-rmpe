@@ -35,8 +35,10 @@ export function PageHeader({ teamSlug }: PageHeaderProps) {
 	const suggestionsEnabled = useFeatureEnabled("suggestionsBoard");
 	const pushEnabled = useFeatureEnabled("pushNotifications");
 
+	// Sticky only from lg: on a phone the bar plus the status strip would keep
+	// a third of the screen pinned over the assignment card.
 	return (
-		<header className="sticky top-0 z-40 bg-background/95 pb-px backdrop-blur-sm">
+		<header className="relative z-40 bg-background/95 pb-px backdrop-blur-sm lg:sticky lg:top-0">
 			<div className="py-4">
 				<div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
 					<div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -50,7 +52,7 @@ export function PageHeader({ teamSlug }: PageHeaderProps) {
 							<TeamWeeklyPRCounter teamSlug={teamSlug} />
 						</div>
 						<nav
-							className="flex w-full flex-wrap items-center justify-end gap-0.5 sm:w-auto sm:flex-nowrap"
+							className="flex w-full flex-nowrap items-center justify-between gap-0.5 overflow-x-auto [scrollbar-width:none] sm:w-auto sm:justify-end sm:overflow-visible"
 							aria-label={t("common.options")}
 						>
 							<IconActionButton

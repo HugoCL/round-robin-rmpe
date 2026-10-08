@@ -4,6 +4,7 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Lightbulb } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { PageIntro } from "@/components/PageIntro";
 import { SecondaryPageNav } from "@/components/SecondaryPageNav";
 import { SuggestionCard } from "@/components/suggestions/SuggestionCard";
 import { SuggestionComposer } from "@/components/suggestions/SuggestionComposer";
@@ -57,60 +58,50 @@ export function SuggestionsBoard() {
 	return (
 		<>
 			<SecondaryPageNav />
-			<div className="container mx-auto max-w-6xl px-4 py-8">
+			<div className="container mx-auto max-w-6xl px-4 py-8 md:py-12">
 				<div className="space-y-6">
-					<section className="page-enter-soft calm-shell px-5 py-7 md:px-7 md:py-8">
-						<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] lg:items-end">
-							<div className="space-y-3">
-								<div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-									<Lightbulb className="h-4 w-4" />
-									{t("suggestions.title")}
-								</div>
-								<h1 className="text-3xl font-semibold tracking-tight md:text-5xl">
-									{t("suggestions.heading")}
-								</h1>
-								<p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-									{t("suggestions.description")}
-								</p>
-							</div>
-							<div
-								className="flex flex-wrap items-center gap-2 lg:justify-end"
-								role="group"
-								aria-label={t("suggestions.sort.top")}
-							>
-								<Button
-									type="button"
-									variant="outline"
-									aria-pressed={sort === "top"}
-									onClick={() => setSort("top")}
-									className={cn(
-										"rounded-full px-5",
-										sort === "top" && sortActive,
-									)}
-								>
-									{t("suggestions.sort.top")}
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									aria-pressed={sort === "new"}
-									onClick={() => setSort("new")}
-									className={cn(
-										"rounded-full px-5",
-										sort === "new" && sortActive,
-									)}
-								>
-									{t("suggestions.sort.new")}
-								</Button>
-							</div>
-						</div>
-					</section>
+					<PageIntro
+						icon={<Lightbulb aria-hidden="true" />}
+						kicker={t("suggestions.title")}
+						title={t("suggestions.heading")}
+						description={t("suggestions.description")}
+					/>
 
 					<section className="page-enter">
 						<SuggestionComposer />
 					</section>
 
 					<section className="page-enter space-y-4">
+						<div
+							className="flex flex-wrap items-center justify-end gap-2"
+							role="group"
+							aria-label={t("suggestions.sort.label")}
+						>
+							<Button
+								type="button"
+								variant="outline"
+								aria-pressed={sort === "top"}
+								onClick={() => setSort("top")}
+								className={cn(
+									"rounded-full px-5",
+									sort === "top" && sortActive,
+								)}
+							>
+								{t("suggestions.sort.top")}
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								aria-pressed={sort === "new"}
+								onClick={() => setSort("new")}
+								className={cn(
+									"rounded-full px-5",
+									sort === "new" && sortActive,
+								)}
+							>
+								{t("suggestions.sort.new")}
+							</Button>
+						</div>
 						{suggestionsBoard === undefined ? (
 							<SuggestionsBoardSkeleton />
 						) : (
