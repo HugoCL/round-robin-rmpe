@@ -769,8 +769,8 @@
 	"shortcutConfirm": {
 		"title": "Confirmar atajo",
 		"assignDescription": "Activaste Asignar PR con el teclado.",
-		"skipDescription": "Activaste Omitir Revisor con el teclado.",
-		"undoDescription": "Activaste Deshacer Última Asignación con el teclado.",
+		"skipDescription": "Activaste Omitir revisor con el teclado.",
+		"undoDescription": "Activaste Deshacer asignación con el teclado.",
 		"assignDetail": "Esto asignará el PR a {nextReviewer}.",
 		"skipDetail": "Esto moverá a {currentReviewer} al final y asignará el PR a {nextAfterSkip}.",
 		"undoDetail": "Esto deshará la última asignación (de {lastAssignedFrom} a {lastAssignedTo}).",
