@@ -1403,6 +1403,7 @@
 				"cleanup_feed_drift": "Repara filas del feed que quedaron con una forma antigua.",
 				"cleanup_legacy_pr_status": "Limpia asignaciones de PR con el estado viejo.",
 				"process_absent_returns": "Marca como disponibles a quienes ya volvieron de su ausencia.",
+				"process_planned_absences": "Activa las ausencias planificadas cuando llega su fecha de inicio.",
 				"auto_complete_expired_events": "Cierra eventos que pasaron su hora de término.",
 				"audit_reviewer_teams": "Informa personas revisoras sin equipo. Solo lectura.",
 				"assert_reviewer_teams_ready": "Comprueba si el backfill de equipos puede correr. Solo lectura.",

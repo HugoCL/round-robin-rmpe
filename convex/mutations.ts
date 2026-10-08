@@ -31,6 +31,10 @@ import {
 	mutation,
 	type QueryCtx,
 } from "./_generated/server";
+import {
+	completeActiveAbsencesForReviewer,
+	deleteAbsencesForReviewer,
+} from "./absenceLifecycle";
 import { assertFeatureEnabled } from "./appConfig";
 import { getResolvedAppSettings } from "./appSettings";
 import {
@@ -942,6 +946,7 @@ export const removeReviewer = mutation({
 		await assertCanAdministerTeamById(ctx, reviewer.teamId);
 		await assertTeamRetainsOwner(ctx, reviewer.teamId, { excluding: id });
 
+		await deleteAbsencesForReviewer(ctx, id);
 		await ctx.db.delete(id);
 
 		// Create backup snapshot
@@ -968,42 +973,28 @@ export const toggleReviewerAbsence = mutation({
 			throw new Error("Reviewer is missing team assignment");
 		}
 		await assertCanMutateTeamById(ctx, reviewer.teamId);
-		const team =
-			reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
 		const now = Date.now();
 
-		const isCurrentlyAbsent = reviewer.isAbsent;
-
-		const updateData: { isAbsent: boolean; assignmentCount?: number } = {
-			isAbsent: !isCurrentlyAbsent,
-		};
-
-		// If unmarking as absent, update assignment count to most common value
-		if (isCurrentlyAbsent) {
-			const allReviewers = await ctx.db
-				.query("reviewers")
-				.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
-				.collect();
-			const availableReviewers = allReviewers.filter(
-				(candidate) =>
-					isReviewerEligibleForAssignmentForTeam(candidate, team, now) ||
-					candidate._id === id,
+		// Unmarking as absent: back to the rotation at the most common count
+		if (reviewer.isAbsent) {
+			const assignmentCount = await returnReviewerToRotation(
+				ctx,
+				reviewer,
+				now,
 			);
-			const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
-			updateData.assignmentCount = mostCommonCount;
+			await createSnapshot(
+				ctx,
+				reviewer.teamId,
+				`Marked ${reviewer.name} as available and updated assignment count to ${assignmentCount}`,
+			);
+			return { success: true };
 		}
 
-		await ctx.db.patch(id, updateData);
-
-		// Create backup snapshot
-		const status = isCurrentlyAbsent ? "available" : "absent";
-		const countMessage = isCurrentlyAbsent
-			? ` and updated assignment count to ${updateData.assignmentCount}`
-			: "";
+		await ctx.db.patch(id, { isAbsent: true });
 		await createSnapshot(
 			ctx,
 			reviewer.teamId,
-			`Marked ${reviewer.name} as ${status}${countMessage}`,
+			`Marked ${reviewer.name} as absent`,
 		);
 
 		return { success: true };
@@ -1059,27 +1050,12 @@ export const markReviewerAvailable = mutation({
 			throw new Error("Reviewer is missing team assignment");
 		}
 		await assertCanMutateTeamById(ctx, reviewer.teamId);
-		const team =
-			reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
-		const now = Date.now();
 
-		// Get all reviewers to calculate most common assignment count
-		const allReviewers = await ctx.db
-			.query("reviewers")
-			.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
-			.collect();
-		const availableReviewers = allReviewers.filter(
-			(candidate) =>
-				isReviewerEligibleForAssignmentForTeam(candidate, team, now) ||
-				candidate._id === id,
+		const mostCommonCount = await returnReviewerToRotation(
+			ctx,
+			reviewer,
+			Date.now(),
 		);
-		const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
-
-		await ctx.db.patch(id, {
-			isAbsent: false,
-			absentUntil: undefined,
-			assignmentCount: mostCommonCount,
-		});
 
 		// Create backup snapshot
 		await createSnapshot(
@@ -1155,27 +1131,11 @@ export const processAbsentReturns = internalMutation({
 			.collect();
 
 		for (const reviewer of absentReviewers) {
-			const team =
-				reviewer.teamId === undefined
-					? null
-					: await ctx.db.get(reviewer.teamId);
-			// Get all reviewers in the same team to calculate most common assignment count
-			const teamReviewers = await ctx.db
-				.query("reviewers")
-				.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
-				.collect();
-			const availableReviewers = teamReviewers.filter(
-				(candidate) =>
-					isReviewerEligibleForAssignmentForTeam(candidate, team, now) ||
-					candidate._id === reviewer._id,
+			const mostCommonCount = await returnReviewerToRotation(
+				ctx,
+				reviewer,
+				now,
 			);
-			const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
-
-			await ctx.db.patch(reviewer._id, {
-				isAbsent: false,
-				absentUntil: undefined,
-				assignmentCount: mostCommonCount,
-			});
 
 			// Create backup snapshot
 			await createSnapshot(
@@ -2651,6 +2611,7 @@ export const importReviewersData = mutation({
 				.map((reviewer) => reviewer.email),
 		);
 		for (const reviewer of existingReviewers) {
+			await deleteAbsencesForReviewer(ctx, reviewer._id);
 			await ctx.db.delete(reviewer._id);
 		}
 
@@ -2798,6 +2759,41 @@ export const backfillUserPreferenceDefaultTeamSlug = mutation({
 	},
 });
 
+/**
+ * Puts a reviewer back in the rotation: clears the absence, resets the
+ * assignment count to the team's most common value, and completes any planned
+ * absence that was driving the absence. Every path that returns a reviewer to
+ * available must go through here. Returns the new assignment count.
+ */
+export async function returnReviewerToRotation(
+	ctx: MutationCtx,
+	reviewer: Doc<"reviewers">,
+	now: number,
+): Promise<number> {
+	const team =
+		reviewer.teamId === undefined ? null : await ctx.db.get(reviewer.teamId);
+	// Get all reviewers in the same team to calculate most common assignment count
+	const teamReviewers = await ctx.db
+		.query("reviewers")
+		.withIndex("by_team", (q) => q.eq("teamId", reviewer.teamId))
+		.collect();
+	const availableReviewers = teamReviewers.filter(
+		(candidate) =>
+			isReviewerEligibleForAssignmentForTeam(candidate, team, now) ||
+			candidate._id === reviewer._id,
+	);
+	const mostCommonCount = getMostCommonAssignmentCount(availableReviewers);
+
+	await ctx.db.patch(reviewer._id, {
+		isAbsent: false,
+		absentUntil: undefined,
+		assignmentCount: mostCommonCount,
+	});
+	await completeActiveAbsencesForReviewer(ctx, reviewer._id, now);
+
+	return mostCommonCount;
+}
+
 // Helper function to get most common assignment count
 function getMostCommonAssignmentCount(
 	reviewers: Array<{
@@ -2848,8 +2844,7 @@ function getMostCommonAssignmentCount(
 }
 
 // Helper function to create backup snapshots
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function createSnapshot(
+export async function createSnapshot(
 	ctx: MutationCtx,
 	teamId: Id<"teams"> | undefined,
 	description: string,
@@ -3066,6 +3061,7 @@ export const restoreFromBackup = mutation({
 					.map((reviewer) => reviewer.email),
 			);
 			for (const reviewer of existingReviewers) {
+				await deleteAbsencesForReviewer(ctx, reviewer._id);
 				await ctx.db.delete(reviewer._id);
 			}
 
@@ -3447,11 +3443,29 @@ export const cleanupOldRecords = internalMutation({
 			await ctx.db.delete(event._id);
 		}
 
+		const oldCompletedAbsences = await ctx.db
+			.query("reviewerAbsences")
+			.withIndex("by_status_and_updatedAt", (q) =>
+				q.eq("status", "completed").lt("updatedAt", cutoffTimestamp),
+			)
+			.take(CLEANUP_BATCH_SIZE);
+		const oldCancelledAbsences = await ctx.db
+			.query("reviewerAbsences")
+			.withIndex("by_status_and_updatedAt", (q) =>
+				q.eq("status", "cancelled").lt("updatedAt", cutoffTimestamp),
+			)
+			.take(CLEANUP_BATCH_SIZE);
+		for (const absence of [...oldCompletedAbsences, ...oldCancelledAbsences]) {
+			await ctx.db.delete(absence._id);
+		}
+
 		return {
 			deletedPrAssignments: oldPrAssignments.length,
 			deletedAssignmentHistory: oldAssignmentHistory.length,
 			deletedCompletedEvents: oldCompletedEvents.length,
 			deletedCancelledEvents: oldCancelledEvents.length,
+			deletedAbsences:
+				oldCompletedAbsences.length + oldCancelledAbsences.length,
 			remainingOldCompletedEvents:
 				oldCompletedEvents.length === CLEANUP_BATCH_SIZE,
 			remainingOldCancelledEvents:

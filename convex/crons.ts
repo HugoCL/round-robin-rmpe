@@ -24,6 +24,13 @@ crons.interval(
 	internal.mutations.processAbsentReturns,
 );
 
+// Start planned absences whose start date has arrived in the team's timezone
+crons.interval(
+	"process-planned-absences",
+	{ minutes: 5 },
+	internal.absences.processPlannedAbsences,
+);
+
 // Clean up old prAssignments and assignmentHistory records daily at midnight UTC
 crons.daily(
 	"cleanup-old-records",

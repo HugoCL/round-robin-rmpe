@@ -1359,6 +1359,7 @@
 				"cleanup_feed_drift": "Repairs feed rows left in an older shape.",
 				"cleanup_legacy_pr_status": "Cleans up PR assignments with the old status field.",
 				"process_absent_returns": "Marks people available once their absence has passed.",
+				"process_planned_absences": "Starts planned absences once their start date arrives.",
 				"auto_complete_expired_events": "Closes events past their end time.",
 				"audit_reviewer_teams": "Reports reviewers with no team. Read only.",
 				"assert_reviewer_teams_ready": "Checks whether the team backfill can run. Read only.",

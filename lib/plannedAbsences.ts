@@ -160,6 +160,29 @@ export function getAbsenceReturnAt(endDate: DateKey, timeZone: string): number {
 	return zonedDateKeyToUtcMs(addDaysToDateKey(endDate, 1), timeZone);
 }
 
+/**
+ * What happens to a reviewer when a scheduled absence starts. An absence that
+ * already ended is skipped; an indefinite or longer manual absence is kept.
+ */
+export function resolveActivatedAbsentUntil(args: {
+	isAbsent: boolean;
+	absentUntil: number | undefined;
+	returnAt: number;
+	now: number;
+}):
+	| { kind: "expired" }
+	| { kind: "activate"; absentUntil: number | undefined } {
+	if (args.returnAt <= args.now) return { kind: "expired" };
+	if (!args.isAbsent) return { kind: "activate", absentUntil: args.returnAt };
+	if (args.absentUntil === undefined) {
+		return { kind: "activate", absentUntil: undefined };
+	}
+	return {
+		kind: "activate",
+		absentUntil: Math.max(args.absentUntil, args.returnAt),
+	};
+}
+
 export function getTodayDateKey(now: number, timeZone: string): DateKey {
 	return getLocalDateKeyYYYYMMDD(now, timeZone);
 }

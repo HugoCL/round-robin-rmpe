@@ -15,6 +15,7 @@ import {
 	isValidDateKey,
 	parsePlannedAbsenceError,
 	plannedAbsenceErrorMessage,
+	resolveActivatedAbsentUntil,
 	validateAbsenceRange,
 	zonedDateKeyToUtcMs,
 } from "../../lib/plannedAbsences";
@@ -239,4 +240,53 @@ test("planned absence errors round-trip through wrapped Convex messages", () => 
 	);
 	assert.equal(parsePlannedAbsenceError(new Error("boom")), null);
 	assert.equal(parsePlannedAbsenceError("PlannedAbsenceInvalid:overlap"), null);
+});
+
+test("resolveActivatedAbsentUntil decides expiry and the stored return time", () => {
+	const now = 1_000;
+	assert.deepEqual(
+		resolveActivatedAbsentUntil({
+			isAbsent: false,
+			absentUntil: undefined,
+			returnAt: 1_000,
+			now,
+		}),
+		{ kind: "expired" },
+	);
+	assert.deepEqual(
+		resolveActivatedAbsentUntil({
+			isAbsent: false,
+			absentUntil: undefined,
+			returnAt: 5_000,
+			now,
+		}),
+		{ kind: "activate", absentUntil: 5_000 },
+	);
+	assert.deepEqual(
+		resolveActivatedAbsentUntil({
+			isAbsent: true,
+			absentUntil: undefined,
+			returnAt: 5_000,
+			now,
+		}),
+		{ kind: "activate", absentUntil: undefined },
+	);
+	assert.deepEqual(
+		resolveActivatedAbsentUntil({
+			isAbsent: true,
+			absentUntil: 9_000,
+			returnAt: 5_000,
+			now,
+		}),
+		{ kind: "activate", absentUntil: 9_000 },
+	);
+	assert.deepEqual(
+		resolveActivatedAbsentUntil({
+			isAbsent: true,
+			absentUntil: 3_000,
+			returnAt: 5_000,
+			now,
+		}),
+		{ kind: "activate", absentUntil: 5_000 },
+	);
 });
