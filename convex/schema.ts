@@ -94,7 +94,7 @@ export default defineSchema({
 		.index("by_absent_until", ["isAbsent", "absentUntil"]), // Optimization: filter absent reviewers efficiently
 
 	/**
-	 * Planned (vacation-style) absences. Dates are team-local calendar keys
+	 * Planned whole-day absences. Dates are team-local calendar keys
 	 * (YYYY-MM-DD), inclusive on both ends. `scheduled` rows flip to `active`
 	 * when the start date arrives; the reviewer's own isAbsent/absentUntil
 	 * fields stay the source of truth for assignment.

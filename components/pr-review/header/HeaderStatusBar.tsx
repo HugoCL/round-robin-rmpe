@@ -180,7 +180,7 @@ export function HeaderStatusBar() {
 						<PlannedAbsenceChip
 							absence={scheduledAbsence}
 							reviewer={currentReviewer}
-							variant="vacation"
+							variant="labeled"
 							canEdit={canToggleAvailability}
 						/>
 					) : null}

@@ -766,7 +766,7 @@
 		"previewIndefinite": "You'll be away starting now",
 		"previewIndefiniteOther": "{name} will be away starting now",
 		"planSubmit": "Schedule absence",
-		"planSaved": "All set, your time off is on the calendar",
+		"planSaved": "All set, your absence is on the calendar",
 		"planUpdated": "Dates updated. Enjoy the break!",
 		"planCancelled": "Planned absence cancelled",
 		"planEnded": "Absence ended, welcome back!",
@@ -779,7 +779,7 @@
 		"cancelPlan": "Cancel plan",
 		"endNow": "End absence now",
 		"chipShort": "{range}",
-		"chipVacation": "Vacation {range}",
+		"chipLabeled": "Away {range}",
 		"planCta": "Plan ahead…",
 		"plan": {
 			"errors": {
@@ -798,7 +798,7 @@
 	"absenceTimeline": {
 		"open": "Team absences",
 		"title": "Team absences",
-		"description": "See who's away and when, and plan time off ahead of time.",
+		"description": "See who's away and when, and plan absences ahead of time.",
 		"previous": "Previous dates",
 		"next": "Next dates",
 		"rangeLabel": "{start} to {end}",

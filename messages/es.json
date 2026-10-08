@@ -823,7 +823,7 @@
 		"cancelPlan": "Cancelar plan",
 		"endNow": "Terminar ausencia ahora",
 		"chipShort": "{range}",
-		"chipVacation": "Vacaciones {range}",
+		"chipLabeled": "Ausente {range}",
 		"planCta": "Planificar…",
 		"plan": {
 			"errors": {
@@ -842,7 +842,7 @@
 	"absenceTimeline": {
 		"open": "Ausencias del equipo",
 		"title": "Ausencias del equipo",
-		"description": "Mira quién está fuera y cuándo, y planifica tus días libres con tiempo.",
+		"description": "Mira quién está fuera y cuándo, y planifica tus ausencias con tiempo.",
 		"previous": "Fechas anteriores",
 		"next": "Fechas siguientes",
 		"rangeLabel": "{start} al {end}",

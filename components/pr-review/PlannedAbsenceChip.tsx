@@ -1,6 +1,6 @@
 "use client";
 
-import { Plane } from "lucide-react";
+import { CalendarClock } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,7 @@ export function formatDateKeyRange(range: DateKeyRange, locale: string) {
 interface PlannedAbsenceChipProps {
 	absence: Doc<"reviewerAbsences">;
 	reviewer: Reviewer;
-	variant: "short" | "vacation";
+	variant: "short" | "labeled";
 	canEdit: boolean;
 }
 
@@ -68,8 +68,8 @@ export function PlannedAbsenceChip({
 
 	const range = formatDateKeyRange(absence, locale);
 	const label =
-		variant === "vacation"
-			? t("absent.chipVacation", { range })
+		variant === "labeled"
+			? t("absent.chipLabeled", { range })
 			: t("absent.chipShort", { range });
 	const detail = t("absent.planPreview", {
 		start: formatDateKeyDay(absence.startDate, locale),
@@ -79,7 +79,7 @@ export function PlannedAbsenceChip({
 
 	const content = (
 		<>
-			<Plane className="size-3 shrink-0" aria-hidden="true" />
+			<CalendarClock className="size-3 shrink-0" aria-hidden="true" />
 			<span className="whitespace-nowrap">{label}</span>
 		</>
 	);
