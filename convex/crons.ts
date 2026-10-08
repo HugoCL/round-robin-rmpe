@@ -29,6 +29,7 @@ crons.interval(
 	"process-planned-absences",
 	{ minutes: 5 },
 	internal.absences.processPlannedAbsences,
+	{},
 );
 
 // Clean up old prAssignments and assignmentHistory records daily at midnight UTC

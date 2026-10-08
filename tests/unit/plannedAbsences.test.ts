@@ -9,6 +9,7 @@ import {
 	dateKeyRangesOverlap,
 	diffInDays,
 	findNextAbsence,
+	findNextScheduledAbsence,
 	getAbsenceReturnAt,
 	getTodayDateKey,
 	getWeekdayOfDateKey,
@@ -158,6 +159,84 @@ test("findNextAbsence picks the earliest live absence of that reviewer", () => {
 	];
 	assert.equal(findNextAbsence(absences, "a")?.startDate, "2026-10-20");
 	assert.equal(findNextAbsence(absences, "zzz"), null);
+});
+
+test("findNextScheduledAbsence skips the active absence for the next scheduled one", () => {
+	const absences = [
+		{
+			reviewerId: "a",
+			status: "active" as const,
+			startDate: "2026-10-05",
+			endDate: "2026-10-09",
+		},
+		{
+			reviewerId: "a",
+			status: "scheduled" as const,
+			startDate: "2026-12-01",
+			endDate: "2026-12-04",
+		},
+		{
+			reviewerId: "a",
+			status: "scheduled" as const,
+			startDate: "2026-11-10",
+			endDate: "2026-11-12",
+		},
+		{
+			reviewerId: "a",
+			status: "completed" as const,
+			startDate: "2026-09-01",
+			endDate: "2026-09-02",
+		},
+		{
+			reviewerId: "b",
+			status: "scheduled" as const,
+			startDate: "2026-10-12",
+			endDate: "2026-10-13",
+		},
+	];
+	assert.equal(
+		findNextScheduledAbsence(absences, "a")?.startDate,
+		"2026-11-10",
+	);
+	assert.equal(findNextAbsence(absences, "a")?.status, "active");
+	assert.equal(findNextScheduledAbsence(absences, "zzz"), null);
+	assert.equal(findNextScheduledAbsence(absences.slice(0, 1), "a"), null);
+});
+
+test("validateAbsenceRange accepts the exact lead and length limits", () => {
+	const todayKey = "2026-10-08";
+	const lastStart = addDaysToDateKey(todayKey, 365);
+	assert.equal(
+		validateAbsenceRange({
+			range: { startDate: lastStart, endDate: lastStart },
+			todayKey,
+			existing: [],
+		}),
+		null,
+	);
+	assert.equal(
+		validateAbsenceRange({
+			range: {
+				startDate: addDaysToDateKey(todayKey, 366),
+				endDate: addDaysToDateKey(todayKey, 366),
+			},
+			todayKey,
+			existing: [],
+		}),
+		"tooFarAhead",
+	);
+	// 366 days inclusive: today through today + 365.
+	assert.equal(
+		validateAbsenceRange({
+			range: {
+				startDate: todayKey,
+				endDate: addDaysToDateKey(todayKey, 365),
+			},
+			todayKey,
+			existing: [],
+		}),
+		null,
+	);
 });
 
 test("validateAbsenceRange reports the first failing rule", () => {

@@ -254,6 +254,7 @@ export default defineSchema({
 				birthdayMonth: v.optional(v.number()),
 				birthdayDay: v.optional(v.number()),
 				lastBirthdayNotifiedLocalDateKey: v.optional(v.string()),
+				absentUntil: v.optional(v.number()),
 				createdAt: v.number(),
 				tags: v.array(v.id("tags")),
 			}),

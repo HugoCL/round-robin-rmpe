@@ -50,6 +50,11 @@ export interface TimelineRow<A extends TimelineAbsenceInput> {
 	segments: TimelineSegment<A>[];
 	/** Per day: not working that weekday (part-time) and not covered by a bar. */
 	partTimeOff: boolean[];
+	/**
+	 * Per day: a new plan can start here. True from today on for days with no
+	 * bar, and for days covered only by a manual absence (no plan behind it).
+	 */
+	plannable: boolean[];
 }
 
 export interface AbsenceTimeline<A extends TimelineAbsenceInput> {
@@ -125,6 +130,8 @@ export function buildAbsenceTimeline<A extends TimelineAbsenceInput>(args: {
 			? manualAwayEnd(reviewer.absentUntil, timeZone)
 			: null;
 
+		// A plan always wins over the manual absence on the days it covers, so
+		// its bar stays editable; an active plan keeps the "now" colouring.
 		const barAt = (day: DateKey): DayBar<A> | null => {
 			const active = own.find(
 				(absence) =>
@@ -134,27 +141,32 @@ export function buildAbsenceTimeline<A extends TimelineAbsenceInput>(args: {
 				reviewer.manualIsAbsent &&
 				compareDateKeys(day, todayKey) >= 0 &&
 				(manualEnd === null || compareDateKeys(day, manualEnd) <= 0);
-			if (active || manualNow) {
-				const openEnded = manualNow && manualEnd === null;
-				const ends = [active?.endDate, manualNow ? manualEnd : undefined]
+			if (active) {
+				const ends = [active.endDate, manualNow ? manualEnd : undefined]
 					.filter((end): end is DateKey => typeof end === "string")
 					.sort(compareDateKeys);
 				return {
 					kind: "now",
-					absence: active ?? null,
-					endDate: openEnded ? null : (ends.at(-1) ?? null),
+					absence: active,
+					endDate:
+						manualNow && manualEnd === null ? null : (ends.at(-1) ?? null),
 				};
 			}
 			const scheduled = own.find(
 				(absence) =>
 					absence.status === "scheduled" && absenceCoversDay(absence, day),
 			);
-			if (!scheduled) return null;
-			return {
-				kind: "planned",
-				absence: scheduled,
-				endDate: scheduled.endDate,
-			};
+			if (scheduled) {
+				return {
+					kind: "planned",
+					absence: scheduled,
+					endDate: scheduled.endDate,
+				};
+			}
+			if (manualNow) {
+				return { kind: "now", absence: null, endDate: manualEnd };
+			}
+			return null;
 		};
 
 		// "now" bars join up regardless of their absence; planned ones per absence.
@@ -214,6 +226,11 @@ export function buildAbsenceTimeline<A extends TimelineAbsenceInput>(args: {
 			partTimeOff: days.map(
 				(day, i) => bars[i] === null && isOffByPartTime(reviewer, day),
 			),
+			plannable: days.map((day, i) => {
+				if (compareDateKeys(day, todayKey) < 0) return false;
+				const bar = bars[i];
+				return bar === null || (bar.kind === "now" && bar.absence === null);
+			}),
 		};
 	});
 

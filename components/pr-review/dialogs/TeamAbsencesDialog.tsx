@@ -74,9 +74,8 @@ export function TeamAbsencesDialog({ trigger }: { trigger: React.ReactNode }) {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
-			<DialogTrigger asChild>
-				<span className="inline-flex">{trigger}</span>
-			</DialogTrigger>
+			{/* The trigger must be the focusable button itself so focus returns to it on close. */}
+			<DialogTrigger asChild>{trigger}</DialogTrigger>
 			<DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-4 sm:max-w-4xl">
 				<DialogHeader>
 					<DialogTitle>{t("absenceTimeline.title")}</DialogTitle>
@@ -248,20 +247,19 @@ function TeamAbsencesTimeline() {
 												"border-l",
 											row.partTimeOff[index] && PART_TIME_OFF_CLASS,
 										);
-										const covered = row.segments.some(
-											(segment) =>
-												segment.startIndex <= index &&
-												index <= segment.endIndex,
-										);
 										const canPlan =
-											canManageCurrentTeam &&
-											!covered &&
-											compareDateKeys(day, todayKey) >= 0;
+											canManageCurrentTeam && row.plannable[index];
 										if (!canPlan) {
 											return (
 												<div key={day} style={style} className={cellClass} />
 											);
 										}
+										// Cells under a manual-only bar sit above it so they stay clickable.
+										const overBar = row.segments.some(
+											(segment) =>
+												segment.startIndex <= index &&
+												index <= segment.endIndex,
+										);
 										return (
 											<button
 												key={day}
@@ -269,7 +267,10 @@ function TeamAbsencesTimeline() {
 												style={style}
 												className={cn(
 													cellClass,
-													"cursor-pointer transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-ring",
+													"cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+													overBar
+														? "relative z-[2] hover:bg-foreground/15 focus-visible:bg-foreground/15"
+														: "hover:bg-muted focus-visible:bg-muted",
 												)}
 												aria-label={t("absenceTimeline.cellLabel", {
 													name: reviewer.name,

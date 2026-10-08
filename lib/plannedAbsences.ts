@@ -267,6 +267,24 @@ export function findNextAbsence<
 	return next;
 }
 
+/** The reviewer's scheduled absence with the earliest start, ignoring active ones. */
+export function findNextScheduledAbsence<
+	T extends DateKeyRange & {
+		reviewerId: string;
+		status: PlannedAbsenceStatus;
+	},
+>(absences: readonly T[], reviewerId: string): T | null {
+	let next: T | null = null;
+	for (const absence of absences) {
+		if (absence.reviewerId !== reviewerId) continue;
+		if (absence.status !== "scheduled") continue;
+		if (!next || compareDateKeys(absence.startDate, next.startDate) < 0) {
+			next = absence;
+		}
+	}
+	return next;
+}
+
 export function validateAbsenceRange(args: {
 	range: DateKeyRange;
 	todayKey: DateKey;

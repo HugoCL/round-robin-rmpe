@@ -87,7 +87,18 @@ export function PlannedAbsenceChip({
 	if (!canEdit) {
 		return (
 			<WithTooltip label={detail}>
-				<span className={PILL_CLASS}>{content}</span>
+				{/* Focusable so keyboard users can open the tooltip with the full dates. */}
+				<span
+					role="group"
+					tabIndex={0}
+					aria-label={`${label}. ${detail}`}
+					className={cn(
+						PILL_CLASS,
+						"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+					)}
+				>
+					{content}
+				</span>
 			</WithTooltip>
 		);
 	}

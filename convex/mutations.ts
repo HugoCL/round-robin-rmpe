@@ -2868,6 +2868,7 @@ export async function createSnapshot(
 		birthdayMonth: reviewer.birthdayMonth,
 		birthdayDay: reviewer.birthdayDay,
 		lastBirthdayNotifiedLocalDateKey: reviewer.lastBirthdayNotifiedLocalDateKey,
+		absentUntil: reviewer.absentUntil,
 		createdAt: reviewer.createdAt,
 		tags: reviewer.tags,
 	}));
@@ -3109,6 +3110,7 @@ export const restoreFromBackup = mutation({
 					birthdayDay: reviewerData.birthdayDay,
 					lastBirthdayNotifiedLocalDateKey:
 						reviewerData.lastBirthdayNotifiedLocalDateKey,
+					absentUntil: reviewerData.absentUntil,
 					createdAt: reviewerData.createdAt,
 					tags: reviewerData.tags,
 					role: previousOwnerEmails.has(reviewerData.email)

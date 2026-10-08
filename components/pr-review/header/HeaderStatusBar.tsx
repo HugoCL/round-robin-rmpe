@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { WithTooltip } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import { countRegularAssignmentsUntilReviewer } from "@/lib/assignmentResolver";
-import { findNextAbsence } from "@/lib/plannedAbsences";
+import { findNextScheduledAbsence } from "@/lib/plannedAbsences";
 import { cn } from "@/lib/utils";
 import {
 	type AbsenceDialogMode,
@@ -130,11 +130,9 @@ export function HeaderStatusBar() {
 		currentReviewer && canManageCurrentTeam && !isForeignTeamView,
 	);
 	const outOfPool = currentReviewer?.excludedFromReviewPool === true;
-	const nextAbsence = currentReviewer
-		? findNextAbsence(plannedAbsences, currentReviewer._id)
+	const scheduledAbsence = currentReviewer
+		? findNextScheduledAbsence(plannedAbsences, currentReviewer._id)
 		: null;
-	const scheduledAbsence =
-		nextAbsence?.status === "scheduled" ? nextAbsence : null;
 	const prsUntilTurn = useMemo(() => {
 		if (!currentReviewer) return null;
 		return countRegularAssignmentsUntilReviewer(reviewers, currentReviewer._id);

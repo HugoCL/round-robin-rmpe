@@ -26,7 +26,10 @@ import { assertCanMutateTeamById } from "./authz";
 import { createSnapshot, returnReviewerToRotation } from "./mutations";
 
 const MAX_TEAM_ABSENCES_PER_STATUS = 200;
-/** Due activations (each with a snapshot) handled per run before continuing. */
+/**
+ * Scheduled rows read per run. Each due row costs a snapshot, so the page
+ * size doubles as the cap on activations per transaction.
+ */
 const MAX_ACTIVATIONS_PER_RUN = 25;
 const MAX_CLOSES_PER_RUN = 100;
 
@@ -330,9 +333,13 @@ export const listTeamAbsences = query({
 // Starts scheduled absences whose start date has arrived in their team's
 // timezone, and closes active ones whose end has passed without the reviewer
 // being returned (indefinite or longer manual absence).
+//
+// Scheduled rows are read one page per run; while more pages remain the run
+// schedules itself with the page cursor. The cron starts without a cursor and
+// only that first run closes ended active rows.
 export const processPlannedAbsences = internalMutation({
-	args: {},
-	handler: async (ctx) => {
+	args: { cursor: v.optional(v.union(v.string(), v.null())) },
+	handler: async (ctx, { cursor }) => {
 		const now = Date.now();
 		// Cheap superset: the earliest timezone on Earth reaches each date first.
 		const earliestToday = getTodayDateKey(now, EARLIEST_TODAY_TIMEZONE);
@@ -349,31 +356,25 @@ export const processPlannedAbsences = internalMutation({
 
 		let activated = 0;
 		let expired = 0;
-		let handled = 0;
 
-		// Scanning past not-yet-due rows only costs reads, so they cannot starve
-		// due ones; the cap bounds writes and snapshots per transaction.
-		const due = ctx.db
+		// One bounded page per transaction; rows not yet due in their own
+		// timezone are skipped and the next page continues after them.
+		const dueRange = ctx.db
 			.query("reviewerAbsences")
 			.withIndex("by_status_and_startDate", (q) =>
 				q.eq("status", "scheduled").lte("startDate", earliestToday),
 			);
-		for await (const absence of due) {
+		const dueRows = await dueRange.paginate({
+			numItems: MAX_ACTIVATIONS_PER_RUN,
+			cursor: cursor ?? null,
+		});
+		for (const absence of dueRows.page) {
 			const timeZone = await getTimeZone(absence.teamId);
 			if (
 				compareDateKeys(getTodayDateKey(now, timeZone), absence.startDate) < 0
 			) {
 				continue;
 			}
-			if (handled >= MAX_ACTIVATIONS_PER_RUN) {
-				await ctx.scheduler.runAfter(
-					0,
-					internal.absences.processPlannedAbsences,
-					{},
-				);
-				break;
-			}
-			handled += 1;
 			const reviewer = await ctx.db.get(absence.reviewerId);
 			if (!reviewer) {
 				// Orphaned row; cancel so it cannot linger.
@@ -401,16 +402,25 @@ export const processPlannedAbsences = internalMutation({
 				`Planned absence started for ${reviewer.name} ${describeRange(absence.startDate, absence.endDate)}`,
 			);
 		}
+		if (!dueRows.isDone) {
+			await ctx.scheduler.runAfter(
+				0,
+				internal.absences.processPlannedAbsences,
+				{ cursor: dueRows.continueCursor },
+			);
+		}
 
 		// Active rows whose range ended while the reviewer stayed absent never
 		// get completed by a return; close them so they stop reading as current.
 		let closed = 0;
-		const ended = await ctx.db
-			.query("reviewerAbsences")
-			.withIndex("by_status_and_endDate", (q) =>
-				q.eq("status", "active").lt("endDate", earliestToday),
-			)
-			.take(MAX_CLOSES_PER_RUN);
+		const ended = cursor
+			? []
+			: await ctx.db
+					.query("reviewerAbsences")
+					.withIndex("by_status_and_endDate", (q) =>
+						q.eq("status", "active").lt("endDate", earliestToday),
+					)
+					.take(MAX_CLOSES_PER_RUN);
 		for (const absence of ended) {
 			const timeZone = await getTimeZone(absence.teamId);
 			if (getAbsenceReturnAt(absence.endDate, timeZone) > now) continue;

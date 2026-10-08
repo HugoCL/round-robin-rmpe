@@ -14,7 +14,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { useConvexTags } from "@/hooks/useConvexTags";
-import { findNextAbsence } from "@/lib/plannedAbsences";
+import { findNextScheduledAbsence } from "@/lib/plannedAbsences";
 import { reviewerHasBirthdayToday } from "@/lib/reviewerAvailability";
 import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -170,9 +170,10 @@ export function ReviewersTable({
 						.join(" · ");
 					const visibleTags =
 						showTags && reviewer.tags?.length > 0 ? reviewer.tags : [];
-					const nextAbsence = findNextAbsence(plannedAbsences, reviewer._id);
-					const scheduledAbsence =
-						nextAbsence?.status === "scheduled" ? nextAbsence : null;
+					const scheduledAbsence = findNextScheduledAbsence(
+						plannedAbsences,
+						reviewer._id,
+					);
 
 					return (
 						<article
