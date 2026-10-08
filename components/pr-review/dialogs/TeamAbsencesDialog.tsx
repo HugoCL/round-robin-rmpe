@@ -77,7 +77,7 @@ export function TeamAbsencesDialog({ trigger }: { trigger: React.ReactNode }) {
 			<DialogTrigger asChild>
 				<span className="inline-flex">{trigger}</span>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-4xl">
+			<DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-4 sm:max-w-4xl">
 				<DialogHeader>
 					<DialogTitle>{t("absenceTimeline.title")}</DialogTitle>
 					<DialogDescription>
@@ -149,8 +149,8 @@ function TeamAbsencesTimeline() {
 	const lowDayCount = timeline.lowThreshold;
 
 	return (
-		<div className="grid min-w-0 gap-3">
-			<div className="flex items-center justify-between gap-2">
+		<div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+			<div className="flex shrink-0 items-center justify-between gap-2">
 				<p className="text-sm font-medium tabular-nums">{rangeLabel}</p>
 				<div className="flex items-center gap-1">
 					<Button
@@ -182,13 +182,13 @@ function TeamAbsencesTimeline() {
 					{t("absenceTimeline.empty")}
 				</p>
 			) : (
-				<div className="overflow-x-auto">
+				<div className="min-h-0 flex-1 overflow-auto">
 					<div className="min-w-[42rem]">
 						<div
-							className="grid items-end border-b"
+							className="sticky top-0 z-20 grid items-end border-b bg-background"
 							style={{ gridTemplateColumns: GRID_COLUMNS }}
 						>
-							<div className="sticky left-0 z-10 bg-background" />
+							<div className="sticky left-0 z-30 bg-background" />
 							{days.map((day, index) => {
 								const isToday = day === todayKey;
 								const date = toUtcDate(day);
@@ -307,10 +307,10 @@ function TeamAbsencesTimeline() {
 						})}
 
 						<div
-							className="grid items-center py-1.5"
+							className="sticky bottom-0 z-20 grid items-center bg-background py-1.5"
 							style={{ gridTemplateColumns: GRID_COLUMNS }}
 						>
-							<div className="sticky left-0 z-10 bg-background pr-2 text-sm font-medium">
+							<div className="sticky left-0 z-30 bg-background pr-2 text-sm font-medium">
 								{t("absenceTimeline.available")}
 							</div>
 							{timeline.available.map((count, index) => {
@@ -337,7 +337,7 @@ function TeamAbsencesTimeline() {
 				</div>
 			)}
 
-			<ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+			<ul className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
 				<LegendItem
 					swatchClass="bg-primary"
 					label={t("absenceTimeline.legendNow")}
