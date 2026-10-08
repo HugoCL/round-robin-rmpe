@@ -188,7 +188,7 @@ function TeamAbsencesTimeline() {
 							className="sticky top-0 z-20 grid items-end border-b bg-background"
 							style={{ gridTemplateColumns: GRID_COLUMNS }}
 						>
-							<div className="sticky left-0 z-30 bg-background" />
+							<div className="sticky top-0 left-0 z-30 self-stretch bg-background" />
 							{days.map((day, index) => {
 								const isToday = day === todayKey;
 								const date = toUtcDate(day);
@@ -307,10 +307,10 @@ function TeamAbsencesTimeline() {
 						})}
 
 						<div
-							className="sticky bottom-0 z-20 grid items-center bg-background py-1.5"
+							className="sticky bottom-0 z-20 grid items-stretch bg-background"
 							style={{ gridTemplateColumns: GRID_COLUMNS }}
 						>
-							<div className="sticky left-0 z-30 bg-background pr-2 text-sm font-medium">
+							<div className="sticky bottom-0 left-0 z-30 flex items-center self-stretch bg-background py-1.5 pr-2 text-sm font-medium">
 								{t("absenceTimeline.available")}
 							</div>
 							{timeline.available.map((count, index) => {
@@ -319,7 +319,7 @@ function TeamAbsencesTimeline() {
 									<div
 										key={days[index]}
 										className={cn(
-											"text-center text-sm tabular-nums",
+											"flex items-center justify-center py-1.5 text-sm tabular-nums",
 											getWeekdayOfDateKey(days[index]) === "monday" &&
 												index > 0 &&
 												"border-l",
