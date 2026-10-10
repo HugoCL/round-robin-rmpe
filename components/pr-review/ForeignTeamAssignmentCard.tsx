@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
 import { usePRReview } from "./PRReviewContext";
 
 export function ForeignTeamAssignmentCard() {
@@ -45,6 +46,7 @@ export function ForeignTeamAssignmentCard() {
 			</div>
 			<div className="mt-4 grid gap-3">
 				<Input
+					id={PR_URL_INPUT_ID}
 					value={prUrl}
 					onChange={(event) => setPrUrl(event.target.value)}
 					placeholder={t("placeholders.githubPrUrl")}

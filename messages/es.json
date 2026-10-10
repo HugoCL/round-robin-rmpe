@@ -355,8 +355,8 @@
 		"duplicatePRAssigned": "Este PR ya fue asignado a {reviewer} {when}.",
 		"assignFailedTitle": "Error",
 		"assignFailedDescription": "Falló al asignar el PR. Por favor intenta de nuevo.",
-		"reviewerSkippedTitle": "Revisor omitido",
-		"reviewerSkippedDescription": "{name} fue omitido pero su contador fue incrementado",
+		"reviewerSkippedTitle": "Turno omitido",
+		"reviewerSkippedDescription": "{name} pasó su turno.",
 		"skipFailedTitle": "Error",
 		"skipFailedDescription": "Falló al omitir el revisor. Por favor intenta de nuevo.",
 		"noOtherReviewersTitle": "Error",
@@ -668,24 +668,25 @@
 		"preview": "Vista previa:"
 	},
 	"shortcuts": {
+		"enterAssigns": "Asignar el PR",
+		"inPrUrlField": "Desde el campo de la URL del PR",
 		"title": "Atajos de teclado",
 		"assign": "Asignar siguiente revisor",
 		"skip": "Omitir revisor actual",
 		"force": "Forzar asignación",
 		"refresh": "Actualizar datos",
 		"help": "Mostrar atajos",
-		"description": "Usa estos atajos de teclado para realizar acciones comunes rápidamente",
-		"assignPR": "Asignar PR al siguiente revisor",
+		"assignPR": "Asignar el PR que pegaste en la tarjeta",
 		"skipReviewer": "Omitir revisor actual",
 		"undoAssignment": "Deshacer última asignación",
 		"refreshData": "Actualizar datos",
+		"assignNote": "Con el campo vacío, te lleva a él",
 		"onlyAvailable": "Solo funciona cuando hay un revisor disponible",
 		"alwaysAvailable": "Siempre disponible",
-		"note": "Nota:",
-		"globalNote": "Los atajos funcionan cuando el foco no está dentro de un campo de texto. Asignar y omitir solo están disponibles cuando hay un siguiente revisor.",
+		"globalNote": "Los atajos funcionan fuera de un campo de texto; Esc sale del campo de la URL cuando está vacío. Omitir solo está disponible cuando hay un siguiente revisor.",
 		"focusPrUrl": "Ir al campo de la URL del PR",
 		"showHelp": "Mostrar estos atajos",
-		"anywhere": "Funciona desde cualquier parte de la página"
+		"anywhere": "Fuera de un campo de texto"
 	},
 	"language": {
 		"switch": "Cambiar idioma",
@@ -758,17 +759,15 @@
 		"message": "¡Hola {nextReviewer}! Serás omitido (sin incrementar tu contador) y este PR será asignado a {nextAfterSkip}. ¿Confirmas?"
 	},
 	"shortcutConfirm": {
-		"title": "Confirmar atajo",
-		"assignDescription": "Activaste Asignar PR con el teclado.",
-		"skipDescription": "Activaste Omitir revisor con el teclado.",
-		"undoDescription": "Activaste Deshacer asignación con el teclado.",
-		"assignDetail": "Esto asignará el PR a {nextReviewer}.",
-		"skipDetail": "Esto moverá a {currentReviewer} al final y asignará el PR a {nextAfterSkip}.",
-		"undoDetail": "Esto deshará la última asignación (de {lastAssignedFrom} a {lastAssignedTo}).",
-		"confirmHint": "Presiona Y para confirmar o N para cancelar.",
-		"actionAssign": "Asignar PR",
-		"actionSkip": "Omitir revisor",
-		"actionUndo": "Deshacer asignación"
+		"skipTitleGeneral": "¿Omitir a {name} en la rotación del equipo?",
+		"skipSelfTitleGeneral": "¿Omitir tu turno en la rotación del equipo?",
+		"actionSkipSelf": "Omitir mi turno",
+		"skipSelfTitle": "¿Omitir tu turno?",
+		"skipSelfEffect": "Pierdes este turno: tu contador sube como si hubieras revisado.",
+		"skipTitle": "¿Omitir a {name}?",
+		"skipEffect": "Pasa su turno; su contador sube como si hubiera revisado.",
+		"confirmHint": "Enter para confirmar · Esc para cancelar.",
+		"actionSkip": "Omitir revisor"
 	},
 	"modifiers": {
 		"styleModifiers": "Modificadores de estilo:"

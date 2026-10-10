@@ -19,7 +19,11 @@ import {
 import { Kbd } from "@/components/ui/kbd";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { ASSIGNMENT_FORM_ID, PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
+import {
+	ASSIGNMENT_FORM_ID,
+	CROSS_TEAMS_ID,
+	PR_URL_INPUT_ID,
+} from "@/lib/assignmentFocus";
 import type { ParsedPrUrl } from "@/lib/prUrl";
 import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -197,6 +201,13 @@ export function AssignmentControlsPanel({
 					id={ASSIGNMENT_FORM_ID}
 					data-mode={mode}
 					data-duplicate={duplicateAssignment ? "true" : undefined}
+					data-needs-teams={
+						parsedPrUrl &&
+						crossTeamReview &&
+						selectedCrossTeamSlugs.length === 0
+							? "true"
+							: undefined
+					}
 					noValidate
 					onSubmit={(event) => {
 						event.preventDefault();
@@ -450,6 +461,7 @@ export function AssignmentControlsPanel({
 							    `excludeTeammates`. It cannot be the only one off: with no other
 							    team there would be no pool. */}
 							<ToggleGroup
+								id={CROSS_TEAMS_ID}
 								type="multiple"
 								variant="outline"
 								size="sm"

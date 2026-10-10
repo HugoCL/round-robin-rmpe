@@ -312,7 +312,7 @@
 		"assignFailedTitle": "Error",
 		"assignFailedDescription": "Failed to assign PR. Please try again.",
 		"reviewerSkippedTitle": "Reviewer Skipped",
-		"reviewerSkippedDescription": "{name} was skipped but their counter was incremented",
+		"reviewerSkippedDescription": "{name} passed their turn.",
 		"skipFailedTitle": "Error",
 		"skipFailedDescription": "Failed to skip reviewer. Please try again.",
 		"noOtherReviewersTitle": "Error",
@@ -624,24 +624,25 @@
 		"preview": "Preview:"
 	},
 	"shortcuts": {
+		"enterAssigns": "Assign the PR",
+		"inPrUrlField": "From the PR URL field",
 		"title": "Keyboard Shortcuts",
 		"assign": "Assign next reviewer",
 		"skip": "Skip current reviewer",
 		"force": "Force assign",
 		"refresh": "Refresh data",
 		"help": "Show shortcuts",
-		"description": "Use these keyboard shortcuts to quickly perform common actions",
-		"assignPR": "Assign PR to next reviewer",
+		"assignPR": "Assign the PR pasted in the card",
 		"skipReviewer": "Skip current reviewer",
 		"undoAssignment": "Undo last assignment",
 		"refreshData": "Refresh data",
+		"assignNote": "With the field empty, it takes you there",
 		"onlyAvailable": "Only works when a reviewer is available",
 		"alwaysAvailable": "Always available",
-		"note": "Note:",
-		"globalNote": "Shortcuts work while focus is outside a text field. Assign and skip are only available when there is a next reviewer.",
+		"globalNote": "Shortcuts work outside a text field; Esc leaves the PR URL field when it is empty. Skip is only available when there is a next reviewer.",
 		"focusPrUrl": "Jump to the PR URL field",
 		"showHelp": "Show these shortcuts",
-		"anywhere": "Works from anywhere on the page"
+		"anywhere": "Outside a text field"
 	},
 	"language": {
 		"switch": "Switch Language",
@@ -714,17 +715,15 @@
 		"message": "Hey {nextReviewer}! You'll be skipped (without incrementing your count) and this PR will be assigned to {nextAfterSkip}. Do you confirm?"
 	},
 	"shortcutConfirm": {
-		"title": "Confirm Shortcut",
-		"assignDescription": "You triggered Assign PR with the keyboard.",
-		"skipDescription": "You triggered Skip Reviewer with the keyboard.",
-		"undoDescription": "You triggered Undo Last Assignment with the keyboard.",
-		"assignDetail": "This will assign the PR to {nextReviewer}.",
-		"skipDetail": "This will move {currentReviewer} to the end and assign the PR to {nextAfterSkip}.",
-		"undoDetail": "This will undo the last assignment (from {lastAssignedFrom} to {lastAssignedTo}).",
-		"confirmHint": "Press Y to confirm or N to cancel.",
-		"actionAssign": "Assign PR",
-		"actionSkip": "Skip Reviewer",
-		"actionUndo": "Undo Assignment"
+		"skipTitleGeneral": "Skip {name} in the team rotation?",
+		"skipSelfTitleGeneral": "Skip your turn in the team rotation?",
+		"actionSkipSelf": "Skip my turn",
+		"skipSelfTitle": "Skip your turn?",
+		"skipSelfEffect": "You pass this turn: your count goes up as if you had reviewed.",
+		"skipTitle": "Skip {name}?",
+		"skipEffect": "They pass their turn; their count goes up as if they had reviewed.",
+		"confirmHint": "Enter to confirm · Esc to cancel.",
+		"actionSkip": "Skip Reviewer"
 	},
 	"modifiers": {
 		"styleModifiers": "Style modifiers:"
