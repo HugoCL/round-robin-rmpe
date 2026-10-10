@@ -377,7 +377,12 @@ export function ForceAssignDialog({
 					>
 						{selectedReviewer
 							? t(
-									duplicateCheck.duplicate ? "pr.assignAgainTo" : "pr.assignTo",
+									!duplicateCheck.duplicate
+										? "pr.assignTo"
+										: duplicateCheck.duplicate.reviewerName ===
+												selectedReviewer.name
+											? "pr.assignAgainToSame"
+											: "pr.assignAlsoTo",
 									{ name: selectedReviewer.name },
 								)
 							: t("pr.assignShort")}
