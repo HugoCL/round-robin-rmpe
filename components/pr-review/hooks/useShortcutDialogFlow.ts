@@ -142,11 +142,13 @@ export function useShortcutDialogFlow({
 			action: ShortcutAction,
 			run: (opts?: ShortcutRunnerOptions) => Promise<void>,
 		) => {
+			// One confirmation at a time: S then U must not swap the open dialog.
+			if (shortcutDialogOpen) return;
 			setPendingShortcut(action);
 			pendingRunnerRef.current = run;
 			setShortcutDialogOpen(true);
 		},
-		[],
+		[shortcutDialogOpen],
 	);
 
 	return {

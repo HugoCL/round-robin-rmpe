@@ -1,5 +1,9 @@
 import { useEffect } from "react";
-import { focusPrUrlInput, isTypingTarget } from "@/lib/assignmentFocus";
+import {
+	focusPrUrlInput,
+	isOverlayOpen,
+	isTypingTarget,
+} from "@/lib/assignmentFocus";
 
 interface KeyboardShortcutsProps {
 	onAssignPR: (opts?: {
@@ -44,6 +48,7 @@ export function useKeyboardShortcuts({
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.ctrlKey || event.metaKey || event.altKey) return;
+			if (isOverlayOpen(event.target)) return;
 
 			const key = event.key.toLowerCase();
 

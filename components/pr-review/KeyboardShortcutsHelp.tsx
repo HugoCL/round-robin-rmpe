@@ -16,7 +16,7 @@ import {
 import { IconActionButton } from "@/components/ui/icon-action-button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { WithTooltip } from "@/components/ui/tooltip";
-import { isTypingTarget } from "@/lib/assignmentFocus";
+import { isOverlayOpen, isTypingTarget } from "@/lib/assignmentFocus";
 
 export function KeyboardShortcutsHelp({
 	iconOnly = false,
@@ -31,7 +31,7 @@ export function KeyboardShortcutsHelp({
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.ctrlKey || event.metaKey || event.altKey) return;
 			if (event.key !== "?") return;
-			if (isTypingTarget(event.target)) return;
+			if (isTypingTarget(event.target) || isOverlayOpen(event.target)) return;
 			event.preventDefault();
 			setOpen(true);
 		};
