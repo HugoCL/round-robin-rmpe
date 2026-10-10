@@ -2,6 +2,8 @@
 export const PR_URL_INPUT_ID = "assignment-pr-url";
 /** The form holds only the PR field: Enter in any other card input must not assign. */
 export const ASSIGNMENT_FORM_ID = "assignment-form";
+/** Team chips of the cross-team row. */
+export const CROSS_TEAMS_ID = "assignment-cross-teams";
 
 export function focusPrUrlInput() {
 	const input = document.getElementById(PR_URL_INPUT_ID);
@@ -26,7 +28,8 @@ export function isTypingTarget(target: EventTarget | null) {
 
 /**
  * The "A" shortcut runs the card's own assign, with the same checks as its
- * button; when those block it, it goes to the field, which says why.
+ * button; when those block it, it goes to the field, which says why, or to
+ * the team chips when the only thing missing is a team.
  */
 export function submitAssignmentOrFocus() {
 	const form = document.getElementById(ASSIGNMENT_FORM_ID);
@@ -47,6 +50,15 @@ export function submitAssignmentOrFocus() {
 	if (form instanceof HTMLFormElement && submitter && !submitter.disabled) {
 		form.requestSubmit();
 		return true;
+	}
+	if (form instanceof HTMLFormElement && form.dataset.needsTeams === "true") {
+		const team = document.querySelector<HTMLElement>(
+			`#${CROSS_TEAMS_ID} [data-state="off"]`,
+		);
+		if (team) {
+			team.focus();
+			return true;
+		}
 	}
 	return focusPrUrlInput();
 }

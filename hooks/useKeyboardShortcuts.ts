@@ -3,19 +3,11 @@ import {
 	focusPrUrlInput,
 	isOverlayOpen,
 	isTypingTarget,
+	submitAssignmentOrFocus,
 } from "@/lib/assignmentFocus";
 
 interface KeyboardShortcutsProps {
-	onAssignPR: (opts?: {
-		prUrl?: string;
-		contextUrl?: string;
-		urgent?: boolean;
-	}) => Promise<void>;
-	onSkipReviewer: (opts?: {
-		prUrl?: string;
-		contextUrl?: string;
-		urgent?: boolean;
-	}) => Promise<void>;
+	onSkipReviewer: () => Promise<void>;
 	onUndoAssignment: () => Promise<void>;
 	isNextReviewerAvailable: boolean;
 	/**
@@ -23,12 +15,8 @@ interface KeyboardShortcutsProps {
 	 * Provide the action key (assign|skip|undo|refresh) and a runner to execute when confirmed.
 	 */
 	onShortcutTriggered?: (
-		action: "assign" | "skip" | "undo",
-		run: (opts?: {
-			prUrl?: string;
-			contextUrl?: string;
-			urgent?: boolean;
-		}) => Promise<void>,
+		action: "skip" | "undo",
+		run: () => Promise<void>,
 	) => void;
 }
 
@@ -39,7 +27,6 @@ interface KeyboardShortcutsProps {
  * select-all, save and undo, including undo inside the PR URL field itself.
  */
 export function useKeyboardShortcuts({
-	onAssignPR,
 	onSkipReviewer,
 	onUndoAssignment,
 	isNextReviewerAvailable,
@@ -63,29 +50,13 @@ export function useKeyboardShortcuts({
 
 			switch (key) {
 				case "a":
-					if (isNextReviewerAvailable) {
-						event.preventDefault();
-						const run = (opts?: {
-							prUrl?: string;
-							contextUrl?: string;
-							urgent?: boolean;
-						}) => {
-							return onAssignPR(opts);
-						};
-						if (onShortcutTriggered) return onShortcutTriggered("assign", run);
-						void run();
-					}
+					// Same path as the card's button, so its mode, options and checks apply.
+					if (submitAssignmentOrFocus()) event.preventDefault();
 					break;
 				case "s":
 					if (isNextReviewerAvailable) {
 						event.preventDefault();
-						const run = (opts?: {
-							prUrl?: string;
-							contextUrl?: string;
-							urgent?: boolean;
-						}) => {
-							return onSkipReviewer(opts);
-						};
+						const run = () => onSkipReviewer();
 						if (onShortcutTriggered) return onShortcutTriggered("skip", run);
 						void run();
 					}
@@ -108,7 +79,6 @@ export function useKeyboardShortcuts({
 			document.removeEventListener("keydown", handleKeyDown);
 		};
 	}, [
-		onAssignPR,
 		onSkipReviewer,
 		onUndoAssignment,
 		isNextReviewerAvailable,

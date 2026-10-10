@@ -1,147 +1,35 @@
 "use client";
 
-import { useAction } from "convex/react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "@/convex/_generated/api";
-import { resolveAssignerDisplayName } from "@/lib/assignerDisplayName";
-import type { Assignment, Reviewer, UserInfo } from "@/lib/types";
+import { useCallback, useRef, useState } from "react";
 import type { ShortcutAction } from "../dialogs/ShortcutConfirmationDialog";
 
-export type ShortcutRunnerOptions = {
-	prUrl?: string;
-	contextUrl?: string;
-	urgent?: boolean;
-};
-
-type ShortcutDialogMessageState = {
-	prUrl?: string;
-	contextUrl?: string;
-	urgent?: boolean;
-	message?: string;
-};
-
-type UseShortcutDialogFlowInput = {
-	assignmentFeed: Assignment;
-	nextReviewer: Reviewer | null;
-	reviewers: Reviewer[];
-	teamSlug?: string;
-	locale: string;
-	userInfo: UserInfo | null;
-};
-
-export function useShortcutDialogFlow({
-	assignmentFeed,
-	nextReviewer,
-	reviewers,
-	teamSlug,
-	locale,
-	userInfo,
-}: UseShortcutDialogFlowInput) {
+/**
+ * Holds a keyboard shortcut (skip, undo) until its dialog confirms it. Skip
+ * only passes the next person's turn: it carries no PR and sends no Chat
+ * message, because it assigns the PR to nobody.
+ */
+export function useShortcutDialogFlow() {
 	const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
 	const [pendingShortcut, setPendingShortcut] = useState<ShortcutAction | null>(
 		null,
 	);
-	const pendingRunnerRef = useRef<
-		((opts?: ShortcutRunnerOptions) => Promise<void>) | null
-	>(null);
-	const lastMessageState = useRef<ShortcutDialogMessageState | null>(null);
-	const sendChatMessage = useAction(api.actions.sendGoogleChatMessage);
+	const pendingRunnerRef = useRef<(() => Promise<void>) | null>(null);
 
 	const handleCancelShortcut = useCallback(() => {
 		setShortcutDialogOpen(false);
 		setPendingShortcut(null);
 		pendingRunnerRef.current = null;
-		lastMessageState.current = null;
 	}, []);
 
 	const handleConfirmShortcut = useCallback(async () => {
 		if (pendingRunnerRef.current && pendingShortcut) {
-			const shortcutOptions = {
-				prUrl: lastMessageState.current?.prUrl,
-				contextUrl: lastMessageState.current?.contextUrl,
-				urgent: lastMessageState.current?.urgent,
-			};
-			const preReviewer = nextReviewer;
-			await pendingRunnerRef.current(shortcutOptions);
-			if (
-				(pendingShortcut === "assign" || pendingShortcut === "skip") &&
-				lastMessageState.current?.prUrl
-			) {
-				try {
-					let target = preReviewer;
-					if (pendingShortcut === "skip" || pendingShortcut === "assign") {
-						const newest = assignmentFeed.items[0];
-						if (newest) {
-							target =
-								reviewers.find(
-									(r) => String(r._id) === String(newest.reviewerId),
-								) || target;
-						}
-					}
-					if (target && teamSlug) {
-						await sendChatMessage({
-							reviewerName: target.name,
-							reviewerEmail: target.email,
-							reviewerChatId: target.googleChatUserId,
-							prUrl: lastMessageState.current.prUrl,
-							contextUrl: lastMessageState.current.contextUrl,
-							customMessage: lastMessageState.current.message,
-							assignerEmail: userInfo?.email,
-							assignerName: resolveAssignerDisplayName({
-								email: userInfo?.email,
-								firstName: userInfo?.firstName,
-								lastName: userInfo?.lastName,
-								fullName: userInfo?.fullName,
-								reviewerName: userInfo?.email
-									? reviewers.find(
-											(reviewer) =>
-												reviewer.email.toLowerCase() ===
-												userInfo.email.toLowerCase(),
-										)?.name
-									: undefined,
-							}),
-							locale,
-							teamSlug,
-							urgent: lastMessageState.current.urgent,
-						});
-					}
-				} catch (error) {
-					console.warn("Failed to send chat message from shortcut", error);
-				}
-			}
+			await pendingRunnerRef.current();
 		}
 		handleCancelShortcut();
-	}, [
-		assignmentFeed.items,
-		handleCancelShortcut,
-		locale,
-		nextReviewer,
-		pendingShortcut,
-		reviewers,
-		sendChatMessage,
-		teamSlug,
-		userInfo?.email,
-		userInfo?.firstName,
-		userInfo?.lastName,
-		userInfo?.fullName,
-	]);
-
-	useEffect(() => {
-		const handler = (event: Event) => {
-			if (!(event instanceof CustomEvent)) return;
-			const detail = event.detail as ShortcutDialogMessageState;
-			lastMessageState.current = detail;
-		};
-		window.addEventListener("shortcutDialogMessageState", handler);
-		return () =>
-			window.removeEventListener("shortcutDialogMessageState", handler);
-	}, []);
+	}, [handleCancelShortcut, pendingShortcut]);
 
 	const onShortcutTriggered = useCallback(
-		(
-			action: ShortcutAction,
-			run: (opts?: ShortcutRunnerOptions) => Promise<void>,
-		) => {
+		(action: ShortcutAction, run: () => Promise<void>) => {
 			// One confirmation at a time: S then U must not swap the open dialog.
 			if (shortcutDialogOpen) return;
 			setPendingShortcut(action);

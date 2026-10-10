@@ -2,7 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 import { AgentSetupDialog } from "@/components/settings/AgentSetupDialog";
 import { api } from "@/convex/_generated/api";
@@ -14,6 +14,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import type { Assignment, UserInfo } from "@/lib/types";
 import { ActiveEventsList } from "./ActiveEventsList";
+import { lastAssignmentUndoCopy } from "./assignment/undoCopy";
 import { ShortcutConfirmationDialog } from "./dialogs/ShortcutConfirmationDialog";
 import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
@@ -37,7 +38,10 @@ export default function PRReviewAssignment({
 	teamSlug?: string;
 }) {
 	const t = useTranslations();
-	const locale = useLocale();
+	const assignmentHistory = useQuery(
+		api.queries.getAssignmentHistory,
+		teamSlug ? { teamSlug } : "skip",
+	);
 	const { user, isLoaded } = useUser();
 	const { signOut } = useClerk();
 	const IMPORT_INPUT_ID = "import-file";
@@ -138,17 +142,9 @@ export default function PRReviewAssignment({
 		[convexAssignmentFeed],
 	);
 
-	const shortcutFlow = useShortcutDialogFlow({
-		assignmentFeed,
-		nextReviewer: nextReviewer || null,
-		reviewers: reviewers || [],
-		teamSlug,
-		locale,
-		userInfo,
-	});
+	const shortcutFlow = useShortcutDialogFlow();
 
 	useKeyboardShortcuts({
-		onAssignPR: assignPR,
 		onSkipReviewer: skipReviewer,
 		onUndoAssignment: undoAssignment,
 		isNextReviewerAvailable: !!nextReviewer,
@@ -382,15 +378,16 @@ export default function PRReviewAssignment({
 					<ShortcutConfirmationDialog
 						isOpen={shortcutFlow.shortcutDialogOpen}
 						action={shortcutFlow.pendingShortcut}
-						nextReviewerName={nextReviewer?.name}
 						currentReviewerName={nextReviewer?.name}
-						nextAfterSkipName={undefined}
-						lastAssignmentFrom={
-							assignmentFeed.items[0]?.actionByName ||
-							assignmentFeed.items[0]?.actionByEmail ||
-							null
+						isSelfNext={
+							!!userInfo?.email &&
+							nextReviewer?.email.toLowerCase() === userInfo.email.toLowerCase()
 						}
-						lastAssignmentTo={assignmentFeed.items[0]?.reviewerName || null}
+						undoCopy={lastAssignmentUndoCopy(
+							t,
+							assignmentFeed.items,
+							assignmentHistory,
+						)}
 						onConfirm={() => void shortcutFlow.handleConfirmShortcut()}
 						onCancel={shortcutFlow.handleCancelShortcut}
 						onOpenChange={(open) => {
