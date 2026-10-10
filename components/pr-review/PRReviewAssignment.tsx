@@ -21,7 +21,6 @@ import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
 import { useAssignmentNotificationAudio } from "./hooks/useAssignmentNotificationAudio";
 import { useShortcutDialogFlow } from "./hooks/useShortcutDialogFlow";
-import { IndefiniteAbsenceReminderBanner } from "./IndefiniteAbsenceReminderBanner";
 import { CompactLayout } from "./layouts/CompactLayout";
 import { PRReviewProvider } from "./PRReviewContext";
 import { PRReviewGuard } from "./PRReviewGuard";
@@ -363,7 +362,6 @@ export default function PRReviewAssignment({
 							<AnnouncementBanner />
 							<SurveyBanner />
 							<TeamBirthdaySection teamSlug={teamSlug} />
-							<IndefiniteAbsenceReminderBanner />
 						</div>
 						<CompactLayout />
 					</main>
