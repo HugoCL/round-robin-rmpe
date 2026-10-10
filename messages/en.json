@@ -467,17 +467,6 @@
 		"revokedAt": "Revoked: {date}",
 		"neverUsed": "Never used",
 		"saving": "Saving…",
-		"tutorialTitle": "How to turn it on",
-		"tutorialPlay": "Play tutorial",
-		"tutorialPause": "Pause tutorial",
-		"tutorialTerminalLabel": "Terminal",
-		"tutorialCommandSuccess": "la-lista is connected.",
-		"tutorialSceneOpenCaption": "In the header, tap the robot icon.",
-		"tutorialSceneOpenHint": "It's the only one with a blue background.",
-		"tutorialSceneTokenCaption": "Generate your personal token.",
-		"tutorialSceneCommandCaption": "Copy the command and run it in your terminal.",
-		"tutorialSceneCommandHint": "Claude Code has to be installed on that machine.",
-		"tutorialSceneAssignCaption": "Done: from there you just ask for it in plain language.",
 		"usageTitle": "How to ask for it",
 		"usageBestWay": "Let GitHub CLI (gh) handle GitHub—create the PR, push, and check CI—and let La Lista pick the reviewer and post to Google Chat. If you don't have the URL at hand, tell it to grab it with gh pr view.",
 		"usageExample": {
@@ -513,7 +502,6 @@
 		"title": "The MCP agent is out of experiments",
 		"description": "From Claude Code: GitHub CLI (gh) publishes the PR and La Lista picks the reviewer. One token, one command, done.",
 		"configure": "Set it up now",
-		"later": "Later",
 		"dismiss": "Dismiss this notice"
 	},
 	"teamSettings": {

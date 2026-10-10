@@ -4,7 +4,8 @@ import { useQuery } from "convex/react";
 import { Bot, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { McpTutorialPlayer } from "@/components/settings/McpTutorialPlayer";
+import { Alert, AlertAction } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WithTooltip } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
@@ -12,7 +13,7 @@ import { openAgentSetupDialog } from "@/lib/agent-setup-dialog-store";
 
 const STORAGE_KEY = "dismissed_announcement_mcp-ga-v1";
 
-function readDismissed() {
+export function isMcpLaunchDismissed() {
 	if (typeof window === "undefined") return false;
 	try {
 		return window.localStorage.getItem(STORAGE_KEY) === "true";
@@ -36,7 +37,7 @@ export function McpLaunchBanner() {
 	const [dismissed, setDismissed] = useState(false);
 
 	useEffect(() => {
-		setDismissed(readDismissed());
+		setDismissed(isMcpLaunchDismissed());
 		setMounted(true);
 	}, []);
 
@@ -50,44 +51,55 @@ export function McpLaunchBanner() {
 		setDismissed(true);
 	};
 
+	// A notice row like the others in the stack: it should not outrank the task.
 	return (
-		<section className="calm-section p-4 md:p-5" aria-label={t("title")}>
-			<div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)] lg:items-start lg:gap-6">
-				<div className="min-w-0 space-y-3">
-					<p className="calm-kicker">{t("kicker")}</p>
-					<div className="flex items-start justify-between gap-3">
-						<h2 className="text-lg font-semibold tracking-tight">
-							{t("title")}
-						</h2>
-						<WithTooltip label={t("dismiss")}>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								onClick={handleDismiss}
-								aria-label={t("dismiss")}
-							>
-								<X />
-							</Button>
-						</WithTooltip>
-					</div>
-					<p className="max-w-prose text-sm text-muted-foreground">
-						{t("description")}
-					</p>
-					<div className="flex flex-wrap items-center gap-2">
-						<Button type="button" onClick={() => openAgentSetupDialog()}>
-							<Bot data-icon="inline-start" />
-							{t("configure")}
-						</Button>
-						<Button type="button" variant="outline" onClick={handleDismiss}>
-							{t("later")}
-						</Button>
-					</div>
-				</div>
-				<div className="min-w-0">
-					<McpTutorialPlayer compact />
-				</div>
+		<Alert
+			data-notice
+			// Not live: it is there on load and should not be announced each time.
+			role={undefined}
+			className="flex min-h-11 flex-wrap items-center gap-x-2.5 gap-y-2 rounded-xl border-border/70 bg-background/72 py-2.5 pr-12 shadow-none"
+		>
+			<Bot
+				className="mt-0.5 shrink-0 self-start text-muted-foreground"
+				aria-hidden="true"
+			/>
+			<div className="flex min-w-0 flex-1 basis-60 flex-wrap items-center gap-x-2 gap-y-0.5">
+				<span className="text-sm font-medium">
+					{t("title")}
+					<Badge
+						variant="secondary"
+						className="ml-1.5 h-5 px-1.5 align-middle text-[11px]"
+					>
+						{t("kicker")}
+					</Badge>
+				</span>
+				<span className="basis-full text-xs text-muted-foreground sm:text-sm">
+					{t("description")}
+				</span>
 			</div>
-		</section>
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				className="cursor-pointer rounded-full"
+				onClick={() => openAgentSetupDialog()}
+			>
+				{t("configure")}
+			</Button>
+			<AlertAction>
+				<WithTooltip label={t("dismiss")}>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon"
+						className="size-8 cursor-pointer"
+						onClick={handleDismiss}
+						aria-label={t("dismiss")}
+					>
+						<X aria-hidden="true" />
+					</Button>
+				</WithTooltip>
+			</AlertAction>
+		</Alert>
 	);
 }
