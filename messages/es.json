@@ -785,11 +785,8 @@
 		"markedAvailableTitle": "¡Bienvenido de vuelta!",
 		"markedAvailableDescription": "Tu estado ha sido actualizado a disponible",
 		"indefiniteReminderTitle": "Sigues marcado como ausente, sin fecha de regreso",
-		"indefiniteReminderDescription": "Sin fecha de regreso el equipo no sabe cuándo volverás. Elige la opción que coincida con tu situación:",
 		"markAvailableCta": "Volver a estar disponible",
-		"markAvailableCtaTooltip": "Quita el ausente sin cambiar tus rotaciones.",
 		"notAReviewerCta": "No participo en la rotación del equipo",
-		"notAReviewerCtaTooltip": "Sales de la rotación del equipo; las rotaciones por tag conservan su configuración.",
 		"indefiniteOption": "No sé cuándo vuelvo",
 		"indefiniteOptionOther": "No sé cuándo vuelve",
 		"returnTodayOption": "Vuelvo hoy mismo",
@@ -810,8 +807,8 @@
 		"cancelPlan": "Cancelar plan",
 		"endNow": "Terminar ausencia ahora",
 		"chipShort": "{range}",
-		"chipLabeled": "Ausente {range}",
-		"planCta": "Planificar…",
+		"chipLabeled": "Ausencia planificada: {range}",
+		"planCta": "Planificar ausencia",
 		"plan": {
 			"errors": {
 				"invalidDate": "Esa fecha no es válida.",
@@ -1091,22 +1088,18 @@
 		}
 	},
 	"headerStatus": {
+		"myWeek": "Mi semana",
+		"receivedLabel": "Recibidos",
+		"sentLabel": "Enviados",
+		"teamTotal": "Total del equipo",
 		"thisWeek": "Esta semana",
-		"received": "recibidos",
-		"sent": "enviados",
-		"receivedAria": "{count, plural, one {# PR recibido esta semana} other {# PRs recibidos esta semana}}",
-		"sentAria": "{count, plural, one {# PR enviado esta semana} other {# PRs enviados esta semana}}",
 		"available": "Disponible",
 		"unavailable": "No disponible",
 		"partTimeOff": "Hoy no te toca (horario parcial)",
-		"youAreNext": "Te toca el siguiente",
-		"lastPrs": "Último",
+		"youAreNext": "te toca",
 		"lastReceived": "Último PR recibido",
 		"lastSent": "Último PR enviado",
-		"lastReceivedHover": "Te lo asignaron el {when}",
-		"lastSentHover": "Lo enviaste el {when}",
-		"untilTurn": "Próxima revisión en {count, plural, one {# PR más} other {# PRs más}}",
-		"untilTurnTooltip": "Cuántos PRs de la rotación general faltan para que te toque"
+		"untilTurn": "te toca en {count, plural, one {# PR} other {# PRs}}"
 	},
 	"announcements": {
 		"title": "Avisos",

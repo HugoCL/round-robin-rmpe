@@ -741,11 +741,8 @@
 		"markedAvailableTitle": "Welcome Back!",
 		"markedAvailableDescription": "Your status has been updated to available",
 		"indefiniteReminderTitle": "You're still marked absent, with no return date",
-		"indefiniteReminderDescription": "Without a return date, your team can't tell when you're back. Pick the option that matches your situation:",
 		"markAvailableCta": "I'm available again",
-		"markAvailableCtaTooltip": "Clears your absence without changing your rotations.",
 		"notAReviewerCta": "I don't take PRs in the team rotation",
-		"notAReviewerCtaTooltip": "Leaves the team rotation; tag rotations keep their current setting.",
 		"indefiniteOption": "I don't know when I'll be back",
 		"indefiniteOptionOther": "I don't know when they'll be back",
 		"returnTodayOption": "I'll be back later today",
@@ -766,8 +763,8 @@
 		"cancelPlan": "Cancel plan",
 		"endNow": "End absence now",
 		"chipShort": "{range}",
-		"chipLabeled": "Away {range}",
-		"planCta": "Plan ahead…",
+		"chipLabeled": "Planned absence: {range}",
+		"planCta": "Plan an absence",
 		"plan": {
 			"errors": {
 				"invalidDate": "That date doesn't look right.",
@@ -1047,22 +1044,18 @@
 		}
 	},
 	"headerStatus": {
+		"myWeek": "My week",
+		"receivedLabel": "Received",
+		"sentLabel": "Sent",
+		"teamTotal": "Team total",
 		"thisWeek": "This week",
-		"received": "received",
-		"sent": "sent",
-		"receivedAria": "{count, plural, one {# PR received this week} other {# PRs received this week}}",
-		"sentAria": "{count, plural, one {# PR sent this week} other {# PRs sent this week}}",
 		"available": "Available",
 		"unavailable": "Unavailable",
 		"partTimeOff": "Off today (part-time schedule)",
-		"youAreNext": "You're up next",
-		"lastPrs": "Latest",
+		"youAreNext": "it's your turn",
 		"lastReceived": "Last PR received",
 		"lastSent": "Last PR sent",
-		"lastReceivedHover": "Assigned on {when}",
-		"lastSentHover": "You sent it on {when}",
-		"untilTurn": "Next review in {count, plural, one {# more PR} other {# more PRs}}",
-		"untilTurnTooltip": "How many general-rotation PRs until it's your turn"
+		"untilTurn": "your turn in {count, plural, one {# PR} other {# PRs}}"
 	},
 	"announcements": {
 		"title": "Notices",
