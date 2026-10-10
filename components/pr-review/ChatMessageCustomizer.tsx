@@ -1,5 +1,5 @@
 "use client";
-import { MessageSquare, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useState, useTransition } from "react";
 import { generatePRChatMessage } from "@/app/actions/generatePRChatMessage";
@@ -8,18 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Toggle } from "@/components/ui/toggle";
 import {
 	GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
 	GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
 	getDefaultPRChatMessageTemplate,
 } from "@/lib/googleChatMessageTemplate";
-
-const selectedPrimaryChipStyle = {
-	backgroundColor: "var(--primary)",
-	borderColor: "var(--primary)",
-	color: "var(--primary-foreground)",
-};
+import { OptionSwitch } from "./assignment/OptionControls";
 
 export interface ChatMessageCustomizerProps {
 	prUrl: string;
@@ -78,7 +72,7 @@ export function ChatMessageCustomizer({
 		},
 		{
 			id: "references",
-			label: locale.startsWith("es") ? "Con Referencias" : "With References",
+			label: locale.startsWith("es") ? "Con referencias" : "With references",
 			emoji: "🎬",
 		},
 		{ id: "spanglish", label: "Spanglish", emoji: "🇺🇸🇪🇸" },
@@ -178,7 +172,7 @@ export function ChatMessageCustomizer({
 						inputMode="url"
 						spellCheck={false}
 						data-form-autocomplete="off"
-						className="text-sm"
+						className="border-control-border text-sm"
 					/>
 				</div>
 			)}
@@ -204,10 +198,10 @@ export function ChatMessageCustomizer({
 						inputMode="url"
 						spellCheck={false}
 						data-form-autocomplete="off"
-						className="text-sm"
+						className="border-control-border text-sm"
 					/>
 					{contextUrl?.trim() && (
-						<p className="text-[10px] text-muted-foreground italic">
+						<p className="text-xs text-muted-foreground italic">
 							{t("googleChat.contextUrlHint", {
 								defaultValue: "Se muestra como botón Contexto en el mensaje",
 							})}
@@ -217,26 +211,20 @@ export function ChatMessageCustomizer({
 			)}
 
 			{showCustomizeToggle && (
-				<div className="flex flex-wrap items-center gap-2 pt-1">
-					<Toggle
+				<div className="pt-1">
+					<OptionSwitch
 						id={toggleCustomId}
-						pressed={enabled}
-						onPressedChange={(pressed) => {
-							if (!pressed) {
+						label={t("googleChat.customizeToggle")}
+						description={t("googleChat.customizeToggleDescription")}
+						checked={enabled}
+						onCheckedChange={(checked) => {
+							if (!checked) {
 								resetCustomMessage();
 								return;
 							}
 							onEnabledChange(true);
 						}}
-						variant="outline"
-						size="sm"
-						aria-label={t("googleChat.customizeToggle")}
-						className="cursor-pointer rounded-full border-border/70 bg-transparent px-3 text-xs text-foreground transition-all duration-150"
-						style={enabled ? selectedPrimaryChipStyle : undefined}
-					>
-						<MessageSquare className="h-3.5 w-3.5" />
-						{t("googleChat.customizeToggle")}
-					</Toggle>
+					/>
 				</div>
 			)}
 
@@ -267,7 +255,7 @@ export function ChatMessageCustomizer({
 							})}
 							className="text-sm"
 						/>
-						<p className="text-[10px] text-muted-foreground leading-snug">
+						<p className="text-xs text-muted-foreground leading-snug">
 							{t("googleChat.customPromptHint", {
 								defaultValue:
 									"Used only when generating with AI. It is not saved.",
@@ -333,7 +321,7 @@ export function ChatMessageCustomizer({
 						</Button>
 					</div>
 
-					<p className="text-[10px] text-muted-foreground leading-snug">
+					<p className="text-xs text-muted-foreground leading-snug">
 						{placeholdersHint}
 					</p>
 				</div>
