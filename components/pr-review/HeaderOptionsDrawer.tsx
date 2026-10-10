@@ -23,6 +23,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
+	focusDialogItself,
 } from "@/components/ui/dialog";
 import {
 	Drawer,
@@ -253,7 +254,10 @@ export function HeaderOptionsDrawer() {
 		<>
 			{triggerButton}
 			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl">
+				<DialogContent
+					className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl"
+					onOpenAutoFocus={focusDialogItself}
+				>
 					<DialogHeader className="shrink-0 border-b border-border/60 pb-4">
 						<DialogTitle>{t("common.options")}</DialogTitle>
 						<DialogDescription>

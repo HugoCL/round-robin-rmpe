@@ -11,6 +11,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
+	focusDialogItself,
 } from "@/components/ui/dialog";
 import { IconActionButton } from "@/components/ui/icon-action-button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
@@ -96,7 +97,10 @@ export function KeyboardShortcutsHelp({
 						</span>
 					</DialogTrigger>
 				)}
-				<DialogContent className="sm:max-w-[500px]">
+				<DialogContent
+					className="sm:max-w-[500px]"
+					onOpenAutoFocus={focusDialogItself}
+				>
 					<DialogHeader>
 						<DialogTitle>{t("shortcuts.title")}</DialogTitle>
 						<DialogDescription>{t("shortcuts.description")}</DialogDescription>
