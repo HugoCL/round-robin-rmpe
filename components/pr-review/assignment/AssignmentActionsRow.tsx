@@ -1,32 +1,36 @@
 import { Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { TextMorph } from "torph/react";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ASSIGNMENT_FORM_ID } from "@/lib/assignmentFocus";
+import { UndoConfirmContent } from "./UndoConfirmContent";
+import type { UndoCopy } from "./undoCopy";
 
 type AssignmentActionsRowProps = {
 	isAssigning: boolean;
 	isAssignDisabled: boolean;
-	/** Why the primary action is unavailable, shown next to the disabled button. */
+	/** Why the primary action is unavailable; the field above explains it. */
 	blockedReason?: string | null;
+	/** Names who gets the PR, so the click confirms the hero instead of guessing. */
+	assignLabel: string;
+	/** Below sm the hero right above already names who gets the PR. */
+	assignShortLabel: string;
+	/** Shown in the message slot when nothing more urgent is there. */
+	chatNotice?: string | null;
 	liveSummary: string;
-	onAssign: () => Promise<void>;
+	canUndo: boolean;
+	/** False while the duplicate warning makes Enter in the field a no-op. */
+	enterAssigns: boolean;
+	/** The PR would go back to whoever has it: not the obvious next step. */
+	deemphasize?: boolean;
+	undoCopy: UndoCopy;
 	onUndoAssignment: () => Promise<void>;
 };
 
@@ -34,43 +38,61 @@ export function AssignmentActionsRow({
 	isAssigning,
 	isAssignDisabled,
 	blockedReason,
+	assignLabel,
+	assignShortLabel,
+	chatNotice,
 	liveSummary,
-	onAssign,
+	canUndo,
+	enterAssigns,
+	deemphasize = false,
+	undoCopy,
 	onUndoAssignment,
 }: AssignmentActionsRowProps) {
 	const t = useTranslations();
 
 	return (
-		<div className="flex flex-col gap-3">
-			{liveSummary && (
-				<p className="text-sm text-muted-foreground" aria-live="polite">
-					{liveSummary}
-				</p>
-			)}
+		<div className="flex flex-col">
+			{liveSummary ? (
+				<p className="mb-3 text-sm text-muted-foreground">{liveSummary}</p>
+			) : null}
 
-			{!liveSummary && blockedReason ? (
-				<p
-					id="assignment-blocked-reason"
-					className="text-sm text-muted-foreground"
-					aria-live="polite"
-				>
-					{blockedReason}
-				</p>
+			{!liveSummary && !blockedReason && chatNotice ? (
+				<p className="mb-3 text-sm text-muted-foreground">{chatNotice}</p>
 			) : null}
 
 			<div className="flex items-center gap-3">
 				<Button
-					onClick={() => void onAssign()}
+					type="submit"
+					form={ASSIGNMENT_FORM_ID}
+					variant={deemphasize ? "outline" : "default"}
+					aria-label={isAssigning ? undefined : assignLabel}
 					disabled={isAssignDisabled}
 					aria-describedby={
 						blockedReason ? "assignment-blocked-reason" : undefined
 					}
-					className="h-12 flex-1 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+					className="h-12 min-w-0 flex-1 shrink overflow-hidden text-base dark:disabled:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 					size="lg"
 				>
-					<TextMorph ease={{ stiffness: 200, damping: 20 }}>
-						{isAssigning ? t("tags.assigning") : t("pr.assignPR")}
-					</TextMorph>
+					{isAssigning ? (
+						<span className="min-w-0 truncate">{t("tags.assigning")}</span>
+					) : (
+						<>
+							<span className="min-w-0 truncate sm:hidden">
+								{assignShortLabel}
+							</span>
+							<span className="hidden min-w-0 truncate sm:inline">
+								{assignLabel}
+							</span>
+						</>
+					)}
+					{isAssignDisabled || !enterAssigns ? null : (
+						<Kbd
+							aria-hidden="true"
+							className="hidden bg-primary-foreground/15 text-primary-foreground sm:inline-flex"
+						>
+							↵
+						</Kbd>
+					)}
 				</Button>
 
 				<TooltipProvider>
@@ -79,39 +101,36 @@ export function AssignmentActionsRow({
 							<TooltipTrigger asChild>
 								<AlertDialogTrigger asChild>
 									<Button
-										variant="outline"
+										type="button"
+										variant="ghost"
 										size="icon-lg"
-										className="size-12 shrink-0"
-										disabled={isAssigning}
-										aria-label={t("pr.undoLastAssignment")}
+										className="size-11 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+										disabled={isAssigning || !canUndo}
+										aria-label={undoCopy.label}
 									>
 										<Undo2 aria-hidden="true" />
 									</Button>
 								</AlertDialogTrigger>
 							</TooltipTrigger>
 							<TooltipContent>
-								<p>{t("pr.undoLastAssignment")}</p>
+								<p className="flex items-center gap-2">
+									{undoCopy.label}
+									<Kbd>U</Kbd>
+								</p>
 							</TooltipContent>
 						</Tooltip>
-						<AlertDialogContent>
-							<AlertDialogHeader>
-								<AlertDialogTitle>
-									{t("history.undoConfirmTitle")}
-								</AlertDialogTitle>
-								<AlertDialogDescription>
+						<UndoConfirmContent
+							title={undoCopy.title}
+							description={
+								<>
 									{t("history.undoLastConfirmDescription")}
-								</AlertDialogDescription>
-							</AlertDialogHeader>
-							<AlertDialogFooter>
-								<AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-								<AlertDialogAction
-									variant="destructive"
-									onClick={() => void onUndoAssignment()}
-								>
-									{t("history.undoConfirmAction")}
-								</AlertDialogAction>
-							</AlertDialogFooter>
-						</AlertDialogContent>
+									{undoCopy.chatNote ? (
+										<span className="mt-2 block">{undoCopy.chatNote}</span>
+									) : null}
+								</>
+							}
+							onConfirm={() => void onUndoAssignment()}
+						/>
 					</AlertDialog>
 				</TooltipProvider>
 			</div>

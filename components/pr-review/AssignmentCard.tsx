@@ -1,21 +1,19 @@
 "use client";
 
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQueries, useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-} from "@/components/ui/card";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { resolveAssignerDisplayName } from "@/lib/assignerDisplayName";
 import { resolveBroadcastTeamSlugs } from "@/lib/chatBroadcast";
+import { buildCrossTeamReviewerPool } from "@/lib/crossTeamPool";
 import { parsePrUrl } from "@/lib/prUrl";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
+import type { Reviewer } from "@/lib/types";
 import { AssignmentActionsRow } from "./assignment/AssignmentActionsRow";
 import { AssignmentControlsPanel } from "./assignment/AssignmentControlsPanel";
 import { AssignmentHeroPanel } from "./assignment/AssignmentHeroPanel";
@@ -28,9 +26,19 @@ import {
 	defaultSlotForMode,
 	findUpcomingAfterCurrent,
 	normalizeSlotForMode,
+	rotationQueue,
 } from "./assignment/assignmentCard.utils";
 import type { ReviewerSlotConfig } from "./assignment/ReviewerSlotsConfigurator";
+import { RotationMenu } from "./assignment/RotationMenu";
 import { resolveAssignmentPreview } from "./assignment/resolveAssignmentPreview";
+import { lastAssignmentUndoCopy } from "./assignment/undoCopy";
+import { ForceAssignDialog } from "./dialogs/ForceAssignDialog";
+import {
+	CHAT_OUTCOME_MESSAGE_KEYS,
+	type ChatSend,
+	useChatNotice,
+} from "./hooks/useChatNotice";
+import { useDuplicatePrCheck } from "./hooks/useDuplicatePrCheck";
 import { usePRReview } from "./PRReviewContext";
 
 export function AssignmentCard() {
@@ -58,25 +66,42 @@ export function AssignmentCard() {
 	>([]);
 	const [customMessage, setCustomMessage] = useState("");
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
-	const [mode, setMode] = useState<AssignmentMode>("regular");
-	const [selectedTagId, setSelectedTagId] = useState<Id<"tags"> | undefined>(
-		undefined,
-	);
 	const [reviewerCount, setReviewerCount] = useState(1);
 	const [slotConfigs, setSlotConfigs] = useState<ReviewerSlotConfig[]>([
 		defaultSlotForMode("regular"),
 	]);
-	const [liveSummary, setLiveSummary] = useState("");
+	const [liveSummary, setLiveSummary] = useState<{
+		text: string;
+		batchId?: string;
+	}>({ text: "" });
+	const [prUrlTouched, setPrUrlTouched] = useState(false);
 	const isMultiAssignmentActive =
 		!hideMultiAssignmentSection && isMultiAssignmentEnabled;
-	const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
-	const [duplicateAssignment, setDuplicateAssignment] = useState<{
-		reviewerName: string;
-		timestamp: number;
-	} | null>(null);
 
-	const tags =
-		useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") || [];
+	const tagsQuery = useQuery(
+		api.queries.getTags,
+		teamSlug ? { teamSlug } : "skip",
+	);
+	const tags = useMemo(() => tagsQuery ?? [], [tagsQuery]);
+	// Remembered per team. A tag that no longer exists falls back to the
+	// general rotation; the rotation is whichever tag is chosen.
+	const [storedTagId, setStoredTagId] = useLocalStorage<Id<"tags"> | null>(
+		`la-lista-assignment-tag:${teamSlug ?? ""}`,
+		null,
+	);
+	const selectedTagId =
+		storedTagId && tags.some((tag) => tag._id === storedTagId)
+			? storedTagId
+			: undefined;
+	const mode: AssignmentMode = selectedTagId ? "tag" : "regular";
+	const [forceAssignOpen, setForceAssignOpen] = useState(false);
+	const setSelectedTagId = (tagId: Id<"tags"> | undefined) =>
+		setStoredTagId(tagId ?? null);
+	const team = useQuery(api.queries.getTeam, teamSlug ? { teamSlug } : "skip");
+	const assignmentHistory = useQuery(
+		api.queries.getAssignmentHistory,
+		teamSlug ? { teamSlug } : "skip",
+	);
 	const allTeams = useQuery(api.queries.getTeams);
 	// Memoized on the query result itself: a fresh `[]` per render while it
 	// loads would re-run the effects that depend on this list.
@@ -100,9 +125,6 @@ export function AssignmentCard() {
 	const sendGoogleChatAction = useAction(api.actions.sendGoogleChatMessage);
 	const sendGoogleChatGroupAction = useAction(
 		api.actions.sendGoogleChatGroupMessage,
-	);
-	const checkPRAlreadyAssignedAction = useAction(
-		api.actions.checkPRAlreadyAssigned,
 	);
 	const assignPRBatchMutation = useMutation(api.mutations.assignPRBatch);
 
@@ -210,13 +232,52 @@ export function AssignmentCard() {
 
 	useEffect(() => {
 		void configurationHash;
-		setLiveSummary("");
+		setLiveSummary({ text: "" });
 	}, [configurationHash]);
 
-	const selectedTag = useMemo(
-		() => tags.find((tag: Doc<"tags">) => tag._id === selectedTagId),
-		[selectedTagId, tags],
+	// Across teams the server picks from the chosen teams' reviewers (and not
+	// this team's when its chip is off), so the preview needs that same pool.
+	const crossTeamActive = crossTeamReview && selectedCrossTeamSlugs.length > 0;
+	// useQueries builds its subscription from the request object's identity and
+	// swapping it sets state during render: a fresh object per render loops.
+	const crossTeamRequests = useMemo(
+		() =>
+			Object.fromEntries(
+				(crossTeamActive ? selectedCrossTeamSlugs : []).map((slug) => [
+					slug,
+					{ query: api.queries.getReviewers, args: { teamSlug: slug } },
+				]),
+			),
+		[crossTeamActive, selectedCrossTeamSlugs],
 	);
+	const crossTeamResults = useQueries(crossTeamRequests);
+	const crossTeamLists = selectedCrossTeamSlugs.map(
+		(slug) => crossTeamResults[slug] as Reviewer[] | Error | undefined,
+	);
+	// A list that failed to load also leaves the pool unknown: no name is shown.
+	const isLoadingCrossTeam =
+		crossTeamActive && !crossTeamLists.every((list) => Array.isArray(list));
+	const crossTeamPool =
+		crossTeamActive && !isLoadingCrossTeam
+			? buildCrossTeamReviewerPool({
+					sourceTeamSlug: teamSlug ?? "",
+					sourceReviewers: reviewers,
+					additionalTeams: selectedCrossTeamSlugs.map((slug, index) => ({
+						teamSlug: slug,
+						reviewers: crossTeamLists[index] as Reviewer[],
+					})),
+					excludeTeammates,
+				})
+			: null;
+	const poolReviewers = crossTeamPool?.reviewers ?? reviewers;
+	const otherTeamNameByReviewerId = new Map<string, string>();
+	for (const [reviewerId, slug] of crossTeamPool?.teamSlugByReviewerId ?? []) {
+		const name = availableCrossTeamTargets.find(
+			(target) => target.slug === slug,
+		)?.name;
+		if (slug !== teamSlug && name)
+			otherTeamNameByReviewerId.set(reviewerId, name);
+	}
 
 	const currentUserReviewerId = useMemo(() => {
 		if (!user?.email) return undefined;
@@ -225,21 +286,28 @@ export function AssignmentCard() {
 		)?._id as Id<"reviewers"> | undefined;
 	}, [reviewers, user?.email]);
 
-	const activeNextReviewer =
-		mode === "tag" ? nextReviewerByTag || null : nextReviewer;
 	const isLoadingTagReviewer =
 		mode === "tag" &&
 		!!selectedTagId &&
 		typeof nextReviewerByTag === "undefined";
 	const availableReviewersForMode = useMemo(() => {
 		if (mode !== "tag") {
-			return reviewers.filter((reviewer) => isEligibleForAssignment(reviewer));
+			return poolReviewers.filter((reviewer) =>
+				isEligibleForAssignment(reviewer),
+			);
 		}
 		if (!selectedTagId) return [];
-		return reviewers.filter((reviewer) =>
+		return poolReviewers.filter((reviewer) =>
 			isEligibleForAssignment(reviewer, selectedTagId),
 		);
-	}, [mode, reviewers, selectedTagId]);
+	}, [mode, poolReviewers, selectedTagId]);
+	// The server's next-reviewer queries only know this team; across teams the
+	// pool's queue gives the same pick.
+	const activeNextReviewer = crossTeamActive
+		? (rotationQueue(availableReviewersForMode, [])[0] ?? null)
+		: mode === "tag"
+			? (nextReviewerByTag ?? null)
+			: nextReviewer;
 	const upcomingReviewer = useMemo(() => {
 		if (!activeNextReviewer) return null;
 		return findUpcomingAfterCurrent(
@@ -247,6 +315,39 @@ export function AssignmentCard() {
 			activeNextReviewer._id as Id<"reviewers">,
 		);
 	}, [activeNextReviewer, availableReviewersForMode]);
+	// The viewer is skipped when they are next, so who follows the receiver
+	// leaves them out too.
+	const upcomingAfterReceiver = useMemo(() => {
+		const isSelfNext =
+			!!currentUserReviewerId &&
+			activeNextReviewer?._id === currentUserReviewerId;
+		const receiver = isSelfNext ? upcomingReviewer : activeNextReviewer;
+		if (!receiver) return null;
+		return (
+			rotationQueue(availableReviewersForMode, [
+				receiver._id,
+				isSelfNext ? currentUserReviewerId : null,
+			])[0] ?? null
+		);
+	}, [
+		activeNextReviewer,
+		availableReviewersForMode,
+		currentUserReviewerId,
+		upcomingReviewer,
+	]);
+	// Switching tags or teams reloads the pick. Until it lands, the hero shows
+	// the last complete picture (dimmed): name and "then" together, never one
+	// from each, and never an empty line that would push the card around.
+	const isLoadingPicks = isLoadingTagReviewer || isLoadingCrossTeam;
+	const heroPicks = {
+		activeNextReviewer,
+		upcomingReviewer,
+		upcomingAfterReceiver,
+		otherTeamNameByReviewerId,
+	};
+	const lastHeroPicksRef = useRef(heroPicks);
+	if (!isLoadingPicks) lastHeroPicksRef.current = heroPicks;
+	const heroShown = isLoadingPicks ? lastHeroPicksRef.current : heroPicks;
 
 	const resolverReasonMessages = useMemo<AssignmentResolverReasonMessages>(
 		() => ({
@@ -267,7 +368,7 @@ export function AssignmentCard() {
 			resolveAssignmentPreview({
 				mode,
 				slotConfigs: effectiveSlotConfigs,
-				reviewers,
+				reviewers: poolReviewers,
 				tags,
 				selectedTagId,
 				currentUserReviewerId,
@@ -276,40 +377,13 @@ export function AssignmentCard() {
 		[
 			mode,
 			effectiveSlotConfigs,
-			reviewers,
+			poolReviewers,
 			tags,
 			selectedTagId,
 			currentUserReviewerId,
 			resolverReasonMessages,
 		],
 	);
-
-	const handlePrUrlBlur = async () => {
-		const trimmedUrl = prUrl.trim();
-		if (!trimmedUrl || !teamSlug) {
-			setShowDuplicateAlert(false);
-			return;
-		}
-
-		try {
-			const existing = await checkPRAlreadyAssignedAction({
-				teamSlug,
-				prUrl: trimmedUrl,
-			});
-
-			if (existing) {
-				setDuplicateAssignment({
-					reviewerName: existing.reviewerName,
-					timestamp: existing.timestamp,
-				});
-				setShowDuplicateAlert(true);
-			} else {
-				setShowDuplicateAlert(false);
-			}
-		} catch (error) {
-			console.error("Error checking for duplicate PR:", error);
-		}
-	};
 
 	const getActionByReviewerId = () => {
 		if (!user?.email) return undefined;
@@ -337,7 +411,6 @@ export function AssignmentCard() {
 	const resetMessageState = () => {
 		setEnableCustomMessage(false);
 		setCustomMessage("");
-		setShowDuplicateAlert(false);
 	};
 
 	// Cross-team assignments must reach both the requesting team channel and the
@@ -353,54 +426,25 @@ export function AssignmentCard() {
 		return slugs.length > 0 ? slugs : undefined;
 	};
 
-	const notifyChatFailure = (error?: string) => {
-		console.error("Failed to send Google Chat message:", error);
-		toast({
-			title: t("common.warning"),
-			description: t("messages.chatNotificationFailed"),
-			variant: "destructive",
+	// The action posts to the webhook of the source team and of every team in
+	// the broadcast; with none of them configured it can only fail, and that
+	// failure would surface as a false warning after every assignment.
+	const canNotifyChat = (broadcastTeamSlugs: string[] | undefined) =>
+		[teamSlug, ...(broadcastTeamSlugs ?? [])].some((slug) => {
+			const target =
+				slug === teamSlug
+					? team
+					: allTeams?.find((candidate) => candidate?.slug === slug);
+			return target?.hasGoogleChatWebhook !== false;
 		});
-	};
 
-	const sendAssignmentMessage = async (
-		assignedItem: AssignPRBatchAssignedItem,
-	) => {
-		if (!(prUrl.trim() && teamSlug)) return;
-		const targetReviewer = assignedItem.reviewer;
-		try {
-			const result = await sendGoogleChatAction({
-				reviewerName: targetReviewer.name,
-				reviewerEmail: targetReviewer.email,
-				reviewerChatId: targetReviewer.googleChatUserId || undefined,
-				prUrl,
-				contextUrl: contextUrl.trim() || undefined,
-				locale: "es",
-				assignerEmail: user?.email,
-				assignerName: getAssignerName(),
-				teamSlug,
-				broadcastTeamSlugs: broadcastTeamSlugsFor([assignedItem]),
-				sendOnlyNames: false,
-				urgent,
-				customMessage:
-					enableCustomMessage && customMessage.trim().length > 0
-						? customMessage
-						: undefined,
-			});
-			if (!result.success) {
-				notifyChatFailure(result.error);
-			}
-		} catch (error) {
-			notifyChatFailure(
-				error instanceof Error ? error.message : "Unknown error",
-			);
-		}
-	};
+	const chatDelivery = useChatNotice();
 
 	const handleAssignPR = async () => {
 		if (!teamSlug) return;
 
 		setIsAssigning(true);
-		setLiveSummary("");
+		setLiveSummary({ text: "" });
 		try {
 			const result = await assignPRBatchMutation({
 				teamSlug,
@@ -420,7 +464,7 @@ export function AssignmentCard() {
 
 			if (!result.success || result.assignedCount === 0) {
 				const message = t("messages.batchAssignFailed");
-				setLiveSummary(message);
+				setLiveSummary({ text: message });
 				toast({
 					title: t("common.error"),
 					description: message,
@@ -429,9 +473,15 @@ export function AssignmentCard() {
 				return;
 			}
 
-			if (prUrl.trim()) {
+			const chatTeams = broadcastTeamSlugsFor(result.assigned);
+			let chatSend: ChatSend | null = null;
+			if (prUrl.trim() && teamSlug && canNotifyChat(chatTeams)) {
+				const chatCustomMessage =
+					enableCustomMessage && customMessage.trim().length > 0
+						? customMessage
+						: undefined;
 				if (result.assignedCount > 1) {
-					const groupResult = await sendGoogleChatGroupAction({
+					const payload = {
 						reviewers: result.assigned.map(
 							(item: AssignPRBatchAssignedItem) => ({
 								name: item.reviewer.name,
@@ -445,51 +495,81 @@ export function AssignmentCard() {
 						assignerEmail: user?.email,
 						assignerName: getAssignerName(),
 						teamSlug,
-						broadcastTeamSlugs: broadcastTeamSlugsFor(result.assigned),
+						broadcastTeamSlugs: chatTeams,
 						urgent,
-						customMessage:
-							enableCustomMessage && customMessage.trim().length > 0
-								? customMessage
-								: undefined,
-					});
-					if (!groupResult.success) {
-						notifyChatFailure(groupResult.error);
-					}
+						customMessage: chatCustomMessage,
+					};
+					chatSend = () => sendGoogleChatGroupAction(payload);
 				} else {
-					await sendAssignmentMessage(result.assigned[0]);
+					const targetReviewer = result.assigned[0].reviewer;
+					const payload = {
+						reviewerName: targetReviewer.name,
+						reviewerEmail: targetReviewer.email,
+						reviewerChatId: targetReviewer.googleChatUserId || undefined,
+						prUrl,
+						contextUrl: contextUrl.trim() || undefined,
+						locale: "es",
+						assignerEmail: user?.email,
+						assignerName: getAssignerName(),
+						teamSlug,
+						broadcastTeamSlugs: chatTeams,
+						sendOnlyNames: false,
+						urgent,
+						customMessage: chatCustomMessage,
+					};
+					chatSend = () => sendGoogleChatAction(payload);
 				}
 			}
 
-			if (result.failedCount > 0) {
-				const message = t("messages.batchAssignPartial", {
-					assigned: result.assignedCount,
-					requested: result.totalRequested,
-				});
-				setLiveSummary(message);
-				toast({
-					title: t("common.warning"),
-					description: message,
-				});
-			} else if (result.assignedCount === 1) {
-				const message = t("messages.batchAssignSingleSuccess", {
-					reviewer: result.assigned[0].reviewer.name,
-				});
-				setLiveSummary(message);
-				toast({
-					title: t("common.success"),
-					description: message,
-				});
-			} else {
-				const message = t("messages.batchAssignSuccess", {
-					count: result.assignedCount,
-				});
-				setLiveSummary(message);
-				toast({
-					title: t("common.success"),
-					description: message,
-				});
-			}
+			const prNumber = parsePrUrl(prUrl)?.number;
+			const firstReviewer = result.assigned[0].reviewer.name;
+			const assignedText =
+				result.failedCount > 0
+					? t("messages.batchAssignPartial", {
+							assigned: result.assignedCount,
+							requested: result.totalRequested,
+						})
+					: result.assignedCount > 1
+						? t("messages.batchAssignSuccess", { count: result.assignedCount })
+						: prNumber
+							? t("messages.batchAssignSingleSuccessWithPr", {
+									number: prNumber,
+									reviewer: firstReviewer,
+								})
+							: t("messages.batchAssignSingleSuccess", {
+									reviewer: firstReviewer,
+								});
+			// One toast with the whole outcome: a second one for the chat would
+			// replace this one (the toaster shows one at a time), or vice versa.
+			const chatOutcome = chatSend ? await chatDelivery.send(chatSend) : null;
+			const message =
+				chatOutcome === null
+					? assignedText
+					: `${assignedText} ${t(CHAT_OUTCOME_MESSAGE_KEYS[chatOutcome], {
+							count: result.assignedCount,
+						})}`;
+			setLiveSummary({ text: message, batchId: result.batchId });
+			toast(
+				chatOutcome === "failed" && chatSend
+					? {
+							title: t("common.warning"),
+							description: message,
+							variant: "destructive",
+							action: chatDelivery.retryAction(chatSend),
+							// A retry nobody saw is a notice nobody got; it stays until dismissed.
+							duration: Number.POSITIVE_INFINITY,
+						}
+					: result.failedCount > 0 || chatOutcome === "partial"
+						? { title: t("common.warning"), description: message }
+						: { description: message },
+			);
 			resetMessageState();
+			// Enter now submits, so a PR that stayed in the field would be one
+			// keystroke away from being assigned twice.
+			setPrUrlTouched(false);
+			setPrUrl("");
+			setContextUrl("");
+			setUrgent(false);
 		} finally {
 			setIsAssigning(false);
 		}
@@ -508,16 +588,19 @@ export function AssignmentCard() {
 		};
 	};
 
-	const lastAssignedReviewer = assignmentFeed.lastAssigned?.reviewerId
-		? reviewers.find(
-				(reviewer) => reviewer._id === assignmentFeed.lastAssigned?.reviewerId,
-			) || null
-		: null;
-
 	// A pasted PR link is the one required input, so it is validated as you type
 	// instead of after the assignment has already notified someone.
 	const parsedPrUrl = useMemo(() => parsePrUrl(prUrl), [prUrl]);
-	const hasPrUrlError = prUrl.trim().length > 0 && parsedPrUrl === null;
+	// Flag a bad link once it is clearly meant as one (pasted, long enough, has a
+	// slash) or once the person leaves the field or tries to assign; not on the
+	// first keystroke.
+	const trimmedPrUrl = prUrl.trim();
+	const hasPrUrlError =
+		trimmedPrUrl.length > 0 &&
+		parsedPrUrl === null &&
+		(prUrlTouched || trimmedPrUrl.length >= 8 || trimmedPrUrl.includes("/"));
+
+	const duplicateCheck = useDuplicatePrCheck(teamSlug, prUrl);
 
 	const isAssignDisabled =
 		isAssigning ||
@@ -530,127 +613,206 @@ export function AssignmentCard() {
 	const assignBlockedReason = (() => {
 		if (isAssigning || !isAssignDisabled) return null;
 		if (!prUrl.trim()) return t("pr.assignDisabledNeedsUrl");
-		// The field already shows the format error in place; repeating it above the
-		// button would say the same thing twice.
+		// The field's format error and the hint under the team chips already say
+		// it in place; repeating them here would say the same thing twice.
 		if (hasPrUrlError) return null;
-		if (mode === "tag" && !selectedTagId) return t("pr.assignDisabledNeedsTag");
-		if (crossTeamReview && selectedCrossTeamSlugs.length === 0)
-			return t("pr.assignDisabledNeedsTeams");
+		if (!parsedPrUrl) return t("pr.assignDisabledNeedsUrl");
+		if (crossTeamReview && selectedCrossTeamSlugs.length === 0) return null;
 		if (resolvedPreview.resolved.length === 0)
 			return t("pr.assignDisabledNoReviewer");
 		return null;
 	})();
 
+	const submittingRef = useRef(false);
+	const handleSubmit = async () => {
+		setPrUrlTouched(true);
+		if (isAssignDisabled || submittingRef.current) return;
+		submittingRef.current = true;
+		try {
+			// The first attempt on an already-assigned PR only surfaces the warning.
+			await duplicateCheck.submit(handleAssignPR);
+		} finally {
+			submittingRef.current = false;
+		}
+	};
+
+	// Undo, here, with U or from the history, takes the batch back and its line too.
+	const isSummaryUndone =
+		!!liveSummary.batchId &&
+		!!assignmentHistory &&
+		!assignmentHistory.some((entry) => entry.batchId === liveSummary.batchId);
+
+	const receivers = resolvedPreview.resolved;
+	// Until the other teams' reviewers load, a name would come from this team only.
+	const namedReceiver =
+		receivers.length === 1 && !isLoadingCrossTeam ? receivers[0] : null;
+	// The rotation landed on the person who already has this PR; say so and
+	// offer the way to pick someone else instead of a silent second notice.
+	const duplicateIsReceiver =
+		namedReceiver !== null &&
+		namedReceiver.reviewer.name === duplicateCheck.duplicate?.reviewerName;
+	const isReassigning = duplicateCheck.duplicate !== null;
+	const assignLabel =
+		receivers.length > 1
+			? t(isReassigning ? "pr.assignAgainToCount" : "pr.assignToCount", {
+					count: receivers.length,
+				})
+			: namedReceiver
+				? t(
+						duplicateIsReceiver
+							? "pr.assignAgainToSame"
+							: isReassigning
+								? "pr.assignAlsoTo"
+								: "pr.assignTo",
+						{
+							name: namedReceiver.reviewer.name,
+						},
+					)
+				: t(isReassigning ? "pr.assignAgainShort" : "pr.assignPR");
+	// The webhook checked here is this team's; across teams each chosen team's
+	// channel is notified, which the toast reports after assigning.
+	const chatNotice =
+		!team?.hasGoogleChatWebhook || crossTeamReview
+			? null
+			: receivers.length > 1
+				? t("pr.chatNoticeCount", { count: receivers.length })
+				: namedReceiver
+					? t("pr.chatNotice", { name: namedReceiver.reviewer.name })
+					: null;
+
 	return (
-		<Card className="calm-shell flex flex-col gap-0 overflow-clip py-0 ring-0">
-			<CardHeader className="sr-only">
-				<h2 data-slot="card-title">{t("pr.nextReviewer")}</h2>
-			</CardHeader>
-			<CardContent className="flex flex-1 items-stretch justify-center px-3 pt-1 sm:px-5 sm:pt-3 md:px-6 md:pt-4 2xl:px-8 cockpit:hero-viewport cockpit:min-h-36 cockpit:overflow-y-auto">
+		<Card className="calm-shell gap-0 overflow-clip py-0 ring-0">
+			<CardContent className="group/assign flex flex-col gap-5 px-4 pt-4 sm:px-5 sm:pt-5 lg:gap-6 lg:px-6 lg:pt-6">
 				<AssignmentHeroPanel
 					mode={mode}
-					lastAssignedReviewer={lastAssignedReviewer}
-					isAssigning={isAssigning}
-					activeNextReviewer={activeNextReviewer}
-					selectedTag={selectedTag}
-					userEmail={user?.email}
-					upcomingReviewer={upcomingReviewer}
-					selectedTagId={selectedTagId}
+					isAssigning={isAssigning || isLoadingPicks}
+					activeNextReviewer={heroShown.activeNextReviewer}
+					otherTeamNameByReviewerId={heroShown.otherTeamNameByReviewerId}
+					currentUserReviewerId={currentUserReviewerId}
+					upcomingReviewer={heroShown.upcomingReviewer}
+					upcomingAfterReceiver={heroShown.upcomingAfterReceiver}
+					multipleReceivers={
+						isMultiAssignmentActive
+							? resolvedPreview.resolved.map((item) => item.reviewer)
+							: null
+					}
 					isLoadingTagReviewer={isLoadingTagReviewer}
-				/>
-			</CardContent>
-			<CardFooter className="border-t border-border/60 bg-card px-3 py-2 sm:px-5 sm:py-4 md:px-6 2xl:px-8 cockpit:items-stretch cockpit:has-[[data-assignment-extras]:not(:empty)]:grow-[3]">
-				<div className="calm-subtle-panel flex w-full flex-col gap-3 p-1.5 sm:p-3 lg:gap-4 lg:p-4">
-					<div className="min-w-0 lg:px-1 cockpit:flex cockpit:flex-1 cockpit:flex-col">
-						<AssignmentControlsPanel
+					rotationMenu={
+						<RotationMenu
 							tags={tags}
-							mode={mode}
 							selectedTagId={selectedTagId}
-							onModeChange={(nextMode) => {
-								if (nextMode === "regular") {
-									setMode("regular");
-									setSelectedTagId(undefined);
-									return;
-								}
-								setMode("tag");
-							}}
-							onTagChange={(tagId) => setSelectedTagId(tagId as Id<"tags">)}
+							onTagChange={setSelectedTagId}
+							onPickSomeoneElse={() => setForceAssignOpen(true)}
 							getTagStats={getTagStats}
-							hideMultiAssignmentSection={hideMultiAssignmentSection}
-							isMultiAssignmentEnabled={isMultiAssignmentEnabled}
-							reviewerCount={reviewerCount}
-							onMultiAssignmentToggle={(enabled) => {
-								setIsMultiAssignmentEnabled(enabled);
-								if (enabled) {
-									if (reviewerCount < 2) {
-										setReviewerCount(2);
-									}
-									return;
-								}
-								setReviewerCount(1);
-								setSlotConfigs([defaultSlotForMode(mode)]);
-							}}
-							urgent={urgent}
-							onUrgentChange={setUrgent}
-							crossTeamReview={crossTeamReview}
-							onCrossTeamReviewChange={setCrossTeamReview}
-							availableCrossTeamTargets={availableCrossTeamTargets}
-							selectedCrossTeamSlugs={selectedCrossTeamSlugs}
-							onSelectedCrossTeamSlugsChange={setSelectedCrossTeamSlugs}
-							excludeTeammates={excludeTeammates}
-							onExcludeTeammatesChange={setExcludeTeammates}
-							showReviewerSlots={
-								!hideMultiAssignmentSection && isMultiAssignmentEnabled
-							}
-							reviewers={reviewers}
-							slotConfigs={slotConfigs}
-							reviewerSlotPreviews={resolvedPreview.slots}
-							onReviewerCountChange={setReviewerCount}
-							onSlotChange={(index, patch) => {
-								setSlotConfigs((prev) =>
-									prev.map((slot, slotIndex) =>
-										slotIndex === index
-											? normalizeSlotForMode({ ...slot, ...patch }, mode)
-											: slot,
-									),
-								);
-							}}
-							prUrl={prUrl}
-							onPrUrlChange={(value) => {
-								setPrUrl(value);
-								if (showDuplicateAlert) setShowDuplicateAlert(false);
-							}}
-							onPrUrlBlur={handlePrUrlBlur}
-							contextUrl={contextUrl}
-							onContextUrlChange={setContextUrl}
-							enableCustomMessage={enableCustomMessage}
-							onEnableCustomMessageChange={(value) => {
-								setEnableCustomMessage(value);
-								if (!value) setCustomMessage("");
-							}}
-							customMessage={customMessage}
-							onCustomMessageChange={setCustomMessage}
-							resolvedPreview={resolvedPreview}
-							activeNextReviewer={activeNextReviewer}
-							showDuplicateAlert={showDuplicateAlert}
-							duplicateAssignment={duplicateAssignment}
-							parsedPrUrl={parsedPrUrl}
-							hasPrUrlError={hasPrUrlError}
 						/>
-					</div>
+					}
+				/>
+				<ForceAssignDialog
+					trigger={null}
+					open={forceAssignOpen}
+					onOpenChange={setForceAssignOpen}
+					draft={{ prUrl, contextUrl, urgent }}
+					onAssigned={() => {
+						setPrUrl("");
+						setContextUrl("");
+						setUrgent(false);
+					}}
+				/>
 
-					<div className="cockpit:shrink-0">
-						<AssignmentActionsRow
-							isAssigning={isAssigning}
-							isAssignDisabled={isAssignDisabled}
-							blockedReason={assignBlockedReason}
-							liveSummary={liveSummary}
-							onAssign={handleAssignPR}
-							onUndoAssignment={onUndoAssignment}
-						/>
-					</div>
+				<hr className="border-border/60" />
+
+				<AssignmentControlsPanel
+					onSubmit={handleSubmit}
+					tags={tags}
+					mode={mode}
+					selectedTagId={selectedTagId}
+					hideMultiAssignmentSection={hideMultiAssignmentSection}
+					isMultiAssignmentEnabled={isMultiAssignmentEnabled}
+					reviewerCount={reviewerCount}
+					onMultiAssignmentToggle={(enabled) => {
+						setIsMultiAssignmentEnabled(enabled);
+						if (enabled) {
+							if (reviewerCount < 2) {
+								setReviewerCount(2);
+							}
+							return;
+						}
+						setReviewerCount(1);
+						setSlotConfigs([defaultSlotForMode(mode)]);
+					}}
+					urgent={urgent}
+					onUrgentChange={setUrgent}
+					crossTeamReview={crossTeamReview}
+					onCrossTeamReviewChange={setCrossTeamReview}
+					availableCrossTeamTargets={availableCrossTeamTargets}
+					currentTeam={
+						teamSlug && team ? { slug: teamSlug, name: team.name } : null
+					}
+					selectedCrossTeamSlugs={selectedCrossTeamSlugs}
+					onSelectedCrossTeamSlugsChange={setSelectedCrossTeamSlugs}
+					excludeTeammates={excludeTeammates}
+					onExcludeTeammatesChange={setExcludeTeammates}
+					reviewers={reviewers}
+					slotConfigs={slotConfigs}
+					reviewerSlotPreviews={resolvedPreview.slots}
+					onReviewerCountChange={setReviewerCount}
+					onSlotChange={(index, patch) => {
+						setSlotConfigs((prev) =>
+							prev.map((slot, slotIndex) =>
+								slotIndex === index
+									? normalizeSlotForMode({ ...slot, ...patch }, mode)
+									: slot,
+							),
+						);
+					}}
+					prUrl={prUrl}
+					onPrUrlBlur={() => setPrUrlTouched(true)}
+					onPrUrlChange={(value) => {
+						setPrUrl(value);
+						if (!value.trim()) setPrUrlTouched(false);
+						// The last result belongs to the previous PR, not this one.
+						setLiveSummary({ text: "" });
+					}}
+					contextUrl={contextUrl}
+					onContextUrlChange={setContextUrl}
+					enableCustomMessage={enableCustomMessage}
+					onEnableCustomMessageChange={(value) => {
+						setEnableCustomMessage(value);
+						if (!value) setCustomMessage("");
+					}}
+					customMessage={customMessage}
+					onCustomMessageChange={setCustomMessage}
+					resolvedPreview={resolvedPreview}
+					activeNextReviewer={activeNextReviewer}
+					duplicateAssignment={duplicateCheck.duplicate}
+					duplicateIsReceiver={duplicateIsReceiver}
+					parsedPrUrl={parsedPrUrl}
+					hasPrUrlError={hasPrUrlError}
+					blockedReason={assignBlockedReason}
+				/>
+
+				<div className="pt-1 pb-4 sm:pb-5 lg:pb-6">
+					<AssignmentActionsRow
+						isAssigning={isAssigning}
+						isAssignDisabled={isAssignDisabled}
+						assignLabel={assignLabel}
+						assignShortLabel={t(
+							isReassigning ? "pr.assignAgainShort" : "pr.assignShort",
+						)}
+						chatNotice={chatNotice}
+						liveSummary={isSummaryUndone ? "" : liveSummary.text}
+						canUndo={assignmentFeed.items.length > 0}
+						enterAssigns={!isReassigning}
+						deemphasize={duplicateIsReceiver}
+						undoCopy={lastAssignmentUndoCopy(
+							t,
+							assignmentFeed.items,
+							assignmentHistory,
+						)}
+						onUndoAssignment={onUndoAssignment}
+					/>
 				</div>
-			</CardFooter>
+			</CardContent>
 		</Card>
 	);
 }

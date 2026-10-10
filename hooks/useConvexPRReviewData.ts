@@ -7,6 +7,7 @@ import {
 	type DateKeyRange,
 	parsePlannedAbsenceError,
 } from "@/lib/plannedAbsences";
+import { parsePrUrl } from "@/lib/prUrl";
 import {
 	type PartTimeSchedule,
 	resolveTeamTimezone,
@@ -264,9 +265,30 @@ export function useConvexPRReviewData(
 			const result = await undoLastAssignmentMutation({ teamSlug });
 
 			if (result.success) {
+				// Name what went away: the whole batch, or the newest feed item when
+				// it belongs to the same person the server undid.
+				const newest = assignmentFeed.items[0];
+				const undone = result.batchId
+					? assignmentFeed.items.filter(
+							(item) => item.batchId === result.batchId,
+						)
+					: newest?.reviewerId === result.reviewerId
+						? [newest]
+						: [];
+				const name =
+					undone.length > 0
+						? undone.map((item) => item.reviewerName).join(", ")
+						: reviewers.find((reviewer) => reviewer._id === result.reviewerId)
+								?.name;
+				const prUrl = undone.find((item) => item.prUrl)?.prUrl;
+				const prNumber = prUrl ? parsePrUrl(prUrl)?.number : undefined;
 				toast({
 					title: t("data.assignmentUndoneTitle"),
-					description: t("data.assignmentUndoneDescription"),
+					description: !name
+						? t("data.assignmentUndoneDescription")
+						: prNumber
+							? t("history.undoneEntryPr", { number: prNumber, name })
+							: t("history.undoneEntry", { name }),
 				});
 			} else {
 				toast({

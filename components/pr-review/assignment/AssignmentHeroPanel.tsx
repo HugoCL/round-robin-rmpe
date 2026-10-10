@@ -1,225 +1,223 @@
 import { useQuery } from "convex/react";
-import { Clock3, Info } from "lucide-react";
-import { useTranslations } from "next-intl";
-import { TextMorph } from "torph/react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useLocale, useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
 import { reviewerHasBirthdayToday } from "@/lib/reviewerAvailability";
 import type { Reviewer } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import {
+	useReviewersPanel,
+	ViewReviewersLink,
+} from "../layouts/ReviewersPanelContext";
 import { usePRReview } from "../PRReviewContext";
-import type { AssignmentCardTag, AssignmentMode } from "./assignmentCard.types";
+import type { AssignmentMode } from "./assignmentCard.types";
 
 type AssignmentHeroPanelProps = {
 	mode: AssignmentMode;
-	lastAssignedReviewer: Reviewer | null;
 	isAssigning: boolean;
 	activeNextReviewer: Reviewer | null;
-	selectedTag?: AssignmentCardTag;
-	userEmail?: string;
+	/** The viewer's reviewer on this team: the one assigning skips. */
+	currentUserReviewerId?: string;
 	upcomingReviewer: Reviewer | null;
-	selectedTagId?: Id<"tags">;
+	/** Who follows the receiver in the rotation. */
+	upcomingAfterReceiver: Reviewer | null;
+	/** With multiple assignment on, everyone who gets the PR, in order. */
+	multipleReceivers: Reviewer[] | null;
+	/** Across teams, the team of each reviewer who is not on this one. */
+	otherTeamNameByReviewerId?: Map<string, string>;
 	isLoadingTagReviewer: boolean;
+	/** Picks the rotation the name comes from; sits on the name's line. */
+	rotationMenu?: ReactNode;
 };
+
+/** From this many people on, first names only, so they still fit. */
+const SHORT_NAMES_FROM = 2;
 
 export function AssignmentHeroPanel({
 	mode,
-	lastAssignedReviewer,
 	isAssigning,
 	activeNextReviewer,
-	selectedTag,
-	userEmail,
+	currentUserReviewerId,
 	upcomingReviewer,
-	selectedTagId,
+	upcomingAfterReceiver,
+	multipleReceivers,
+	otherTeamNameByReviewerId,
 	isLoadingTagReviewer,
+	rotationMenu,
 }: AssignmentHeroPanelProps) {
 	const t = useTranslations();
+	const locale = useLocale();
 	const { teamSlug } = usePRReview();
+	const reviewersPanel = useReviewersPanel();
 
 	const team = useQuery(api.queries.getTeam, teamSlug ? { teamSlug } : "skip");
 	const teamTimezone = team?.timezone ?? "UTC";
 
-	const activeHasBirthday =
-		activeNextReviewer &&
-		reviewerHasBirthdayToday(activeNextReviewer, teamTimezone);
-	const lastHasBirthday =
-		lastAssignedReviewer &&
-		reviewerHasBirthdayToday(lastAssignedReviewer, teamTimezone);
-	const upcomingHasBirthday =
-		upcomingReviewer &&
-		reviewerHasBirthdayToday(upcomingReviewer, teamTimezone);
+	const isSelfNext =
+		!!currentUserReviewerId &&
+		activeNextReviewer?._id === currentUserReviewerId;
+	// Assigning skips the person looking when they are next, so the hero names
+	// who actually receives the PR (the resolver's pick once they are excluded).
+	const receiver = isSelfNext ? upcomingReviewer : activeNextReviewer;
+	const isMultiple = (multipleReceivers?.length ?? 0) > 1;
+	// With several people getting the PR there is no single "next after".
+	const following = isMultiple ? null : upcomingAfterReceiver;
+	const followingHasBirthday =
+		following && reviewerHasBirthdayToday(following, teamTimezone);
+	// Everyone who gets the PR shares the big line, at equal weight. The size
+	// steps down with the count and the line height stays fixed, so the row
+	// never grows and the rotation chip never drops below it.
+	const receivers: Reviewer[] =
+		multipleReceivers && isMultiple
+			? multipleReceivers
+			: receiver
+				? [receiver]
+				: [];
+	const shortNames = receivers.length >= SHORT_NAMES_FROM;
+	const receiverNames = receivers.map((item) =>
+		shortNames ? item.name.split(/\s+/)[0] : item.name,
+	);
+	const listFormat = new Intl.ListFormat(locale, { type: "conjunction" });
+	const receiverLabel = listFormat.format(receiverNames);
+	// Parts keep the input order, so the n-th name is the n-th receiver: keyed by
+	// id, two people sharing a first name stay distinct.
+	let namesSeen = 0;
+	const receiverParts = listFormat.formatToParts(receiverNames).map((part) => {
+		if (part.type === "element") namesSeen += 1;
+		const ownerId = receivers[namesSeen - 1]?._id;
+		return {
+			...part,
+			key: part.type === "element" ? ownerId : `after-${ownerId}`,
+		};
+	});
+	const receiverSizeClass =
+		receivers.length >= 4
+			? "text-lg lg:text-xl"
+			: receivers.length === 3
+				? "text-xl lg:text-2xl"
+				: receivers.length === 2
+					? "text-2xl lg:text-3xl"
+					: "text-3xl lg:text-4xl";
 
-	if (!activeNextReviewer) {
-		return (
-			<div className="w-full rounded-[2rem] border border-dashed border-border/70 bg-muted/22 p-8 text-center lg:p-10">
-				{mode === "tag" ? (
-					selectedTagId ? (
-						<p className="text-sm text-muted-foreground lg:text-base">
-							{isLoadingTagReviewer
-								? t("tags.findingNextReviewer")
-								: t("tags.noAvailableReviewers")}
-						</p>
-					) : (
-						<>
-							<h3 className="mb-2 text-xl font-medium text-muted-foreground lg:text-2xl">
-								{t("tags.heroNoTagTitle")}
-							</h3>
-							<p className="text-sm text-muted-foreground lg:text-base">
-								{t("tags.heroNoTagHint")}
-							</p>
-						</>
-					)
-				) : (
-					<>
-						<h3 className="mb-2 text-xl font-medium text-muted-foreground lg:text-2xl">
-							{t("pr.noAvailableReviewersTitle")}
-						</h3>
-						<p className="text-sm text-muted-foreground lg:text-base">
-							{t("pr.allReviewersAbsent")}
-						</p>
-					</>
-				)}
-			</div>
-		);
-	}
+	const receiverHasBirthday =
+		receiver && reviewerHasBirthdayToday(receiver, teamTimezone);
+	const receiverTeamName =
+		receiver && !isMultiple
+			? otherTeamNameByReviewerId?.get(String(receiver._id))
+			: undefined;
+
+	const emptyTitle = isSelfNext
+		? t("pr.noAvailableReviewersTitle")
+		: mode === "tag"
+			? isLoadingTagReviewer
+				? t("tags.findingNextReviewer")
+				: t("tags.noAvailableReviewers")
+			: t("pr.noAvailableReviewersTitle");
+	const emptyHint = isSelfNext
+		? t("pr.autoSkipDescriptionNoNext")
+		: mode === "tag"
+			? null
+			: t("pr.allReviewersAbsent");
 
 	return (
-		<div className="flex min-h-full w-full flex-col py-1 text-center sm:py-3 md:py-4 2xl:py-5">
-			<div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 2xl:gap-4">
-				{mode === "regular" && lastAssignedReviewer && (
-					<div className="hero-secondary flex flex-wrap items-center justify-center gap-2 text-center">
-						<Clock3
-							className="h-4 w-4 text-muted-foreground"
-							aria-hidden="true"
-						/>
-						<span className="text-sm text-muted-foreground">
-							{t("pr.lastAssigned")}:
+		<div className="flex flex-col gap-2">
+			{/* From sm, no wrap: a long name yields width instead of pushing the chip
+			    down. On phones the chip gets its own line above, or the name has ~100px. */}
+			<div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
+				{receiver ? (
+					<h2
+						className={cn(
+							"flex min-h-10 min-w-0 flex-1 items-baseline gap-x-2 transition-opacity duration-200 motion-reduce:transition-none",
+							isAssigning ? "opacity-40" : "opacity-100",
+						)}
+					>
+						<span className="shrink-0 text-sm font-normal tracking-normal text-muted-foreground lg:text-base">
+							{t("pr.nextReviewer")}
 						</span>
-						<h4
-							className={`inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-opacity duration-300 motion-reduce:transition-none lg:text-base ${
-								isAssigning ? "opacity-0" : "opacity-80"
-							}`}
+						<span
+							className={cn(
+								"min-w-0 truncate font-semibold text-primary",
+								receiverSizeClass,
+							)}
+							title={receiverLabel}
 						>
-							<TextMorph ease={{ stiffness: 200, damping: 20 }}>
-								{lastAssignedReviewer.name}
-							</TextMorph>
-							{lastHasBirthday && <Badge variant="secondary">🎂 HBD</Badge>}
-						</h4>
+							{/* Keyed fade per person, not a glyph morph: the morph lays letters
+							    out absolutely and a long name overflowed while it ran. */}
+							{receiverParts.map((part) =>
+								part.type === "element" ? (
+									<span
+										key={part.key}
+										className="inline-block animate-in fade-in-0 slide-in-from-bottom-1 duration-200 motion-reduce:animate-none"
+									>
+										{part.value}
+									</span>
+								) : (
+									<span
+										key={part.key}
+										className="font-normal text-muted-foreground"
+									>
+										{part.value}
+									</span>
+								),
+							)}
+						</span>
+						{receiverTeamName ? (
+							<span className="shrink-0 text-sm font-normal text-muted-foreground lg:text-base">
+								· {receiverTeamName}
+							</span>
+						) : null}
+						{receiverHasBirthday && (
+							<Badge variant="secondary" title="¡Feliz Cumpleaños! 🎂">
+								🎂 HBD
+							</Badge>
+						)}
+					</h2>
+				) : (
+					<div className="flex min-h-10 min-w-0 flex-1 flex-col justify-center gap-1">
+						{/* min-h: as tall as the name line, so an empty state does not shift the card. */}
+						<h2 className="text-lg font-medium">{emptyTitle}</h2>
+						{emptyHint ? (
+							<p className="text-sm text-muted-foreground">{emptyHint}</p>
+						) : null}
 					</div>
 				)}
-
-				{/* The frame stretches to the height the card actually has, so the
-				    turn, the name and what follows sit at the top, middle and bottom
-				    of the space instead of huddling in the centre of an empty box. */}
-				<div className="hero-frame relative mx-auto flex min-h-44 w-full min-w-0 flex-1 flex-col items-center justify-between gap-4 px-4 py-4 sm:min-h-56 sm:gap-6 sm:px-8 sm:py-6 md:px-12 lg:py-6 2xl:px-16">
-					<span
-						className="pointer-events-none absolute left-0 top-0 h-8 w-8 rounded-tl-xl border-l-2 border-t-2 border-primary lg:h-10 lg:w-10"
-						aria-hidden="true"
-					/>
-					<span
-						className="pointer-events-none absolute right-0 top-0 h-8 w-8 rounded-tr-xl border-r-2 border-t-2 border-primary lg:h-10 lg:w-10"
-						aria-hidden="true"
-					/>
-					<span
-						className="pointer-events-none absolute bottom-0 left-0 h-8 w-8 rounded-bl-xl border-b-2 border-l-2 border-primary lg:h-10 lg:w-10"
-						aria-hidden="true"
-					/>
-					<span
-						className="pointer-events-none absolute bottom-0 right-0 h-8 w-8 rounded-br-xl border-b-2 border-r-2 border-primary lg:h-10 lg:w-10"
-						aria-hidden="true"
-					/>
-
-					<span className="hero-badge relative inline-flex shrink-0 items-center rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25 lg:text-sm">
-						{mode === "tag" ? t("tags.nextReviewer") : t("pr.nextReviewer")}
-					</span>
-
-					<div className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col items-center justify-center gap-2 sm:gap-3">
-						<h3
-							className={`inline-flex w-full max-w-full flex-wrap items-center justify-center gap-2.5 break-words text-4xl font-bold leading-[1.05] text-primary transition-transform transition-opacity duration-300 sm:text-5xl md:text-6xl lg:text-[clamp(3rem,8.5vh,7rem)] motion-reduce:transition-none ${
-								isAssigning
-									? "translate-y-1 opacity-0"
-									: "translate-y-0 opacity-100"
-							}`}
-						>
-							<span className="w-full text-balance text-center sm:hidden">
-								{activeNextReviewer.name}
-							</span>
-							<span className="hidden sm:inline">
-								<TextMorph
-									className="max-w-full !whitespace-normal !text-center"
-									ease={{ stiffness: 200, damping: 20 }}
-								>
-									{activeNextReviewer.name}
-								</TextMorph>
-							</span>
-							{activeHasBirthday && (
-								<span
-									className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-800 shadow-md shadow-amber-500/5 motion-safe:animate-pulse dark:text-amber-300"
-									title="¡Feliz Cumpleaños! 🎂"
-								>
-									🎂 HBD!
-								</span>
-							)}
-						</h3>
-						{mode === "tag" && selectedTag && (
-							<div className="flex justify-center">
-								<Badge
-									variant="secondary"
-									style={{
-										backgroundColor: `${selectedTag.color}20`,
-										color: selectedTag.color,
-										borderColor: selectedTag.color,
-									}}
-								>
-									{selectedTag.name}
-								</Badge>
-							</div>
-						)}
-					</div>
-
-					{upcomingReviewer && (
-						<div className="hero-secondary relative flex shrink-0 flex-col items-center gap-0.5 sm:gap-1">
-							<span className="h-3 w-px bg-border sm:h-5" aria-hidden="true" />
-							<span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground lg:text-xs">
-								{t("pr.upNext")}
-							</span>
-							<h4 className="inline-flex items-center justify-center gap-1.5 text-lg font-medium text-foreground lg:text-xl">
-								<TextMorph ease={{ stiffness: 200, damping: 20 }}>
-									{upcomingReviewer.name}
-								</TextMorph>
-								{upcomingHasBirthday && (
-									<Badge variant="secondary">🎂 HBD</Badge>
-								)}
-							</h4>
-						</div>
-					)}
-				</div>
-
-				{userEmail &&
-					activeNextReviewer.email.toLowerCase() ===
-						userEmail.toLowerCase() && (
-						<Alert className="border-border/60 bg-muted/35">
-							<Info className="h-4 w-4 self-center text-muted-foreground" />
-							<AlertTitle className="text-sm text-foreground lg:text-base">
-								{t("pr.autoSkipTitle")}
-							</AlertTitle>
-							<AlertDescription className="text-sm text-muted-foreground lg:text-base">
-								{upcomingReviewer ? (
-									<>
-										{t("pr.autoSkipDescriptionPrefix")}{" "}
-										<TextMorph ease={{ stiffness: 200, damping: 20 }}>
-											{upcomingReviewer.name}
-										</TextMorph>{" "}
-										{t("pr.autoSkipDescriptionSuffix")}
-									</>
-								) : (
-									t("pr.autoSkipDescriptionNoNext")
-								)}
-							</AlertDescription>
-						</Alert>
-					)}
+				<div className="shrink-0">{rotationMenu}</div>
 			</div>
+			{/* Also with nobody to assign: that is when the panel is needed most,
+			    e.g. a new team whose only reviewer is its creator. */}
+			{receiver || reviewersPanel ? (
+				<p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground lg:text-base">
+					{receiver && isSelfNext && (
+						<>
+							<span>{t("pr.autoSkipNote")}</span>
+							<span aria-hidden="true">·</span>
+						</>
+					)}
+					{following && (
+						<>
+							<span>
+								{t("pr.upNext")}{" "}
+								<span className="font-medium text-foreground">
+									<span
+										key={following._id}
+										className="inline-block animate-in fade-in-0 duration-200 motion-reduce:animate-none"
+									>
+										{following.name}
+									</span>
+								</span>
+								{followingHasBirthday && (
+									<Badge variant="secondary" className="ml-1.5">
+										🎂 HBD
+									</Badge>
+								)}
+							</span>
+							{reviewersPanel ? <span aria-hidden="true">·</span> : null}
+						</>
+					)}
+					<ViewReviewersLink />
+				</p>
+			) : null}
 		</div>
 	);
 }
