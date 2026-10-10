@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
 import {
 	Toast,
 	ToastClose,
@@ -17,7 +18,13 @@ export function Toaster() {
 		<ToastProvider>
 			{toasts.map(({ id, title, description, action, ...props }) => (
 				<Toast key={id} {...props}>
-					<div className="grid gap-1">
+					{props.variant === "destructive" ? (
+						<AlertTriangle
+							className="size-4 shrink-0 self-start text-red-700 dark:text-red-300"
+							aria-hidden="true"
+						/>
+					) : null}
+					<div className="grid min-w-0 flex-1 gap-1">
 						{title && <ToastTitle>{title}</ToastTitle>}
 						{description && <ToastDescription>{description}</ToastDescription>}
 					</div>
