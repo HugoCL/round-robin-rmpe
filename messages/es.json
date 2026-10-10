@@ -155,6 +155,7 @@
 		"assignmentOptionsPanelTitle": "Opciones de asignación",
 		"assignmentOptionsPanelDescription": "Ajusta cómo se resuelven los revisores y la mensajería del PR.",
 		"openAssignmentOptions": "Configurar",
+		"chipRemove": "Quitar {label}",
 		"multipleAssignmentToggleLabel": "Asignación múltiple",
 		"multipleAssignmentToggleShort": "Múltiple",
 		"multipleAssignmentToggleDescription": "Permite asignar a más de una persona en una sola acción.",
@@ -624,10 +625,10 @@
 	"googleChat": {
 		"greeting": "Hola {reviewer} 👋",
 		"assignmentMessage": "{assigner} te ha asignado esta revisión",
-		"prUrlLabel": "PR URL",
+		"prUrlLabel": "URL del PR",
 		"prUrlRequiredForAssignment": "Ingresa la URL del PR. La usaremos para el botón de Google Chat.",
 		"addContext": "Añadir contexto",
-		"contextUrlLabel": "URL de contexto (opcional)",
+		"contextUrlLabel": "Link de contexto (opcional)",
 		"contextUrlHint": "Se muestra como botón Contexto en el mensaje",
 		"customizeToggle": "Personalizar mensaje",
 		"customizeToggleDescription": "Edita el mensaje que enviaremos por Google Chat antes de asignar el PR.",
@@ -739,7 +740,7 @@
 	},
 	"placeholders": {
 		"selectTeam": "Selecciona equipo",
-		"githubPrUrl": "https://github.com/owner/repo/pull/123",
+		"githubPrUrl": "https://github.com/org/repo/pull/123",
 		"pastePrUrl": "Pega la URL del PR",
 		"contextUrl": "https://…"
 	},

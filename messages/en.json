@@ -111,6 +111,7 @@
 		"assignmentOptionsPanelTitle": "Assignment options",
 		"assignmentOptionsPanelDescription": "Adjust how reviewer resolution and PR messaging work.",
 		"openAssignmentOptions": "Configure",
+		"chipRemove": "Remove {label}",
 		"multipleAssignmentToggleLabel": "Multi-assignment",
 		"multipleAssignmentToggleShort": "Multiple",
 		"multipleAssignmentToggleDescription": "Assign more than one reviewer in a single action.",
@@ -583,7 +584,7 @@
 		"prUrlLabel": "PR URL",
 		"prUrlRequiredForAssignment": "Enter the PR URL. We'll use it for the Google Chat button.",
 		"addContext": "Add context",
-		"contextUrlLabel": "Context URL (optional)",
+		"contextUrlLabel": "Context link (optional)",
 		"contextUrlHint": "Will show up as a Context button in the message",
 		"customizeToggle": "Customize message",
 		"customizeToggleDescription": "Edit the Google Chat message before assigning the PR.",
@@ -695,7 +696,7 @@
 	},
 	"placeholders": {
 		"selectTeam": "Select team",
-		"githubPrUrl": "https://github.com/owner/repo/pull/123",
+		"githubPrUrl": "https://github.com/org/repo/pull/123",
 		"pastePrUrl": "Paste the PR URL",
 		"contextUrl": "https://…"
 	},
