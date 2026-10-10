@@ -1,19 +1,8 @@
 "use client";
 
-import {
-	Bot,
-	Clock,
-	Download,
-	Eye,
-	Save,
-	Settings,
-	User,
-	Webhook,
-} from "lucide-react";
+import { Bot, Clock, Download, Eye, Save, User, Webhook } from "lucide-react";
 import { useTranslations } from "next-intl";
-import * as React from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsHelp";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -34,8 +23,6 @@ import {
 	DrawerHeader,
 	DrawerTitle,
 } from "@/components/ui/drawer";
-import { IconActionButton } from "@/components/ui/icon-action-button";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { openAgentSetupDialog } from "@/lib/agent-setup-dialog-store";
@@ -43,10 +30,16 @@ import { openAgentSetupDialog } from "@/lib/agent-setup-dialog-store";
 import { TeamSettingsDialog } from "./dialogs/TeamSettingsDialog";
 import { usePRReview } from "./PRReviewContext";
 
-export function HeaderOptionsDrawer() {
+/** Opened from the header menu, which owns its state. */
+export function HeaderOptionsDrawer({
+	open,
+	onOpenChange: setOpen,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+}) {
 	const t = useTranslations();
 	const isMobile = useIsMobile();
-	const [open, setOpen] = React.useState(false);
 	const {
 		teamSlug,
 		openSnapshotDialog,
@@ -201,16 +194,6 @@ export function HeaderOptionsDrawer() {
 						</h3>
 						<LanguageSwitcher />
 					</div>
-
-					<Separator />
-
-					<div className="flex flex-col gap-3">
-						<h3 className="flex items-center gap-2 text-sm font-semibold">
-							<Settings className="h-4 w-4 text-primary" />
-							{t("common.help")}
-						</h3>
-						<KeyboardShortcutsHelp />
-					</div>
 				</div>
 			</section>
 		</div>
@@ -222,56 +205,47 @@ export function HeaderOptionsDrawer() {
 		</Button>
 	);
 
-	const triggerButton = (
-		<IconActionButton label={t("common.options")} onClick={() => setOpen(true)}>
-			<Settings className="h-4 w-4" />
-		</IconActionButton>
-	);
-
 	if (isMobile) {
 		return (
-			<>
-				{triggerButton}
-				<Drawer open={open} onOpenChange={setOpen}>
-					<DrawerContent className="max-h-[90vh] overflow-y-auto overscroll-contain">
-						<DrawerHeader>
-							<DrawerTitle>{t("common.options")}</DrawerTitle>
-							<DrawerDescription>
-								{t("common.optionsDescription")}
-							</DrawerDescription>
-						</DrawerHeader>
-						<div className="px-4 pb-5">{bodyContent}</div>
-						<DrawerFooter>
-							<DrawerClose asChild>{footerAction}</DrawerClose>
-						</DrawerFooter>
-					</DrawerContent>
-				</Drawer>
-			</>
+			<Drawer open={open} onOpenChange={setOpen}>
+				<DrawerContent
+					className="max-h-[90vh] overflow-y-auto overscroll-contain"
+					onOpenAutoFocus={focusDialogItself}
+				>
+					<DrawerHeader>
+						<DrawerTitle>{t("common.options")}</DrawerTitle>
+						<DrawerDescription>
+							{t("common.optionsDescription")}
+						</DrawerDescription>
+					</DrawerHeader>
+					<div className="px-4 pb-5">{bodyContent}</div>
+					<DrawerFooter>
+						<DrawerClose asChild>{footerAction}</DrawerClose>
+					</DrawerFooter>
+				</DrawerContent>
+			</Drawer>
 		);
 	}
 
 	return (
-		<>
-			{triggerButton}
-			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent
-					className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl"
-					onOpenAutoFocus={focusDialogItself}
-				>
-					<DialogHeader className="shrink-0 border-b border-border/60 pb-4">
-						<DialogTitle>{t("common.options")}</DialogTitle>
-						<DialogDescription>
-							{t("common.optionsDescription")}
-						</DialogDescription>
-					</DialogHeader>
-					<div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 py-1">
-						{bodyContent}
-					</div>
-					<DialogFooter className="shrink-0 border-t border-border/60 pt-4">
-						<DialogClose asChild>{footerAction}</DialogClose>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-		</>
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogContent
+				className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl"
+				onOpenAutoFocus={focusDialogItself}
+			>
+				<DialogHeader className="shrink-0 border-b border-border/60 pb-4">
+					<DialogTitle>{t("common.options")}</DialogTitle>
+					<DialogDescription>
+						{t("common.optionsDescription")}
+					</DialogDescription>
+				</DialogHeader>
+				<div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 py-1">
+					{bodyContent}
+				</div>
+				<DialogFooter className="shrink-0 border-t border-border/60 pt-4">
+					<DialogClose asChild>{footerAction}</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }

@@ -26,6 +26,7 @@
 		"breakdownLabel": "Breakdown"
 	},
 	"common": {
+		"menu": "Menu",
 		"darkTheme": "Dark theme",
 		"lightTheme": "Light theme",
 		"save": "Save",
@@ -58,7 +59,6 @@
 		"language": "Language",
 		"viewOptions": "View Options",
 		"historyAndData": "History & Data",
-		"help": "Help",
 		"update": "Update",
 		"viewPR": "View PR",
 		"viewContext": "View Context",
@@ -197,8 +197,6 @@
 		"toggleExpand": "Expand",
 		"assignedBy": "Assigned by",
 		"reviewer": "Reviewer",
-		"teamPrsThisWeek": "Team PRs this week",
-		"teamPrsThisWeekAria": "Team PRs this week: {count}",
 		"assignDisabledNeedsUrl": "Paste the PR URL to assign.",
 		"assignDisabledNeedsTag": "Pick a tag to assign.",
 		"assignDisabledNeedsTeams": "Pick at least one target team.",
@@ -402,7 +400,7 @@
 		"showEmailsLabel": "Show emails",
 		"showEmailsDescription": "Shows the email column in the reviewers table.",
 		"hideMultiAssignmentSectionLabel": "Hide multi-assignment section",
-		"hideMultiAssignmentSectionDescription": "Hides multi-assignment configuration and always uses a single slot.",
+		"hideMultiAssignmentSectionDescription": "Hides multi-assignment and always assigns to a single person.",
 		"saveFailed": "Failed to save your personal settings. Please try again.",
 		"bootstrapFailed": "Failed to initialize your personal settings. Default values will be used."
 	},
@@ -415,9 +413,8 @@
 		"title": "MCP agent",
 		"drawerDescription": "Three steps: pick a team, generate a token, run one command in Claude Code.",
 		"navbarLabel": "MCP agent",
-		"navbarTooltip": "Connect Claude Code",
 		"openSetup": "Open setup",
-		"settingsRowDescription": "The same setup the robot icon opens in the header.",
+		"settingsRowDescription": "The same setup that MCP agent opens from the header menu.",
 		"connectTab": "Connect",
 		"tokensTab": "Tokens",
 		"wizardProgress": "Setup progress",
@@ -538,6 +535,12 @@
 		"scheduleReason": "Unavailable due to part-time schedule",
 		"returningOn": "Returns on {date}",
 		"noReturnDate": "No return date set"
+	},
+	"headerMenu": {
+		"team": "Team",
+		"help": "Help",
+		"admin": "Admin",
+		"preferences": "Preferences"
 	},
 	"reviewersPanel": {
 		"show": "Show reviewers",
@@ -817,7 +820,6 @@
 	},
 	"events": {
 		"createEvent": "Create Event",
-		"createEventTooltip": "Create an event for the team",
 		"createDescription": "Schedule a new event and invite your team to participate.",
 		"title": "Title",
 		"titlePlaceholder": "e.g., Estimation, Planning, Retro",
@@ -888,15 +890,7 @@
 		"scheduleNotEditable": "Only scheduled events can be rescheduled"
 	},
 	"notifications": {
-		"title": "Push Notifications",
-		"enable": "Enable notifications",
-		"disable": "Disable notifications",
-		"enabled": "Notifications enabled",
 		"blocked": "Notifications blocked",
-		"blockedByBrowser": "Blocked by browser",
-		"receiveAlerts": "You will receive notifications for PRs and events",
-		"enableToReceive": "Enable to receive alerts",
-		"blockedButton": "Blocked",
 		"label": "Notifications"
 	},
 	"suggestions": {
@@ -1073,9 +1067,9 @@
 	"announcements": {
 		"title": "Notices",
 		"coordChannel": "Got a question about a release, a feature idea, or anything about La Lista? Jump into <channel>coord-la-lista</channel>.",
-		"createEventMoved": "If your team uses events, Create Event now lives on the calendar icon in the header. Below the navbar there's a persistent strip with your availability, this week's PRs, and keyboard shortcuts.",
+		"createEventMoved": "If your team uses events, Create event now lives in the header menu. Your availability and this week's PRs are in the buttons next to the team.",
 		"reviewersPanelMoved": "Looking for Manage Reviewers? It found a new home: open it from the Reviewers side panel. That's where the list lives, plus tag management and per-person settings.",
-		"mcpSetupWizard": "Connecting the MCP Agent is easier now: choose your team, generate a token, and connect Claude Code in three steps. Open the robot icon to get started.",
+		"mcpSetupWizard": "Connecting the MCP Agent is easier now: choose your team, generate a token, and connect Claude Code in three steps. Open it from the header menu.",
 		"dismiss": "Dismiss"
 	},
 	"changelog": {

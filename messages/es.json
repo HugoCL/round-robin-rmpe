@@ -26,6 +26,7 @@
 		"breakdownLabel": "Desglose"
 	},
 	"common": {
+		"menu": "Menú",
 		"darkTheme": "Tema oscuro",
 		"lightTheme": "Tema claro",
 		"save": "Guardar",
@@ -106,7 +107,6 @@
 		"language": "Idioma",
 		"viewOptions": "Opciones de vista",
 		"historyAndData": "Historial y datos",
-		"help": "Ayuda",
 		"viewPR": "Ver PR",
 		"viewContext": "Ver contexto",
 		"viewChatThread": "Ver hilo de Chat",
@@ -241,8 +241,6 @@
 		"toggleExpand": "Expandir",
 		"assignedBy": "Asignado por",
 		"reviewer": "Revisor",
-		"teamPrsThisWeek": "PRs del equipo esta semana",
-		"teamPrsThisWeekAria": "PRs del equipo esta semana: {count}",
 		"assignDisabledNeedsUrl": "Pega la URL del PR para asignar.",
 		"assignDisabledNeedsTag": "Elige un tag para asignar.",
 		"assignDisabledNeedsTeams": "Elige al menos un equipo destino.",
@@ -446,7 +444,7 @@
 		"showEmailsLabel": "Mostrar emails",
 		"showEmailsDescription": "Muestra la columna de correos en la tabla de revisores.",
 		"hideMultiAssignmentSectionLabel": "Ocultar sección de asignación múltiple",
-		"hideMultiAssignmentSectionDescription": "Oculta la configuración de asignación múltiple y usa siempre un solo slot.",
+		"hideMultiAssignmentSectionDescription": "Oculta la asignación múltiple y asigna siempre a una sola persona.",
 		"saveFailed": "No se pudieron guardar tus ajustes personales. Intenta nuevamente.",
 		"bootstrapFailed": "No se pudieron inicializar tus ajustes personales. Se usarán valores por defecto."
 	},
@@ -459,9 +457,8 @@
 		"title": "Agente MCP",
 		"drawerDescription": "Tres pasos: eliges equipo, generas un token y corres un comando en Claude Code.",
 		"navbarLabel": "Agente MCP",
-		"navbarTooltip": "Conectar Claude Code",
 		"openSetup": "Abrir configuración",
-		"settingsRowDescription": "El mismo setup que abre el ícono del robot en el header.",
+		"settingsRowDescription": "El mismo setup que abre Agente MCP en el menú del header.",
 		"connectTab": "Conectar",
 		"tokensTab": "Tokens",
 		"wizardProgress": "Progreso de la configuración",
@@ -582,6 +579,12 @@
 		"scheduleReason": "No disponible por horario part-time",
 		"returningOn": "Vuelve el {date}",
 		"noReturnDate": "Sin fecha de regreso"
+	},
+	"headerMenu": {
+		"team": "Equipo",
+		"help": "Ayuda",
+		"admin": "Admin",
+		"preferences": "Preferencias"
 	},
 	"reviewersPanel": {
 		"show": "Mostrar revisores",
@@ -861,7 +864,6 @@
 	},
 	"events": {
 		"createEvent": "Crear evento",
-		"createEventTooltip": "Crear un evento para el equipo",
 		"createDescription": "Programa un nuevo evento e invita a tu equipo a participar.",
 		"title": "Título",
 		"titlePlaceholder": "ej., Estimación, Planning, Retro",
@@ -932,15 +934,7 @@
 		"scheduleNotEditable": "Solo se puede reprogramar un evento programado"
 	},
 	"notifications": {
-		"title": "Notificaciones Push",
-		"enable": "Activar notificaciones",
-		"disable": "Desactivar notificaciones",
-		"enabled": "Notificaciones activadas",
 		"blocked": "Notificaciones bloqueadas",
-		"blockedByBrowser": "Bloqueadas por el navegador",
-		"receiveAlerts": "Recibirás notificaciones de PRs y eventos",
-		"enableToReceive": "Activa para recibir alertas",
-		"blockedButton": "Bloqueado",
 		"label": "Notificaciones"
 	},
 	"suggestions": {
@@ -1117,9 +1111,9 @@
 	"announcements": {
 		"title": "Avisos",
 		"coordChannel": "¿Tienes una duda de un lanzamiento, una idea o cualquier cosa de La Lista? Pásate por <channel>coord-la-lista</channel>.",
-		"createEventMoved": "Si usas eventos, Crear Evento ahora está en el calendario del header. Debajo del navbar dejamos una barra fija: tu disponibilidad, los PRs de la semana y los atajos.",
+		"createEventMoved": "Si usas eventos, Crear evento ahora está en el menú del header. Tu disponibilidad y los PRs de tu semana están en los botones junto al equipo.",
 		"reviewersPanelMoved": "Si buscas Gestionar Revisores, se cambió de casa: ábrelo desde el panel lateral de Revisores. Ahí está la lista, el manejo de tags y los ajustes por usuario.",
-		"mcpSetupWizard": "Conectar el Agente MCP ahora es más fácil: elige tu equipo, genera un token y conecta Claude Code en tres pasos. Abre el ícono del robot para empezar.",
+		"mcpSetupWizard": "Conectar el Agente MCP ahora es más fácil: elige tu equipo, genera un token y conecta Claude Code en tres pasos. Ábrelo desde el menú del header.",
 		"dismiss": "Descartar"
 	},
 	"changelog": {

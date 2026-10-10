@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useMutation } from "convex/react";
-import { Calendar, CalendarPlus, Clock, Globe, Plus } from "lucide-react";
+import { Calendar, Clock, Globe } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
-import { IconActionButton } from "@/components/ui/icon-action-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -30,8 +28,9 @@ import { cn } from "@/lib/utils";
 import { usePRReview } from "../PRReviewContext";
 
 interface CreateEventDialogProps {
-	trigger?: React.ReactNode;
-	iconOnly?: boolean;
+	/** Opened from the header menu, which owns its state. */
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
 }
 
 // Get user's timezone name
@@ -69,8 +68,8 @@ function isUserInChile(): boolean {
 }
 
 export function CreateEventDialog({
-	trigger,
-	iconOnly,
+	open,
+	onOpenChange: setOpen,
 }: CreateEventDialogProps) {
 	const t = useTranslations();
 	const locale = useLocale();
@@ -82,7 +81,6 @@ export function CreateEventDialog({
 	const timeId = useId();
 	const sendInviteId = useId();
 
-	const [open, setOpen] = useState(false);
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [date, setDate] = useState<Date | undefined>(new Date());
@@ -252,153 +250,130 @@ export function CreateEventDialog({
 	};
 
 	return (
-		<>
-			{iconOnly ? (
-				<IconActionButton
-					label={t("events.createEvent")}
-					tooltip={t("events.createEventTooltip")}
-					onClick={() => setOpen(true)}
-				>
-					<CalendarPlus />
-				</IconActionButton>
-			) : null}
-			<Dialog open={open} onOpenChange={setOpen}>
-				{iconOnly ? null : (
-					<DialogTrigger asChild>
-						{trigger || (
-							<Button variant="outline" size="sm">
-								<Plus className="h-4 w-4 mr-2" />
-								{t("events.createEvent")}
-							</Button>
-						)}
-					</DialogTrigger>
-				)}
-				<DialogContent className="sm:max-w-[425px]">
-					<DialogHeader>
-						<DialogTitle>{t("events.createEvent")}</DialogTitle>
-						<DialogDescription>
-							{t("events.createDescription")}
-						</DialogDescription>
-					</DialogHeader>
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogContent className="sm:max-w-[425px]">
+				<DialogHeader>
+					<DialogTitle>{t("events.createEvent")}</DialogTitle>
+					<DialogDescription>{t("events.createDescription")}</DialogDescription>
+				</DialogHeader>
 
-					<div className="grid gap-4">
-						{/* Title */}
-						<div className="grid gap-2">
-							<Label htmlFor={titleId}>{t("events.title")}</Label>
-							<Input
-								id={titleId}
-								placeholder={t("events.titlePlaceholder")}
-								value={title}
-								onChange={(e) => setTitle(e.target.value)}
-							/>
-						</div>
-
-						{/* Description */}
-						<div className="grid gap-2">
-							<Label htmlFor={descriptionId}>
-								{t("events.description")}{" "}
-								<span className="text-muted-foreground text-xs">
-									({t("common.optional")})
-								</span>
-							</Label>
-							<Textarea
-								id={descriptionId}
-								placeholder={t("events.descriptionPlaceholder")}
-								value={description}
-								onChange={(e) => setDescription(e.target.value)}
-								rows={3}
-							/>
-						</div>
-
-						{/* Date */}
-						<div className="grid gap-2">
-							<Label>{t("events.date")}</Label>
-							<Popover>
-								<PopoverTrigger asChild>
-									<Button
-										variant="outline"
-										className={cn(
-											"w-full justify-start text-left font-normal",
-											!date && "text-muted-foreground",
-										)}
-									>
-										<Calendar className="mr-2 h-4 w-4" />
-										{date ? formatDate(date) : t("events.selectDate")}
-									</Button>
-								</PopoverTrigger>
-								<PopoverContent className="w-auto p-0" align="start">
-									<CalendarComponent
-										mode="single"
-										selected={date}
-										onSelect={setDate}
-										autoFocus
-									/>
-								</PopoverContent>
-							</Popover>
-						</div>
-
-						{/* Time */}
-						<div className="grid gap-2">
-							<Label htmlFor={timeId}>{t("events.time")}</Label>
-							<div className="relative">
-								<Clock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-								<Input
-									id={timeId}
-									type="time"
-									value={time}
-									onChange={(e) => setTime(e.target.value)}
-									// The native picker icon is hidden to match Fecha, so the
-									// field itself opens the picker.
-									onClick={(e) => {
-										try {
-											e.currentTarget.showPicker?.();
-										} catch {
-											// Not allowed in this context; typing still works.
-										}
-									}}
-									className="w-full pr-28 pl-9 [&::-webkit-calendar-picker-indicator]:hidden"
-								/>
-								<span className="pointer-events-none absolute top-1/2 right-4 max-w-24 -translate-y-1/2 truncate text-xs text-muted-foreground">
-									{userTimezone.split("/").pop()?.replace("_", " ") ||
-										t("events.yourTime")}
-								</span>
-							</div>
-							{/* Show Chile time conversion if user is not in Chile */}
-							{!userInChile && chileTimePreview && (
-								<div className="calm-subtle-panel flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground">
-									<Globe className="h-3.5 w-3.5" />
-									<span>
-										{t("events.chileTimePreview", { time: chileTimePreview })}
-									</span>
-								</div>
-							)}
-						</div>
-
-						{/* Send invite toggle */}
-						<div className="flex items-center gap-2">
-							<input
-								type="checkbox"
-								id={sendInviteId}
-								checked={sendInvite}
-								onChange={(e) => setSendInvite(e.target.checked)}
-								className=""
-							/>
-							<Label htmlFor={sendInviteId} className="text-sm font-normal">
-								{t("events.sendInviteToChat")}
-							</Label>
-						</div>
+				<div className="grid gap-4">
+					{/* Title */}
+					<div className="grid gap-2">
+						<Label htmlFor={titleId}>{t("events.title")}</Label>
+						<Input
+							id={titleId}
+							placeholder={t("events.titlePlaceholder")}
+							value={title}
+							onChange={(e) => setTitle(e.target.value)}
+						/>
 					</div>
 
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setOpen(false)}>
-							{t("common.cancel")}
-						</Button>
-						<Button onClick={handleSubmit} disabled={isSubmitting}>
-							{isSubmitting ? t("common.creating") : t("events.createEvent")}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-		</>
+					{/* Description */}
+					<div className="grid gap-2">
+						<Label htmlFor={descriptionId}>
+							{t("events.description")}{" "}
+							<span className="text-muted-foreground text-xs">
+								({t("common.optional")})
+							</span>
+						</Label>
+						<Textarea
+							id={descriptionId}
+							placeholder={t("events.descriptionPlaceholder")}
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							rows={3}
+						/>
+					</div>
+
+					{/* Date */}
+					<div className="grid gap-2">
+						<Label>{t("events.date")}</Label>
+						<Popover>
+							<PopoverTrigger asChild>
+								<Button
+									variant="outline"
+									className={cn(
+										"w-full justify-start text-left font-normal",
+										!date && "text-muted-foreground",
+									)}
+								>
+									<Calendar className="mr-2 h-4 w-4" />
+									{date ? formatDate(date) : t("events.selectDate")}
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent className="w-auto p-0" align="start">
+								<CalendarComponent
+									mode="single"
+									selected={date}
+									onSelect={setDate}
+									autoFocus
+								/>
+							</PopoverContent>
+						</Popover>
+					</div>
+
+					{/* Time */}
+					<div className="grid gap-2">
+						<Label htmlFor={timeId}>{t("events.time")}</Label>
+						<div className="relative">
+							<Clock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								id={timeId}
+								type="time"
+								value={time}
+								onChange={(e) => setTime(e.target.value)}
+								// The native picker icon is hidden to match Fecha, so the
+								// field itself opens the picker.
+								onClick={(e) => {
+									try {
+										e.currentTarget.showPicker?.();
+									} catch {
+										// Not allowed in this context; typing still works.
+									}
+								}}
+								className="w-full pr-28 pl-9 [&::-webkit-calendar-picker-indicator]:hidden"
+							/>
+							<span className="pointer-events-none absolute top-1/2 right-4 max-w-24 -translate-y-1/2 truncate text-xs text-muted-foreground">
+								{userTimezone.split("/").pop()?.replace("_", " ") ||
+									t("events.yourTime")}
+							</span>
+						</div>
+						{/* Show Chile time conversion if user is not in Chile */}
+						{!userInChile && chileTimePreview && (
+							<div className="calm-subtle-panel flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground">
+								<Globe className="h-3.5 w-3.5" />
+								<span>
+									{t("events.chileTimePreview", { time: chileTimePreview })}
+								</span>
+							</div>
+						)}
+					</div>
+
+					{/* Send invite toggle */}
+					<div className="flex items-center gap-2">
+						<input
+							type="checkbox"
+							id={sendInviteId}
+							checked={sendInvite}
+							onChange={(e) => setSendInvite(e.target.checked)}
+							className=""
+						/>
+						<Label htmlFor={sendInviteId} className="text-sm font-normal">
+							{t("events.sendInviteToChat")}
+						</Label>
+					</div>
+				</div>
+
+				<DialogFooter>
+					<Button variant="outline" onClick={() => setOpen(false)}>
+						{t("common.cancel")}
+					</Button>
+					<Button onClick={handleSubmit} disabled={isSubmitting}>
+						{isSubmitting ? t("common.creating") : t("events.createEvent")}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }
