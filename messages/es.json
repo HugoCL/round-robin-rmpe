@@ -1102,7 +1102,9 @@
 		"untilTurn": "te toca en {count, plural, one {# PR} other {# PRs}}"
 	},
 	"announcements": {
+		"sheetDescription": "Anuncios, encuestas y ajustes pendientes de La Lista.",
 		"title": "Avisos",
+		"empty": "No tienes avisos pendientes.",
 		"coordChannel": "¿Tienes una duda de un lanzamiento, una idea o cualquier cosa de La Lista? Pásate por <channel>coord-la-lista</channel>.",
 		"createEventMoved": "Si usas eventos, Crear evento ahora está en el menú del header. Tu disponibilidad y los PRs de tu semana están en los botones junto al equipo.",
 		"reviewersPanelMoved": "Si buscas Gestionar Revisores, se cambió de casa: ábrelo desde el panel lateral de Revisores. Ahí está la lista, el manejo de tags y los ajustes por usuario.",

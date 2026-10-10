@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	Bell,
 	Bot,
 	CalendarPlus,
 	ClipboardList,
@@ -15,6 +16,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useFeatureEnabled } from "@/components/AppConfigProvider";
+import { Badge } from "@/components/ui/badge";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -31,10 +33,12 @@ import { openAgentSetupDialog } from "@/lib/agent-setup-dialog-store";
 import { ChangelogDialog } from "../ChangelogDialog";
 import { CreateEventDialog } from "../dialogs/CreateEventDialog";
 import { HeaderOptionsDrawer } from "../HeaderOptionsDrawer";
+import { usePendingNoticesCount } from "../hooks/usePendingNoticesCount";
 import { KeyboardShortcutsHelp } from "../KeyboardShortcutsHelp";
+import { NoticesSheet } from "../NoticesSheet";
 import { usePRReview } from "../PRReviewContext";
 
-type MenuDialog = "options" | "event" | "changelog" | "shortcuts";
+type MenuDialog = "options" | "event" | "changelog" | "shortcuts" | "notices";
 
 function PushNotificationsItem({
 	push: { status, isLoading, subscribe, unsubscribe },
@@ -70,6 +74,7 @@ export function HeaderMenu() {
 	const suggestionsEnabled = useFeatureEnabled("suggestionsBoard");
 	const pushEnabled = useFeatureEnabled("pushNotifications");
 	const [dialog, setDialog] = useState<MenuDialog | null>(null);
+	const pendingNotices = usePendingNoticesCount();
 	// Not in the menu item: closed menu content unmounts, and the hook must run on
 	// load to register the service worker and clear Firefox's stale notifications.
 	const push = usePushNotifications({
@@ -90,6 +95,12 @@ export function HeaderMenu() {
 				<DropdownMenuTrigger asChild>
 					<IconActionButton label={t("common.menu")} className="relative">
 						<Menu />
+						{pendingNotices.count > 0 ? (
+							<span
+								aria-hidden="true"
+								className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary"
+							/>
+						) : null}
 					</IconActionButton>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-64">
@@ -114,6 +125,15 @@ export function HeaderMenu() {
 					<DropdownMenuSeparator />
 					<DropdownMenuGroup>
 						<DropdownMenuLabel>{t("headerMenu.help")}</DropdownMenuLabel>
+						<DropdownMenuItem onSelect={() => setDialog("notices")}>
+							<Bell />
+							{t("announcements.title")}
+							{pendingNotices.count > 0 ? (
+								<Badge variant="secondary" className="ml-auto tabular-nums">
+									{pendingNotices.count}
+								</Badge>
+							) : null}
+						</DropdownMenuItem>
 						<DropdownMenuItem onSelect={() => setDialog("changelog")}>
 							<Sparkles />
 							{t("changelog.title")}
@@ -172,6 +192,13 @@ export function HeaderMenu() {
 			{/* Rendered outside the menu so closing it does not unmount them. */}
 			<HeaderOptionsDrawer {...dialogProps("options")} />
 			<ChangelogDialog {...dialogProps("changelog")} />
+			<NoticesSheet
+				{...dialogProps("notices")}
+				onOpenChange={(open) => {
+					setDialog(open ? "notices" : null);
+					if (!open) pendingNotices.refresh();
+				}}
+			/>
 			<KeyboardShortcutsHelp {...dialogProps("shortcuts")} />
 			{canManageCurrentTeam && eventsEnabled ? (
 				<CreateEventDialog {...dialogProps("event")} />

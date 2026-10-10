@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { ChevronDown, Info, X } from "lucide-react";
+import { Info, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import {
@@ -10,17 +10,10 @@ import {
 	AlertDescription,
 	AlertTitle,
 } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { WithTooltip } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import { resolveAnnouncementBody } from "@/lib/announcementVisibility";
-import { cn } from "@/lib/utils";
 import { usePRReview } from "./PRReviewContext";
 
 /**
@@ -108,9 +101,7 @@ export function AnnouncementBanner() {
 	);
 	if (visible.length === 0) return null;
 
-	const grouped = visible.length > 1;
-
-	const alerts = visible.map((announcement) => {
+	return visible.map((announcement) => {
 		const body = announcement.translationKey
 			? null
 			: resolveAnnouncementBody(announcement, locale);
@@ -122,14 +113,10 @@ export function AnnouncementBanner() {
 		return (
 			<Alert
 				key={announcement._id}
-				data-notice={grouped ? undefined : true}
+				role="status"
+				data-notice
 				variant={announcement.variant}
-				className={cn(
-					"flex min-h-11 items-center gap-2.5 py-2.5 pr-12 shadow-none",
-					grouped
-						? "rounded-none border-0 bg-transparent"
-						: "rounded-xl border-border/70 bg-background/72",
-				)}
+				className="flex min-h-11 items-center gap-2.5 rounded-xl border-border/70 bg-background/72 py-2.5 pr-12 shadow-none"
 			>
 				<Info className="shrink-0 text-muted-foreground" aria-hidden="true" />
 				<AlertTitle className="sr-only">{t("common.info")}</AlertTitle>
@@ -187,36 +174,4 @@ export function AnnouncementBanner() {
 			</Alert>
 		);
 	});
-
-	if (!grouped) {
-		return alerts;
-	}
-
-	return (
-		<Collapsible
-			defaultOpen={window.innerWidth >= 640}
-			className="group/avisos calm-panel p-2"
-		>
-			<CollapsibleTrigger asChild>
-				<Button
-					type="button"
-					variant="ghost"
-					className="h-10 w-full justify-start rounded-xl px-2"
-				>
-					<Info aria-hidden="true" />
-					<span>{t("announcements.title")}</span>
-					<Badge variant="secondary" className="ml-auto">
-						{visible.length}
-					</Badge>
-					<ChevronDown
-						className="transition-transform duration-200 motion-reduce:transition-none group-data-[state=open]/avisos:rotate-180"
-						aria-hidden="true"
-					/>
-				</Button>
-			</CollapsibleTrigger>
-			<CollapsibleContent className="divide-y divide-border/60 pt-1">
-				{alerts}
-			</CollapsibleContent>
-		</Collapsible>
-	);
 }

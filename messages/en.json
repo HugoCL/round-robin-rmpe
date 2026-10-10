@@ -1058,7 +1058,9 @@
 		"untilTurn": "your turn in {count, plural, one {# PR} other {# PRs}}"
 	},
 	"announcements": {
+		"sheetDescription": "Announcements, surveys and pending setup for La Lista.",
 		"title": "Notices",
+		"empty": "You have no pending notices.",
 		"coordChannel": "Got a question about a release, a feature idea, or anything about La Lista? Jump into <channel>coord-la-lista</channel>.",
 		"createEventMoved": "If your team uses events, Create event now lives in the header menu. Your availability and this week's PRs are in the buttons next to the team.",
 		"reviewersPanelMoved": "Looking for Manage Reviewers? It found a new home: open it from the Reviewers side panel. That's where the list lives, plus tag management and per-person settings.",
