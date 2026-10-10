@@ -24,7 +24,9 @@ export function TeamSwitcher({ teamSlug }: { teamSlug?: string }) {
 
 	return (
 		<Select value={teamSlug} onValueChange={onChange}>
-			<SelectTrigger className="w-56">
+			{/* The second crumb after the product name: where you are, not one more
+			    bordered control competing with your status. */}
+			<SelectTrigger className="h-9 w-auto max-w-full rounded-full border-transparent bg-transparent px-2.5 text-sm font-medium hover:bg-muted/40 data-[state=open]:bg-muted sm:text-base dark:hover:bg-muted/50">
 				<SelectValue placeholder={t("placeholders.selectTeam")} />
 			</SelectTrigger>
 			<SelectContent>

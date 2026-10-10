@@ -4,7 +4,6 @@ import { useQuery } from "convex/react";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-import { KeyboardShortcutsHelp } from "@/components/pr-review/KeyboardShortcutsHelp";
 import { PlannedAbsenceChip } from "@/components/pr-review/PlannedAbsenceChip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -325,10 +324,6 @@ export function HeaderStatusBar() {
 					</div>
 				</>
 			) : null}
-
-			<div className="ml-auto hidden items-center md:flex">
-				<KeyboardShortcutsHelp iconOnly />
-			</div>
 
 			{currentReviewer ? (
 				<MarkAbsentDialog

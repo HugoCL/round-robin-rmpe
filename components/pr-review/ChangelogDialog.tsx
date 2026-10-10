@@ -1,8 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -21,7 +19,6 @@ import {
 	DrawerHeader,
 	DrawerTitle,
 } from "@/components/ui/drawer";
-import { IconActionButton } from "@/components/ui/icon-action-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -105,8 +102,14 @@ function ChangelogContent({ entries }: { entries: ChangelogEntry[] }) {
 	);
 }
 
-export function ChangelogDialog({ iconOnly = false }: { iconOnly?: boolean }) {
-	const [open, setOpen] = useState(false);
+/** Opened from the header menu, which owns its state. */
+export function ChangelogDialog({
+	open,
+	onOpenChange: setOpen,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+}) {
 	const isMobile = useIsMobile();
 	const tCommon = useTranslations("common");
 	const tChangelog = useTranslations("changelog");
@@ -114,63 +117,39 @@ export function ChangelogDialog({ iconOnly = false }: { iconOnly?: boolean }) {
 	const title = tChangelog("title");
 	const description = tChangelog("description");
 
-	const iconOnlyButton = (
-		<IconActionButton label={title} onClick={() => setOpen(true)}>
-			<Sparkles className="h-4 w-4" />
-		</IconActionButton>
-	);
-
-	const standardButton = (
-		<Button
-			variant="outline"
-			size="sm"
-			className="flex items-center gap-1"
-			onClick={() => setOpen(true)}
-		>
-			<Sparkles className="h-4 w-4" />
-			<span className="hidden sm:inline">{title}</span>
-		</Button>
-	);
-
 	if (isMobile) {
 		return (
-			<>
-				{iconOnly ? iconOnlyButton : standardButton}
-				<Drawer open={open} onOpenChange={setOpen}>
-					<DrawerContent>
-						<DrawerHeader>
-							<DrawerTitle>{title}</DrawerTitle>
-							<DrawerDescription>{description}</DrawerDescription>
-						</DrawerHeader>
-						<div className="px-4 pb-4">
-							<ChangelogContent entries={changelogEntries} />
-						</div>
-						<DrawerFooter>
-							<DrawerClose asChild>
-								<Button variant="outline">{tCommon("close")}</Button>
-							</DrawerClose>
-						</DrawerFooter>
-					</DrawerContent>
-				</Drawer>
-			</>
+			<Drawer open={open} onOpenChange={setOpen}>
+				<DrawerContent onOpenAutoFocus={focusDialogItself}>
+					<DrawerHeader>
+						<DrawerTitle>{title}</DrawerTitle>
+						<DrawerDescription>{description}</DrawerDescription>
+					</DrawerHeader>
+					<div className="px-4 pb-4">
+						<ChangelogContent entries={changelogEntries} />
+					</div>
+					<DrawerFooter>
+						<DrawerClose asChild>
+							<Button variant="outline">{tCommon("close")}</Button>
+						</DrawerClose>
+					</DrawerFooter>
+				</DrawerContent>
+			</Drawer>
 		);
 	}
 
 	return (
-		<>
-			{iconOnly ? iconOnlyButton : standardButton}
-			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent
-					className="sm:max-w-[500px]"
-					onOpenAutoFocus={focusDialogItself}
-				>
-					<DialogHeader>
-						<DialogTitle>{title}</DialogTitle>
-						<DialogDescription>{description}</DialogDescription>
-					</DialogHeader>
-					<ChangelogContent entries={changelogEntries} />
-				</DialogContent>
-			</Dialog>
-		</>
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogContent
+				className="sm:max-w-[500px]"
+				onOpenAutoFocus={focusDialogItself}
+			>
+				<DialogHeader>
+					<DialogTitle>{title}</DialogTitle>
+					<DialogDescription>{description}</DialogDescription>
+				</DialogHeader>
+				<ChangelogContent entries={changelogEntries} />
+			</DialogContent>
+		</Dialog>
 	);
 }
