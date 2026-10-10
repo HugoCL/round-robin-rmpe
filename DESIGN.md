@@ -18,7 +18,10 @@ colors:
   dark-background: "oklch(0.17 0.01 260)"
   dark-foreground: "oklch(0.965 0.004 255)"
   dark-primary: "oklch(0.67 0.16 255)"
+  dark-primary-foreground: "oklch(0.17 0.01 260)"
   dark-border: "oklch(0.34 0.012 259)"
+  control-border: "oklch(0.64 0.02 256)"
+  dark-control-border: "oklch(0.52 0.02 256)"
 typography:
   display:
     fontFamily: "\"Space Grotesk\", system-ui, sans-serif"
@@ -134,7 +137,7 @@ This system explicitly rejects: gradient text, hero-metric widgets (big number +
 One accent, one hue family, two luminance modes. The blue is never decorative — it marks primary actions, current selection, and active state indicators only.
 
 ### Primary
-- **Instrument Blue** (`oklch(0.52 0.19 258)`, light mode): The one accent. Assign PR button, focus rings, active chip backgrounds, link hover. Never used for decoration. Dark mode shifts to `oklch(0.67 0.16 255)` to maintain contrast on dark surfaces.
+- **Instrument Blue** (`oklch(0.52 0.19 258)`, light mode): The one accent. Assign PR button, focus rings, active chip backgrounds, link hover. Never used for decoration. Dark mode shifts to `oklch(0.67 0.16 255)` to maintain contrast on dark surfaces, and text on it turns dark (`oklch(0.17 0.01 260)`, 6.3:1): white on that blue is only 2.9:1.
 - **Ring Blue** (`oklch(0.69 0.12 258)`): Focus rings only. Lower chroma than the primary to read as a guide, not a shout.
 
 ### Neutral
@@ -143,12 +146,13 @@ One accent, one hue family, two luminance modes. The blue is never decorative �
 - **Quiet Ash** (`oklch(0.962 0.006 255)` / `oklch(0.955 0.008 255)`): Muted and secondary surfaces, chip backgrounds, tag backgrounds.
 - **Slate Ink** (`oklch(0.205 0.01 258)`): Primary foreground text, light mode. Hue-tinted dark, not black.
 - **Steel Mist** (`oklch(0.48 0.02 256)`): Secondary foreground. Metadata, labels, helper text.
+- **Control Edge** (`oklch(0.64 0.02 256)` light / `oklch(0.52 0.02 256)` dark, `--control-border`): The off track of a switch and the border of the PR field, where the edge itself says "this is a control". It clears 3:1 against the page (WCAG 1.4.11); Ghost Line and `--input` do not, so they stay for dividers and secondary fields.
 - **Ghost Line** (`oklch(0.9 0.01 255)`): Borders and dividers. Consistently at 70% opacity in use (`border-border/70`) for depth.
 - **Midnight Void** (`oklch(0.17 0.01 260)`): Dark mode background. Same hue family, deep.
 - **Ember** (`oklch(0.58 0.22 27)`): Destructive state only. Warm red, not used elsewhere.
 
 ### Named Rules
-**The One Hue Rule.** Every color in the system shares hue 255–260. Tints range from L 0.17 (dark background) to L 0.995 (card surface). No secondary accent hues are introduced. Pops of semantic color (red for urgent, amber for forced, sky for cross-team) are confined to status badges and never bleed into surfaces.
+**The One Hue Rule.** Every color in the system shares hue 255–260. Tints range from L 0.17 (dark background) to L 0.995 (card surface). No secondary accent hues are introduced. Pops of semantic color (red for urgent, amber for forced, sky for cross-team) are confined to status badges and never bleed into surfaces. One exception: a notice that asks for attention (the duplicate PR warning, the absence reminder in your status) may sit on a faint amber surface, `border-amber-500/30 bg-amber-500/[0.06]`.
 
 **The Opacity Layer Rule.** Surfaces use opacity variants (`bg-background/82`, `bg-muted/28`) over a shared hue-tinted background to create depth without explicit shadow stacking. The backdrop is always the same hue; only the opacity shifts.
 
@@ -162,7 +166,7 @@ One accent, one hue family, two luminance modes. The blue is never decorative �
 
 ### Hierarchy
 - **Display** (Space Grotesk, weight 600, `text-2xl md:text-3xl`, −0.02em): Page h1 — the tool name / dashboard title. Used once per page.
-- **Headline** (Space Grotesk, weight 600, `text-xl–2xl`, −0.02em): Card titles, section group headings. The reviewer name in the assignment card (`text-4xl font-bold`) is the single intentional exception — it IS the hero element on that surface.
+- **Headline** (Space Grotesk, weight 600, `text-xl–2xl`, −0.02em): Card titles, section group headings. The reviewer name in the assignment card (`text-3xl lg:text-4xl font-semibold`) is the one step above it.
 - **Title** (Space Grotesk, weight 500, `text-lg`): Section h3/h4 inside panels. Used sparingly.
 - **Body** (system-ui, weight 400, `text-sm`, line-height 1.6): All prose, descriptions, history item content. Keep to 65–75ch where prose runs long.
 - **Label** (Space Grotesk, weight 600, `text-[11px]`, tracking 0.22em, uppercase): Section eyebrows (`calm-kicker`), section headers (HISTORY, AVAILABLE TEAMS), status overlines. The uppercase + wide tracking creates a clear label register distinct from body.
@@ -171,7 +175,7 @@ One accent, one hue family, two luminance modes. The blue is never decorative �
 ### Named Rules
 **The Heading-Only Display Rule.** Space Grotesk is restricted to headings, labels, and the `calm-kicker` eyebrow. It is never used for body copy, button labels (those use the system font through the component default), or data tables. This keeps the two-voice distinction clear.
 
-**The Reviewer Name Exception.** The current reviewer's name (`text-4xl font-bold`, primary color) is the single largest typographic element in the product. This is intentional — the whole tool exists to answer "who reviews this?" That name is the answer. Nothing else in the UI competes with it.
+**The Reviewer Name Rule.** The next reviewer's name (`text-3xl lg:text-4xl font-semibold`, primary color) is the largest type in the product, at a fixed size. The system already picks the reviewer, so the name confirms the answer; the user's task is the PR link and Assign right below it. Never size it from the viewport (`vh`, `clamp`) or let its container stretch to fill the window.
 
 ## 4. Elevation
 
@@ -197,8 +201,8 @@ All buttons share `rounded-full` (9999px). This is a system-wide convention — 
 
 - **Primary** (solid blue): `bg-primary text-primary-foreground rounded-full px-6 py-2.5`. The Assign PR button stretches full-width in its container. No icon except where it aids clarity (Plus for create actions).
 - **Hover / Focus**: Darker primary (`oklch(0.46 0.19 258)`). Focus: `ring-2 ring-primary/50`. No scale transform on primary — transform reserved for icon-hint secondary CTAs.
-- **Outline**: `border border-border/70 bg-background/70 rounded-full`. The dominant secondary variant — used for all utility controls in the header bar.
-- **Ghost**: `bg-transparent hover:bg-muted/30 rounded-full`. Icon-only actions in icon bars (ThemeToggle, ChangelogDialog, etc.).
+- **Outline**: `border border-border/70 bg-background/70 rounded-full`. The dominant secondary variant. In the header bar only "Mi semana" keeps it: an occasional lookup, so the border marks a secondary action.
+- **Ghost**: `bg-transparent hover:bg-muted/40 rounded-full`. Icon actions in icon bars (ThemeToggle, the header menu), and the header controls that read as text: the team switcher, the second crumb after "La Lista /", and your status ("Disponible · te toca en 2 PRs"). The hover background shows where to click.
 - **Destructive**: Red palette. Confined to confirmation dialogs; never appears inline as a primary action.
 
 ### Chips (Action Toggles)
@@ -222,15 +226,14 @@ This is the signature of the system. Rather than ad-hoc `bg-white rounded-xl sha
 - **Select**: Same surface treatment. `SelectTrigger` matches the input surface.
 
 ### Labels / Kickers
-- **`calm-kicker`**: `text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/85`. The eyebrow label — appears above page titles ("LA LISTA") and section headers ("HISTORY", "AVAILABLE TEAMS"). This is the system's one use of uppercase + wide tracking.
+- **`calm-kicker`**: `text-[11px] font-semibold uppercase tracking-[0.22em] text-primary`. The eyebrow label — appears above page titles ("LA LISTA") and section headers ("HISTORY", "AVAILABLE TEAMS"). This is the system's one use of uppercase + wide tracking.
 
 ### Signature Component: The Reviewer Display
-The heart of the product. Centered in the AssignmentCard:
-- **"LAST ASSIGNED"** label (kicker style, muted-foreground): Stacked above.
-- **"Next Reviewer" pill**: `bg-primary/15 ring-1 ring-primary/25 rounded-full px-3 py-1 text-xs font-semibold text-primary` — subtle, pill-shaped announcement chip.
-- **Reviewer name** (`text-4xl md:text-5xl font-bold text-primary`): The singular visual apex. Animated via TextMorph spring on change.
-- **"UP NEXT" label + name** (kicker + `text-lg font-medium text-muted-foreground`): Stacked below, subdued.
-- **Reviewer box background**: `bg-gradient-to-br from-primary/14 via-background to-primary/8 rounded-[2rem] border border-primary/16 shadow-[0_28px_72px_-44px_rgba(37,99,235,0.55)]`. The only surface in the product with a visible drop shadow directly tied to the primary blue — it frames the most important element.
+The heart of the product: a left-aligned block at the top of the AssignmentCard, read as a sentence.
+- **Heading** (`h2`): "Le toca a" (`text-sm lg:text-base text-muted-foreground`) followed by the name of whoever actually receives the PR (see The Reviewer Name Rule). When the viewer is next, the assignment skips them, so the heading names the replacement and one muted line explains the skip. When the rotation moves, each name fades in on its own (a keyed fade, not a glyph morph).
+- **Metadata line**: always its own line under the heading, never inline: "Después {name}" (name in `font-medium text-foreground`) and the "Ver revisores (N)" link that opens the reviewers panel.
+- **Aside**: on the right of the same row, one outline chip "Rotación · {Todos | tag}" that opens a menu: the team rotation and each tag as radio items, then "Elegir otra persona…" (force assignment). It shows on teams without tags too.
+- **No frame**: no pill, kicker, corner brackets or tinted box. The PR field follows directly below; the Assign button names the receiver ("Asignar a {name}", just "Asignar" on phones) and sits after the options, with Undo beside it.
 
 ## 6. Do's and Don'ts
 
