@@ -204,7 +204,7 @@ function TeamAbsencesTimeline() {
 												"border-l",
 										)}
 									>
-										<span className="h-3 text-[10px] uppercase tracking-wide">
+										<span className="h-3 text-[11px] leading-3 uppercase tracking-wide">
 											{showMonth ? monthFormatter.format(date) : ""}
 										</span>
 										<span>{weekdayFormatter.format(date)}</span>

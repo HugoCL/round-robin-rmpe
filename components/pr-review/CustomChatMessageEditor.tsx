@@ -100,7 +100,7 @@ export function CustomChatMessageEditor({
 					/>
 				)}
 				{enabled && (
-					<p className="text-[10px] text-muted-foreground leading-snug">
+					<p className="text-xs text-muted-foreground leading-snug">
 						{t("googleChat.placeholdersHint", {
 							reviewer: GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
 							requester: GOOGLE_CHAT_REQUESTER_PLACEHOLDER,
