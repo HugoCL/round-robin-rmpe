@@ -1,91 +1,41 @@
-import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { cn } from "@/lib/utils";
+import { useRef, useState } from "react";
 import { AssignmentCard } from "../AssignmentCard";
 import { FeedHistory } from "../FeedHistory";
 import { ForeignTeamAssignmentCard } from "../ForeignTeamAssignmentCard";
 import { usePRReview } from "../PRReviewContext";
 import { ReviewersPanel } from "../ReviewersPanel";
-
-/** Below this width the three columns can't all hold a usable measure. */
-const BOTH_PANELS_QUERY = "(min-width: 1500px)";
+import { ReviewersPanelContext } from "./ReviewersPanelContext";
 
 export function CompactLayout() {
 	const { teamSlug, isForeignTeamView } = usePRReview();
-	const canShowBothPanels = useMediaQuery(BOTH_PANELS_QUERY);
-	const [historyOpen, setHistoryOpen] = useLocalStorage(
-		"la-lista-history-open",
-		false,
-	);
-	const [reviewersOpen, setReviewersOpen] = useLocalStorage(
-		"la-lista-reviewers-open",
-		false,
-	);
-	// Both panels can stay open on wide screens; narrower ones still trade one
-	// for the other so the assignment column keeps a readable width.
-	const bothOpen = reviewersOpen && historyOpen && canShowBothPanels;
-	const historyExpanded = historyOpen && (bothOpen || !reviewersOpen);
-	const reviewersExpanded = reviewersOpen;
+	const [reviewersOpen, setReviewersOpen] = useState(false);
+	const reviewersOpenerRef = useRef<HTMLElement | null>(null);
 
-	const handleReviewersOpenChange = (open: boolean) => {
-		setReviewersOpen(open);
-		if (open && !canShowBothPanels) {
-			setHistoryOpen(false);
-		}
-	};
-
-	const handleHistoryOpenChange = (open: boolean) => {
-		setHistoryOpen(open);
-		if (open && !canShowBothPanels) {
-			setReviewersOpen(false);
-		}
-	};
-
-	// The cockpit fills whatever the notices above leave, but its floor is the
-	// assignment card's own minimum (hero + collapsed controls): when notices
-	// take more, the shell scrolls instead of clipping the PR field. The side
-	// panels opt out of sizing the row so a long history can't stretch it.
 	return (
-		<div className="mt-3 flex flex-col gap-4 sm:mt-5 sm:gap-6 lg:mt-6 cockpit:flex-1">
-			<div
-				className={cn(
-					"grid items-stretch gap-4 sm:gap-6 cockpit:flex-1",
-					!reviewersExpanded &&
-						!historyExpanded &&
-						"lg:grid-cols-[3.5rem_minmax(0,1fr)_3.5rem]",
-					reviewersExpanded &&
-						!historyExpanded &&
-						"lg:grid-cols-[minmax(340px,0.82fr)_minmax(0,1.18fr)_3.5rem] 2xl:grid-cols-[minmax(420px,0.72fr)_minmax(0,1.28fr)_3.5rem]",
-					!reviewersExpanded &&
-						historyExpanded &&
-						"lg:grid-cols-[3.5rem_minmax(0,1.18fr)_minmax(340px,0.82fr)] 2xl:grid-cols-[3.5rem_minmax(0,1.28fr)_minmax(420px,0.72fr)]",
-					reviewersExpanded &&
-						historyExpanded &&
-						"lg:grid-cols-[minmax(320px,0.7fr)_minmax(0,1.6fr)_minmax(320px,0.7fr)]",
-				)}
-			>
-				<ReviewersPanel
-					teamSlug={teamSlug}
-					open={reviewersExpanded}
-					onOpenChange={handleReviewersOpenChange}
-					className="order-2 lg:order-1 cockpit:contain-size"
-				/>
-				<div className="order-1 flex min-w-0 flex-col gap-4 sm:gap-6 lg:order-2 cockpit:h-full">
-					<section className="page-enter-soft cockpit:flex cockpit:flex-1 cockpit:flex-col cockpit:[&>[data-slot=card]]:flex-1">
-						{isForeignTeamView ? (
-							<ForeignTeamAssignmentCard />
-						) : (
-							<AssignmentCard />
-						)}
-					</section>
-				</div>
-				<FeedHistory
-					teamSlug={teamSlug}
-					open={historyExpanded}
-					onOpenChange={handleHistoryOpenChange}
-					className="order-3 cockpit:contain-size"
-				/>
+		<ReviewersPanelContext.Provider
+			value={{
+				openPanel: (opener) => {
+					reviewersOpenerRef.current = opener;
+					setReviewersOpen(true);
+				},
+			}}
+		>
+			<div className="mt-3 flex flex-col gap-4 sm:mt-5 sm:gap-6 lg:mt-6">
+				<section className="page-enter-soft">
+					{isForeignTeamView ? (
+						<ForeignTeamAssignmentCard />
+					) : (
+						<AssignmentCard />
+					)}
+				</section>
+				<FeedHistory teamSlug={teamSlug} />
 			</div>
-		</div>
+			<ReviewersPanel
+				teamSlug={teamSlug}
+				open={reviewersOpen}
+				onOpenChange={setReviewersOpen}
+				returnFocusTo={reviewersOpenerRef}
+			/>
+		</ReviewersPanelContext.Provider>
 	);
 }

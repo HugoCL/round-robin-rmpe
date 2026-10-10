@@ -8,7 +8,7 @@ import { usePRReview } from "../PRReviewContext";
  * "see all" next to the rotation they summarize.
  */
 export const ReviewersPanelContext = createContext<{
-	openPanel: () => void;
+	openPanel: (opener: HTMLElement) => void;
 } | null>(null);
 
 export const useReviewersPanel = () => useContext(ReviewersPanelContext);
@@ -23,7 +23,7 @@ export function ViewReviewersLink() {
 		<Button
 			type="button"
 			variant="link"
-			onClick={reviewersPanel.openPanel}
+			onClick={(event) => reviewersPanel.openPanel(event.currentTarget)}
 			className="h-auto cursor-pointer p-0 text-sm text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground lg:text-base"
 		>
 			{t("viewReviewers", { count: reviewers.length })}
