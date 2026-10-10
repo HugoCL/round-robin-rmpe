@@ -12,6 +12,7 @@ import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { focusPrUrlInput, PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
 import type { Assignment, UserInfo } from "@/lib/types";
 import { ActiveEventsList } from "./ActiveEventsList";
 import { lastAssignmentUndoCopy } from "./assignment/undoCopy";
@@ -343,6 +344,17 @@ export default function PRReviewAssignment({
 		>
 			<PRReviewProvider value={providerValue}>
 				<div className="flex min-h-dvh flex-col">
+					{accessContext?.isForeignTeam === true ? null : (
+						<a
+							href={`#${PR_URL_INPUT_ID}`}
+							onClick={(event) => {
+								if (focusPrUrlInput()) event.preventDefault();
+							}}
+							className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+						>
+							{t("shortcuts.focusPrUrl")}
+						</a>
+					)}
 					<PageHeader teamSlug={teamSlug} />
 					<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-3 pb-4 sm:px-6 lg:pb-6">
 						<div
