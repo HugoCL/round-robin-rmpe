@@ -26,6 +26,8 @@
 		"breakdownLabel": "Breakdown"
 	},
 	"common": {
+		"darkTheme": "Dark theme",
+		"lightTheme": "Light theme",
 		"save": "Save",
 		"cancel": "Cancel",
 		"delete": "Delete",
@@ -39,7 +41,6 @@
 		"notices": "Notices",
 		"confirm": "Confirm",
 		"close": "Close",
-		"theme": "Theme",
 		"name": "Name",
 		"email": "Email",
 		"color": "Color",

@@ -26,6 +26,8 @@
 		"breakdownLabel": "Desglose"
 	},
 	"common": {
+		"darkTheme": "Tema oscuro",
+		"lightTheme": "Tema claro",
 		"save": "Guardar",
 		"cancel": "Cancelar",
 		"delete": "Eliminar",
@@ -44,7 +46,6 @@
 		"yes": "Sí",
 		"no": "No",
 		"ok": "OK",
-		"theme": "Tema",
 		"back": "Atrás",
 		"next": "Siguiente",
 		"previous": "Anterior",
