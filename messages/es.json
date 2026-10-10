@@ -511,17 +511,6 @@
 		"revokedAt": "Revocado: {date}",
 		"neverUsed": "Nunca usado",
 		"saving": "Guardando…",
-		"tutorialTitle": "Cómo activarlo",
-		"tutorialPlay": "Reproducir tutorial",
-		"tutorialPause": "Pausar tutorial",
-		"tutorialTerminalLabel": "Terminal",
-		"tutorialCommandSuccess": "la-lista quedó conectado.",
-		"tutorialSceneOpenCaption": "En el header, toca el ícono del robot.",
-		"tutorialSceneOpenHint": "Es el único con fondo azul.",
-		"tutorialSceneTokenCaption": "Genera tu token personal.",
-		"tutorialSceneCommandCaption": "Copia el comando y córrelo en tu terminal.",
-		"tutorialSceneCommandHint": "Claude Code tiene que estar instalado en esa máquina.",
-		"tutorialSceneAssignCaption": "Listo: desde ahí se lo pides conversando.",
 		"usageTitle": "Cómo pedírselo",
 		"usageBestWay": "Deja que GitHub CLI (gh) se encargue de GitHub —crear el PR, hacer push y revisar los checks— y que La Lista elija al revisor y avise en Google Chat. Si no tienes la URL a mano, pídele que la saque con gh pr view.",
 		"usageExample": {
@@ -557,7 +546,6 @@
 		"title": "El agente MCP ya salió de experimentos",
 		"description": "Desde Claude Code: GitHub CLI (gh) publica el PR y La Lista elige al revisor. Un token, un comando y queda andando.",
 		"configure": "Configurarlo ahora",
-		"later": "Más tarde",
 		"dismiss": "Cerrar este aviso"
 	},
 	"teamSettings": {
