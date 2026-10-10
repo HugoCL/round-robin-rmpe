@@ -129,7 +129,6 @@
 		"exportData": "Exportar datos",
 		"nameHeader": "Nombre",
 		"tagsHeader": "Tags",
-		"assignmentsHeader": "Asignaciones",
 		"statusHeader": "Disponibilidad",
 		"title": "Revisión PR",
 		"assignReviewer": "Asignar revisor",
@@ -247,7 +246,7 @@
 		"assignDisabledNoReviewer": "No hay revisores disponibles para asignar.",
 		"prUrlInvalid": "Esa URL no parece un pull request. Pega el enlace completo, por ejemplo https://github.com/org/repo/pull/123",
 		"prUrlRecognized": "{repo} · PR #{number}",
-		"assignmentsUnit": "PRs"
+		"assignmentsUnit": "{count, plural, one {PR} other {PRs}}"
 	},
 	"tags": {
 		"optionAvailable": "{name} · {count, plural, =0 {nadie disponible} one {# disponible} other {# disponibles}}",
@@ -279,9 +278,10 @@
 		"assigning": "Asignando…"
 	},
 	"reviewer": {
+		"assignmentsOf": "Asignaciones de {name}",
+		"editAssignments": "Editar asignaciones",
 		"addNew": "Agregar nuevo revisor",
 		"addDescription": "Ingresa el nombre y email del nuevo revisor para agregar a la rotación.",
-		"editReviewer": "Editar revisor",
 		"editKicker": "Revisor",
 		"editDescription": "Ajusta cómo entra a la rotación y cómo lo mencionamos en Chat.",
 		"enterName": "Nombre y apellido",
@@ -591,6 +591,7 @@
 		"preferences": "Preferencias"
 	},
 	"reviewersPanel": {
+		"absentGroup": "No disponibles",
 		"show": "Mostrar revisores",
 		"hide": "Ocultar revisores",
 		"entriesCount": "{count, plural, one {# revisor} other {# revisores}}",
@@ -782,6 +783,7 @@
 		"returningLaterToday": "Regresa más tarde hoy",
 		"permanentRotationHintSelf": "Si sales de la rotación de forma permanente, hazlo en tus ajustes.",
 		"permanentRotationHintOther": "Si {name} necesita salir de la rotación de forma permanente, hazlo en sus ajustes.",
+		"markAvailable": "Marcar como disponible",
 		"markAbsent": "Marcar como ausente",
 		"markedAbsentTitle": "Marcado como ausente",
 		"markedAbsentDescription": "Estado actualizado correctamente",

@@ -1,6 +1,5 @@
 "use client";
 
-import { Edit } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type ComponentType, type ReactNode, useId, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -29,7 +28,6 @@ import {
 	FieldLabel,
 	FieldSet,
 } from "@/components/ui/field";
-import { IconActionButton } from "@/components/ui/icon-action-button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
@@ -60,7 +58,8 @@ interface EditReviewerDialogProps {
 		excludedFromReviewPool?: boolean,
 		includedInTagRotations?: boolean,
 	) => Promise<boolean>;
-	trigger?: ReactNode;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
 }
 
 function schedulesMatch(
@@ -80,11 +79,11 @@ function schedulesMatch(
 export function EditReviewerDialog({
 	reviewer,
 	onUpdateReviewer,
-	trigger,
+	open,
+	onOpenChange,
 }: EditReviewerDialogProps) {
 	const t = useTranslations();
 	const isMobile = useIsMobile();
-	const [isOpen, setIsOpen] = useState(false);
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [reviewerName, setReviewerName] = useState(reviewer.name);
 	const [reviewerEmail, setReviewerEmail] = useState(reviewer.email);
@@ -123,7 +122,7 @@ export function EditReviewerDialog({
 	};
 
 	const handleOpenChange = (open: boolean) => {
-		setIsOpen(open);
+		onOpenChange(open);
 		resetFromReviewer();
 	};
 
@@ -159,7 +158,7 @@ export function EditReviewerDialog({
 				includedInTagRotations,
 			);
 			if (success) {
-				setIsOpen(false);
+				handleOpenChange(false);
 			}
 		} finally {
 			setIsUpdating(false);
@@ -318,55 +317,13 @@ export function EditReviewerDialog({
 		</>
 	);
 
-	const triggerNode = (
-		<span className="inline-flex" onClick={() => handleOpenChange(true)}>
-			{trigger || (
-				<IconActionButton label={t("reviewer.editReviewer")}>
-					<Edit />
-				</IconActionButton>
-			)}
-		</span>
-	);
-
 	if (isMobile) {
 		return (
-			<>
-				{triggerNode}
-				<Drawer open={isOpen} onOpenChange={handleOpenChange}>
-					<DrawerContent className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:max-h-[92dvh]">
-						<DrawerHeader className="shrink-0 text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left">
-							{header(DrawerTitle, DrawerDescription)}
-						</DrawerHeader>
-						<form
-							className="flex min-h-0 flex-1 flex-col"
-							onSubmit={(event) => {
-								event.preventDefault();
-								void handleUpdateReviewer();
-							}}
-						>
-							<div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-4">
-								{fields}
-							</div>
-							<DrawerFooter className="shrink-0 flex-col-reverse pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:justify-end">
-								{footer}
-							</DrawerFooter>
-						</form>
-					</DrawerContent>
-				</Drawer>
-			</>
-		);
-	}
-
-	return (
-		<>
-			{triggerNode}
-			<Dialog open={isOpen} onOpenChange={handleOpenChange}>
-				<DialogContent className="flex max-h-[88dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-					<div className="shrink-0 border-b border-border/60 px-6 py-4 pr-14">
-						<DialogHeader className="pr-0">
-							{header(DialogTitle, DialogDescription)}
-						</DialogHeader>
-					</div>
+			<Drawer open={open} onOpenChange={handleOpenChange}>
+				<DrawerContent className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:max-h-[92dvh]">
+					<DrawerHeader className="shrink-0 text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left">
+						{header(DrawerTitle, DrawerDescription)}
+					</DrawerHeader>
 					<form
 						className="flex min-h-0 flex-1 flex-col"
 						onSubmit={(event) => {
@@ -374,15 +331,41 @@ export function EditReviewerDialog({
 							void handleUpdateReviewer();
 						}}
 					>
-						<div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-6 py-4">
+						<div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-4">
 							{fields}
 						</div>
-						<DialogFooter className="shrink-0 border-t border-border/60 px-6 py-4">
+						<DrawerFooter className="shrink-0 flex-col-reverse pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:justify-end">
 							{footer}
-						</DialogFooter>
+						</DrawerFooter>
 					</form>
-				</DialogContent>
-			</Dialog>
-		</>
+				</DrawerContent>
+			</Drawer>
+		);
+	}
+
+	return (
+		<Dialog open={open} onOpenChange={handleOpenChange}>
+			<DialogContent className="flex max-h-[88dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+				<div className="shrink-0 border-b border-border/60 px-6 py-4 pr-14">
+					<DialogHeader className="pr-0">
+						{header(DialogTitle, DialogDescription)}
+					</DialogHeader>
+				</div>
+				<form
+					className="flex min-h-0 flex-1 flex-col"
+					onSubmit={(event) => {
+						event.preventDefault();
+						void handleUpdateReviewer();
+					}}
+				>
+					<div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-6 py-4">
+						{fields}
+					</div>
+					<DialogFooter className="shrink-0 border-t border-border/60 px-6 py-4">
+						{footer}
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
 	);
 }

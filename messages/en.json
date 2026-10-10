@@ -85,7 +85,6 @@
 		"exportData": "Export Data",
 		"nameHeader": "Name",
 		"tagsHeader": "Tags",
-		"assignmentsHeader": "Assignments",
 		"statusHeader": "Availability",
 		"title": "PR Review",
 		"assignReviewer": "Assign Reviewer",
@@ -203,7 +202,7 @@
 		"assignDisabledNoReviewer": "No reviewers available to assign.",
 		"prUrlInvalid": "That URL doesn't look like a pull request. Paste the full link, for example https://github.com/org/repo/pull/123",
 		"prUrlRecognized": "{repo} · PR #{number}",
-		"assignmentsUnit": "PRs"
+		"assignmentsUnit": "{count, plural, one {PR} other {PRs}}"
 	},
 	"tags": {
 		"optionAvailable": "{name} · {count, plural, =0 {nobody available} other {# available}}",
@@ -235,9 +234,10 @@
 		"assigning": "Assigning…"
 	},
 	"reviewer": {
+		"assignmentsOf": "Assignments of {name}",
+		"editAssignments": "Edit assignments",
 		"addNew": "Add New Reviewer",
 		"addDescription": "Enter the name and email of the new reviewer to add to the rotation.",
-		"editReviewer": "Edit reviewer",
 		"editKicker": "Reviewer",
 		"editDescription": "Tune how they join the rotation, and how we mention them in Chat.",
 		"enterName": "Full name",
@@ -547,6 +547,7 @@
 		"preferences": "Preferences"
 	},
 	"reviewersPanel": {
+		"absentGroup": "Unavailable",
 		"show": "Show reviewers",
 		"hide": "Hide reviewers",
 		"entriesCount": "{count, plural, one {# reviewer} other {# reviewers}}",
@@ -738,6 +739,7 @@
 		"returningLaterToday": "Returning later today",
 		"permanentRotationHintSelf": "If you're leaving the rotation for good, do that in your settings.",
 		"permanentRotationHintOther": "If {name} needs to leave the rotation permanently, do that in their settings.",
+		"markAvailable": "Mark as available",
 		"markAbsent": "Mark as Absent",
 		"markedAbsentTitle": "Marked as Absent",
 		"markedAbsentDescription": "Status updated successfully",
