@@ -93,7 +93,7 @@ tests/        unit tests (tests/unit) and e2e (tests/e2e)
 
 ## Run it locally
 
-Requirements: Node.js 20+, [pnpm](https://pnpm.io), a free
+Requirements: a current Node.js (the Docker image uses Node 26), [pnpm](https://pnpm.io), a free
 [Convex](https://convex.dev) account and a [Clerk](https://clerk.com)
 application.
 
