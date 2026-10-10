@@ -1,6 +1,6 @@
 "use client";
 
-import { Cake, ChevronDown } from "lucide-react";
+import { Cake, ChevronDown, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -19,7 +19,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { WithTooltip } from "@/components/ui/tooltip";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { isValidCalendarBirthday } from "@/lib/reviewerAvailability";
 import { usePRReview } from "./PRReviewContext";
 
@@ -30,6 +32,9 @@ function daysForMonth(month: number): number[] {
 	}
 	return out;
 }
+
+export const birthdaySetupDismissedKey = (email: string) =>
+	`la-lista-birthday-setup-dismissed:${email}`;
 
 export function BirthdaySetupBanner() {
 	const t = useTranslations("birthday");
@@ -46,6 +51,12 @@ export function BirthdaySetupBanner() {
 	const [day, setDay] = useState<string>("");
 	const [saving, setSaving] = useState(false);
 	const [open, setOpen] = useState(false);
+	// A reminder, not a requirement: once dismissed it stays away for this person.
+	const [dismissed, setDismissed] = useLocalStorage(
+		birthdaySetupDismissedKey(userInfo?.email ?? ""),
+		false,
+	);
+	const tAnnouncements = useTranslations("announcements");
 
 	const monthLabels = useMemo(() => {
 		const fmt = new Intl.DateTimeFormat(locale, { month: "long" });
@@ -58,7 +69,8 @@ export function BirthdaySetupBanner() {
 	const monthNum = month ? Number.parseInt(month, 10) : NaN;
 	const validDays = Number.isFinite(monthNum) ? daysForMonth(monthNum) : [];
 
-	if (!teamSlug || !canManageCurrentTeam || !userInfo?.email) return null;
+	if (!teamSlug || !canManageCurrentTeam || !userInfo?.email || dismissed)
+		return null;
 
 	const row = reviewers.find(
 		(r) => r.email.toLowerCase() === userInfo.email.toLowerCase(),
@@ -98,7 +110,11 @@ export function BirthdaySetupBanner() {
 
 	return (
 		<Collapsible open={open} onOpenChange={setOpen} data-notice>
-			<Alert className="rounded-xl border-primary/20 bg-primary/[0.04] px-3 py-2.5 text-foreground shadow-none sm:px-4">
+			<Alert
+				// Present on load; announcing it on every visit is noise.
+				role={undefined}
+				className="rounded-xl border-primary/20 bg-primary/[0.04] px-3 py-2.5 text-foreground shadow-none sm:px-4"
+			>
 				<Cake className="text-primary" />
 				<div className="col-start-2 flex min-w-0 items-center gap-3">
 					<div className="min-w-0 flex-1">
@@ -125,6 +141,18 @@ export function BirthdaySetupBanner() {
 							/>
 						</Button>
 					</CollapsibleTrigger>
+					<WithTooltip label={tAnnouncements("dismiss")}>
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							className="size-8 cursor-pointer"
+							onClick={() => setDismissed(true)}
+							aria-label={tAnnouncements("dismiss")}
+						>
+							<X aria-hidden="true" />
+						</Button>
+					</WithTooltip>
 				</div>
 				<CollapsibleContent className="col-span-full mt-3 border-t border-border/60 pt-3">
 					<AlertDescription>
