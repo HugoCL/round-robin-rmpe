@@ -44,3 +44,9 @@ chrome-extension/releases/
 test-results/
 playwright-report/
 .DS_Store
+
+# impeccable local state (critique snapshots, hook cache)
+.impeccable/
+
+# local Claude Code settings
+.claude/settings.local.json
