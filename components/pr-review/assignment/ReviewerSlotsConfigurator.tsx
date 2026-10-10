@@ -16,6 +16,7 @@ import { WithTooltip } from "@/components/ui/tooltip";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import type { Reviewer } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export const MIN_BATCH_SLOTS = 1;
 export const MAX_BATCH_SLOTS = 5;
@@ -46,6 +47,8 @@ type Props = {
 	reviewerCount: number;
 	minReviewerCount?: number;
 	allowReviewerCountChange?: boolean;
+	/** The count is set elsewhere (the card's segmented control). */
+	hideCountControl?: boolean;
 	embedded?: boolean;
 	selectedTagId?: Id<"tags">;
 	slots: ReviewerSlotConfig[];
@@ -61,6 +64,7 @@ export function ReviewerSlotsConfigurator({
 	reviewerCount,
 	minReviewerCount = MIN_BATCH_SLOTS,
 	allowReviewerCountChange = true,
+	hideCountControl = false,
 	embedded = false,
 	selectedTagId,
 	slots,
@@ -80,68 +84,72 @@ export function ReviewerSlotsConfigurator({
 
 	return (
 		<section className={containerClass}>
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-				<div className="space-y-1 sm:max-w-[70%]">
-					<Label htmlFor="reviewer-slots-count">
-						{t("pr.reviewersToAssign")}
-					</Label>
-					<p className="text-xs text-muted-foreground">
-						{t("pr.reviewersToAssignDescription")}
-					</p>
-				</div>
-				<div
-					className="inline-flex items-center gap-1 self-start rounded-md border bg-background p-1"
-					id="reviewer-slots-count"
-					aria-label={t("pr.reviewersToAssign")}
-				>
-					<WithTooltip label={t("pr.decreaseReviewerCount")}>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							className="size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"
-							onClick={() =>
-								onReviewerCountChange(
-									Math.max(minReviewerCount, reviewerCount - 1),
-								)
-							}
-							disabled={
-								!allowReviewerCountChange || reviewerCount <= minReviewerCount
-							}
-							aria-label={t("pr.decreaseReviewerCount")}
-						>
-							<Minus className="h-4 w-4" aria-hidden="true" />
-						</Button>
-					</WithTooltip>
-					<span
-						className="min-w-8 text-center text-sm font-medium"
-						aria-live="polite"
+			{hideCountControl ? null : (
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+					<div className="space-y-1 sm:max-w-[70%]">
+						<Label htmlFor="reviewer-slots-count">
+							{t("pr.reviewersToAssign")}
+						</Label>
+						<p className="text-xs text-muted-foreground">
+							{t("pr.reviewersToAssignDescription")}
+						</p>
+					</div>
+					<div
+						className="inline-flex items-center gap-1 self-start rounded-md border bg-background p-1"
+						id="reviewer-slots-count"
+						aria-label={t("pr.reviewersToAssign")}
 					>
-						{reviewerCount}
-					</span>
-					<WithTooltip label={t("pr.increaseReviewerCount")}>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							className="size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"
-							onClick={() =>
-								onReviewerCountChange(
-									Math.min(MAX_BATCH_SLOTS, reviewerCount + 1),
-								)
-							}
-							disabled={
-								!allowReviewerCountChange || reviewerCount >= MAX_BATCH_SLOTS
-							}
-							aria-label={t("pr.increaseReviewerCount")}
+						<WithTooltip label={t("pr.decreaseReviewerCount")}>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								className="size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"
+								onClick={() =>
+									onReviewerCountChange(
+										Math.max(minReviewerCount, reviewerCount - 1),
+									)
+								}
+								disabled={
+									!allowReviewerCountChange || reviewerCount <= minReviewerCount
+								}
+								aria-label={t("pr.decreaseReviewerCount")}
+							>
+								<Minus className="h-4 w-4" aria-hidden="true" />
+							</Button>
+						</WithTooltip>
+						<span
+							className="min-w-8 text-center text-sm font-medium"
+							aria-live="polite"
 						>
-							<Plus className="h-4 w-4" aria-hidden="true" />
-						</Button>
-					</WithTooltip>
+							{reviewerCount}
+						</span>
+						<WithTooltip label={t("pr.increaseReviewerCount")}>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								className="size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"
+								onClick={() =>
+									onReviewerCountChange(
+										Math.min(MAX_BATCH_SLOTS, reviewerCount + 1),
+									)
+								}
+								disabled={
+									!allowReviewerCountChange || reviewerCount >= MAX_BATCH_SLOTS
+								}
+								aria-label={t("pr.increaseReviewerCount")}
+							>
+								<Plus className="h-4 w-4" aria-hidden="true" />
+							</Button>
+						</WithTooltip>
+					</div>
 				</div>
-			</div>
+			)}
 
-			<div className="space-y-3">
+			<div
+				className={hideCountControl ? "grid gap-4 sm:grid-cols-2" : "space-y-5"}
+			>
 				{slots.map((slot, slotIndex) => {
 					const slotPreview = previews.find(
 						(preview) => preview.slotIndex === slotIndex,
@@ -173,17 +181,29 @@ export function ReviewerSlotsConfigurator({
 						slot.strategy === "tag_random_selected" && !selectedTagId;
 
 					return (
-						<fieldset
-							key={slot.id}
-							className="min-w-0 space-y-2 rounded-xl border bg-card/70 px-2.5 pb-3 pt-2 sm:px-3 md:px-4 md:pb-4 md:pt-3"
-						>
-							<legend className="ml-2 bg-card/70 px-2 text-sm font-semibold leading-none">
+						<fieldset key={slot.id} className="min-w-0 space-y-2">
+							<legend
+								className={cn(
+									"mb-2 text-sm font-semibold",
+									hideCountControl && "mb-1 text-xs text-muted-foreground",
+								)}
+							>
 								{t("pr.reviewerSlotLegend", { index: slotIndex + 1 })}
 							</legend>
 
-							<div className="flex min-w-0 flex-col gap-2 md:flex-row">
+							{/* Compact (two slots per row): the selects stack instead of
+							    sharing a column that cannot hold both. */}
+							<div
+								className={cn(
+									"flex min-w-0 flex-col gap-2",
+									!hideCountControl && "md:flex-row",
+								)}
+							>
 								<div className="min-w-0 space-y-1 md:flex-1">
-									<Label htmlFor={strategySelectId}>
+									<Label
+										htmlFor={strategySelectId}
+										className={cn(hideCountControl && "sr-only")}
+									>
 										{t("pr.slotTypeLabel")}
 									</Label>
 									<Select
@@ -214,7 +234,12 @@ export function ReviewerSlotsConfigurator({
 
 								{requiresTag && (
 									<div className="min-w-0 space-y-1 md:flex-1">
-										<Label htmlFor={tagSelectId}>{t("pr.slotTagLabel")}</Label>
+										<Label
+											htmlFor={tagSelectId}
+											className={cn(hideCountControl && "sr-only")}
+										>
+											{t("pr.slotTagLabel")}
+										</Label>
 										<Select
 											value={slot.tagId}
 											onValueChange={(value) =>
@@ -242,7 +267,10 @@ export function ReviewerSlotsConfigurator({
 
 								{requiresReviewer && (
 									<div className="min-w-0 space-y-1 md:flex-1">
-										<Label htmlFor={reviewerSelectId}>
+										<Label
+											htmlFor={reviewerSelectId}
+											className={cn(hideCountControl && "sr-only")}
+										>
 											{t("pr.slotReviewerLabel")}
 										</Label>
 										<Select
