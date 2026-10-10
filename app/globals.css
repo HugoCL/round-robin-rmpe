@@ -30,6 +30,7 @@
 	--color-chart-1: var(--chart-1);
 	--color-ring: var(--ring);
 	--color-input: var(--input);
+	--color-control-border: var(--control-border);
 	--color-border: var(--border);
 	--color-destructive: var(--destructive);
 	--color-accent-foreground: var(--accent-foreground);
@@ -71,6 +72,8 @@
 	--destructive: oklch(0.58 0.22 27);
 	--border: oklch(0.9 0.01 255);
 	--input: oklch(0.925 0.008 255);
+	/* Edges of controls that must read as controls (WCAG 1.4.11): 3.2:1 on the page. */
+	--control-border: oklch(0.64 0.02 256);
 	--ring: oklch(0.69 0.12 258);
 	--chart-1: oklch(0.78 0.1 246);
 	--chart-2: oklch(0.66 0.16 251);
@@ -106,6 +109,7 @@
 	--destructive: oklch(0.704 0.191 22.216);
 	--border: oklch(0.34 0.012 259);
 	--input: oklch(0.29 0.015 260);
+	--control-border: oklch(0.52 0.02 256);
 	--ring: oklch(0.62 0.11 255);
 	--chart-1: oklch(0.78 0.1 246);
 	--chart-2: oklch(0.66 0.16 251);
