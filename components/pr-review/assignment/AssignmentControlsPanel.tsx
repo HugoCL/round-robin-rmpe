@@ -1,5 +1,4 @@
 import {
-	AlertCircle,
 	AlertTriangle,
 	Globe2,
 	Link2,
@@ -10,7 +9,6 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,6 +47,7 @@ import type {
 	AssignmentMode,
 	ResolvedPreview,
 } from "./assignmentCard.types";
+import { DuplicatePrAlert } from "./DuplicatePrAlert";
 import type {
 	ReviewerSlotConfig,
 	ReviewerSlotPreview,
@@ -663,17 +662,7 @@ export function AssignmentControlsPanel({
 				)}
 
 				{showDuplicateAlert && duplicateAssignment && (
-					<Alert variant="destructive">
-						<AlertCircle className="h-4 w-4" aria-hidden="true" />
-						<AlertDescription>
-							{t("messages.duplicatePRAssigned", {
-								reviewer: duplicateAssignment.reviewerName,
-								date: new Date(
-									duplicateAssignment.timestamp,
-								).toLocaleDateString(),
-							})}
-						</AlertDescription>
-					</Alert>
+					<DuplicatePrAlert duplicate={duplicateAssignment} />
 				)}
 			</div>
 		</div>

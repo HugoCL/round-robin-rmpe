@@ -26,6 +26,7 @@
 		"breakdownLabel": "Breakdown"
 	},
 	"common": {
+		"youSuffix": "(you)",
 		"menu": "Menu",
 		"darkTheme": "Dark theme",
 		"lightTheme": "Light theme",
@@ -70,10 +71,10 @@
 		"show": "Show",
 		"hide": "Hide"
 	},
-	"hints": {
-		"reviewConfirm": "Review and confirm before sending"
-	},
 	"pr": {
+		"assignShort": "Assign",
+		"assignAgainTo": "Assign again to {name}",
+		"assignTo": "Assign to {name}",
 		"manageData": "Manage Data",
 		"exportData": "Export Data",
 		"nameHeader": "Name",
@@ -202,7 +203,7 @@
 		"assignDisabledNeedsTag": "Pick a tag to assign.",
 		"assignDisabledNeedsTeams": "Pick at least one target team.",
 		"assignDisabledNoReviewer": "No reviewers available to assign.",
-		"prUrlInvalid": "That URL doesn't look like a pull request. Paste the full link, for example https://github.com/team/repo/pull/123",
+		"prUrlInvalid": "That URL doesn't look like a pull request. Paste the full link, for example https://github.com/org/repo/pull/123",
 		"prUrlRecognized": "{repo} · PR #{number}",
 		"assignmentsUnit": "PRs"
 	},
@@ -254,8 +255,8 @@
 		"rotationSection": "Rotation",
 		"deleteTitle": "Remove Reviewer",
 		"deleteDescription": "Are you sure you want to remove {name} from the reviewer list? This action cannot be undone.",
-		"forceAssignTitle": "Force Assign Reviewer",
-		"forceAssignDescription": "Select a reviewer to force assign to the next PR, bypassing the normal rotation.",
+		"forceAssignTitle": "Pick someone else",
+		"forceAssignDescription": "Pick who gets this PR. Their count goes up as if it had been their turn.",
 		"skipTitle": "Skip Current Reviewer",
 		"skipDescription": "Are you sure you want to skip {name}? They will be moved to the end of the rotation.",
 		"selectReviewer": "Select a reviewer…",
@@ -280,6 +281,15 @@
 		"rotationColumn": "Team rotation"
 	},
 	"messages": {
+		"duplicateWhenToday": "today at {time}",
+		"duplicateWhenYesterday": "yesterday at {time}",
+		"duplicateWhenDate": "on {date}",
+		"chatStillNotNotified": "We still couldn't notify on Google Chat.",
+		"chatNotified": "{count, plural, one {We notified them on Google Chat.} other {We notified them on Google Chat.}}",
+		"chatNotNotified": "We couldn't notify on Google Chat.",
+		"chatPartiallyNotified": "We couldn't notify every Google Chat channel.",
+		"chatNotificationSent": "Google Chat notice sent.",
+		"chatNotificationRetry": "Retry notice",
 		"tagAdded": "Tag added successfully",
 		"tagUpdated": "Tag updated successfully",
 		"tagRemoved": "Tag removed successfully",
@@ -295,8 +305,8 @@
 		"restoreSnapshotFailed": "Failed to restore from snapshot",
 		"enterTagName": "Please enter a tag name",
 		"selectReviewerError": "Please select a reviewer to force assign",
-		"forceAssignSuccess": "PR assigned to {reviewer}",
-		"forceAssignAbsentWarning": "PR assigned to {reviewer} who is currently marked as absent",
+		"forceAssignSuccess": "PR #{number} assigned to {reviewer}.",
+		"forceAssignAbsentWarning": "PR #{number} assigned to {reviewer}. {reviewer} is marked as absent.",
 		"forceAssignFailed": "Failed to force assign PR. Please try again.",
 		"trackAssignSuccess": "PR assigned to {reviewer} ({tag} tag)",
 		"trackAssignFailed": "Failed to assign PR. Please try again.",
@@ -305,7 +315,7 @@
 		"batchAssignPartial": "Assigned {assigned} of {requested} requested reviewers.",
 		"batchAssignFailed": "No reviewer could be resolved for this assignment.",
 		"chatNotificationFailed": "The PR was assigned, but the Google Chat message could not be delivered to every team channel.",
-		"duplicatePRAssigned": "This PR was already assigned to {reviewer} on {date}.",
+		"duplicatePRAssigned": "This PR was already assigned to {reviewer} {when}.",
 		"assignFailedTitle": "Error",
 		"assignFailedDescription": "Failed to assign PR. Please try again.",
 		"reviewerSkippedTitle": "Reviewer Skipped",
