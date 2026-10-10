@@ -51,6 +51,7 @@ interface PlannedAbsenceChipProps {
 	reviewer: Reviewer;
 	variant: "short" | "labeled";
 	canEdit: boolean;
+	className?: string;
 }
 
 export function PlannedAbsenceChip({
@@ -58,6 +59,7 @@ export function PlannedAbsenceChip({
 	reviewer,
 	variant,
 	canEdit,
+	className,
 }: PlannedAbsenceChipProps) {
 	const t = useTranslations();
 	const locale = useLocale();
@@ -95,6 +97,7 @@ export function PlannedAbsenceChip({
 					className={cn(
 						PILL_CLASS,
 						"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+						className,
 					)}
 				>
 					{content}
@@ -122,6 +125,7 @@ export function PlannedAbsenceChip({
 						className={cn(
 							PILL_CLASS,
 							"cursor-pointer transition-colors hover:bg-amber-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+							className,
 						)}
 						aria-label={`${label}. ${detail}`}
 					>
