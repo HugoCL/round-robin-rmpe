@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
+import { ViewReviewersLink } from "./layouts/ReviewersPanelContext";
 import { usePRReview } from "./PRReviewContext";
 
 export function ForeignTeamAssignmentCard() {
@@ -43,6 +44,7 @@ export function ForeignTeamAssignmentCard() {
 				<p className="text-sm text-muted-foreground">
 					{t("team.foreignTeamPromptDescription")}
 				</p>
+				<ViewReviewersLink />
 			</div>
 			<div className="mt-4 grid gap-3">
 				<Input

@@ -593,24 +593,23 @@ export function useConvexPRReviewData(
 		}
 	};
 
+	// Confirmed by the caller's dialog (the reviewers panel), not window.confirm.
 	const handleResetCounts = async () => {
-		if (confirm(t("messages.resetCountsConfirmation"))) {
-			try {
-				if (teamSlug) {
-					await resetAllCountsMutation({ teamSlug });
-				}
-
-				toast({
-					title: t("messages.resetCountsSuccessTitle"),
-					description: t("messages.resetCountsSuccessDescription"),
-				});
-			} catch (_error) {
-				toast({
-					title: t("messages.statusUpdateFailedTitle"),
-					description: t("messages.statusUpdateFailedDescription"),
-					variant: "destructive",
-				});
+		try {
+			if (teamSlug) {
+				await resetAllCountsMutation({ teamSlug });
 			}
+
+			toast({
+				title: t("messages.resetCountsSuccessTitle"),
+				description: t("messages.resetCountsSuccessDescription"),
+			});
+		} catch (_error) {
+			toast({
+				title: t("messages.statusUpdateFailedTitle"),
+				description: t("messages.statusUpdateFailedDescription"),
+				variant: "destructive",
+			});
 		}
 	};
 

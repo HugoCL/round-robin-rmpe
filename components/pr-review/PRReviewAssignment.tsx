@@ -342,9 +342,9 @@ export default function PRReviewAssignment({
 			}}
 		>
 			<PRReviewProvider value={providerValue}>
-				<div className="flex min-h-dvh flex-col cockpit:h-dvh cockpit:overflow-y-auto">
+				<div className="flex min-h-dvh flex-col">
 					<PageHeader teamSlug={teamSlug} />
-					<main className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col px-3 pb-4 sm:px-6 lg:px-8 lg:pb-6">
+					<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-3 pb-4 sm:px-6 lg:pb-6">
 						<div
 							className="notice-stack page-enter mt-3 sm:mt-5 lg:mt-6"
 							role="region"
