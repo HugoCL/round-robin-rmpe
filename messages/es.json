@@ -26,6 +26,7 @@
 		"breakdownLabel": "Desglose"
 	},
 	"common": {
+		"youSuffix": "(tú)",
 		"menu": "Menú",
 		"darkTheme": "Tema oscuro",
 		"lightTheme": "Tema claro",
@@ -114,10 +115,10 @@
 		"signIn": "Iniciar sesión",
 		"creating": "Creando…"
 	},
-	"hints": {
-		"reviewConfirm": "Revisa y confirma antes de enviar"
-	},
 	"pr": {
+		"assignShort": "Asignar",
+		"assignAgainTo": "Asignar de nuevo a {name}",
+		"assignTo": "Asignar a {name}",
 		"manageData": "Gestionar datos",
 		"exportData": "Exportar datos",
 		"nameHeader": "Nombre",
@@ -246,7 +247,7 @@
 		"assignDisabledNeedsTag": "Elige un tag para asignar.",
 		"assignDisabledNeedsTeams": "Elige al menos un equipo destino.",
 		"assignDisabledNoReviewer": "No hay revisores disponibles para asignar.",
-		"prUrlInvalid": "Esa URL no parece un pull request. Pega el enlace completo, por ejemplo https://github.com/equipo/repo/pull/123",
+		"prUrlInvalid": "Esa URL no parece un pull request. Pega el enlace completo, por ejemplo https://github.com/org/repo/pull/123",
 		"prUrlRecognized": "{repo} · PR #{number}",
 		"assignmentsUnit": "PRs"
 	},
@@ -298,8 +299,8 @@
 		"rotationSection": "Rotación",
 		"deleteTitle": "Eliminar revisor",
 		"deleteDescription": "¿Estás seguro de que quieres eliminar a {name} de la lista de revisores? Esta acción no se puede deshacer.",
-		"forceAssignTitle": "Forzar asignación de revisor",
-		"forceAssignDescription": "Selecciona un revisor para forzar la asignación al próximo PR, saltando la rotación normal.",
+		"forceAssignTitle": "Elegir otra persona",
+		"forceAssignDescription": "Elige quién recibe este PR. Su contador sube como si le hubiera tocado.",
 		"skipTitle": "Omitir revisor actual",
 		"skipDescription": "¿Estás seguro de que quieres omitir a {name}? Se moverá al final de la rotación.",
 		"selectReviewer": "Selecciona un revisor…",
@@ -324,6 +325,15 @@
 		"rotationColumn": "Rotación del equipo"
 	},
 	"messages": {
+		"duplicateWhenToday": "hoy a las {time}",
+		"duplicateWhenYesterday": "ayer a las {time}",
+		"duplicateWhenDate": "el {date}",
+		"chatStillNotNotified": "Seguimos sin poder avisar por Google Chat.",
+		"chatNotified": "{count, plural, one {Le avisamos por Google Chat.} other {Les avisamos por Google Chat.}}",
+		"chatNotNotified": "No pudimos avisar por Google Chat.",
+		"chatPartiallyNotified": "No pudimos avisar en todos los canales de Google Chat.",
+		"chatNotificationSent": "Aviso enviado por Google Chat.",
+		"chatNotificationRetry": "Reintentar aviso",
 		"tagAdded": "Tag agregado exitosamente",
 		"tagUpdated": "Tag actualizado exitosamente",
 		"tagRemoved": "Tag eliminado exitosamente",
@@ -339,8 +349,8 @@
 		"restoreSnapshotFailed": "Falló al restaurar desde la instantánea",
 		"enterTagName": "Por favor ingresa un nombre de tag",
 		"selectReviewerError": "Por favor selecciona un revisor para forzar asignación",
-		"forceAssignSuccess": "PR asignado a {reviewer}",
-		"forceAssignAbsentWarning": "PR asignado a {reviewer} quien está actualmente marcado como ausente",
+		"forceAssignSuccess": "PR #{number} asignado a {reviewer}.",
+		"forceAssignAbsentWarning": "PR #{number} asignado a {reviewer}. {reviewer} está marcado como ausente.",
 		"forceAssignFailed": "Falló al forzar la asignación del PR. Por favor intenta de nuevo.",
 		"trackAssignSuccess": "PR asignado a {reviewer} (tag {tag})",
 		"trackAssignFailed": "Falló al asignar el PR. Por favor intenta de nuevo.",
@@ -349,7 +359,7 @@
 		"batchAssignPartial": "Se asignaron {assigned} de {requested} revisores solicitados.",
 		"batchAssignFailed": "No se pudo resolver ningún revisor para esta asignación.",
 		"chatNotificationFailed": "El PR se asignó, pero no pudimos entregar el mensaje de Google Chat en todos los canales.",
-		"duplicatePRAssigned": "Este PR ya fue asignado a {reviewer} el {date}.",
+		"duplicatePRAssigned": "Este PR ya fue asignado a {reviewer} {when}.",
 		"assignFailedTitle": "Error",
 		"assignFailedDescription": "Falló al asignar el PR. Por favor intenta de nuevo.",
 		"reviewerSkippedTitle": "Revisor omitido",

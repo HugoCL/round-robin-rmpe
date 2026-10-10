@@ -1,9 +1,9 @@
 "use client";
 
-import { useAction, useMutation } from "convex/react";
-import { AlertTriangle, Info, UserCheck } from "lucide-react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { AlertTriangle, UserCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -21,33 +21,40 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Toggle } from "@/components/ui/toggle";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { resolveAssignerDisplayName } from "@/lib/assignerDisplayName";
 import { getDefaultPRChatMessageTemplate } from "@/lib/googleChatMessageTemplate";
+import { parsePrUrl } from "@/lib/prUrl";
+import { DuplicatePrAlert } from "../assignment/DuplicatePrAlert";
+import { UrgentToggle } from "../assignment/OptionControls";
 import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
-
+import {
+	CHAT_OUTCOME_MESSAGE_KEYS,
+	type ChatSend,
+	useChatNotice,
+} from "../hooks/useChatNotice";
+import { useDuplicatePrCheck } from "../hooks/useDuplicatePrCheck";
 import { usePRReview } from "../PRReviewContext";
 
-const selectedUrgentChipStyle = {
-	backgroundColor: "#dc2626",
-	borderColor: "#dc2626",
-	color: "#ffffff",
-};
-
 interface ForceAssignDialogProps {
+	/** `null` renders no trigger: the dialog is then opened through `open`. */
 	trigger?: React.ReactNode;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+	/** The PR already filled in the assignment card; the dialog opens with it. */
+	draft?: { prUrl: string; contextUrl: string; urgent: boolean };
+	onAssigned?: () => void;
 }
 
-export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
+export function ForceAssignDialog({
+	trigger,
+	open: controlledOpen,
+	onOpenChange,
+	draft,
+	onAssigned,
+}: ForceAssignDialogProps) {
 	const t = useTranslations();
 	const locale = useLocale();
 	const { reviewers, onDataUpdate, userInfo: user, teamSlug } = usePRReview();
@@ -58,7 +65,16 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 	const [urgent, setUrgent] = useState(false);
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [customMessage, setCustomMessage] = useState("");
-	const isConfirmDisabled = !selectedReviewerId || prUrl.trim().length === 0;
+	const parsedPrUrl = parsePrUrl(prUrl);
+	const hasPrUrlError = prUrl.trim().length > 0 && parsedPrUrl === null;
+	const isConfirmDisabled = !selectedReviewerId || parsedPrUrl === null;
+	const selectedReviewer = reviewers.find(
+		(reviewer) => reviewer._id === selectedReviewerId,
+	);
+	const team = useQuery(api.queries.getTeam, teamSlug ? { teamSlug } : "skip");
+	const duplicateCheck = useDuplicatePrCheck(teamSlug, prUrl);
+	const chatDelivery = useChatNotice();
+	const submittingRef = useRef(false);
 
 	const sendChatMessage = useAction(api.actions.sendGoogleChatMessage);
 
@@ -70,6 +86,25 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 		setEnableCustomMessage(false);
 		setCustomMessage("");
 	}, []);
+
+	const isOpen = controlledOpen ?? forceDialogOpen;
+	const setOpen = (open: boolean) => {
+		setForceDialogOpen(open);
+		onOpenChange?.(open);
+		if (!open) resetDialogState();
+	};
+
+	// Seeded when it opens, not in `onOpenChange`: Radix skips that callback when
+	// the parent opens the dialog through `open`.
+	const [wasOpen, setWasOpen] = useState(isOpen);
+	if (isOpen !== wasOpen) {
+		setWasOpen(isOpen);
+		if (isOpen && draft) {
+			setPrUrl(draft.prUrl);
+			setContextUrl(draft.contextUrl);
+			setUrgent(draft.urgent);
+		}
+	}
 
 	// Use Convex mutation for force assignment & active assignment creation
 	const assignPRMutation = useMutation(api.mutations.assignPR);
@@ -147,50 +182,65 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 				// Refresh data to get updated reviewers and feed
 				await onDataUpdate();
 
-				if (teamSlug && forcedReviewer) {
-					try {
-						await sendChatMessage({
-							reviewerName: forcedReviewer.name,
-							reviewerEmail: forcedReviewer.email,
-							reviewerChatId: forcedReviewer.googleChatUserId,
-							prUrl: prUrl.trim(),
-							contextUrl: contextUrl.trim() || undefined,
-							assignerEmail: user?.email,
-							assignerName,
-							locale,
-							teamSlug,
-							sendOnlyNames: false,
-							urgent,
-							customMessage:
-								enableCustomMessage && customMessage.trim().length > 0
-									? customMessage
-									: undefined,
-						});
-					} catch (e) {
-						console.warn("Failed to send chat message for forced assign", e);
-					}
+				// No webhook means the action can only fail; skip it instead of
+				// reporting a failure nobody can fix from here.
+				let chatSend: ChatSend | null = null;
+				if (
+					teamSlug &&
+					forcedReviewer &&
+					team?.hasGoogleChatWebhook !== false
+				) {
+					const payload = {
+						reviewerName: forcedReviewer.name,
+						reviewerEmail: forcedReviewer.email,
+						reviewerChatId: forcedReviewer.googleChatUserId,
+						prUrl: prUrl.trim(),
+						contextUrl: contextUrl.trim() || undefined,
+						assignerEmail: user?.email,
+						assignerName,
+						locale,
+						teamSlug,
+						sendOnlyNames: false,
+						urgent,
+						customMessage:
+							enableCustomMessage && customMessage.trim().length > 0
+								? customMessage
+								: undefined,
+					};
+					chatSend = () => sendChatMessage(payload);
 				}
+				const chatOutcome = chatSend ? await chatDelivery.send(chatSend) : null;
 
-				// Show appropriate toast based on reviewer status
-				if (result.reviewer.effectiveIsAbsent) {
-					toast({
-						title: t("pr.forceAssign"),
-						description: t("messages.forceAssignAbsentWarning", {
-							reviewer: result.reviewer.name,
-						}),
-					});
-				} else {
-					toast({
-						title: t("pr.forceAssign"),
-						description: t("messages.forceAssignSuccess", {
-							reviewer: result.reviewer.name,
-						}),
-					});
-				}
+				const assignedText = t(
+					result.reviewer.effectiveIsAbsent
+						? "messages.forceAssignAbsentWarning"
+						: "messages.forceAssignSuccess",
+					{
+						reviewer: result.reviewer.name,
+						number: parsedPrUrl?.number ?? "",
+					},
+				);
+				const message =
+					chatOutcome === null
+						? assignedText
+						: `${assignedText} ${t(CHAT_OUTCOME_MESSAGE_KEYS[chatOutcome], {
+								count: 1,
+							})}`;
+				toast(
+					chatOutcome === "failed" && chatSend
+						? {
+								title: t("common.warning"),
+								description: message,
+								variant: "destructive",
+								action: chatDelivery.retryAction(chatSend),
+								// A retry nobody saw is a notice nobody got; it stays until dismissed.
+								duration: Number.POSITIVE_INFINITY,
+							}
+						: { description: message },
+				);
 
-				// Close the dialog
-				setForceDialogOpen(false);
-				resetDialogState();
+				setOpen(false);
+				onAssigned?.();
 			} else {
 				toast({
 					title: t("common.error"),
@@ -208,24 +258,29 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 		}
 	};
 
+	const handleConfirm = async () => {
+		if (isConfirmDisabled || submittingRef.current) return;
+		submittingRef.current = true;
+		try {
+			// The first attempt on an already-assigned PR only surfaces the warning.
+			await duplicateCheck.submit(handleForceAssign);
+		} finally {
+			submittingRef.current = false;
+		}
+	};
+
 	return (
-		<Dialog
-			open={forceDialogOpen}
-			onOpenChange={(open) => {
-				setForceDialogOpen(open);
-				if (!open) {
-					resetDialogState();
-				}
-			}}
-		>
-			<DialogTrigger asChild>
-				{trigger || (
-					<Button variant="outline" className="w-full">
-						<UserCheck className="h-4 w-4 mr-2" />
-						{t("pr.forceAssign")} PR
-					</Button>
-				)}
-			</DialogTrigger>
+		<Dialog open={isOpen} onOpenChange={setOpen}>
+			{trigger === null ? null : (
+				<DialogTrigger asChild>
+					{trigger || (
+						<Button variant="outline" className="w-full">
+							<UserCheck className="h-4 w-4 mr-2" />
+							{t("pr.forceAssign")} PR
+						</Button>
+					)}
+				</DialogTrigger>
+			)}
 			<DialogContent className="sm:max-w-135">
 				<DialogHeader>
 					<div className="flex items-center gap-2">
@@ -236,9 +291,6 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 					</div>
 					<DialogDescription>
 						{t("reviewer.forceAssignDescription")}
-						<span className="block text-[11px] text-muted-foreground mt-1">
-							{t("hints.reviewConfirm")}
-						</span>
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-4">
@@ -246,7 +298,10 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 						value={selectedReviewerId}
 						onValueChange={setSelectedReviewerId}
 					>
-						<SelectTrigger className="w-full">
+						<SelectTrigger
+							className="w-full border-control-border"
+							aria-label={t("pr.slotReviewerLabel")}
+						>
 							<SelectValue placeholder={t("reviewer.selectReviewer")} />
 						</SelectTrigger>
 						<SelectContent>
@@ -255,7 +310,16 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 								.map((reviewer) => (
 									<SelectItem key={reviewer._id} value={reviewer._id}>
 										<div className="flex items-center">
-											<span>{reviewer.name}</span>
+											<span>
+												{reviewer.name}
+												{reviewer.email.toLowerCase() ===
+												user?.email?.toLowerCase() ? (
+													<span className="text-muted-foreground">
+														{" "}
+														{t("common.youSuffix")}
+													</span>
+												) : null}
+											</span>
 											{reviewer.effectiveIsAbsent && (
 												<AlertTriangle className="h-4 w-4 ml-2 text-amber-500" />
 											)}
@@ -275,32 +339,7 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 						)}
 
 					<div className="flex flex-wrap gap-2">
-						<TooltipProvider>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Toggle
-										pressed={urgent}
-										onPressedChange={setUrgent}
-										variant="outline"
-										size="sm"
-										aria-label={t("googleChat.urgentToggle")}
-										className="cursor-pointer rounded-full border-red-200/80 bg-transparent px-3 text-xs text-red-700 transition-all duration-150 dark:border-red-900/50 dark:text-red-300"
-										style={urgent ? selectedUrgentChipStyle : undefined}
-									>
-										<AlertTriangle className="h-3.5 w-3.5" />
-										{t("googleChat.urgentToggle")}
-										<Info
-											className={`h-3.5 w-3.5 ${
-												urgent ? "text-white/80" : "text-muted-foreground/90"
-											}`}
-										/>
-									</Toggle>
-								</TooltipTrigger>
-								<TooltipContent className="max-w-64 text-xs">
-									<p>{t("googleChat.urgentToggleDescription")}</p>
-								</TooltipContent>
-							</Tooltip>
-						</TooltipProvider>
+						<UrgentToggle pressed={urgent} onPressedChange={setUrgent} />
 					</div>
 
 					<ChatMessageCustomizer
@@ -318,16 +357,30 @@ export function ForceAssignDialog({ trigger }: ForceAssignDialogProps) {
 						compact
 						autoTemplate={getDefaultPRChatMessageTemplate(locale)}
 					/>
-					<p className="text-xs text-muted-foreground">
-						{t("googleChat.prUrlRequiredForAssignment")}
-					</p>
+					{hasPrUrlError ? (
+						<p className="text-xs text-destructive">{t("pr.prUrlInvalid")}</p>
+					) : duplicateCheck.duplicate ? (
+						<DuplicatePrAlert duplicate={duplicateCheck.duplicate} />
+					) : prUrl.trim() || !team?.hasGoogleChatWebhook ? null : (
+						<p className="text-xs text-muted-foreground">
+							{t("googleChat.prUrlRequiredForAssignment")}
+						</p>
+					)}
 				</div>
 				<DialogFooter>
-					<Button variant="outline" onClick={() => setForceDialogOpen(false)}>
+					<Button variant="outline" onClick={() => setOpen(false)}>
 						{t("common.cancel")}
 					</Button>
-					<Button onClick={handleForceAssign} disabled={isConfirmDisabled}>
-						{t("pr.forceAssign")}
+					<Button
+						onClick={() => void handleConfirm()}
+						disabled={isConfirmDisabled}
+					>
+						{selectedReviewer
+							? t(
+									duplicateCheck.duplicate ? "pr.assignAgainTo" : "pr.assignTo",
+									{ name: selectedReviewer.name },
+								)
+							: t("pr.assignShort")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
