@@ -34,6 +34,7 @@ import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { rotationQueue } from "./assignment/assignmentCard.utils";
+import { describeReturn } from "./describeReturn";
 import { EditReviewerDialog } from "./dialogs/EditReviewerDialog";
 import { MarkAbsentDialog } from "./dialogs/MarkAbsentDialog";
 import { PlannedAbsenceChip } from "./PlannedAbsenceChip";
@@ -135,9 +136,7 @@ export function ReviewersTable({
 			return t("partTime.scheduleReason");
 		if (reviewer.absenceReason === "manual") {
 			return reviewer.absentUntil
-				? t("partTime.returningOn", {
-						date: new Date(reviewer.absentUntil).toLocaleDateString(locale),
-					})
+				? describeReturn(t, locale, teamTimezone, reviewer.absentUntil)
 				: t("partTime.noReturnDate");
 		}
 		return null;

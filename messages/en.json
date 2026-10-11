@@ -538,6 +538,7 @@
 		"manualReason": "Away",
 		"scheduleReason": "Unavailable due to part-time schedule",
 		"returningOn": "Returns on {date}",
+		"returningRelative": "Returns {when}",
 		"noReturnDate": "No return date set"
 	},
 	"headerMenu": {
