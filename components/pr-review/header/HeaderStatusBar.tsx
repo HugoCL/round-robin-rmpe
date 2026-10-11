@@ -19,6 +19,7 @@ import { countRegularAssignmentsUntilReviewer } from "@/lib/assignmentResolver";
 import { findNextScheduledAbsence } from "@/lib/plannedAbsences";
 import { isIncludedInTagRotations } from "@/lib/reviewerEligibility";
 import { cn } from "@/lib/utils";
+import { describeReturn } from "../describeReturn";
 import { MarkAbsentDialog } from "../dialogs/MarkAbsentDialog";
 import { usePRReview } from "../PRReviewContext";
 
@@ -101,6 +102,7 @@ export function HeaderStatusBar() {
 		onMarkAvailable,
 		onSetExcludedFromReviewPool,
 		plannedAbsences,
+		teamTimezone,
 	} = usePRReview();
 	const [now] = useState(() => Date.now());
 	const [statusOpen, setStatusOpen] = useState(false);
@@ -138,11 +140,7 @@ export function HeaderStatusBar() {
 	}, [currentReviewer, reviewers]);
 	const returningLabel =
 		currentReviewer?.manualIsAbsent && currentReviewer.absentUntil
-			? t("partTime.returningOn", {
-					date: new Date(currentReviewer.absentUntil).toLocaleDateString(
-						locale,
-					),
-				})
+			? describeReturn(t, locale, teamTimezone, currentReviewer.absentUntil)
 			: currentReviewer?.manualIsAbsent
 				? t("partTime.noReturnDate")
 				: null;

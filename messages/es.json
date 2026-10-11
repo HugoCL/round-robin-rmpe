@@ -575,6 +575,7 @@
 		"manualReason": "Fuera",
 		"scheduleReason": "No disponible por horario part-time",
 		"returningOn": "Vuelve el {date}",
+		"returningRelative": "Vuelve {when}",
 		"noReturnDate": "Sin fecha de regreso"
 	},
 	"headerMenu": {
