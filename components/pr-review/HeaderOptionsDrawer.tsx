@@ -208,18 +208,22 @@ export function HeaderOptionsDrawer({
 	if (isMobile) {
 		return (
 			<Drawer open={open} onOpenChange={setOpen}>
+				{/* The body scrolls, not the drawer: vaul's backdrop extension hangs off
+				    the drawer's bottom edge and would cover whatever scrolls past it. */}
 				<DrawerContent
-					className="max-h-[90vh] overflow-y-auto overscroll-contain"
+					className="max-h-[90vh] overflow-hidden"
 					onOpenAutoFocus={focusDialogItself}
 				>
-					<DrawerHeader>
+					<DrawerHeader className="shrink-0">
 						<DrawerTitle>{t("common.options")}</DrawerTitle>
 						<DrawerDescription>
 							{t("common.optionsDescription")}
 						</DrawerDescription>
 					</DrawerHeader>
-					<div className="px-4 pb-5">{bodyContent}</div>
-					<DrawerFooter>
+					<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-5">
+						{bodyContent}
+					</div>
+					<DrawerFooter className="shrink-0">
 						<DrawerClose asChild>{footerAction}</DrawerClose>
 					</DrawerFooter>
 				</DrawerContent>
