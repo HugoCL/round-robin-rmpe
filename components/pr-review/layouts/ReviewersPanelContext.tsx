@@ -24,7 +24,7 @@ export function ViewReviewersLink() {
 			type="button"
 			variant="link"
 			onClick={(event) => reviewersPanel.openPanel(event.currentTarget)}
-			className="h-auto cursor-pointer p-0 text-sm text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground lg:text-base"
+			className="h-auto p-0 text-sm text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground lg:text-base"
 		>
 			{t("viewReviewers", { count: reviewers.length })}
 		</Button>

@@ -124,6 +124,11 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
+	/* Tailwind v4 gives buttons the default cursor; every enabled one shows the pointer. */
+	button:not(:disabled),
+	[role="button"]:not([aria-disabled="true"]) {
+		cursor: pointer;
+	}
 	body {
 		@apply bg-background text-foreground;
 		background-image:

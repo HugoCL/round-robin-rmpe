@@ -23,8 +23,7 @@ import { describeReturn } from "../describeReturn";
 import { MarkAbsentDialog } from "../dialogs/MarkAbsentDialog";
 import { usePRReview } from "../PRReviewContext";
 
-const PILL_CLASS =
-	"h-9 cursor-pointer gap-2 rounded-full px-3 text-sm font-normal";
+const PILL_CLASS = "h-9 gap-2 rounded-full px-3 text-sm font-normal";
 
 function getPrNumber(prUrl?: string | null) {
 	return prUrl?.match(/(?:pull|pulls|merge_requests)\/(\d+)(?:[/?#]|$)/i)?.[1];
@@ -279,7 +278,7 @@ export function HeaderStatusBar() {
 								type="button"
 								variant="outline"
 								size="sm"
-								className="cursor-pointer self-start"
+								className="self-start"
 								onClick={() => {
 									setStatusOpen(false);
 									setAbsentDialogOpen(true);

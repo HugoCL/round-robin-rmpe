@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
  * that would clip it.
  */
 export const assignmentChipClass =
-	"inline-flex h-11 min-w-0 max-w-full shrink-0 basis-auto cursor-pointer items-center justify-center gap-2.5 rounded-full border-border/70 bg-transparent px-3.5 text-xs text-foreground transition-colors duration-150 lg:px-4 lg:text-sm";
+	"inline-flex h-11 min-w-0 max-w-full shrink-0 basis-auto items-center justify-center gap-2.5 rounded-full border-border/70 bg-transparent px-3.5 text-xs text-foreground transition-colors duration-150 lg:px-4 lg:text-sm";
 
 const urgentActiveClass =
 	"aria-pressed:bg-red-600 aria-pressed:border-red-600 aria-pressed:text-white hover:aria-pressed:bg-red-600/90 dark:aria-pressed:bg-red-700 dark:aria-pressed:border-red-700";
@@ -127,7 +127,7 @@ export function OptionSwitch({
 				id={id}
 				checked={checked}
 				onCheckedChange={onCheckedChange}
-				className="mt-0.5 cursor-pointer"
+				className="mt-0.5"
 			/>
 			<div className="flex min-w-0 flex-col gap-0.5">
 				<Label htmlFor={id} className="cursor-pointer text-sm font-medium">

@@ -64,7 +64,9 @@ export function ForeignTeamAssignmentCard() {
 						checked={urgent}
 						onCheckedChange={setUrgent}
 					/>
-					<Label htmlFor="foreign-team-urgent">{t("pr.urgent")}</Label>
+					<Label htmlFor="foreign-team-urgent" className="cursor-pointer">
+						{t("pr.urgent")}
+					</Label>
 				</div>
 				<Button
 					onClick={handleAssign}
