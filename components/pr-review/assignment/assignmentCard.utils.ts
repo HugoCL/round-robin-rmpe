@@ -17,6 +17,10 @@ export function normalizeSlotForMode(
 	slot: ReviewerSlotConfig,
 	mode: AssignmentMode,
 ): ReviewerSlotConfig {
+	// Tags and people belong to this team: another team's slot is its rotation.
+	if (slot.teamSlug) {
+		return { id: slot.id, strategy: "random", teamSlug: slot.teamSlug };
+	}
 	const next = { ...slot };
 	if (mode === "regular") {
 		if (next.strategy !== "random" && next.strategy !== "specific") {

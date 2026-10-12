@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { rotationQueue } from "../../components/pr-review/assignment/assignmentCard.utils";
+import {
+	normalizeSlotForMode,
+	rotationQueue,
+} from "../../components/pr-review/assignment/assignmentCard.utils";
 import type { Reviewer } from "../../lib/types";
 
 const reviewer = (
@@ -24,5 +27,26 @@ test("orders by fewest assignments, then earliest joiner, skipping excluded", ()
 	assert.deepEqual(
 		queue.map((item) => item._id),
 		["early-low", "late-low", "high"],
+	);
+});
+
+test("keeps another team's reviewer on that team's rotation in any mode", () => {
+	const slot = {
+		id: "s1",
+		strategy: "tag_random_other" as const,
+		tagId: "frontend" as never,
+		reviewerId: "ana" as never,
+		teamSlug: "demo-pagos",
+	};
+	for (const mode of ["regular", "tag"] as const) {
+		assert.deepEqual(normalizeSlotForMode(slot, mode), {
+			id: "s1",
+			strategy: "random",
+			teamSlug: "demo-pagos",
+		});
+	}
+	assert.equal(
+		normalizeSlotForMode({ id: "s2", strategy: "random" }, "tag").strategy,
+		"tag_random_selected",
 	);
 });

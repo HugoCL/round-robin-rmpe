@@ -24,7 +24,10 @@ type AssignmentHeroPanelProps = {
 	upcomingAfterReceiver: Reviewer | null;
 	/** With multiple assignment on, everyone who gets the PR, in order. */
 	multipleReceivers: Reviewer[] | null;
-	/** Across teams, the team of each reviewer who is not on this one. */
+	/**
+	 * Across teams, the team of each reviewer who is not on this one, for the
+	 * line under several names; with one, the rotation chip already names it.
+	 */
 	otherTeamNameByReviewerId?: Map<string, string>;
 	isLoadingTagReviewer: boolean;
 	/** Picks the rotation the name comes from; sits on the name's line. */
@@ -102,10 +105,20 @@ export function AssignmentHeroPanel({
 
 	const receiverHasBirthday =
 		receiver && reviewerHasBirthdayToday(receiver, teamTimezone);
-	const receiverTeamName =
-		receiver && !isMultiple
-			? otherTeamNameByReviewerId?.get(String(receiver._id))
-			: undefined;
+	// Several people across teams: one group per team, in the order they come,
+	// e.g. "Catalina y Joaquín, de tu equipo · Sofía, de Demo Pagos".
+	const receiversByTeam = new Map<string, string[]>();
+	if (otherTeamNameByReviewerId && isMultiple) {
+		for (const [index, item] of receivers.entries()) {
+			const team =
+				otherTeamNameByReviewerId.get(String(item._id)) ??
+				t("googleChat.crossTeamOwnTeam");
+			receiversByTeam.set(team, [
+				...(receiversByTeam.get(team) ?? []),
+				receiverNames[index],
+			]);
+		}
+	}
 
 	const emptyTitle = isSelfNext
 		? t("pr.noAvailableReviewersTitle")
@@ -162,11 +175,6 @@ export function AssignmentHeroPanel({
 								),
 							)}
 						</span>
-						{receiverTeamName ? (
-							<span className="shrink-0 text-sm font-normal text-muted-foreground lg:text-base">
-								· {receiverTeamName}
-							</span>
-						) : null}
 						{receiverHasBirthday && (
 							<Badge variant="secondary" title="¡Feliz Cumpleaños! 🎂">
 								🎂 HBD
@@ -194,6 +202,19 @@ export function AssignmentHeroPanel({
 							<span aria-hidden="true">·</span>
 						</>
 					)}
+					{[...receiversByTeam].map(([team, names], index, groups) => (
+						<span key={team} className="contents">
+							<span>
+								{t("pr.receiversFromTeam", {
+									names: listFormat.format(names),
+									team,
+								})}
+							</span>
+							{index < groups.length - 1 || reviewersPanel ? (
+								<span aria-hidden="true">·</span>
+							) : null}
+						</span>
+					))}
 					{following && (
 						<>
 							<span>

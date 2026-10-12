@@ -17,29 +17,48 @@ import type { AssignmentCardTag } from "./assignmentCard.types";
 import { assignmentChipClass } from "./OptionControls";
 
 const REGULAR_VALUE = "regular";
+/** Radio value of an "Otros equipos" option: the prefix plus the team slug. */
+const OTHER_TEAM_VALUE_PREFIX = "team:";
 
 type RotationMenuProps = {
 	tags: AssignmentCardTag[];
 	selectedTagId?: Id<"tags">;
 	/** `undefined` picks the general rotation. */
 	onTagChange: (tagId: Id<"tags"> | undefined) => void;
+	/**
+	 * With one reviewer, the menu also picks another team for them; with
+	 * several, each reviewer row does.
+	 */
+	otherTeams?: { slug: string; name: string }[];
+	selectedTeamSlug?: string;
+	onTeamChange?: (teamSlug: string) => void;
 	onPickSomeoneElse: () => void;
 	getTagStats: (tagId: Id<"tags">) => { availableReviewers: number };
 };
 
 /**
- * One chip that names the rotation the hero shows (general or a tag's) and
- * swaps it in place, so choosing never adds a second control beside it.
+ * One chip that names the rotation the hero shows (this team's general one or
+ * a tag's, or with one reviewer another team's) and swaps it in place, so
+ * choosing never adds a second control beside it.
  */
 export function RotationMenu({
 	tags,
 	selectedTagId,
 	onTagChange,
+	otherTeams = [],
+	selectedTeamSlug,
+	onTeamChange,
 	onPickSomeoneElse,
 	getTagStats,
 }: RotationMenuProps) {
 	const t = useTranslations();
-	const selectedTag = tags.find((tag) => tag._id === selectedTagId);
+	const selectedTeam = otherTeams.find(
+		(team) => team.slug === selectedTeamSlug,
+	);
+	const selectedTag = selectedTeam
+		? undefined
+		: tags.find((tag) => tag._id === selectedTagId);
+	const showTeams = otherTeams.length > 0 && onTeamChange !== undefined;
 
 	return (
 		<DropdownMenu modal={false}>
@@ -61,21 +80,33 @@ export function RotationMenu({
 					/>
 				) : null}
 				<span className="truncate font-medium leading-none text-foreground">
-					{selectedTag?.name ?? t("pr.assignmentModeRegularShort")}
+					{selectedTeam?.name ??
+						selectedTag?.name ??
+						t("pr.assignmentModeRegularShort")}
 				</span>
 				<ChevronDown className="size-4 shrink-0" aria-hidden="true" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-64">
-				<DropdownMenuGroup>
-					<DropdownMenuLabel>{t("pr.assignmentModeLabel")}</DropdownMenuLabel>
-					<DropdownMenuRadioGroup
-						value={selectedTagId ?? REGULAR_VALUE}
-						onValueChange={(value) =>
-							onTagChange(
-								value === REGULAR_VALUE ? undefined : (value as Id<"tags">),
-							)
+				<DropdownMenuRadioGroup
+					value={
+						selectedTeam
+							? `${OTHER_TEAM_VALUE_PREFIX}${selectedTeam.slug}`
+							: (selectedTagId ?? REGULAR_VALUE)
+					}
+					onValueChange={(value) => {
+						if (value.startsWith(OTHER_TEAM_VALUE_PREFIX)) {
+							onTeamChange?.(value.slice(OTHER_TEAM_VALUE_PREFIX.length));
+							return;
 						}
-					>
+						onTagChange(
+							value === REGULAR_VALUE ? undefined : (value as Id<"tags">),
+						);
+					}}
+				>
+					<DropdownMenuGroup>
+						<DropdownMenuLabel>
+							{showTeams ? t("pr.ownTeamGroup") : t("pr.assignmentModeLabel")}
+						</DropdownMenuLabel>
 						<DropdownMenuRadioItem value={REGULAR_VALUE}>
 							{t("pr.assignmentModeRegularShort")}
 						</DropdownMenuRadioItem>
@@ -92,8 +123,24 @@ export function RotationMenu({
 								})}
 							</DropdownMenuRadioItem>
 						))}
-					</DropdownMenuRadioGroup>
-				</DropdownMenuGroup>
+					</DropdownMenuGroup>
+					{showTeams ? (
+						<>
+							<DropdownMenuSeparator />
+							<DropdownMenuGroup>
+								<DropdownMenuLabel>{t("pr.otherTeamsGroup")}</DropdownMenuLabel>
+								{otherTeams.map((team) => (
+									<DropdownMenuRadioItem
+										key={team.slug}
+										value={`${OTHER_TEAM_VALUE_PREFIX}${team.slug}`}
+									>
+										{team.name}
+									</DropdownMenuRadioItem>
+								))}
+							</DropdownMenuGroup>
+						</>
+					) : null}
+				</DropdownMenuRadioGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onSelect={onPickSomeoneElse}>
 					<UserCheck />

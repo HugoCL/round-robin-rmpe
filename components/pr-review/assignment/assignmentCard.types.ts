@@ -11,6 +11,8 @@ export type AssignmentPayloadSlot = {
 	strategy: ReviewerSlotStrategy;
 	reviewerId?: Id<"reviewers">;
 	tagId?: Id<"tags">;
+	/** Cross-team: the other team this slot asks. */
+	teamSlug?: string;
 };
 
 export type ResolvedSlot = {

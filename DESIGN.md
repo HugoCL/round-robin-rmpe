@@ -231,8 +231,8 @@ This is the signature of the system. Rather than ad-hoc `bg-white rounded-xl sha
 ### Signature Component: The Reviewer Display
 The heart of the product: a left-aligned block at the top of the AssignmentCard, read as a sentence.
 - **Heading** (`h2`): "Le toca a" (`text-sm lg:text-base text-muted-foreground`) followed by the name of whoever actually receives the PR (see The Reviewer Name Rule). When the viewer is next, the assignment skips them, so the heading names the replacement and one muted line explains the skip. When the rotation moves, each name fades in on its own (a keyed fade, not a glyph morph).
-- **Metadata line**: always its own line under the heading, never inline: "Después {name}" (name in `font-medium text-foreground`) and the "Ver revisores (N)" link that opens the reviewers panel.
-- **Aside**: on the right of the same row, one outline chip "Rotación · {Todos | tag}" that opens a menu: the team rotation and each tag as radio items, then "Elegir otra persona…" (force assignment). It shows on teams without tags too.
+- **Metadata line**: always its own line under the heading, never inline: "Después {name}" (name in `font-medium text-foreground`) and the "Ver revisores (N)" link that opens the reviewers panel. With several receivers and someone from another team, it groups them by team instead ("Catalina y Joaquín, de tu equipo · Sofía, de Demo Pagos").
+- **Aside**: on the right of the same row, one outline chip "Rotación · {Todos | tag | team}" that opens a menu: this team's rotation and each tag as radio items, then, with one reviewer, an "Otros equipos" group (with several, each reviewer row picks its team), then "Elegir otra persona…" (force assignment). It shows on teams without tags too. With one reviewer from another team, the chip is where the team shows: the name carries no team suffix, which would only repeat the chip and take the name's width.
 - **No frame**: no pill, kicker, corner brackets or tinted box. The PR field follows directly below; the Assign button names the receiver ("Asignar a {name}", just "Asignar" on phones) and sits after the options, with Undo beside it.
 
 ## 6. Do's and Don'ts

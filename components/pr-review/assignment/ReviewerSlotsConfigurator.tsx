@@ -8,7 +8,10 @@ import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
+	SelectSeparator,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
@@ -20,6 +23,8 @@ import { cn } from "@/lib/utils";
 
 export const MIN_BATCH_SLOTS = 1;
 export const MAX_BATCH_SLOTS = 5;
+/** Select value of an "Otros equipos" option: the prefix plus the team slug. */
+const OTHER_TEAM_VALUE_PREFIX = "team:";
 
 export type ReviewerSlotStrategy =
 	| "random"
@@ -32,6 +37,8 @@ export type ReviewerSlotConfig = {
 	strategy: ReviewerSlotStrategy;
 	reviewerId?: Id<"reviewers">;
 	tagId?: Id<"tags">;
+	/** Another team this reviewer comes from, by its own rotation; none means this team. */
+	teamSlug?: string;
 };
 
 export type ReviewerSlotPreview = {
@@ -55,6 +62,8 @@ type Props = {
 	reviewers: Reviewer[];
 	tags: Doc<"tags">[];
 	previews: ReviewerSlotPreview[];
+	/** Teams a reviewer can come from besides this one. */
+	otherTeams?: { slug: string; name: string }[];
 	onReviewerCountChange: (next: number) => void;
 	onSlotChange: (index: number, patch: Partial<ReviewerSlotConfig>) => void;
 };
@@ -71,6 +80,7 @@ export function ReviewerSlotsConfigurator({
 	reviewers,
 	tags,
 	previews,
+	otherTeams = [],
 	onReviewerCountChange,
 	onSlotChange,
 }: Props) {
@@ -207,27 +217,78 @@ export function ReviewerSlotsConfigurator({
 										{t("pr.slotTypeLabel")}
 									</Label>
 									<Select
-										value={slot.strategy}
+										value={
+											slot.teamSlug
+												? `${OTHER_TEAM_VALUE_PREFIX}${slot.teamSlug}`
+												: slot.strategy
+										}
 										onValueChange={(value) =>
-											onSlotChange(slotIndex, {
-												strategy: value as ReviewerSlotStrategy,
-												reviewerId: undefined,
-												tagId: undefined,
-											})
+											onSlotChange(
+												slotIndex,
+												value.startsWith(OTHER_TEAM_VALUE_PREFIX)
+													? {
+															strategy: "random",
+															teamSlug: value.slice(
+																OTHER_TEAM_VALUE_PREFIX.length,
+															),
+															reviewerId: undefined,
+															tagId: undefined,
+														}
+													: {
+															strategy: value as ReviewerSlotStrategy,
+															teamSlug: undefined,
+															reviewerId: undefined,
+															tagId: undefined,
+														},
+											)
 										}
 									>
 										<SelectTrigger
 											id={strategySelectId}
 											className="w-full min-w-0 data-[size=default]:h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:data-[size=default]:h-9"
 										>
-											<SelectValue placeholder={t("pr.slotTypePlaceholder")} />
+											<SelectValue placeholder={t("pr.slotTypePlaceholder")}>
+												{slot.teamSlug
+													? (otherTeams.find(
+															(team) => team.slug === slot.teamSlug,
+														)?.name ?? slot.teamSlug)
+													: otherTeams.length > 0
+														? t("pr.fromOwnTeam", {
+																strategy:
+																	strategyOptions.find(
+																		(option) => option.value === slot.strategy,
+																	)?.label ?? "",
+															})
+														: undefined}
+											</SelectValue>
 										</SelectTrigger>
 										<SelectContent>
-											{strategyOptions.map((option) => (
-												<SelectItem key={option.value} value={option.value}>
-													{option.label}
-												</SelectItem>
-											))}
+											<SelectGroup>
+												{otherTeams.length > 0 ? (
+													<SelectLabel>{t("pr.ownTeamGroup")}</SelectLabel>
+												) : null}
+												{strategyOptions.map((option) => (
+													<SelectItem key={option.value} value={option.value}>
+														{option.label}
+													</SelectItem>
+												))}
+											</SelectGroup>
+											{otherTeams.length > 0 ? (
+												<>
+													<SelectSeparator />
+													<SelectGroup>
+														<SelectLabel>{t("pr.otherTeamsGroup")}</SelectLabel>
+														{otherTeams.map((team) => (
+															<SelectItem
+																key={team.slug}
+																value={`${OTHER_TEAM_VALUE_PREFIX}${team.slug}`}
+															>
+																{team.name}
+															</SelectItem>
+														))}
+													</SelectGroup>
+												</>
+											) : null}
 										</SelectContent>
 									</Select>
 								</div>
