@@ -81,7 +81,7 @@ export function McpLaunchBanner() {
 				type="button"
 				variant="outline"
 				size="sm"
-				className="cursor-pointer rounded-full"
+				className="rounded-full"
 				onClick={() => openAgentSetupDialog()}
 			>
 				{t("configure")}
@@ -92,7 +92,7 @@ export function McpLaunchBanner() {
 						type="button"
 						variant="ghost"
 						size="icon"
-						className="size-8 cursor-pointer"
+						className="size-8"
 						onClick={handleDismiss}
 						aria-label={t("dismiss")}
 					>

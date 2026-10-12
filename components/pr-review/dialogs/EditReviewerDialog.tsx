@@ -252,7 +252,7 @@ export function EditReviewerDialog({
 				<p className="calm-kicker">{t("reviewer.rotationSection")}</p>
 				<Field orientation="horizontal" data-disabled={isUpdating || undefined}>
 					<FieldContent>
-						<FieldLabel htmlFor={rotationId}>
+						<FieldLabel htmlFor={rotationId} className="cursor-pointer">
 							{t("reviewer.inReviewPoolSwitchLabel")}
 						</FieldLabel>
 						<FieldDescription>
@@ -269,7 +269,7 @@ export function EditReviewerDialog({
 				</Field>
 				<Field orientation="horizontal" data-disabled={isUpdating || undefined}>
 					<FieldContent>
-						<FieldLabel htmlFor={tagRotationsId}>
+						<FieldLabel htmlFor={tagRotationsId} className="cursor-pointer">
 							{t("reviewer.tagRotationsEditLabel")}
 						</FieldLabel>
 						<FieldDescription>

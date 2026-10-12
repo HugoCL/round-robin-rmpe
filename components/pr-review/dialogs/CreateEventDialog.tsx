@@ -332,7 +332,7 @@ export function CreateEventDialog({
 										// Not allowed in this context; typing still works.
 									}
 								}}
-								className="w-full pr-28 pl-9 [&::-webkit-calendar-picker-indicator]:hidden"
+								className="w-full cursor-pointer pr-28 pl-9 [&::-webkit-calendar-picker-indicator]:hidden"
 							/>
 							<span className="pointer-events-none absolute top-1/2 right-4 max-w-24 -translate-y-1/2 truncate text-xs text-muted-foreground">
 								{userTimezone.split("/").pop()?.replace("_", " ") ||
@@ -357,9 +357,12 @@ export function CreateEventDialog({
 							id={sendInviteId}
 							checked={sendInvite}
 							onChange={(e) => setSendInvite(e.target.checked)}
-							className=""
+							className="cursor-pointer"
 						/>
-						<Label htmlFor={sendInviteId} className="text-sm font-normal">
+						<Label
+							htmlFor={sendInviteId}
+							className="cursor-pointer text-sm font-normal"
+						>
 							{t("events.sendInviteToChat")}
 						</Label>
 					</div>

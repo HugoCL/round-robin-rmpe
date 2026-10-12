@@ -455,7 +455,10 @@ function MarkAbsentDialogBody({
 											handleOptionChange("indefinite", checked === true)
 										}
 									/>
-									<Label htmlFor={indefiniteId} className="font-normal">
+									<Label
+										htmlFor={indefiniteId}
+										className="cursor-pointer font-normal"
+									>
 										{isSelf
 											? t("absent.indefiniteOption")
 											: t("absent.indefiniteOptionOther")}
@@ -469,7 +472,10 @@ function MarkAbsentDialogBody({
 											handleOptionChange("today", checked === true)
 										}
 									/>
-									<Label htmlFor={todayId} className="font-normal">
+									<Label
+										htmlFor={todayId}
+										className="cursor-pointer font-normal"
+									>
 										{isSelf
 											? t("absent.returnTodayOption")
 											: t("absent.returnTodayOptionOther")}

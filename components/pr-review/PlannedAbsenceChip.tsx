@@ -124,7 +124,7 @@ export function PlannedAbsenceChip({
 						type="button"
 						className={cn(
 							PILL_CLASS,
-							"cursor-pointer transition-colors hover:bg-amber-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+							"transition-colors hover:bg-amber-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 							className,
 						)}
 						aria-label={`${label}. ${detail}`}

@@ -104,7 +104,7 @@ export function AssignmentActionsRow({
 										type="button"
 										variant="ghost"
 										size="icon-lg"
-										className="size-11 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+										className="size-11 shrink-0 text-muted-foreground hover:text-foreground"
 										disabled={isAssigning || !canUndo}
 										aria-label={undoCopy.label}
 									>

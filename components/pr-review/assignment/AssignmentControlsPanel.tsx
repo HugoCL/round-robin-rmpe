@@ -277,11 +277,7 @@ export function AssignmentControlsPanel({
 										onUrgentChange(false);
 									}}
 									trigger={
-										<Button
-											type="button"
-											size="sm"
-											className="ml-1 cursor-pointer"
-										>
+										<Button type="button" size="sm" className="ml-1">
 											{t("pr.forceAssignAction")}
 										</Button>
 									}

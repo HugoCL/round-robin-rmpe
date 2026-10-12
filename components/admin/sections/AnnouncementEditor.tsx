@@ -300,7 +300,10 @@ export function AnnouncementEditor({
 										)
 									}
 								/>
-								<label htmlFor={`team-${team._id}`} className="text-sm">
+								<label
+									htmlFor={`team-${team._id}`}
+									className="cursor-pointer text-sm"
+								>
 									{team.name}
 								</label>
 							</li>

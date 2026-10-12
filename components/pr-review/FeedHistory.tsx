@@ -350,7 +350,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 				<div className="flex items-center gap-2">
 					<label
 						htmlFor="history-my-assignments-toggle"
-						className="whitespace-nowrap text-xs text-muted-foreground lg:text-sm"
+						className="cursor-pointer whitespace-nowrap text-xs text-muted-foreground lg:text-sm"
 					>
 						{t("history.myAssignmentsOnlyLabel")}
 					</label>
