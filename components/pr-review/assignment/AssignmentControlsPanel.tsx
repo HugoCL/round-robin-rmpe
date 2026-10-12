@@ -1,4 +1,4 @@
-import { Building2, Link2, MessageSquareText, Minus, Plus } from "lucide-react";
+import { Link2, MessageSquareText, Minus, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,8 @@ import {
 	InputGroupInput,
 } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import {
-	ASSIGNMENT_FORM_ID,
-	CROSS_TEAMS_ID,
-	PR_URL_INPUT_ID,
-} from "@/lib/assignmentFocus";
+import { ASSIGNMENT_FORM_ID, PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
 import type { ParsedPrUrl } from "@/lib/prUrl";
 import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -58,15 +53,7 @@ type AssignmentControlsPanelProps = {
 	onMultiAssignmentToggle: (enabled: boolean) => void;
 	urgent: boolean;
 	onUrgentChange: (value: boolean) => void;
-	crossTeamReview: boolean;
-	onCrossTeamReviewChange: (value: boolean) => void;
 	availableCrossTeamTargets: Doc<"teams">[];
-	/** The team the card belongs to: first chip of the teams row, on by default. */
-	currentTeam: { slug: string; name: string } | null;
-	selectedCrossTeamSlugs: string[];
-	onSelectedCrossTeamSlugsChange: (value: string[]) => void;
-	excludeTeammates: boolean;
-	onExcludeTeammatesChange: (value: boolean) => void;
 	reviewers: Reviewer[];
 	slotConfigs: ReviewerSlotConfig[];
 	reviewerSlotPreviews: ReviewerSlotPreview[];
@@ -103,14 +90,7 @@ export function AssignmentControlsPanel({
 	onMultiAssignmentToggle,
 	urgent,
 	onUrgentChange,
-	crossTeamReview,
-	onCrossTeamReviewChange,
 	availableCrossTeamTargets,
-	currentTeam,
-	selectedCrossTeamSlugs,
-	onSelectedCrossTeamSlugsChange,
-	excludeTeammates,
-	onExcludeTeammatesChange,
 	reviewers,
 	slotConfigs,
 	reviewerSlotPreviews,
@@ -162,8 +142,11 @@ export function AssignmentControlsPanel({
 		if (!isMultiAssignmentEnabled) onMultiAssignmentToggle(true);
 		onReviewerCountChange(count);
 	};
-	// What "+ Add" still offers: lines not on the form yet. Teams only when
-	// another team exists to pull from.
+	const otherTeams = availableCrossTeamTargets.map((team) => ({
+		slug: team.slug,
+		name: team.name,
+	}));
+	// What "+ Add" still offers: lines not on the form yet.
 	const addableExtras = [
 		...(showContextInput
 			? []
@@ -172,15 +155,6 @@ export function AssignmentControlsPanel({
 						label: t("pr.chipContext"),
 						icon: Link2,
 						add: () => setShowContextInput(true),
-					},
-				]),
-		...(crossTeamReview || availableCrossTeamTargets.length === 0
-			? []
-			: [
-					{
-						label: t("pr.chipCrossTeam"),
-						icon: Building2,
-						add: () => onCrossTeamReviewChange(true),
 					},
 				]),
 		...(enableCustomMessage
@@ -201,13 +175,6 @@ export function AssignmentControlsPanel({
 					id={ASSIGNMENT_FORM_ID}
 					data-mode={mode}
 					data-duplicate={duplicateAssignment ? "true" : undefined}
-					data-needs-teams={
-						parsedPrUrl &&
-						crossTeamReview &&
-						selectedCrossTeamSlugs.length === 0
-							? "true"
-							: undefined
-					}
 					noValidate
 					onSubmit={(event) => {
 						event.preventDefault();
@@ -416,6 +383,7 @@ export function AssignmentControlsPanel({
 								reviewers={reviewers}
 								tags={tags}
 								previews={reviewerSlotPreviews}
+								otherTeams={otherTeams}
 								onReviewerCountChange={onReviewerCountChange}
 								onSlotChange={onSlotChange}
 							/>
@@ -450,82 +418,6 @@ export function AssignmentControlsPanel({
 									autoFocus
 								/>
 							</InputGroup>
-						</ExtraRow>
-					</CollapsibleContent>
-				</Collapsible>
-
-				<Collapsible open={crossTeamReview} className="contents">
-					<CollapsibleContent>
-						<ExtraRow
-							label={t("pr.chipCrossTeam")}
-							icon={Building2}
-							onRemove={() => onCrossTeamReviewChange(false)}
-						>
-							{/* Your own team is one chip among the rest; turning it off is
-							    `excludeTeammates`. It cannot be the only one off: with no other
-							    team there would be no pool. */}
-							<ToggleGroup
-								id={CROSS_TEAMS_ID}
-								type="multiple"
-								variant="outline"
-								size="sm"
-								spacing={2}
-								value={[
-									...(currentTeam && !excludeTeammates
-										? [currentTeam.slug]
-										: []),
-									...selectedCrossTeamSlugs,
-								]}
-								onValueChange={(values) => {
-									const others = values.filter(
-										(slug) => slug !== currentTeam?.slug,
-									);
-									const ownOn =
-										!currentTeam ||
-										values.includes(currentTeam.slug) ||
-										others.length === 0;
-									onExcludeTeammatesChange(!ownOn);
-									onSelectedCrossTeamSlugsChange(others);
-								}}
-								aria-label={t("googleChat.crossTeamTargetTeamsLabel")}
-								className="inline-flex max-w-full flex-wrap justify-start"
-							>
-								{[
-									...(currentTeam
-										? [
-												{
-													slug: currentTeam.slug,
-													name: currentTeam.name,
-													own: true,
-												},
-											]
-										: []),
-									...availableCrossTeamTargets.map((teamOption) => ({
-										slug: teamOption.slug,
-										name: teamOption.name,
-										own: false,
-									})),
-								].map((teamOption) => (
-									<ToggleGroupItem
-										key={teamOption.slug}
-										value={teamOption.slug}
-										aria-label={teamOption.name}
-										className="h-9 gap-1 rounded-full border-border/70 bg-transparent px-3.5 text-xs lg:text-sm data-[state=on]:border-primary data-[state=on]:bg-primary/12 data-[state=on]:text-primary data-[state=on]:ring-1 data-[state=on]:ring-primary data-[state=on]:ring-inset"
-									>
-										{teamOption.name}
-										{teamOption.own ? (
-											<span className="font-normal opacity-70">
-												· {t("googleChat.crossTeamOwnTeam")}
-											</span>
-										) : null}
-									</ToggleGroupItem>
-								))}
-							</ToggleGroup>
-							{selectedCrossTeamSlugs.length === 0 ? (
-								<p className="text-xs text-muted-foreground">
-									{t("googleChat.crossTeamTargetTeamsRequired")}
-								</p>
-							) : null}
 						</ExtraRow>
 					</CollapsibleContent>
 				</Collapsible>

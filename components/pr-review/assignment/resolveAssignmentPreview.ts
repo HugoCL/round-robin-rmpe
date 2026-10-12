@@ -2,11 +2,13 @@ import type { Id } from "@/convex/_generated/dataModel";
 import {
 	type AssignmentFailureReason,
 	resolveAssignmentSlots,
+	resolveAssignmentSlotsPerTeam,
 } from "@/lib/assignmentResolver";
 import type { Reviewer } from "@/lib/types";
 import type {
 	AssignmentCardTag,
 	AssignmentMode,
+	AssignmentPayloadSlot,
 	AssignmentResolverReasonMessages,
 	ResolvedPreview,
 } from "./assignmentCard.types";
@@ -21,6 +23,10 @@ type ResolveAssignmentPreviewInput = {
 	selectedTagId?: Id<"tags">;
 	currentUserReviewerId?: Id<"reviewers">;
 	reasonMessages: AssignmentResolverReasonMessages;
+	/** Slots from other teams resolve per team, with every team's reviewers. */
+	sourceTeamSlug?: string;
+	reviewersByTeam?: ReadonlyMap<string, Reviewer[]>;
+	requesterEmail?: string;
 };
 
 export function resolveAssignmentPreview({
@@ -31,26 +37,38 @@ export function resolveAssignmentPreview({
 	selectedTagId,
 	currentUserReviewerId,
 	reasonMessages,
+	sourceTeamSlug,
+	reviewersByTeam,
+	requesterEmail,
 }: ResolveAssignmentPreviewInput): ResolvedPreview {
-	const payloadSlots = slotConfigs.map((rawSlot) => {
+	const payloadSlots: AssignmentPayloadSlot[] = slotConfigs.map((rawSlot) => {
 		const slot = normalizeSlotForMode(rawSlot, mode);
 		return {
 			strategy: slot.strategy,
 			reviewerId: slot.reviewerId,
 			tagId: slot.tagId,
+			teamSlug: slot.teamSlug,
 		};
 	});
-	const resolution = resolveAssignmentSlots<
-		Id<"reviewers">,
-		Id<"tags">,
-		Reviewer
-	>({
-		mode,
-		selectedTagId,
-		slots: payloadSlots,
-		reviewers,
-		excludedReviewerId: currentUserReviewerId,
-	});
+	const resolution =
+		payloadSlots.some((slot) => slot.teamSlug) &&
+		sourceTeamSlug &&
+		reviewersByTeam
+			? resolveAssignmentSlotsPerTeam<Id<"reviewers">, Id<"tags">, Reviewer>({
+					mode,
+					selectedTagId,
+					slots: payloadSlots,
+					sourceTeamSlug,
+					reviewersByTeam,
+					requesterEmail,
+				})
+			: resolveAssignmentSlots<Id<"reviewers">, Id<"tags">, Reviewer>({
+					mode,
+					selectedTagId,
+					slots: payloadSlots,
+					reviewers,
+					excludedReviewerId: currentUserReviewerId,
+				});
 	const resolvedBySlot = new Map(
 		resolution.resolved.map((item) => [item.slotIndex, item]),
 	);

@@ -21,6 +21,8 @@ export type AssignmentSlotInput<ReviewerId = string, TagId = string> = {
 	strategy: AssignmentSlotStrategy | string;
 	reviewerId?: ReviewerId;
 	tagId?: TagId;
+	/** Cross-team: the team this slot asks; none means the requesting team. */
+	teamSlug?: string;
 };
 
 export type AssignmentResolverReviewer<ReviewerId = string, TagId = string> = {
@@ -244,6 +246,88 @@ export function resolveAssignmentSlots<
 	return {
 		resolved,
 		failed,
+		totalRequested: slots.length,
+	};
+}
+
+/**
+ * Cross-team request where each slot asks one team: every team picks from its
+ * own reviewers with its own rotation, so counts are only compared within a
+ * team. The requesting team goes first, since only its slots can name a person
+ * or a tag. One person can have a reviewer row in several teams, so people are
+ * told apart by email: nobody is picked twice, and the requester never gets
+ * their own PR from another team.
+ */
+export function resolveAssignmentSlotsPerTeam<
+	ReviewerId = string,
+	TagId = string,
+	Reviewer extends AssignmentResolverReviewer<
+		ReviewerId,
+		TagId
+	> = AssignmentResolverReviewer<ReviewerId, TagId>,
+>({
+	mode,
+	selectedTagId,
+	slots,
+	sourceTeamSlug,
+	reviewersByTeam,
+	requesterEmail,
+}: {
+	mode: AssignmentMode;
+	selectedTagId?: TagId;
+	slots: AssignmentSlotInput<ReviewerId, TagId>[];
+	sourceTeamSlug: string;
+	reviewersByTeam: ReadonlyMap<string, Reviewer[]>;
+	requesterEmail?: string;
+}): AssignmentResolverResult<ReviewerId, TagId, Reviewer> {
+	if (slots.length === 0) {
+		return {
+			resolved: [],
+			failed: [{ slotIndex: 0, reason: "no_candidates" }],
+			totalRequested: 0,
+		};
+	}
+
+	const teamOf = (slot: AssignmentSlotInput<ReviewerId, TagId>) =>
+		slot.teamSlug ?? sourceTeamSlug;
+	const emailOf = (reviewer: Reviewer) => reviewer.email?.trim().toLowerCase();
+	const requester = requesterEmail?.trim().toLowerCase();
+	const pickedEmails = new Set<string>();
+	const resolved: AssignmentResolvedSlot<ReviewerId, TagId, Reviewer>[] = [];
+	const failed: AssignmentFailedSlot[] = [];
+
+	for (const team of new Set([sourceTeamSlug, ...slots.map(teamOf)])) {
+		const slotIndexes = slots.flatMap((slot, index) =>
+			teamOf(slot) === team ? [index] : [],
+		);
+		if (slotIndexes.length === 0) continue;
+		const isSourceTeam = team === sourceTeamSlug;
+		const reviewers = (reviewersByTeam.get(team) ?? []).filter((reviewer) => {
+			const email = emailOf(reviewer);
+			return !email || !pickedEmails.has(email);
+		});
+		const result = resolveAssignmentSlots<ReviewerId, TagId, Reviewer>({
+			mode: isSourceTeam ? mode : "regular",
+			selectedTagId: isSourceTeam ? selectedTagId : undefined,
+			slots: slotIndexes.map((index) => slots[index]),
+			reviewers,
+			excludedReviewerId: requester
+				? reviewers.find((reviewer) => emailOf(reviewer) === requester)?._id
+				: undefined,
+		});
+		for (const item of result.resolved) {
+			resolved.push({ ...item, slotIndex: slotIndexes[item.slotIndex] });
+			const email = emailOf(item.reviewer);
+			if (email) pickedEmails.add(email);
+		}
+		for (const item of result.failed) {
+			failed.push({ ...item, slotIndex: slotIndexes[item.slotIndex] });
+		}
+	}
+
+	return {
+		resolved: resolved.sort((a, b) => a.slotIndex - b.slotIndex),
+		failed: failed.sort((a, b) => a.slotIndex - b.slotIndex),
 		totalRequested: slots.length,
 	};
 }

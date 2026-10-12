@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useMutation, useQueries, useQuery } from "convex/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
@@ -10,7 +10,6 @@ import { toast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { resolveAssignerDisplayName } from "@/lib/assignerDisplayName";
 import { resolveBroadcastTeamSlugs } from "@/lib/chatBroadcast";
-import { buildCrossTeamReviewerPool } from "@/lib/crossTeamPool";
 import { parsePrUrl } from "@/lib/prUrl";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import type { Reviewer } from "@/lib/types";
@@ -43,6 +42,7 @@ import { usePRReview } from "./PRReviewContext";
 
 export function AssignmentCard() {
 	const t = useTranslations();
+	const locale = useLocale();
 	const {
 		teamSlug,
 		nextReviewer,
@@ -59,11 +59,6 @@ export function AssignmentCard() {
 	const [prUrl, setPrUrl] = useState("");
 	const [contextUrl, setContextUrl] = useState("");
 	const [urgent, setUrgent] = useState(false);
-	const [crossTeamReview, setCrossTeamReview] = useState(false);
-	const [excludeTeammates, setExcludeTeammates] = useState(false);
-	const [selectedCrossTeamSlugs, setSelectedCrossTeamSlugs] = useState<
-		string[]
-	>([]);
 	const [customMessage, setCustomMessage] = useState("");
 	const [enableCustomMessage, setEnableCustomMessage] = useState(false);
 	const [reviewerCount, setReviewerCount] = useState(1);
@@ -137,50 +132,6 @@ export function AssignmentCard() {
 	}, [hideMultiAssignmentSection, isMultiAssignmentEnabled, mode]);
 
 	useEffect(() => {
-		if (!crossTeamReview && selectedCrossTeamSlugs.length > 0) {
-			setSelectedCrossTeamSlugs([]);
-			return;
-		}
-		if (!crossTeamReview && excludeTeammates) {
-			setExcludeTeammates(false);
-		}
-		if (crossTeamReview && availableCrossTeamTargets.length === 0) {
-			// A new `[]` on every pass would re-trigger this effect forever.
-			if (selectedCrossTeamSlugs.length > 0) setSelectedCrossTeamSlugs([]);
-			return;
-		}
-		if (selectedCrossTeamSlugs.length === 0) {
-			return;
-		}
-		const allowedSlugs = new Set<string>();
-		for (const candidate of availableCrossTeamTargets) {
-			if (candidate?.slug) {
-				allowedSlugs.add(candidate.slug);
-			}
-		}
-		const filtered = selectedCrossTeamSlugs.filter((slug) =>
-			allowedSlugs.has(slug),
-		);
-		if (filtered.length !== selectedCrossTeamSlugs.length) {
-			setSelectedCrossTeamSlugs(filtered);
-		}
-	}, [
-		availableCrossTeamTargets,
-		crossTeamReview,
-		excludeTeammates,
-		selectedCrossTeamSlugs,
-	]);
-
-	useEffect(() => {
-		if (!crossTeamReview) return;
-		if (selectedCrossTeamSlugs.length > 0) return;
-		if (availableCrossTeamTargets.length !== 1) return;
-		const onlyTeamSlug = availableCrossTeamTargets[0]?.slug;
-		if (typeof onlyTeamSlug !== "string" || onlyTeamSlug.length === 0) return;
-		setSelectedCrossTeamSlugs([onlyTeamSlug]);
-	}, [availableCrossTeamTargets, crossTeamReview, selectedCrossTeamSlugs]);
-
-	useEffect(() => {
 		setSlotConfigs((prev) => {
 			const normalized = prev.map((slot) => normalizeSlotForMode(slot, mode));
 			if (normalized.length === reviewerCount) return normalized;
@@ -211,13 +162,13 @@ export function AssignmentCard() {
 				mode,
 				isMultiAssignmentEnabled: isMultiAssignmentActive,
 				reviewerCount: effectiveReviewerCount,
-				excludeTeammates,
 				selectedTagId: selectedTagId ? String(selectedTagId) : null,
 				slots: effectiveSlotConfigs.map((slot) => ({
 					id: slot.id,
 					strategy: slot.strategy,
 					reviewerId: slot.reviewerId ? String(slot.reviewerId) : null,
 					tagId: slot.tagId ? String(slot.tagId) : null,
+					teamSlug: slot.teamSlug ?? null,
 				})),
 			}),
 		[
@@ -225,7 +176,6 @@ export function AssignmentCard() {
 			effectiveSlotConfigs,
 			isMultiAssignmentActive,
 			mode,
-			excludeTeammates,
 			selectedTagId,
 		],
 	);
@@ -235,49 +185,55 @@ export function AssignmentCard() {
 		setLiveSummary({ text: "" });
 	}, [configurationHash]);
 
-	// Across teams the server picks from the chosen teams' reviewers (and not
-	// this team's when its chip is off), so the preview needs that same pool.
-	const crossTeamActive = crossTeamReview && selectedCrossTeamSlugs.length > 0;
+	// A reviewer can come from another team, picked by that team's rotation; the
+	// preview loads those teams' reviewers to name who it will be.
+	const crossTeamSlugs = [
+		...new Set(
+			effectiveSlotConfigs.flatMap((slot) =>
+				slot.teamSlug ? [slot.teamSlug] : [],
+			),
+		),
+	];
+	const crossTeamActive = crossTeamSlugs.length > 0;
+	const crossTeamKey = crossTeamSlugs.join(",");
 	// useQueries builds its subscription from the request object's identity and
 	// swapping it sets state during render: a fresh object per render loops.
 	const crossTeamRequests = useMemo(
 		() =>
 			Object.fromEntries(
-				(crossTeamActive ? selectedCrossTeamSlugs : []).map((slug) => [
-					slug,
-					{ query: api.queries.getReviewers, args: { teamSlug: slug } },
-				]),
+				crossTeamKey
+					.split(",")
+					.filter(Boolean)
+					.map((slug) => [
+						slug,
+						{ query: api.queries.getReviewers, args: { teamSlug: slug } },
+					]),
 			),
-		[crossTeamActive, selectedCrossTeamSlugs],
+		[crossTeamKey],
 	);
 	const crossTeamResults = useQueries(crossTeamRequests);
-	const crossTeamLists = selectedCrossTeamSlugs.map(
-		(slug) => crossTeamResults[slug] as Reviewer[] | Error | undefined,
+	// A team whose reviewers failed to load gives nobody.
+	const crossTeamLists = crossTeamSlugs.map((slug) => {
+		const result = crossTeamResults[slug];
+		return result instanceof Error ? [] : (result as Reviewer[] | undefined);
+	});
+	const isLoadingCrossTeam = crossTeamLists.some((list) => list === undefined);
+	const teamNameBySlug = new Map(
+		availableCrossTeamTargets.map((target) => [target.slug, target.name]),
 	);
-	// A list that failed to load also leaves the pool unknown: no name is shown.
-	const isLoadingCrossTeam =
-		crossTeamActive && !crossTeamLists.every((list) => Array.isArray(list));
-	const crossTeamPool =
-		crossTeamActive && !isLoadingCrossTeam
-			? buildCrossTeamReviewerPool({
-					sourceTeamSlug: teamSlug ?? "",
-					sourceReviewers: reviewers,
-					additionalTeams: selectedCrossTeamSlugs.map((slug, index) => ({
-						teamSlug: slug,
-						reviewers: crossTeamLists[index] as Reviewer[],
-					})),
-					excludeTeammates,
-				})
-			: null;
-	const poolReviewers = crossTeamPool?.reviewers ?? reviewers;
-	const otherTeamNameByReviewerId = new Map<string, string>();
-	for (const [reviewerId, slug] of crossTeamPool?.teamSlugByReviewerId ?? []) {
-		const name = availableCrossTeamTargets.find(
-			(target) => target.slug === slug,
-		)?.name;
-		if (slug !== teamSlug && name)
-			otherTeamNameByReviewerId.set(reviewerId, name);
-	}
+	const otherTeams = availableCrossTeamTargets.map((target) => ({
+		slug: target.slug,
+		name: target.name,
+	}));
+	const otherTeamNameByReviewerId = new Map<string, string>(
+		crossTeamSlugs.flatMap((slug, index) => {
+			const list = crossTeamLists[index];
+			const name = teamNameBySlug.get(slug);
+			return list && name
+				? list.map((reviewer) => [String(reviewer._id), name] as const)
+				: [];
+		}),
+	);
 
 	const currentUserReviewerId = useMemo(() => {
 		if (!user?.email) return undefined;
@@ -285,69 +241,6 @@ export function AssignmentCard() {
 			(reviewer) => reviewer.email.toLowerCase() === user.email.toLowerCase(),
 		)?._id as Id<"reviewers"> | undefined;
 	}, [reviewers, user?.email]);
-
-	const isLoadingTagReviewer =
-		mode === "tag" &&
-		!!selectedTagId &&
-		typeof nextReviewerByTag === "undefined";
-	const availableReviewersForMode = useMemo(() => {
-		if (mode !== "tag") {
-			return poolReviewers.filter((reviewer) =>
-				isEligibleForAssignment(reviewer),
-			);
-		}
-		if (!selectedTagId) return [];
-		return poolReviewers.filter((reviewer) =>
-			isEligibleForAssignment(reviewer, selectedTagId),
-		);
-	}, [mode, poolReviewers, selectedTagId]);
-	// The server's next-reviewer queries only know this team; across teams the
-	// pool's queue gives the same pick.
-	const activeNextReviewer = crossTeamActive
-		? (rotationQueue(availableReviewersForMode, [])[0] ?? null)
-		: mode === "tag"
-			? (nextReviewerByTag ?? null)
-			: nextReviewer;
-	const upcomingReviewer = useMemo(() => {
-		if (!activeNextReviewer) return null;
-		return findUpcomingAfterCurrent(
-			availableReviewersForMode,
-			activeNextReviewer._id as Id<"reviewers">,
-		);
-	}, [activeNextReviewer, availableReviewersForMode]);
-	// The viewer is skipped when they are next, so who follows the receiver
-	// leaves them out too.
-	const upcomingAfterReceiver = useMemo(() => {
-		const isSelfNext =
-			!!currentUserReviewerId &&
-			activeNextReviewer?._id === currentUserReviewerId;
-		const receiver = isSelfNext ? upcomingReviewer : activeNextReviewer;
-		if (!receiver) return null;
-		return (
-			rotationQueue(availableReviewersForMode, [
-				receiver._id,
-				isSelfNext ? currentUserReviewerId : null,
-			])[0] ?? null
-		);
-	}, [
-		activeNextReviewer,
-		availableReviewersForMode,
-		currentUserReviewerId,
-		upcomingReviewer,
-	]);
-	// Switching tags or teams reloads the pick. Until it lands, the hero shows
-	// the last complete picture (dimmed): name and "then" together, never one
-	// from each, and never an empty line that would push the card around.
-	const isLoadingPicks = isLoadingTagReviewer || isLoadingCrossTeam;
-	const heroPicks = {
-		activeNextReviewer,
-		upcomingReviewer,
-		upcomingAfterReceiver,
-		otherTeamNameByReviewerId,
-	};
-	const lastHeroPicksRef = useRef(heroPicks);
-	if (!isLoadingPicks) lastHeroPicksRef.current = heroPicks;
-	const heroShown = isLoadingPicks ? lastHeroPicksRef.current : heroPicks;
 
 	const resolverReasonMessages = useMemo<AssignmentResolverReasonMessages>(
 		() => ({
@@ -363,27 +256,132 @@ export function AssignmentCard() {
 		[t],
 	);
 
-	const resolvedPreview = useMemo(
-		() =>
-			resolveAssignmentPreview({
-				mode,
-				slotConfigs: effectiveSlotConfigs,
-				reviewers: poolReviewers,
-				tags,
-				selectedTagId,
-				currentUserReviewerId,
-				reasonMessages: resolverReasonMessages,
-			}),
-		[
-			mode,
-			effectiveSlotConfigs,
-			poolReviewers,
-			tags,
-			selectedTagId,
-			currentUserReviewerId,
-			resolverReasonMessages,
-		],
+	const resolvedPreview = resolveAssignmentPreview({
+		mode,
+		slotConfigs: effectiveSlotConfigs,
+		reviewers,
+		tags,
+		selectedTagId,
+		currentUserReviewerId,
+		reasonMessages: resolverReasonMessages,
+		sourceTeamSlug: teamSlug ?? undefined,
+		reviewersByTeam: crossTeamActive
+			? new Map([
+					[teamSlug ?? "", reviewers],
+					...crossTeamSlugs.map(
+						(slug, index) => [slug, crossTeamLists[index] ?? []] as const,
+					),
+				])
+			: undefined,
+		requesterEmail: user?.email,
+	});
+	const previewReceivers = resolvedPreview.resolved.map(
+		(item) => item.reviewer,
 	);
+	// Another team's reviewer that cannot be named says which team falls short
+	// (or that it is still loading), in its row and above the button.
+	const slotPreviews = resolvedPreview.slots.map((preview) => {
+		const slug = resolvedPreview.payloadSlots[preview.slotIndex]?.teamSlug;
+		if (!slug || preview.status === "resolved") return preview;
+		return {
+			...preview,
+			reason: isLoadingCrossTeam
+				? t("tags.findingNextReviewer")
+				: t("pr.teamsUnavailable", { teams: teamNameBySlug.get(slug) ?? slug }),
+		};
+	});
+	const shortTeamNames = isLoadingCrossTeam
+		? []
+		: [
+				...new Set(
+					slotPreviews.flatMap((preview) => {
+						const slug =
+							resolvedPreview.payloadSlots[preview.slotIndex]?.teamSlug;
+						return slug && preview.status === "unresolved"
+							? [teamNameBySlug.get(slug) ?? slug]
+							: [];
+					}),
+				),
+			];
+
+	// With one reviewer, the rotation menu picks their team (none: this one).
+	const setFirstReviewerTeam = (slug: string | undefined) =>
+		setSlotConfigs((previous) => {
+			const slot = defaultSlotForMode(mode);
+			return [
+				normalizeSlotForMode(
+					{ ...slot, id: previous[0]?.id ?? slot.id, teamSlug: slug },
+					mode,
+				),
+				...previous.slice(1),
+			];
+		});
+	const isLoadingTagReviewer =
+		mode === "tag" &&
+		!!selectedTagId &&
+		typeof nextReviewerByTag === "undefined";
+	const availableReviewersForMode = useMemo(() => {
+		if (mode !== "tag") {
+			return reviewers.filter((reviewer) => isEligibleForAssignment(reviewer));
+		}
+		if (!selectedTagId) return [];
+		return reviewers.filter((reviewer) =>
+			isEligibleForAssignment(reviewer, selectedTagId),
+		);
+	}, [mode, reviewers, selectedTagId]);
+	// Across teams the preview's picks are the receivers; this team's
+	// next-reviewer queries, and who follows in its rotation, do not apply.
+	const activeNextReviewer = crossTeamActive
+		? (previewReceivers[0] ?? null)
+		: mode === "tag"
+			? (nextReviewerByTag ?? null)
+			: nextReviewer;
+	const upcomingReviewer = useMemo(() => {
+		if (crossTeamActive || !activeNextReviewer) return null;
+		return findUpcomingAfterCurrent(
+			availableReviewersForMode,
+			activeNextReviewer._id as Id<"reviewers">,
+		);
+	}, [activeNextReviewer, availableReviewersForMode, crossTeamActive]);
+	// The viewer is skipped when they are next, so who follows the receiver
+	// leaves them out too.
+	const upcomingAfterReceiver = useMemo(() => {
+		if (crossTeamActive) return null;
+		const isSelfNext =
+			!!currentUserReviewerId &&
+			activeNextReviewer?._id === currentUserReviewerId;
+		const receiver = isSelfNext ? upcomingReviewer : activeNextReviewer;
+		if (!receiver) return null;
+		return (
+			rotationQueue(availableReviewersForMode, [
+				receiver._id,
+				isSelfNext ? currentUserReviewerId : null,
+			])[0] ?? null
+		);
+	}, [
+		activeNextReviewer,
+		availableReviewersForMode,
+		crossTeamActive,
+		currentUserReviewerId,
+		upcomingReviewer,
+	]);
+	// Switching tags or teams reloads the pick. Until it lands, the hero shows
+	// the last complete picture (dimmed): name and "then" together, never one
+	// from each, and never an empty line that would push the card around.
+	const isLoadingPicks = isLoadingTagReviewer || isLoadingCrossTeam;
+	const heroPicks = {
+		activeNextReviewer,
+		upcomingReviewer,
+		upcomingAfterReceiver,
+		multipleReceivers:
+			isMultiAssignmentActive || crossTeamActive ? previewReceivers : null,
+		otherTeamNameByReviewerId: crossTeamActive
+			? otherTeamNameByReviewerId
+			: undefined,
+	};
+	const lastHeroPicksRef = useRef(heroPicks);
+	if (!isLoadingPicks) lastHeroPicksRef.current = heroPicks;
+	const heroShown = isLoadingPicks ? lastHeroPicksRef.current : heroPicks;
 
 	const getActionByReviewerId = () => {
 		if (!user?.email) return undefined;
@@ -450,15 +448,12 @@ export function AssignmentCard() {
 				teamSlug,
 				mode,
 				selectedTagId: mode === "tag" ? selectedTagId : undefined,
-				slots: resolvedPreview.payloadSlots.slice(0, effectiveReviewerCount),
+				slots: resolvedPreview.payloadSlots,
 				prUrl: prUrl.trim() || undefined,
 				contextUrl: contextUrl.trim() || undefined,
 				urgent,
-				crossTeamReview,
-				excludeTeammates,
-				additionalTeamSlugs: crossTeamReview
-					? selectedCrossTeamSlugs
-					: undefined,
+				crossTeamReview: crossTeamActive,
+				additionalTeamSlugs: crossTeamActive ? crossTeamSlugs : undefined,
 				actionByReviewerId: getActionByReviewerId(),
 			});
 
@@ -602,25 +597,37 @@ export function AssignmentCard() {
 
 	const duplicateCheck = useDuplicatePrCheck(teamSlug, prUrl);
 
+	// Any reviewer the preview cannot name blocks the button: assigning the rest
+	// would quietly send fewer than asked.
+	const unresolvedReason = slotPreviews.flatMap((preview) =>
+		preview.status === "unresolved" ? [preview.reason] : [],
+	)[0];
 	const isAssignDisabled =
 		isAssigning ||
 		!parsedPrUrl ||
 		(mode === "tag" && !selectedTagId) ||
-		(crossTeamReview && selectedCrossTeamSlugs.length === 0) ||
+		isLoadingCrossTeam ||
+		unresolvedReason !== undefined ||
 		resolvedPreview.resolved.length === 0;
 
 	// A disabled primary action always says what is missing.
 	const assignBlockedReason = (() => {
 		if (isAssigning || !isAssignDisabled) return null;
 		if (!prUrl.trim()) return t("pr.assignDisabledNeedsUrl");
-		// The field's format error and the hint under the team chips already say
-		// it in place; repeating them here would say the same thing twice.
+		// The field already shows the format error in place; repeating it here
+		// would say the same thing twice.
 		if (hasPrUrlError) return null;
 		if (!parsedPrUrl) return t("pr.assignDisabledNeedsUrl");
-		if (crossTeamReview && selectedCrossTeamSlugs.length === 0) return null;
+		if (isLoadingCrossTeam) return null;
+		if (shortTeamNames.length > 0)
+			return t("pr.teamsUnavailable", {
+				teams: new Intl.ListFormat(locale, { type: "conjunction" }).format(
+					shortTeamNames,
+				),
+			});
 		if (resolvedPreview.resolved.length === 0)
 			return t("pr.assignDisabledNoReviewer");
-		return null;
+		return unresolvedReason ?? null;
 	})();
 
 	const submittingRef = useRef(false);
@@ -643,19 +650,21 @@ export function AssignmentCard() {
 		!assignmentHistory.some((entry) => entry.batchId === liveSummary.batchId);
 
 	const receivers = resolvedPreview.resolved;
-	// Until the other teams' reviewers load, a name would come from this team only.
-	const namedReceiver =
-		receivers.length === 1 && !isLoadingCrossTeam ? receivers[0] : null;
+	const namedReceiver = receivers.length === 1 ? receivers[0] : null;
 	// The rotation landed on the person who already has this PR; say so and
 	// offer the way to pick someone else instead of a silent second notice.
 	const duplicateIsReceiver =
 		namedReceiver !== null &&
 		namedReceiver.reviewer.name === duplicateCheck.duplicate?.reviewerName;
 	const isReassigning = duplicateCheck.duplicate !== null;
-	const assignLabel =
-		receivers.length > 1
+	// The button counts what was asked; a row that cannot be filled is said under
+	// the field. Until other teams' reviewers load, nothing is known.
+	const askedCount = resolvedPreview.payloadSlots.length;
+	const assignLabel = isLoadingCrossTeam
+		? t("pr.assignPR")
+		: askedCount > 1
 			? t(isReassigning ? "pr.assignAgainToCount" : "pr.assignToCount", {
-					count: receivers.length,
+					count: askedCount,
 				})
 			: namedReceiver
 				? t(
@@ -672,7 +681,7 @@ export function AssignmentCard() {
 	// The webhook checked here is this team's; across teams each chosen team's
 	// channel is notified, which the toast reports after assigning.
 	const chatNotice =
-		!team?.hasGoogleChatWebhook || crossTeamReview
+		!team?.hasGoogleChatWebhook || crossTeamActive
 			? null
 			: receivers.length > 1
 				? t("pr.chatNoticeCount", { count: receivers.length })
@@ -691,17 +700,23 @@ export function AssignmentCard() {
 					currentUserReviewerId={currentUserReviewerId}
 					upcomingReviewer={heroShown.upcomingReviewer}
 					upcomingAfterReceiver={heroShown.upcomingAfterReceiver}
-					multipleReceivers={
-						isMultiAssignmentActive
-							? resolvedPreview.resolved.map((item) => item.reviewer)
-							: null
-					}
+					multipleReceivers={heroShown.multipleReceivers}
 					isLoadingTagReviewer={isLoadingTagReviewer}
 					rotationMenu={
 						<RotationMenu
 							tags={tags}
 							selectedTagId={selectedTagId}
-							onTagChange={setSelectedTagId}
+							onTagChange={(tagId) => {
+								setSelectedTagId(tagId);
+								if (!isMultiAssignmentActive) setFirstReviewerTeam(undefined);
+							}}
+							otherTeams={otherTeams}
+							selectedTeamSlug={
+								isMultiAssignmentActive ? undefined : slotConfigs[0]?.teamSlug
+							}
+							onTeamChange={
+								isMultiAssignmentActive ? undefined : setFirstReviewerTeam
+							}
 							onPickSomeoneElse={() => setForceAssignOpen(true)}
 							getTagStats={getTagStats}
 						/>
@@ -738,23 +753,17 @@ export function AssignmentCard() {
 							return;
 						}
 						setReviewerCount(1);
-						setSlotConfigs([defaultSlotForMode(mode)]);
+						// The one reviewer left keeps the first row's team.
+						setSlotConfigs((previous) => [
+							{ ...defaultSlotForMode(mode), teamSlug: previous[0]?.teamSlug },
+						]);
 					}}
 					urgent={urgent}
 					onUrgentChange={setUrgent}
-					crossTeamReview={crossTeamReview}
-					onCrossTeamReviewChange={setCrossTeamReview}
 					availableCrossTeamTargets={availableCrossTeamTargets}
-					currentTeam={
-						teamSlug && team ? { slug: teamSlug, name: team.name } : null
-					}
-					selectedCrossTeamSlugs={selectedCrossTeamSlugs}
-					onSelectedCrossTeamSlugsChange={setSelectedCrossTeamSlugs}
-					excludeTeammates={excludeTeammates}
-					onExcludeTeammatesChange={setExcludeTeammates}
 					reviewers={reviewers}
 					slotConfigs={slotConfigs}
-					reviewerSlotPreviews={resolvedPreview.slots}
+					reviewerSlotPreviews={slotPreviews}
 					onReviewerCountChange={setReviewerCount}
 					onSlotChange={(index, patch) => {
 						setSlotConfigs((prev) =>

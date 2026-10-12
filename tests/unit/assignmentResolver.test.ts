@@ -6,6 +6,7 @@ import {
 	isForcedAssignmentStrategy,
 	isSingleForcedAssignment,
 	resolveAssignmentSlots,
+	resolveAssignmentSlotsPerTeam,
 } from "../../lib/assignmentResolver";
 
 type Reviewer = AssignmentResolverReviewer<string, string>;
@@ -147,4 +148,82 @@ test("counts through a large assignment-count gap", () => {
 	assert.ok(
 		(countRegularAssignmentsUntilReviewer(reviewers, "carla") ?? 0) > 3,
 	);
+});
+
+const perTeam = (
+	slots: { strategy: string; tagId?: string; teamSlug?: string }[],
+	options: {
+		mode?: "regular" | "tag";
+		selectedTagId?: string;
+		requesterEmail?: string;
+	} = {},
+) =>
+	resolveAssignmentSlotsPerTeam({
+		mode: options.mode ?? "regular",
+		selectedTagId: options.selectedTagId,
+		sourceTeamSlug: "home",
+		requesterEmail: options.requesterEmail,
+		slots,
+		reviewersByTeam: new Map([
+			[
+				"home",
+				[
+					reviewer("ana", 3, 1, { email: "ana@x.com", tags: ["frontend"] }),
+					reviewer("bea", 5, 2, { email: "bea@x.com" }),
+					reviewer("me-home", 0, 3, { email: "me@x.com" }),
+				],
+			],
+			[
+				"other",
+				[
+					reviewer("me-other", 0, 4, { email: "me@x.com" }),
+					reviewer("ana-other", 1, 5, { email: "ana@x.com" }),
+					reviewer("caro", 2, 6, { email: "caro@x.com" }),
+					reviewer("dani", 2, 7, { email: "dani@x.com" }),
+				],
+			],
+			["empty", [reviewer("eva", 0, 8, { effectiveIsAbsent: true })]],
+		]),
+	});
+const picked = (result: ReturnType<typeof perTeam>) =>
+	result.resolved.map((item) => `${item.slotIndex}:${item.reviewer._id}`);
+
+test("asks each team for its own reviewers, comparing counts only within a team", () => {
+	const result = perTeam(
+		[
+			{ strategy: "random" },
+			{ strategy: "random" },
+			{ strategy: "random", teamSlug: "other" },
+		],
+		{ requesterEmail: "me@x.com" },
+	);
+	// Home gives Ana and Bea although Caro has fewer PRs; the other team skips
+	// the requester and Ana, who are already home reviewers.
+	assert.deepEqual(picked(result), ["0:ana", "1:bea", "2:caro"]);
+	assert.deepEqual(result.failed, []);
+});
+
+test("leaves the requesting team out when no slot asks it", () => {
+	const result = perTeam([
+		{ strategy: "random", teamSlug: "other" },
+		{ strategy: "random", teamSlug: "other" },
+	]);
+	assert.deepEqual(picked(result), ["0:me-other", "1:ana-other"]);
+});
+
+test("fails only the slots of a team with nobody available", () => {
+	const result = perTeam([
+		{ strategy: "random" },
+		{ strategy: "random", teamSlug: "empty" },
+	]);
+	assert.deepEqual(picked(result), ["0:me-home"]);
+	assert.deepEqual(result.failed, [{ slotIndex: 1, reason: "no_candidates" }]);
+});
+
+test("applies the tag rotation to the requesting team only", () => {
+	const result = perTeam(
+		[{ strategy: "random" }, { strategy: "random", teamSlug: "other" }],
+		{ mode: "tag", selectedTagId: "frontend" },
+	);
+	assert.deepEqual(picked(result), ["0:ana", "1:me-other"]);
 });
