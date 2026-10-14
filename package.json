@@ -15,6 +15,7 @@
 		"biome:fix": "biome check --write",
 		"biome:fix-unsafe": "biome check --unsafe --write",
 		"prepare": "lefthook install || true",
+		"seed": "convex run seed:seed",
 		"ext:dev": "pnpm --dir chrome-extension run dev",
 		"ext:build": "pnpm --dir chrome-extension run build",
 		"ext:pack": "cd chrome-extension && node scripts/pack.mjs"

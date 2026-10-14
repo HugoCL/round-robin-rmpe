@@ -10,6 +10,7 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
+	focusDialogItself,
 } from "@/components/ui/dialog";
 import {
 	Drawer,
@@ -159,7 +160,10 @@ export function ChangelogDialog({ iconOnly = false }: { iconOnly?: boolean }) {
 		<>
 			{iconOnly ? iconOnlyButton : standardButton}
 			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent className="sm:max-w-[500px]">
+				<DialogContent
+					className="sm:max-w-[500px]"
+					onOpenAutoFocus={focusDialogItself}
+				>
 					<DialogHeader>
 						<DialogTitle>{title}</DialogTitle>
 						<DialogDescription>{description}</DialogDescription>

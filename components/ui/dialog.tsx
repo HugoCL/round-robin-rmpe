@@ -89,6 +89,16 @@ function DialogContent({
   )
 }
 
+/**
+ * `onOpenAutoFocus` for dialogs whose first focusable control has a tooltip
+ * (often the close button): focusing it opens the tooltip, which then takes the
+ * first Escape. Focusing the dialog itself keeps Escape and Tab working.
+ */
+function focusDialogItself(event: Event) {
+  event.preventDefault()
+  if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus()
+}
+
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -169,4 +179,5 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
+  focusDialogItself,
 }

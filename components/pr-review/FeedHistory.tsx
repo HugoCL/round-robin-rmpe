@@ -44,22 +44,11 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
+import { getInitials } from "@/lib/initials";
 import type { GroupedAssignmentHistoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { HistoryChatThreadLinks } from "./HistoryChatThreadLinks";
 import { usePRReview } from "./PRReviewContext";
-
-function getInitials(name?: string) {
-	return (
-		name
-			?.trim()
-			.split(/\s+/)
-			.slice(0, 2)
-			.map((part) => part[0])
-			.join("")
-			.toUpperCase() || "?"
-	);
-}
 
 function getPRNumber(prUrl?: string) {
 	return prUrl?.match(/(?:pull|pulls|merge_requests)\/(\d+)(?:[/?#]|$)/i)?.[1];

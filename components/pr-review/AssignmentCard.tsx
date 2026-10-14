@@ -77,11 +77,13 @@ export function AssignmentCard() {
 
 	const tags =
 		useQuery(api.queries.getTags, teamSlug ? { teamSlug } : "skip") || [];
-	const allTeams = useQuery(api.queries.getTeams) || [];
+	const allTeams = useQuery(api.queries.getTeams);
+	// Memoized on the query result itself: a fresh `[]` per render while it
+	// loads would re-run the effects that depend on this list.
 	const availableCrossTeamTargets = useMemo(
 		() =>
-			allTeams.filter(
-				(team): team is NonNullable<(typeof allTeams)[number]> =>
+			(allTeams ?? []).filter(
+				(team): team is NonNullable<NonNullable<typeof allTeams>[number]> =>
 					team !== null &&
 					typeof team.slug === "string" &&
 					team.slug !== teamSlug,
@@ -121,7 +123,8 @@ export function AssignmentCard() {
 			setExcludeTeammates(false);
 		}
 		if (crossTeamReview && availableCrossTeamTargets.length === 0) {
-			setSelectedCrossTeamSlugs([]);
+			// A new `[]` on every pass would re-trigger this effect forever.
+			if (selectedCrossTeamSlugs.length > 0) setSelectedCrossTeamSlugs([]);
 			return;
 		}
 		if (selectedCrossTeamSlugs.length === 0) {

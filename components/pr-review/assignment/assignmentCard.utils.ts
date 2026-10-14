@@ -39,41 +39,24 @@ export function normalizeSlotForMode(
 	return next;
 }
 
+/** Who the regular rotation picks next, excluding `excludedIds`: fewest
+ * assignments first, then whoever joined earliest. */
+export function rotationQueue(
+	candidates: Reviewer[],
+	excludedIds: (Id<"reviewers"> | string | null | undefined)[],
+): Reviewer[] {
+	const excluded = new Set(excludedIds.filter(Boolean).map(String));
+	return candidates
+		.filter((reviewer) => !excluded.has(String(reviewer._id)))
+		.sort(
+			(a, b) =>
+				a.assignmentCount - b.assignmentCount || a.createdAt - b.createdAt,
+		);
+}
+
 export function findUpcomingAfterCurrent(
 	candidates: Reviewer[],
 	currentReviewerId: Id<"reviewers">,
 ): Reviewer | null {
-	if (candidates.length <= 1) return null;
-
-	const minCount = Math.min(
-		...candidates.map((reviewer) => reviewer.assignmentCount),
-	);
-	const candidatesWithSameCount = candidates
-		.filter(
-			(reviewer) =>
-				reviewer.assignmentCount === minCount &&
-				reviewer._id !== currentReviewerId,
-		)
-		.sort((a, b) => a.createdAt - b.createdAt);
-
-	if (candidatesWithSameCount.length > 0) {
-		return candidatesWithSameCount[0];
-	}
-
-	const higherCountCandidates = candidates.filter(
-		(reviewer) =>
-			reviewer.assignmentCount > minCount && reviewer._id !== currentReviewerId,
-	);
-
-	if (higherCountCandidates.length === 0) return null;
-
-	const nextMinCount = Math.min(
-		...higherCountCandidates.map((reviewer) => reviewer.assignmentCount),
-	);
-
-	return (
-		higherCountCandidates
-			.filter((reviewer) => reviewer.assignmentCount === nextMinCount)
-			.sort((a, b) => a.createdAt - b.createdAt)[0] || null
-	);
+	return rotationQueue(candidates, [currentReviewerId])[0] ?? null;
 }

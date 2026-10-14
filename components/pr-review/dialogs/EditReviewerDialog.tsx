@@ -35,6 +35,7 @@ import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getInitials } from "@/lib/initials";
 import {
 	normalizeWorkingDays,
 	type PartTimeSchedule,
@@ -60,18 +61,6 @@ interface EditReviewerDialogProps {
 		includedInTagRotations?: boolean,
 	) => Promise<boolean>;
 	trigger?: ReactNode;
-}
-
-function getInitials(name?: string) {
-	return (
-		name
-			?.trim()
-			.split(/\s+/)
-			.slice(0, 2)
-			.map((part) => part[0])
-			.join("")
-			.toUpperCase() || "?"
-	);
 }
 
 function schedulesMatch(

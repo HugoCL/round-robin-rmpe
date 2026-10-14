@@ -238,7 +238,7 @@ export function AgentSetupSection() {
 							>
 								<span
 									className={cn(
-										"flex size-5 shrink-0 items-center justify-center rounded-full border text-[10px]",
+										"flex size-5 shrink-0 items-center justify-center rounded-full border text-[11px]",
 										isComplete &&
 											"border-primary bg-primary text-primary-foreground",
 										isCurrent && "border-primary/40 bg-primary/10 text-primary",

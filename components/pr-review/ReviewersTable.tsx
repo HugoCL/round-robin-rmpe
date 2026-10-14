@@ -14,6 +14,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
 import { useConvexTags } from "@/hooks/useConvexTags";
+import { getInitials } from "@/lib/initials";
 import { findNextScheduledAbsence } from "@/lib/plannedAbsences";
 import { reviewerHasBirthdayToday } from "@/lib/reviewerAvailability";
 import type { Reviewer } from "@/lib/types";
@@ -26,18 +27,6 @@ import { usePRReview } from "./PRReviewContext";
 interface ReviewersTableProps {
 	teamSlug?: string;
 	readOnly?: boolean;
-}
-
-function getInitials(name?: string) {
-	return (
-		name
-			?.trim()
-			.split(/\s+/)
-			.slice(0, 2)
-			.map((part) => part[0])
-			.join("")
-			.toUpperCase() || "?"
-	);
 }
 
 export function ReviewersTable({
