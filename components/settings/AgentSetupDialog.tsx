@@ -9,6 +9,7 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
+	focusDialogItself,
 } from "@/components/ui/dialog";
 import {
 	Drawer,
@@ -40,7 +41,10 @@ export function AgentSetupDialog() {
 	if (isMobile) {
 		return (
 			<Drawer open={open} onOpenChange={setAgentSetupDialogOpen}>
-				<DrawerContent className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:max-h-[92dvh]">
+				<DrawerContent
+					className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:max-h-[92dvh]"
+					onOpenAutoFocus={focusDialogItself}
+				>
 					<DrawerHeader className="shrink-0 text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left">
 						<DrawerTitle>{title}</DrawerTitle>
 						<DrawerDescription>{description}</DrawerDescription>
@@ -60,7 +64,10 @@ export function AgentSetupDialog() {
 
 	return (
 		<Dialog open={open} onOpenChange={setAgentSetupDialogOpen}>
-			<DialogContent className="flex max-h-[min(88dvh,48rem)] w-[min(100%-1.5rem,42rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+			<DialogContent
+				className="flex max-h-[min(88dvh,48rem)] w-[min(100%-1.5rem,42rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+				onOpenAutoFocus={focusDialogItself}
+			>
 				<div className="shrink-0 border-b border-border/60 bg-muted/20 px-5 py-4 pr-14 sm:px-6 sm:py-5">
 					<DialogHeader className="pr-0 text-left">
 						<DialogTitle>{title}</DialogTitle>

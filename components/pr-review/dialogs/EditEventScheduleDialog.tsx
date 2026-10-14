@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "convex/react";
-import { Calendar, Clock, Globe, Pencil } from "lucide-react";
+import { Calendar, Clock, Globe } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +30,10 @@ interface EditEventScheduleDialogProps {
 	eventId: Id<"events">;
 	eventTitle: string;
 	scheduledAt: number;
-	trigger?: React.ReactNode;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	/** Opened from a menu, so there is no trigger to take focus back. */
+	onCloseAutoFocus: (event: Event) => void;
 }
 
 function getUserTimezone(): string {
@@ -83,13 +85,14 @@ export function EditEventScheduleDialog({
 	eventId,
 	eventTitle,
 	scheduledAt,
-	trigger,
+	open,
+	onOpenChange,
+	onCloseAutoFocus,
 }: EditEventScheduleDialogProps) {
 	const t = useTranslations();
 	const locale = useLocale();
 	const timeId = useId();
 
-	const [open, setOpen] = useState(false);
 	const [date, setDate] = useState<Date | undefined>();
 	const [time, setTime] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,7 +142,7 @@ export function EditEventScheduleDialog({
 					title: t("events.scheduleUpdated"),
 					description: t("events.scheduleUpdatedDescription"),
 				});
-				setOpen(false);
+				onOpenChange(false);
 				return;
 			}
 
@@ -173,16 +176,11 @@ export function EditEventScheduleDialog({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				{trigger ?? (
-					<Button variant="outline" size="sm">
-						<Pencil className="h-4 w-4 mr-1" />
-						{t("events.editSchedule")}
-					</Button>
-				)}
-			</DialogTrigger>
-			<DialogContent className="sm:max-w-[425px]">
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent
+				className="sm:max-w-[425px]"
+				onCloseAutoFocus={onCloseAutoFocus}
+			>
 				<DialogHeader>
 					<DialogTitle>{t("events.editSchedule")}</DialogTitle>
 					<DialogDescription>
@@ -247,7 +245,7 @@ export function EditEventScheduleDialog({
 				</div>
 
 				<DialogFooter>
-					<Button variant="outline" onClick={() => setOpen(false)}>
+					<Button variant="outline" onClick={() => onOpenChange(false)}>
 						{t("common.cancel")}
 					</Button>
 					<Button onClick={handleSubmit} disabled={isSubmitting}>

@@ -5,7 +5,6 @@ import { useQuery } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 import { AgentSetupDialog } from "@/components/settings/AgentSetupDialog";
-import { McpLaunchBanner } from "@/components/settings/McpLaunchBanner";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "@/hooks/use-toast";
@@ -15,17 +14,14 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import type { Assignment, UserInfo } from "@/lib/types";
 import { ActiveEventsList } from "./ActiveEventsList";
-import { AnnouncementBanner } from "./AnnouncementBanner";
 import { ShortcutConfirmationDialog } from "./dialogs/ShortcutConfirmationDialog";
 import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
 import { useAssignmentNotificationAudio } from "./hooks/useAssignmentNotificationAudio";
 import { useShortcutDialogFlow } from "./hooks/useShortcutDialogFlow";
-import { IndefiniteAbsenceReminderBanner } from "./IndefiniteAbsenceReminderBanner";
 import { CompactLayout } from "./layouts/CompactLayout";
 import { PRReviewProvider } from "./PRReviewContext";
 import { PRReviewGuard } from "./PRReviewGuard";
-import { SurveyBanner } from "./SurveyBanner";
 import { TeamBirthdaySection } from "./TeamBirthdaySection";
 
 interface BackupEntry {
@@ -359,11 +355,7 @@ export default function PRReviewAssignment({
 							aria-label={t("common.notices")}
 						>
 							<ActiveEventsList />
-							<McpLaunchBanner />
-							<AnnouncementBanner />
-							<SurveyBanner />
 							<TeamBirthdaySection teamSlug={teamSlug} />
-							<IndefiniteAbsenceReminderBanner />
 						</div>
 						<CompactLayout />
 					</main>

@@ -97,6 +97,7 @@ export function SurveyBanner() {
 		<>
 			<Alert
 				data-notice
+				role="status"
 				className="grid-cols-[auto_minmax(0,1fr)] rounded-xl border-primary/20 bg-primary/[0.04] px-3 py-2.5 text-foreground shadow-none sm:px-4 *:data-[slot=alert-title]:col-start-auto [&>svg]:row-span-1"
 			>
 				<MessageSquareHeart className="text-primary" />

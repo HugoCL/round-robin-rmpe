@@ -24,6 +24,7 @@ export type PushNotificationStatus =
 
 interface UsePushNotificationsOptions {
 	userEmail: string;
+	enabled?: boolean;
 }
 
 interface UsePushNotificationsReturn {
@@ -36,6 +37,7 @@ interface UsePushNotificationsReturn {
 
 export function usePushNotifications({
 	userEmail,
+	enabled = true,
 }: UsePushNotificationsOptions): UsePushNotificationsReturn {
 	const [status, setStatus] = useState<PushNotificationStatus>("unsupported");
 	const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +65,7 @@ export function usePushNotifications({
 
 	// Check support and current subscription status
 	useEffect(() => {
-		if (typeof window === "undefined") return;
+		if (typeof window === "undefined" || !enabled) return;
 
 		const checkSupport = async () => {
 			if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
@@ -112,7 +114,7 @@ export function usePushNotifications({
 		};
 
 		registerServiceWorker();
-	}, [clearPendingNotifications]);
+	}, [enabled, clearPendingNotifications]);
 
 	useEffect(() => {
 		if (typeof window === "undefined" || !isSupported) return;

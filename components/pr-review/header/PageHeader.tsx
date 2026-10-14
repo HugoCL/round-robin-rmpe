@@ -1,111 +1,57 @@
-import { Bot, ClipboardList, Lightbulb, ShieldCheck } from "lucide-react";
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
-import { useFeatureEnabled } from "@/components/AppConfigProvider";
-import { PushNotificationManager } from "@/components/PushNotificationManager";
+import { useTranslations } from "next-intl";
 import { TeamSwitcher } from "@/components/TeamSwitcher";
-import { IconActionButton } from "@/components/ui/icon-action-button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import {
-	openAgentSetupDialog,
-	useAgentSetupDialogOpen,
-} from "@/lib/agent-setup-dialog-store";
-import { ChangelogDialog } from "../ChangelogDialog";
-import { CreateEventDialog } from "../dialogs/CreateEventDialog";
-import { HeaderOptionsDrawer } from "../HeaderOptionsDrawer";
 import { usePRReview } from "../PRReviewContext";
+import { HeaderMenu } from "./HeaderMenu";
 import { HeaderStatusBar } from "./HeaderStatusBar";
-import { TeamWeeklyPRCounter } from "./TeamWeeklyPRCounter";
 
 interface PageHeaderProps {
 	teamSlug?: string;
 }
 
 /**
- * PageHeader component displays the main title, team switcher, and action buttons.
+ * One row: the product, the team, your own status and a menu with everything
+ * that is not part of assigning a PR.
  */
 export function PageHeader({ teamSlug }: PageHeaderProps) {
 	const t = useTranslations();
-	const { isAdmin, isForeignTeamView, canManageCurrentTeam, userInfo } =
-		usePRReview();
-	const locale = useLocale();
-	const agentSetupOpen = useAgentSetupDialogOpen();
-	const eventsEnabled = useFeatureEnabled("events");
-	const surveysEnabled = useFeatureEnabled("surveys");
-	const suggestionsEnabled = useFeatureEnabled("suggestionsBoard");
-	const pushEnabled = useFeatureEnabled("pushNotifications");
+	const { isForeignTeamView } = usePRReview();
 
-	// Sticky only from lg: on a phone the bar plus the status strip would keep
-	// a third of the screen pinned over the assignment card.
+	// Sticky only from lg: on a phone the wrapped header would keep a third of
+	// the screen pinned over the assignment card.
 	return (
-		<header className="relative z-40 bg-background/95 pb-px backdrop-blur-sm lg:sticky lg:top-0">
-			<div className="py-4">
-				<div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-					<div className="flex flex-wrap items-center gap-2 sm:gap-3">
-						<div className="mr-auto flex w-full min-w-0 items-center gap-2 sm:w-auto sm:gap-3">
-							<h1 className="shrink-0 text-xl font-semibold tracking-tight sm:text-2xl">
-								La Lista
-							</h1>
-							<div className="min-w-0 flex-1 sm:flex-none [&_[data-slot=select-trigger]]:h-9 [&_[data-slot=select-trigger]]:w-full [&_[data-slot=select-trigger]]:rounded-xl sm:[&_[data-slot=select-trigger]]:w-[min(13rem,48vw)]">
-								<TeamSwitcher teamSlug={teamSlug} />
-							</div>
-							<TeamWeeklyPRCounter teamSlug={teamSlug} />
-						</div>
-						<nav
-							className="flex w-full flex-nowrap items-center justify-between gap-0.5 overflow-x-auto [scrollbar-width:none] sm:w-auto sm:justify-end sm:overflow-visible"
-							aria-label={t("common.options")}
-						>
-							<IconActionButton
-								accent
-								label={t("agentSetup.navbarLabel")}
-								tooltip={t("agentSetup.navbarTooltip")}
-								aria-expanded={agentSetupOpen}
-								aria-haspopup="dialog"
-								onClick={() => openAgentSetupDialog()}
-							>
-								<Bot />
-							</IconActionButton>
-							{suggestionsEnabled ? (
-								<IconActionButton asChild label={t("suggestions.shortcut")}>
-									<Link href={`/${locale}/suggestions`}>
-										<Lightbulb />
-									</Link>
-								</IconActionButton>
-							) : null}
-							{isAdmin && surveysEnabled ? (
-								<IconActionButton asChild label={t("survey.shortcut")}>
-									<Link href={`/${locale}/surveys`}>
-										<ClipboardList />
-									</Link>
-								</IconActionButton>
-							) : null}
-							{isAdmin ? (
-								<IconActionButton asChild label={t("admin.shortcut")}>
-									<Link href={`/${locale}/admin`}>
-										<ShieldCheck />
-									</Link>
-								</IconActionButton>
-							) : null}
-							{canManageCurrentTeam && eventsEnabled ? (
-								<CreateEventDialog iconOnly />
-							) : null}
-							<ChangelogDialog iconOnly />
-							{userInfo?.email && pushEnabled ? (
-								<PushNotificationManager userEmail={userInfo.email} iconOnly />
-							) : null}
-							<ThemeToggle />
-							<HeaderOptionsDrawer />
-						</nav>
-						{isForeignTeamView ? (
-							<p className="basis-full truncate text-xs text-muted-foreground">
-								{t("team.foreignTeamReadonlyBanner")}
-							</p>
-						) : null}
+		<header className="relative z-40 border-b border-border/60 bg-background/95 backdrop-blur-sm lg:sticky lg:top-0">
+			<div className="mx-auto flex w-full max-w-screen-2xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
+				<div className="flex min-w-0 flex-1 items-center gap-1 sm:flex-none">
+					<h1 className="shrink-0 text-2xl font-semibold tracking-tight md:text-3xl">
+						La Lista
+					</h1>
+					<span
+						aria-hidden="true"
+						className="ml-2 shrink-0 text-2xl font-light text-muted-foreground/40 md:text-3xl"
+					>
+						/
+					</span>
+					{/* Pulled back by the switcher's own padding, so the slash sits evenly between both names. */}
+					<div className="-ml-1.25 min-w-0">
+						<TeamSwitcher teamSlug={teamSlug} />
 					</div>
 				</div>
-			</div>
-			<div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-				<HeaderStatusBar />
+				<div className="max-sm:order-last max-sm:basis-full">
+					<HeaderStatusBar />
+				</div>
+				<nav
+					className="ml-auto flex items-center gap-1"
+					aria-label={t("common.options")}
+				>
+					<ThemeToggle />
+					<HeaderMenu />
+				</nav>
+				{isForeignTeamView ? (
+					<p className="basis-full truncate text-xs text-muted-foreground">
+						{t("team.foreignTeamReadonlyBanner")}
+					</p>
+				) : null}
 			</div>
 		</header>
 	);

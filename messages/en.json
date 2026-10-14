@@ -26,6 +26,7 @@
 		"breakdownLabel": "Breakdown"
 	},
 	"common": {
+		"menu": "Menu",
 		"darkTheme": "Dark theme",
 		"lightTheme": "Light theme",
 		"save": "Save",
@@ -58,7 +59,6 @@
 		"language": "Language",
 		"viewOptions": "View Options",
 		"historyAndData": "History & Data",
-		"help": "Help",
 		"update": "Update",
 		"viewPR": "View PR",
 		"viewContext": "View Context",
@@ -197,8 +197,6 @@
 		"toggleExpand": "Expand",
 		"assignedBy": "Assigned by",
 		"reviewer": "Reviewer",
-		"teamPrsThisWeek": "Team PRs this week",
-		"teamPrsThisWeekAria": "Team PRs this week: {count}",
 		"assignDisabledNeedsUrl": "Paste the PR URL to assign.",
 		"assignDisabledNeedsTag": "Pick a tag to assign.",
 		"assignDisabledNeedsTeams": "Pick at least one target team.",
@@ -402,7 +400,7 @@
 		"showEmailsLabel": "Show emails",
 		"showEmailsDescription": "Shows the email column in the reviewers table.",
 		"hideMultiAssignmentSectionLabel": "Hide multi-assignment section",
-		"hideMultiAssignmentSectionDescription": "Hides multi-assignment configuration and always uses a single slot.",
+		"hideMultiAssignmentSectionDescription": "Hides multi-assignment and always assigns to a single person.",
 		"saveFailed": "Failed to save your personal settings. Please try again.",
 		"bootstrapFailed": "Failed to initialize your personal settings. Default values will be used."
 	},
@@ -415,9 +413,8 @@
 		"title": "MCP agent",
 		"drawerDescription": "Three steps: pick a team, generate a token, run one command in Claude Code.",
 		"navbarLabel": "MCP agent",
-		"navbarTooltip": "Connect Claude Code",
 		"openSetup": "Open setup",
-		"settingsRowDescription": "The same setup the robot icon opens in the header.",
+		"settingsRowDescription": "The same setup that MCP agent opens from the header menu.",
 		"connectTab": "Connect",
 		"tokensTab": "Tokens",
 		"wizardProgress": "Setup progress",
@@ -467,17 +464,6 @@
 		"revokedAt": "Revoked: {date}",
 		"neverUsed": "Never used",
 		"saving": "Saving…",
-		"tutorialTitle": "How to turn it on",
-		"tutorialPlay": "Play tutorial",
-		"tutorialPause": "Pause tutorial",
-		"tutorialTerminalLabel": "Terminal",
-		"tutorialCommandSuccess": "la-lista is connected.",
-		"tutorialSceneOpenCaption": "In the header, tap the robot icon.",
-		"tutorialSceneOpenHint": "It's the only one with a blue background.",
-		"tutorialSceneTokenCaption": "Generate your personal token.",
-		"tutorialSceneCommandCaption": "Copy the command and run it in your terminal.",
-		"tutorialSceneCommandHint": "Claude Code has to be installed on that machine.",
-		"tutorialSceneAssignCaption": "Done: from there you just ask for it in plain language.",
 		"usageTitle": "How to ask for it",
 		"usageBestWay": "Let GitHub CLI (gh) handle GitHub—create the PR, push, and check CI—and let La Lista pick the reviewer and post to Google Chat. If you don't have the URL at hand, tell it to grab it with gh pr view.",
 		"usageExample": {
@@ -507,14 +493,6 @@
 				"agent": "It went to Martina, from Payments. I pinged their Chat space and ours."
 			}
 		}
-	},
-	"mcpLaunch": {
-		"kicker": "New",
-		"title": "The MCP agent is out of experiments",
-		"description": "From Claude Code: GitHub CLI (gh) publishes the PR and La Lista picks the reviewer. One token, one command, done.",
-		"configure": "Set it up now",
-		"later": "Later",
-		"dismiss": "Dismiss this notice"
 	},
 	"teamSettings": {
 		"title": "Team Settings",
@@ -550,6 +528,12 @@
 		"scheduleReason": "Unavailable due to part-time schedule",
 		"returningOn": "Returns on {date}",
 		"noReturnDate": "No return date set"
+	},
+	"headerMenu": {
+		"team": "Team",
+		"help": "Help",
+		"admin": "Admin",
+		"preferences": "Preferences"
 	},
 	"reviewersPanel": {
 		"show": "Show reviewers",
@@ -750,11 +734,8 @@
 		"markedAvailableTitle": "Welcome Back!",
 		"markedAvailableDescription": "Your status has been updated to available",
 		"indefiniteReminderTitle": "You're still marked absent, with no return date",
-		"indefiniteReminderDescription": "Without a return date, your team can't tell when you're back. Pick the option that matches your situation:",
 		"markAvailableCta": "I'm available again",
-		"markAvailableCtaTooltip": "Clears your absence without changing your rotations.",
 		"notAReviewerCta": "I don't take PRs in the team rotation",
-		"notAReviewerCtaTooltip": "Leaves the team rotation; tag rotations keep their current setting.",
 		"indefiniteOption": "I don't know when I'll be back",
 		"indefiniteOptionOther": "I don't know when they'll be back",
 		"returnTodayOption": "I'll be back later today",
@@ -775,8 +756,8 @@
 		"cancelPlan": "Cancel plan",
 		"endNow": "End absence now",
 		"chipShort": "{range}",
-		"chipLabeled": "Away {range}",
-		"planCta": "Plan ahead…",
+		"chipLabeled": "Planned absence: {range}",
+		"planCta": "Plan an absence",
 		"plan": {
 			"errors": {
 				"invalidDate": "That date doesn't look right.",
@@ -829,7 +810,6 @@
 	},
 	"events": {
 		"createEvent": "Create Event",
-		"createEventTooltip": "Create an event for the team",
 		"createDescription": "Schedule a new event and invite your team to participate.",
 		"title": "Title",
 		"titlePlaceholder": "e.g., Estimation, Planning, Retro",
@@ -846,7 +826,6 @@
 		"created": "Event Created",
 		"createdDescription": "Your event has been scheduled successfully",
 		"createFailed": "Failed to create event. Please try again.",
-		"upcomingEvents": "Upcoming Events",
 		"upcomingDescription": "Events scheduled for your team",
 		"createdBy": "Created by {name}",
 		"closedSummary": "{title}, created by {creator}, scheduled for {date} at {time}. {status}",
@@ -883,7 +862,6 @@
 		"alreadyParticipating": "Already Participating",
 		"goToTeam": "Go to Team",
 		"addParticipant": "Add Participant",
-		"selectTeamMember": "Select team member",
 		"participantAdded": "Participant Added",
 		"participantAddedDescription": "{name} has been added to the event",
 		"addParticipantFailed": "Failed to add participant. Please try again.",
@@ -900,15 +878,7 @@
 		"scheduleNotEditable": "Only scheduled events can be rescheduled"
 	},
 	"notifications": {
-		"title": "Push Notifications",
-		"enable": "Enable notifications",
-		"disable": "Disable notifications",
-		"enabled": "Notifications enabled",
 		"blocked": "Notifications blocked",
-		"blockedByBrowser": "Blocked by browser",
-		"receiveAlerts": "You will receive notifications for PRs and events",
-		"enableToReceive": "Enable to receive alerts",
-		"blockedButton": "Blocked",
 		"label": "Notifications"
 	},
 	"suggestions": {
@@ -1065,29 +1035,27 @@
 		}
 	},
 	"headerStatus": {
+		"myWeek": "My week",
+		"receivedLabel": "Received",
+		"sentLabel": "Sent",
+		"teamTotal": "Team total",
 		"thisWeek": "This week",
-		"received": "received",
-		"sent": "sent",
-		"receivedAria": "{count, plural, one {# PR received this week} other {# PRs received this week}}",
-		"sentAria": "{count, plural, one {# PR sent this week} other {# PRs sent this week}}",
 		"available": "Available",
 		"unavailable": "Unavailable",
 		"partTimeOff": "Off today (part-time schedule)",
-		"youAreNext": "You're up next",
-		"lastPrs": "Latest",
+		"youAreNext": "it's your turn",
 		"lastReceived": "Last PR received",
 		"lastSent": "Last PR sent",
-		"lastReceivedHover": "Assigned on {when}",
-		"lastSentHover": "You sent it on {when}",
-		"untilTurn": "Next review in {count, plural, one {# more PR} other {# more PRs}}",
-		"untilTurnTooltip": "How many general-rotation PRs until it's your turn"
+		"untilTurn": "your turn in {count, plural, one {# PR} other {# PRs}}"
 	},
 	"announcements": {
+		"sheetDescription": "Announcements, surveys and pending setup for La Lista.",
 		"title": "Notices",
+		"empty": "You have no pending notices.",
 		"coordChannel": "Got a question about a release, a feature idea, or anything about La Lista? Jump into <channel>coord-la-lista</channel>.",
-		"createEventMoved": "If your team uses events, Create Event now lives on the calendar icon in the header. Below the navbar there's a persistent strip with your availability, this week's PRs, and keyboard shortcuts.",
+		"createEventMoved": "If your team uses events, Create event now lives in the header menu. Your availability and this week's PRs are in the buttons next to the team.",
 		"reviewersPanelMoved": "Looking for Manage Reviewers? It found a new home: open it from the Reviewers side panel. That's where the list lives, plus tag management and per-person settings.",
-		"mcpSetupWizard": "Connecting the MCP Agent is easier now: choose your team, generate a token, and connect Claude Code in three steps. Open the robot icon to get started.",
+		"mcpSetupWizard": "Connecting the MCP Agent is easier now: choose your team, generate a token, and connect Claude Code in three steps. Open it from the header menu.",
 		"dismiss": "Dismiss"
 	},
 	"changelog": {

@@ -3,7 +3,6 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { BirthdayCelebrationOverlay } from "./BirthdayCelebrationOverlay";
-import { BirthdaySetupBanner } from "./BirthdaySetupBanner";
 import { BirthdayTeamNoticeBanner } from "./BirthdayTeamNoticeBanner";
 
 export function TeamBirthdaySection({ teamSlug }: { teamSlug?: string }) {
@@ -17,7 +16,6 @@ export function TeamBirthdaySection({ teamSlug }: { teamSlug?: string }) {
 
 	return (
 		<>
-			<BirthdaySetupBanner />
 			<BirthdayTeamNoticeBanner teamTimezone={timeZone} />
 			<BirthdayCelebrationOverlay teamSlug={teamSlug} teamTimezone={timeZone} />
 		</>

@@ -26,6 +26,7 @@
 		"breakdownLabel": "Desglose"
 	},
 	"common": {
+		"menu": "Menú",
 		"darkTheme": "Tema oscuro",
 		"lightTheme": "Tema claro",
 		"save": "Guardar",
@@ -106,7 +107,6 @@
 		"language": "Idioma",
 		"viewOptions": "Opciones de vista",
 		"historyAndData": "Historial y datos",
-		"help": "Ayuda",
 		"viewPR": "Ver PR",
 		"viewContext": "Ver contexto",
 		"viewChatThread": "Ver hilo de Chat",
@@ -241,8 +241,6 @@
 		"toggleExpand": "Expandir",
 		"assignedBy": "Asignado por",
 		"reviewer": "Revisor",
-		"teamPrsThisWeek": "PRs del equipo esta semana",
-		"teamPrsThisWeekAria": "PRs del equipo esta semana: {count}",
 		"assignDisabledNeedsUrl": "Pega la URL del PR para asignar.",
 		"assignDisabledNeedsTag": "Elige un tag para asignar.",
 		"assignDisabledNeedsTeams": "Elige al menos un equipo destino.",
@@ -446,7 +444,7 @@
 		"showEmailsLabel": "Mostrar emails",
 		"showEmailsDescription": "Muestra la columna de correos en la tabla de revisores.",
 		"hideMultiAssignmentSectionLabel": "Ocultar sección de asignación múltiple",
-		"hideMultiAssignmentSectionDescription": "Oculta la configuración de asignación múltiple y usa siempre un solo slot.",
+		"hideMultiAssignmentSectionDescription": "Oculta la asignación múltiple y asigna siempre a una sola persona.",
 		"saveFailed": "No se pudieron guardar tus ajustes personales. Intenta nuevamente.",
 		"bootstrapFailed": "No se pudieron inicializar tus ajustes personales. Se usarán valores por defecto."
 	},
@@ -459,9 +457,8 @@
 		"title": "Agente MCP",
 		"drawerDescription": "Tres pasos: eliges equipo, generas un token y corres un comando en Claude Code.",
 		"navbarLabel": "Agente MCP",
-		"navbarTooltip": "Conectar Claude Code",
 		"openSetup": "Abrir configuración",
-		"settingsRowDescription": "El mismo setup que abre el ícono del robot en el header.",
+		"settingsRowDescription": "El mismo setup que abre Agente MCP en el menú del header.",
 		"connectTab": "Conectar",
 		"tokensTab": "Tokens",
 		"wizardProgress": "Progreso de la configuración",
@@ -511,17 +508,6 @@
 		"revokedAt": "Revocado: {date}",
 		"neverUsed": "Nunca usado",
 		"saving": "Guardando…",
-		"tutorialTitle": "Cómo activarlo",
-		"tutorialPlay": "Reproducir tutorial",
-		"tutorialPause": "Pausar tutorial",
-		"tutorialTerminalLabel": "Terminal",
-		"tutorialCommandSuccess": "la-lista quedó conectado.",
-		"tutorialSceneOpenCaption": "En el header, toca el ícono del robot.",
-		"tutorialSceneOpenHint": "Es el único con fondo azul.",
-		"tutorialSceneTokenCaption": "Genera tu token personal.",
-		"tutorialSceneCommandCaption": "Copia el comando y córrelo en tu terminal.",
-		"tutorialSceneCommandHint": "Claude Code tiene que estar instalado en esa máquina.",
-		"tutorialSceneAssignCaption": "Listo: desde ahí se lo pides conversando.",
 		"usageTitle": "Cómo pedírselo",
 		"usageBestWay": "Deja que GitHub CLI (gh) se encargue de GitHub —crear el PR, hacer push y revisar los checks— y que La Lista elija al revisor y avise en Google Chat. Si no tienes la URL a mano, pídele que la saque con gh pr view.",
 		"usageExample": {
@@ -551,14 +537,6 @@
 				"agent": "Le tocó a Martina, de Pagos. Avisé en el Chat de ellos y en el nuestro."
 			}
 		}
-	},
-	"mcpLaunch": {
-		"kicker": "Nuevo",
-		"title": "El agente MCP ya salió de experimentos",
-		"description": "Desde Claude Code: GitHub CLI (gh) publica el PR y La Lista elige al revisor. Un token, un comando y queda andando.",
-		"configure": "Configurarlo ahora",
-		"later": "Más tarde",
-		"dismiss": "Cerrar este aviso"
 	},
 	"teamSettings": {
 		"title": "Configuración del equipo",
@@ -594,6 +572,12 @@
 		"scheduleReason": "No disponible por horario part-time",
 		"returningOn": "Vuelve el {date}",
 		"noReturnDate": "Sin fecha de regreso"
+	},
+	"headerMenu": {
+		"team": "Equipo",
+		"help": "Ayuda",
+		"admin": "Admin",
+		"preferences": "Preferencias"
 	},
 	"reviewersPanel": {
 		"show": "Mostrar revisores",
@@ -794,11 +778,8 @@
 		"markedAvailableTitle": "¡Bienvenido de vuelta!",
 		"markedAvailableDescription": "Tu estado ha sido actualizado a disponible",
 		"indefiniteReminderTitle": "Sigues marcado como ausente, sin fecha de regreso",
-		"indefiniteReminderDescription": "Sin fecha de regreso el equipo no sabe cuándo volverás. Elige la opción que coincida con tu situación:",
 		"markAvailableCta": "Volver a estar disponible",
-		"markAvailableCtaTooltip": "Quita el ausente sin cambiar tus rotaciones.",
 		"notAReviewerCta": "No participo en la rotación del equipo",
-		"notAReviewerCtaTooltip": "Sales de la rotación del equipo; las rotaciones por tag conservan su configuración.",
 		"indefiniteOption": "No sé cuándo vuelvo",
 		"indefiniteOptionOther": "No sé cuándo vuelve",
 		"returnTodayOption": "Vuelvo hoy mismo",
@@ -819,8 +800,8 @@
 		"cancelPlan": "Cancelar plan",
 		"endNow": "Terminar ausencia ahora",
 		"chipShort": "{range}",
-		"chipLabeled": "Ausente {range}",
-		"planCta": "Planificar…",
+		"chipLabeled": "Ausencia planificada: {range}",
+		"planCta": "Planificar ausencia",
 		"plan": {
 			"errors": {
 				"invalidDate": "Esa fecha no es válida.",
@@ -873,7 +854,6 @@
 	},
 	"events": {
 		"createEvent": "Crear evento",
-		"createEventTooltip": "Crear un evento para el equipo",
 		"createDescription": "Programa un nuevo evento e invita a tu equipo a participar.",
 		"title": "Título",
 		"titlePlaceholder": "ej., Estimación, Planning, Retro",
@@ -890,7 +870,6 @@
 		"created": "Evento creado",
 		"createdDescription": "Tu evento ha sido programado exitosamente",
 		"createFailed": "Error al crear el evento. Por favor intenta de nuevo.",
-		"upcomingEvents": "Próximos eventos",
 		"upcomingDescription": "Eventos programados para tu equipo",
 		"createdBy": "Creado por {name}",
 		"closedSummary": "{title}, creado por {creator}, programado para {date} a las {time}. {status}",
@@ -927,7 +906,6 @@
 		"alreadyParticipating": "Ya estás participando",
 		"goToTeam": "Ir al equipo",
 		"addParticipant": "Añadir participante",
-		"selectTeamMember": "Seleccionar miembro del equipo",
 		"participantAdded": "Participante añadido",
 		"participantAddedDescription": "{name} ha sido añadido al evento",
 		"addParticipantFailed": "Error al añadir participante. Por favor intenta de nuevo.",
@@ -944,15 +922,7 @@
 		"scheduleNotEditable": "Solo se puede reprogramar un evento programado"
 	},
 	"notifications": {
-		"title": "Notificaciones Push",
-		"enable": "Activar notificaciones",
-		"disable": "Desactivar notificaciones",
-		"enabled": "Notificaciones activadas",
 		"blocked": "Notificaciones bloqueadas",
-		"blockedByBrowser": "Bloqueadas por el navegador",
-		"receiveAlerts": "Recibirás notificaciones de PRs y eventos",
-		"enableToReceive": "Activa para recibir alertas",
-		"blockedButton": "Bloqueado",
 		"label": "Notificaciones"
 	},
 	"suggestions": {
@@ -1109,29 +1079,27 @@
 		}
 	},
 	"headerStatus": {
+		"myWeek": "Mi semana",
+		"receivedLabel": "Recibidos",
+		"sentLabel": "Enviados",
+		"teamTotal": "Total del equipo",
 		"thisWeek": "Esta semana",
-		"received": "recibidos",
-		"sent": "enviados",
-		"receivedAria": "{count, plural, one {# PR recibido esta semana} other {# PRs recibidos esta semana}}",
-		"sentAria": "{count, plural, one {# PR enviado esta semana} other {# PRs enviados esta semana}}",
 		"available": "Disponible",
 		"unavailable": "No disponible",
 		"partTimeOff": "Hoy no te toca (horario parcial)",
-		"youAreNext": "Te toca el siguiente",
-		"lastPrs": "Último",
+		"youAreNext": "te toca",
 		"lastReceived": "Último PR recibido",
 		"lastSent": "Último PR enviado",
-		"lastReceivedHover": "Te lo asignaron el {when}",
-		"lastSentHover": "Lo enviaste el {when}",
-		"untilTurn": "Próxima revisión en {count, plural, one {# PR más} other {# PRs más}}",
-		"untilTurnTooltip": "Cuántos PRs de la rotación general faltan para que te toque"
+		"untilTurn": "te toca en {count, plural, one {# PR} other {# PRs}}"
 	},
 	"announcements": {
+		"sheetDescription": "Anuncios, encuestas y ajustes pendientes de La Lista.",
 		"title": "Avisos",
+		"empty": "No tienes avisos pendientes.",
 		"coordChannel": "¿Tienes una duda de un lanzamiento, una idea o cualquier cosa de La Lista? Pásate por <channel>coord-la-lista</channel>.",
-		"createEventMoved": "Si usas eventos, Crear Evento ahora está en el calendario del header. Debajo del navbar dejamos una barra fija: tu disponibilidad, los PRs de la semana y los atajos.",
+		"createEventMoved": "Si usas eventos, Crear evento ahora está en el menú del header. Tu disponibilidad y los PRs de tu semana están en los botones junto al equipo.",
 		"reviewersPanelMoved": "Si buscas Gestionar Revisores, se cambió de casa: ábrelo desde el panel lateral de Revisores. Ahí está la lista, el manejo de tags y los ajustes por usuario.",
-		"mcpSetupWizard": "Conectar el Agente MCP ahora es más fácil: elige tu equipo, genera un token y conecta Claude Code en tres pasos. Abre el ícono del robot para empezar.",
+		"mcpSetupWizard": "Conectar el Agente MCP ahora es más fácil: elige tu equipo, genera un token y conecta Claude Code en tres pasos. Ábrelo desde el menú del header.",
 		"dismiss": "Descartar"
 	},
 	"changelog": {
