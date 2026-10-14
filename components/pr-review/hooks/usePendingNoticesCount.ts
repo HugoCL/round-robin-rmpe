@@ -1,7 +1,6 @@
 import { useQuery } from "convex/react";
 import { useCallback, useEffect, useState } from "react";
 import { birthdaySetupDismissedKey } from "@/components/pr-review/BirthdaySetupBanner";
-import { isMcpLaunchDismissed } from "@/components/settings/McpLaunchBanner";
 import { api } from "@/convex/_generated/api";
 import { usePRReview } from "../PRReviewContext";
 
@@ -29,21 +28,14 @@ export function usePendingNoticesCount() {
 		const id = window.setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
 		return () => window.clearInterval(id);
 	}, []);
-	const [local, setLocal] = useState({
-		mcpDismissed: true,
-		birthdayDismissed: true,
-	});
+	const [birthdayDismissed, setBirthdayDismissed] = useState(true);
 	const announcements = useQuery(api.announcements.listForMe, { teamSlug });
 	const survey = useQuery(api.surveys.getActiveSurveyForMe, { now });
-	const tokens = useQuery(api.agent.getMyAgentTokens);
 
 	const readDismissals = useCallback(() => {
-		setLocal({
-			mcpDismissed: isMcpLaunchDismissed(),
-			birthdayDismissed: readLocalFlag(
-				birthdaySetupDismissedKey(userInfo?.email ?? ""),
-			),
-		});
+		setBirthdayDismissed(
+			readLocalFlag(birthdaySetupDismissedKey(userInfo?.email ?? "")),
+		);
 	}, [userInfo?.email]);
 	// localStorage only exists after mount; until then nothing counts.
 	useEffect(readDismissals, [readDismissals]);
@@ -59,17 +51,10 @@ export function usePendingNoticesCount() {
 		canManageCurrentTeam &&
 		!!me &&
 		(me.birthdayMonth === undefined || me.birthdayDay === undefined) &&
-		!local.birthdayDismissed;
-	const mcpPending =
-		tokens !== undefined &&
-		!tokens.some((token) => !token.revokedAt) &&
-		!local.mcpDismissed;
+		!birthdayDismissed;
 
 	const count =
-		(announcements?.length ?? 0) +
-		(survey ? 1 : 0) +
-		(mcpPending ? 1 : 0) +
-		(birthdayMissing ? 1 : 0);
+		(announcements?.length ?? 0) + (survey ? 1 : 0) + (birthdayMissing ? 1 : 0);
 	const refresh = () => {
 		setNow(Date.now());
 		readDismissals();

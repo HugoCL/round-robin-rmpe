@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { McpLaunchBanner } from "@/components/settings/McpLaunchBanner";
 import { focusDialogItself } from "@/components/ui/dialog";
 import {
 	Sheet,
@@ -40,7 +39,6 @@ export function NoticesSheet({
 				<div className="peer flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-4 empty:hidden">
 					<AnnouncementBanner />
 					<SurveyBanner />
-					<McpLaunchBanner />
 					<BirthdaySetupBanner />
 				</div>
 				{/* Every banner renders nothing when it does not apply, so CSS knows. */}

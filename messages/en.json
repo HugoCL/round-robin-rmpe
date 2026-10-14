@@ -494,13 +494,6 @@
 			}
 		}
 	},
-	"mcpLaunch": {
-		"kicker": "New",
-		"title": "The MCP agent is out of experiments",
-		"description": "From Claude Code: GitHub CLI (gh) publishes the PR and La Lista picks the reviewer. One token, one command, done.",
-		"configure": "Set it up now",
-		"dismiss": "Dismiss this notice"
-	},
 	"teamSettings": {
 		"title": "Team Settings",
 		"description": "Configure settings for this team.",

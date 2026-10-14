@@ -538,13 +538,6 @@
 			}
 		}
 	},
-	"mcpLaunch": {
-		"kicker": "Nuevo",
-		"title": "El agente MCP ya salió de experimentos",
-		"description": "Desde Claude Code: GitHub CLI (gh) publica el PR y La Lista elige al revisor. Un token, un comando y queda andando.",
-		"configure": "Configurarlo ahora",
-		"dismiss": "Cerrar este aviso"
-	},
 	"teamSettings": {
 		"title": "Configuración del equipo",
 		"description": "Configura los ajustes para este equipo.",
