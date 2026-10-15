@@ -2,7 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 import { AgentSetupDialog } from "@/components/settings/AgentSetupDialog";
 import { api } from "@/convex/_generated/api";
@@ -12,8 +12,10 @@ import { useConvexPRReviewData } from "@/hooks/useConvexPRReviewData";
 import { useConvexTags } from "@/hooks/useConvexTags";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { focusPrUrlInput, PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
 import type { Assignment, UserInfo } from "@/lib/types";
 import { ActiveEventsList } from "./ActiveEventsList";
+import { lastAssignmentUndoCopy } from "./assignment/undoCopy";
 import { ShortcutConfirmationDialog } from "./dialogs/ShortcutConfirmationDialog";
 import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
@@ -37,7 +39,10 @@ export default function PRReviewAssignment({
 	teamSlug?: string;
 }) {
 	const t = useTranslations();
-	const locale = useLocale();
+	const assignmentHistory = useQuery(
+		api.queries.getAssignmentHistory,
+		teamSlug ? { teamSlug } : "skip",
+	);
 	const { user, isLoaded } = useUser();
 	const { signOut } = useClerk();
 	const IMPORT_INPUT_ID = "import-file";
@@ -138,17 +143,9 @@ export default function PRReviewAssignment({
 		[convexAssignmentFeed],
 	);
 
-	const shortcutFlow = useShortcutDialogFlow({
-		assignmentFeed,
-		nextReviewer: nextReviewer || null,
-		reviewers: reviewers || [],
-		teamSlug,
-		locale,
-		userInfo,
-	});
+	const shortcutFlow = useShortcutDialogFlow();
 
 	useKeyboardShortcuts({
-		onAssignPR: assignPR,
 		onSkipReviewer: skipReviewer,
 		onUndoAssignment: undoAssignment,
 		isNextReviewerAvailable: !!nextReviewer,
@@ -346,9 +343,20 @@ export default function PRReviewAssignment({
 			}}
 		>
 			<PRReviewProvider value={providerValue}>
-				<div className="flex min-h-dvh flex-col cockpit:h-dvh cockpit:overflow-y-auto">
+				<div className="flex min-h-dvh flex-col">
+					{accessContext?.isForeignTeam === true ? null : (
+						<a
+							href={`#${PR_URL_INPUT_ID}`}
+							onClick={(event) => {
+								if (focusPrUrlInput()) event.preventDefault();
+							}}
+							className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+						>
+							{t("shortcuts.focusPrUrl")}
+						</a>
+					)}
 					<PageHeader teamSlug={teamSlug} />
-					<main className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col px-3 pb-4 sm:px-6 lg:px-8 lg:pb-6">
+					<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-3 pb-4 sm:px-6 lg:pb-6">
 						<div
 							className="notice-stack page-enter mt-3 sm:mt-5 lg:mt-6"
 							role="region"
@@ -382,15 +390,16 @@ export default function PRReviewAssignment({
 					<ShortcutConfirmationDialog
 						isOpen={shortcutFlow.shortcutDialogOpen}
 						action={shortcutFlow.pendingShortcut}
-						nextReviewerName={nextReviewer?.name}
 						currentReviewerName={nextReviewer?.name}
-						nextAfterSkipName={undefined}
-						lastAssignmentFrom={
-							assignmentFeed.items[0]?.actionByName ||
-							assignmentFeed.items[0]?.actionByEmail ||
-							null
+						isSelfNext={
+							!!userInfo?.email &&
+							nextReviewer?.email.toLowerCase() === userInfo.email.toLowerCase()
 						}
-						lastAssignmentTo={assignmentFeed.items[0]?.reviewerName || null}
+						undoCopy={lastAssignmentUndoCopy(
+							t,
+							assignmentFeed.items,
+							assignmentHistory,
+						)}
 						onConfirm={() => void shortcutFlow.handleConfirmShortcut()}
 						onCancel={shortcutFlow.handleCancelShortcut}
 						onOpenChange={(open) => {

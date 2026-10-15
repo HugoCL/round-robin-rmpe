@@ -199,7 +199,7 @@ export function SurveyBanner() {
 															/>
 															<FieldLabel
 																htmlFor={optionId}
-																className="font-normal"
+																className="cursor-pointer font-normal"
 															>
 																{option.label}
 															</FieldLabel>

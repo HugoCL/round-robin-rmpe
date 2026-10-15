@@ -80,7 +80,10 @@ export function FeaturesSection() {
 							className="flex min-h-14 flex-wrap items-center gap-3 px-4 py-3"
 						>
 							<div className="min-w-0 flex-1 space-y-0.5">
-								<label htmlFor={switchId} className="text-sm font-medium">
+								<label
+									htmlFor={switchId}
+									className="cursor-pointer text-sm font-medium"
+								>
 									{t(`features.names.${feature.key}`)}
 								</label>
 								<p className="text-pretty text-xs text-muted-foreground">

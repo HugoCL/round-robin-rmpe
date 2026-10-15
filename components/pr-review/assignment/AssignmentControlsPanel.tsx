@@ -1,105 +1,59 @@
-import {
-	AlertCircle,
-	AlertTriangle,
-	Globe2,
-	Link2,
-	MessageSquare,
-	Plus,
-	UserCheck,
-	Users,
-} from "lucide-react";
+import { Link2, MessageSquareText, Minus, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { IconActionButton } from "@/components/ui/icon-action-button";
 import {
 	InputGroup,
 	InputGroupAddon,
-	InputGroupButton,
 	InputGroupInput,
 } from "@/components/ui/input-group";
-import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Toggle } from "@/components/ui/toggle";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Kbd } from "@/components/ui/kbd";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
+import { ASSIGNMENT_FORM_ID, PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
 import type { ParsedPrUrl } from "@/lib/prUrl";
 import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ChatMessageCustomizer } from "../ChatMessageCustomizer";
 import { ForceAssignDialog } from "../dialogs/ForceAssignDialog";
+import type { DuplicateAssignment } from "../hooks/useDuplicatePrCheck";
 import type {
 	AssignmentCardTag,
 	AssignmentMode,
 	ResolvedPreview,
 } from "./assignmentCard.types";
+import { DuplicatePrAlert } from "./DuplicatePrAlert";
+import { assignmentChipClass, ExtraRow, UrgentToggle } from "./OptionControls";
 import type {
 	ReviewerSlotConfig,
 	ReviewerSlotPreview,
 } from "./ReviewerSlotsConfigurator";
-import { ReviewerSlotsConfigurator } from "./ReviewerSlotsConfigurator";
-
-/** Overrides ToggleGroupItem `data-[state=on]:bg-muted` for the same reason. */
-const assignmentGroupItemActivePrimary =
-	"data-[state=on]:bg-primary data-[state=on]:border-primary data-[state=on]:text-primary-foreground hover:data-[state=on]:bg-primary/95";
-
-const assignmentChipActiveUrgent =
-	"aria-pressed:bg-red-600 aria-pressed:border-red-600 aria-pressed:text-white hover:aria-pressed:bg-red-600/90 dark:aria-pressed:bg-red-700 dark:aria-pressed:border-red-700";
-
-/**
- * Option chips share one pill shape. They are 44px tall so they stay comfortable
- * to tap, and their width comes from their own label — never from a fixed column
- * that would clip it.
- */
-const assignmentChipClass =
-	"inline-flex h-11 min-w-0 max-w-full cursor-pointer items-center justify-center gap-2.5 rounded-full border-border/70 bg-transparent px-3.5 text-xs text-foreground transition-colors duration-150 lg:px-4 lg:text-sm";
-
-/** Chips keep their own width and simply wrap onto the next row. */
-const assignmentChipSlot = "min-w-0 shrink-0 basis-auto";
-
-const assignmentChipActiveCrossTeam =
-	"aria-pressed:bg-sky-600 aria-pressed:border-sky-600 aria-pressed:text-white hover:aria-pressed:bg-sky-600/90 dark:aria-pressed:bg-sky-700 dark:aria-pressed:border-sky-700";
+import {
+	MAX_BATCH_SLOTS,
+	ReviewerSlotsConfigurator,
+} from "./ReviewerSlotsConfigurator";
 
 type AssignmentControlsPanelProps = {
+	/** Enter in the PR field; the card decides whether assigning is allowed. */
+	onSubmit: () => void;
 	tags: AssignmentCardTag[];
 	mode: AssignmentMode;
 	selectedTagId?: Id<"tags">;
-	onModeChange: (mode: AssignmentMode) => void;
-	onTagChange: (tagId: Id<"tags">) => void;
-	getTagStats: (tagId: Id<"tags">) => {
-		totalReviewers: number;
-		availableReviewers: number;
-	};
 	hideMultiAssignmentSection: boolean;
 	isMultiAssignmentEnabled: boolean;
 	reviewerCount: number;
 	onMultiAssignmentToggle: (enabled: boolean) => void;
 	urgent: boolean;
 	onUrgentChange: (value: boolean) => void;
-	crossTeamReview: boolean;
-	onCrossTeamReviewChange: (value: boolean) => void;
 	availableCrossTeamTargets: Doc<"teams">[];
-	selectedCrossTeamSlugs: string[];
-	onSelectedCrossTeamSlugsChange: (value: string[]) => void;
-	excludeTeammates: boolean;
-	onExcludeTeammatesChange: (value: boolean) => void;
-	showReviewerSlots: boolean;
 	reviewers: Reviewer[];
 	slotConfigs: ReviewerSlotConfig[];
 	reviewerSlotPreviews: ReviewerSlotPreview[];
@@ -107,7 +61,7 @@ type AssignmentControlsPanelProps = {
 	onSlotChange: (index: number, patch: Partial<ReviewerSlotConfig>) => void;
 	prUrl: string;
 	onPrUrlChange: (value: string) => void;
-	onPrUrlBlur: () => Promise<void> | void;
+	onPrUrlBlur: () => void;
 	contextUrl: string;
 	onContextUrlChange: (value: string) => void;
 	enableCustomMessage: boolean;
@@ -116,46 +70,27 @@ type AssignmentControlsPanelProps = {
 	onCustomMessageChange: (value: string) => void;
 	resolvedPreview: ResolvedPreview;
 	activeNextReviewer: Reviewer | null;
-	showDuplicateAlert: boolean;
-	duplicateAssignment: {
-		reviewerName: string;
-		timestamp: number;
-	} | null;
+	duplicateAssignment: DuplicateAssignment | null;
+	/** The PR would go back to the person who already has it. */
+	duplicateIsReceiver: boolean;
 	parsedPrUrl: ParsedPrUrl | null;
 	hasPrUrlError: boolean;
+	/** Why Assign is unavailable right now; read under the field it concerns. */
+	blockedReason?: string | null;
 };
 
-/**
- * The selected mode is marked with a tinted surface, not a solid primary fill:
- * "Assign PR" is the only primary action on the panel.
- */
-const assignmentModeTabActive =
-	"border-primary/40 bg-primary/12 text-primary hover:bg-primary/16 hover:text-primary";
-
-const assignmentChipActivePrimary =
-	"aria-pressed:bg-primary aria-pressed:border-primary aria-pressed:text-primary-foreground hover:aria-pressed:bg-primary/95";
-
 export function AssignmentControlsPanel({
+	onSubmit,
 	tags,
 	mode,
 	selectedTagId,
-	onModeChange,
-	onTagChange,
-	getTagStats,
 	hideMultiAssignmentSection,
 	isMultiAssignmentEnabled,
 	reviewerCount,
 	onMultiAssignmentToggle,
 	urgent,
 	onUrgentChange,
-	crossTeamReview,
-	onCrossTeamReviewChange,
 	availableCrossTeamTargets,
-	selectedCrossTeamSlugs,
-	onSelectedCrossTeamSlugsChange,
-	excludeTeammates,
-	onExcludeTeammatesChange,
-	showReviewerSlots,
 	reviewers,
 	slotConfigs,
 	reviewerSlotPreviews,
@@ -172,10 +107,11 @@ export function AssignmentControlsPanel({
 	onCustomMessageChange,
 	resolvedPreview,
 	activeNextReviewer,
-	showDuplicateAlert,
 	duplicateAssignment,
+	duplicateIsReceiver,
 	parsedPrUrl,
 	hasPrUrlError,
+	blockedReason,
 }: AssignmentControlsPanelProps) {
 	const t = useTranslations();
 	const resolvedNamesForMessage = resolvedPreview.resolved
@@ -184,6 +120,7 @@ export function AssignmentControlsPanel({
 	const [showContextInput, setShowContextInput] = useState(
 		contextUrl.trim().length > 0,
 	);
+	const [isPrUrlFocused, setIsPrUrlFocused] = useState(false);
 	const prUrlInputRef = useRef<HTMLInputElement>(null);
 
 	// Land keyboard focus on the one field the flow starts with, but only where
@@ -195,486 +132,322 @@ export function AssignmentControlsPanel({
 		prUrlInputRef.current?.focus();
 	}, []);
 
-	// Two zones so the cockpit can treat them differently: the core (mode, PR
-	// field, option chips) never shrinks, while the panels the chips open
-	// scroll inside whatever height is left, keeping "Assign" in view.
+	// One person is the plain rotation; two or more is multiple assignment.
+	const activeReviewerCount = isMultiAssignmentEnabled ? reviewerCount : 1;
+	const setReviewerCount = (count: number) => {
+		if (count <= 1) {
+			onMultiAssignmentToggle(false);
+			return;
+		}
+		if (!isMultiAssignmentEnabled) onMultiAssignmentToggle(true);
+		onReviewerCountChange(count);
+	};
+	const otherTeams = availableCrossTeamTargets.map((team) => ({
+		slug: team.slug,
+		name: team.name,
+	}));
+	// What "+ Add" still offers: lines not on the form yet.
+	const addableExtras = [
+		...(showContextInput
+			? []
+			: [
+					{
+						label: t("pr.chipContext"),
+						icon: Link2,
+						add: () => setShowContextInput(true),
+					},
+				]),
+		...(enableCustomMessage
+			? []
+			: [
+					{
+						label: t("pr.chipMessage"),
+						icon: MessageSquareText,
+						add: () => onEnableCustomMessageChange(true),
+					},
+				]),
+	];
+
 	return (
-		<div className="@container flex flex-col gap-3 lg:gap-4 cockpit:flex-1">
+		<div className="@container flex flex-col gap-3 lg:gap-4">
 			<div className="flex flex-col gap-3 lg:gap-4">
-				{tags.length > 0 && (
-					<div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-muted/18 p-2 sm:gap-3 sm:p-3 lg:p-4">
-						<div
-							className="grid grid-cols-2 gap-2"
-							role="tablist"
-							aria-label={t("pr.assignmentModeRegular")}
-						>
-							<Button
-								variant="outline"
-								size="sm"
-								role="tab"
-								aria-selected={mode === "regular"}
-								onClick={() => onModeChange("regular")}
-								className={cn(
-									"h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-									mode === "regular" && assignmentModeTabActive,
-								)}
-							>
-								<span className="sm:hidden">
-									{t("pr.assignmentModeRegularShort")}
-								</span>
-								<span className="hidden sm:inline">
-									{t("pr.assignmentModeRegular")}
-								</span>
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								role="tab"
-								aria-selected={mode === "tag"}
-								onClick={() => onModeChange("tag")}
-								className={cn(
-									"h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-									mode === "tag" && assignmentModeTabActive,
-								)}
-							>
-								<span className="sm:hidden">
-									{t("pr.assignmentModeWithTagsShort")}
-								</span>
-								<span className="hidden sm:inline">
-									{t("pr.assignmentModeWithTags")}
-								</span>
-							</Button>
-						</div>
-
-						{mode === "tag" && (
-							<div className="flex flex-col gap-2">
-								<Label htmlFor="assignment-tag-global">
-									{t("tags.selectTag")}
-								</Label>
-								<Select value={selectedTagId} onValueChange={onTagChange}>
-									<SelectTrigger
-										id="assignment-tag-global"
-										className="w-full min-w-0 data-[size=default]:h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:data-[size=default]:h-10"
-									>
-										<SelectValue placeholder={t("tags.chooseTag")} />
-									</SelectTrigger>
-									<SelectContent>
-										{tags.map((tag) => {
-											const stats = getTagStats(tag._id as Id<"tags">);
-											return (
-												<SelectItem key={tag._id} value={tag._id}>
-													{tag.name} ({stats.availableReviewers}/
-													{stats.totalReviewers})
-												</SelectItem>
-											);
-										})}
-									</SelectContent>
-								</Select>
-								<p className="text-xs text-muted-foreground lg:text-sm">
-									{t("tags.tagBasedDescription")}
-								</p>
-							</div>
-						)}
-					</div>
-				)}
-
-				<Field>
-					<FieldLabel htmlFor={PR_URL_INPUT_ID} className="sr-only">
-						{t("googleChat.prUrlLabel")}
-					</FieldLabel>
-					<InputGroup
-						className={cn(
-							"h-12 rounded-2xl bg-background/70",
-							hasPrUrlError && "border-destructive",
-						)}
-					>
-						<InputGroupAddon align="inline-start">
-							<Link2 className="h-5 w-5" aria-hidden="true" />
-						</InputGroupAddon>
-						<InputGroupInput
-							id={PR_URL_INPUT_ID}
-							ref={prUrlInputRef}
-							placeholder={t("placeholders.pastePrUrl")}
-							value={prUrl}
-							onChange={(event) => onPrUrlChange(event.target.value)}
-							onBlur={() => void onPrUrlBlur()}
-							required
-							aria-required="true"
-							aria-invalid={hasPrUrlError || undefined}
-							aria-describedby={
-								hasPrUrlError
-									? "assignment-pr-url-error"
-									: parsedPrUrl
-										? "assignment-pr-url-parsed"
-										: undefined
-							}
-							autoComplete="off"
-							inputMode="url"
-							spellCheck={false}
-							data-form-autocomplete="off"
-						/>
-						<InputGroupAddon align="inline-end">
-							{/* Below `sm` the label would eat the URL field, so the button
-						    keeps only its icon and carries the name in aria-label. */}
-							<InputGroupButton
-								variant={showContextInput ? "secondary" : "ghost"}
-								size="sm"
-								aria-label={t("googleChat.addContext")}
-								aria-pressed={showContextInput}
-								onClick={() => {
-									setShowContextInput(!showContextInput);
-									if (showContextInput) onContextUrlChange("");
-								}}
-								className="size-10 shrink-0 rounded-full p-0 sm:size-auto sm:rounded-md sm:px-2.5"
-							>
-								<Plus aria-hidden="true" />
-								<span className="sr-only sm:not-sr-only">
-									{t("googleChat.addContext")}
-								</span>
-							</InputGroupButton>
-						</InputGroupAddon>
-					</InputGroup>
-					{hasPrUrlError ? (
-						<p
-							id="assignment-pr-url-error"
-							className="text-xs text-destructive lg:text-sm"
-						>
-							{t("pr.prUrlInvalid")}
-						</p>
-					) : parsedPrUrl ? (
-						<p
-							id="assignment-pr-url-parsed"
-							className="font-mono text-xs text-muted-foreground"
-						>
-							{t("pr.prUrlRecognized", {
-								repo: parsedPrUrl.repo,
-								number: parsedPrUrl.number,
-							})}
-						</p>
-					) : null}
-				</Field>
-
-				{showContextInput && (
+				<form
+					id={ASSIGNMENT_FORM_ID}
+					data-mode={mode}
+					data-duplicate={duplicateAssignment ? "true" : undefined}
+					noValidate
+					onSubmit={(event) => {
+						event.preventDefault();
+						onSubmit();
+					}}
+				>
 					<Field>
-						<FieldLabel htmlFor="assignment-context-url">
-							{t("googleChat.contextUrlLabel")}
+						<FieldLabel htmlFor={PR_URL_INPUT_ID} className="sr-only">
+							{t("googleChat.prUrlLabel")}
 						</FieldLabel>
-						<InputGroup className="rounded-2xl bg-background/70">
+						<InputGroup
+							className={cn(
+								"h-12 rounded-2xl border-control-border bg-background/70",
+								hasPrUrlError && "border-destructive",
+							)}
+						>
 							<InputGroupAddon align="inline-start">
-								<Link2 aria-hidden="true" />
+								<Link2 className="h-5 w-5" aria-hidden="true" />
 							</InputGroupAddon>
 							<InputGroupInput
-								id="assignment-context-url"
-								placeholder={t("placeholders.contextUrl")}
-								value={contextUrl}
-								onChange={(event) => onContextUrlChange(event.target.value)}
+								id={PR_URL_INPUT_ID}
+								ref={prUrlInputRef}
+								placeholder={t("placeholders.pastePrUrl")}
+								value={prUrl}
+								onChange={(event) => onPrUrlChange(event.target.value)}
+								// With the warning showing, re-assigning takes a deliberate click or Tab.
+								onKeyDown={(event) => {
+									if (event.key === "Enter" && duplicateAssignment)
+										event.preventDefault();
+									// Out of the field the single-letter shortcuts work again.
+									if (event.key === "Escape" && !prUrl)
+										event.currentTarget.blur();
+								}}
+								onFocus={() => setIsPrUrlFocused(true)}
+								onBlur={() => {
+									setIsPrUrlFocused(false);
+									onPrUrlBlur();
+								}}
+								aria-keyshortcuts="/"
+								required
+								aria-required="true"
+								aria-invalid={hasPrUrlError || undefined}
+								aria-describedby={
+									hasPrUrlError
+										? "assignment-pr-url-error"
+										: parsedPrUrl
+											? "assignment-pr-url-parsed"
+											: undefined
+								}
 								autoComplete="off"
 								inputMode="url"
 								spellCheck={false}
+								data-form-autocomplete="off"
 							/>
+							{prUrl || isPrUrlFocused ? null : (
+								<InputGroupAddon align="inline-end" className="hidden sm:flex">
+									<Kbd aria-hidden="true">/</Kbd>
+								</InputGroupAddon>
+							)}
 						</InputGroup>
+						{hasPrUrlError ? (
+							<p
+								id="assignment-pr-url-error"
+								className="text-xs text-destructive lg:text-sm"
+							>
+								{t("pr.prUrlInvalid")}
+							</p>
+						) : parsedPrUrl ? (
+							<p
+								id="assignment-pr-url-parsed"
+								className="font-mono text-xs text-muted-foreground lg:text-sm"
+							>
+								{t("pr.prUrlRecognized", {
+									repo: parsedPrUrl.repo,
+									number: parsedPrUrl.number,
+								})}
+							</p>
+						) : null}
+						{/* Always mounted, so its first announcement is not lost. */}
+						<p
+							id="assignment-blocked-reason"
+							role="status"
+							className="text-xs text-muted-foreground empty:hidden lg:text-sm"
+						>
+							{hasPrUrlError ? null : blockedReason || null}
+						</p>
 					</Field>
+				</form>
+
+				{duplicateAssignment && (
+					<DuplicatePrAlert
+						duplicate={duplicateAssignment}
+						action={
+							duplicateIsReceiver ? (
+								<ForceAssignDialog
+									draft={{ prUrl, contextUrl, urgent }}
+									onAssigned={() => {
+										onPrUrlChange("");
+										onContextUrlChange("");
+										onUrgentChange(false);
+									}}
+									trigger={
+										<Button type="button" size="sm" className="ml-1">
+											{t("pr.forceAssignAction")}
+										</Button>
+									}
+								/>
+							) : null
+						}
+					/>
 				)}
 
-				{/* Each chip is as wide as its own label and wraps onto the next row
-			    when it no longer fits, so a label is never squeezed into a column
-			    too narrow for it. */}
-				<div className="flex flex-wrap gap-2 lg:gap-3 2xl:gap-4">
-					{!hideMultiAssignmentSection && (
-						<TooltipProvider>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<ToggleGroup
-										type="multiple"
-										variant="outline"
-										size="sm"
-										spacing={2}
-										value={isMultiAssignmentEnabled ? ["multi-assignment"] : []}
-										onValueChange={(value) =>
-											onMultiAssignmentToggle(
-												value.includes("multi-assignment"),
-											)
-										}
-										className={cn("inline-flex", assignmentChipSlot)}
-									>
-										<ToggleGroupItem
-											value="multi-assignment"
-											aria-label={t("pr.multipleAssignmentToggleLabel")}
-											className={cn(
-												assignmentChipClass,
-												"w-full",
-												isMultiAssignmentEnabled &&
-													assignmentGroupItemActivePrimary,
-											)}
-										>
-											<Users className="size-4 shrink-0" aria-hidden="true" />
-											<span className="min-w-0 truncate leading-none">
-												{t("pr.multipleAssignmentToggleShort")}
-											</span>
-										</ToggleGroupItem>
-									</ToggleGroup>
-								</TooltipTrigger>
-								<TooltipContent className="max-w-64 text-xs">
-									<p>{t("pr.multipleAssignmentToggleDescription")}</p>
-								</TooltipContent>
-							</Tooltip>
-						</TooltipProvider>
+				<div className="flex flex-wrap items-center gap-2">
+					<UrgentToggle
+						id="assignment-urgent-toggle"
+						pressed={urgent}
+						onPressedChange={onUrgentChange}
+					/>
+
+					{hideMultiAssignmentSection ? null : (
+						<div className="flex items-center gap-2">
+							<span
+								id="assignment-reviewer-count-label"
+								className="text-sm text-muted-foreground"
+							>
+								{t("pr.reviewerCountLabel")}
+							</span>
+							<div
+								role="group"
+								aria-labelledby="assignment-reviewer-count-label"
+								className="inline-flex items-center rounded-full border border-border/70"
+							>
+								<IconActionButton
+									label={t("pr.decreaseReviewerCount")}
+									className="size-9 rounded-full text-muted-foreground"
+									disabled={activeReviewerCount <= 1}
+									onClick={() => setReviewerCount(activeReviewerCount - 1)}
+								>
+									<Minus />
+								</IconActionButton>
+								<span
+									className="min-w-6 text-center text-sm font-medium tabular-nums"
+									aria-live="polite"
+								>
+									{activeReviewerCount}
+								</span>
+								<IconActionButton
+									label={t("pr.increaseReviewerCount")}
+									className="size-9 rounded-full text-muted-foreground"
+									disabled={activeReviewerCount >= MAX_BATCH_SLOTS}
+									onClick={() => setReviewerCount(activeReviewerCount + 1)}
+								>
+									<Plus />
+								</IconActionButton>
+							</div>
+						</div>
 					)}
 
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<div className={cn("inline-flex", assignmentChipSlot)}>
-									<ForceAssignDialog
-										trigger={
-											<Button
-												variant="outline"
-												size="sm"
-												className={cn(assignmentChipClass, "w-full")}
-											>
-												<UserCheck
-													className="size-4 shrink-0"
-													aria-hidden="true"
-												/>
-												<span className="min-w-0 truncate leading-none">
-													{t("pr.forceAssignShort")}
-												</span>
-											</Button>
-										}
-									/>
-								</div>
-							</TooltipTrigger>
-							<TooltipContent className="max-w-64 text-xs">
-								<p>{t("reviewer.forceAssignDescription")}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Toggle
-									id="assignment-custom-message-toggle"
-									pressed={enableCustomMessage}
-									onPressedChange={(pressed) => {
-										onEnableCustomMessageChange(pressed);
-										if (!pressed) onCustomMessageChange("");
-									}}
-									variant="outline"
-									size="sm"
-									aria-label={t("googleChat.customizeToggle")}
-									className={cn(
-										assignmentChipClass,
-										assignmentChipSlot,
-										enableCustomMessage && assignmentChipActivePrimary,
-									)}
-								>
-									<MessageSquare
-										className="size-4 shrink-0"
-										aria-hidden="true"
-									/>
-									<span className="min-w-0 truncate leading-none">
-										{t("googleChat.customizeToggle")}
-									</span>
-								</Toggle>
-							</TooltipTrigger>
-							<TooltipContent className="max-w-64 text-xs">
-								<p>{t("googleChat.customizeToggleDescription")}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Toggle
-									id="assignment-urgent-toggle"
-									pressed={urgent}
-									onPressedChange={onUrgentChange}
-									variant="outline"
-									size="sm"
-									aria-label={t("googleChat.urgentToggle")}
-									className={cn(
-										assignmentChipClass,
-										assignmentChipSlot,
-										urgent && assignmentChipActiveUrgent,
-									)}
-								>
-									<AlertTriangle
-										className="size-4 shrink-0"
-										aria-hidden="true"
-									/>
-									<span className="min-w-0 truncate leading-none">
-										{t("googleChat.urgentToggle")}
-									</span>
-								</Toggle>
-							</TooltipTrigger>
-							<TooltipContent className="max-w-64 text-xs">
-								<p>{t("googleChat.urgentToggleDescription")}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Toggle
-									id="assignment-cross-team-toggle"
-									pressed={crossTeamReview}
-									onPressedChange={onCrossTeamReviewChange}
-									variant="outline"
-									size="sm"
-									aria-label={t("googleChat.crossTeamToggle")}
-									className={cn(
-										assignmentChipClass,
-										assignmentChipSlot,
-										crossTeamReview && assignmentChipActiveCrossTeam,
-									)}
-								>
-									<Globe2 className="size-4 shrink-0" aria-hidden="true" />
-									<span className="min-w-0 truncate leading-none">
-										{t("googleChat.crossTeamToggleShort")}
-									</span>
-								</Toggle>
-							</TooltipTrigger>
-							<TooltipContent className="max-w-64 text-xs">
-								<p>{t("googleChat.crossTeamToggleDescription")}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				</div>
-			</div>
-
-			{/* Size containment keeps the open panels out of the card's minimum
-				    height; they take the leftover space and scroll inside it. */}
-			<div
-				data-assignment-extras
-				className="flex flex-col gap-3 empty:hidden lg:gap-4 cockpit:min-h-32 cockpit:flex-1 cockpit:overflow-y-auto cockpit:overflow-x-hidden cockpit:contain-size"
-			>
-				{enableCustomMessage && (
-					<section className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-3 sm:p-4 lg:p-5">
-						<ChatMessageCustomizer
-							prUrl={prUrl}
-							onPrUrlChange={onPrUrlChange}
-							onPrUrlBlur={() => void onPrUrlBlur()}
-							contextUrl={contextUrl}
-							onContextUrlChange={onContextUrlChange}
-							enabled={enableCustomMessage}
-							onEnabledChange={onEnableCustomMessageChange}
-							message={customMessage}
-							onMessageChange={onCustomMessageChange}
-							nextReviewerName={
-								resolvedNamesForMessage || activeNextReviewer?.name
-							}
-							embedded
-							showPrUrlField={false}
-							showContextUrlField={false}
-							showCustomizeToggle={false}
-						/>
-					</section>
-				)}
-
-				{crossTeamReview && (
-					<section className="flex flex-col gap-3 rounded-2xl border border-sky-200/60 bg-sky-50/30 p-3 sm:p-4 lg:p-5 dark:border-sky-900/40 dark:bg-sky-950/15">
-						<p className="text-xs text-sky-800 lg:text-sm dark:text-sky-200">
-							{t("googleChat.crossTeamSharePrompt")}
-						</p>
-						{availableCrossTeamTargets.length > 0 ? (
-							<>
-								<Label>{t("googleChat.crossTeamTargetTeamsLabel")}</Label>
-								<ToggleGroup
-									type="multiple"
-									variant="outline"
-									size="sm"
-									spacing={2}
-									value={selectedCrossTeamSlugs}
-									onValueChange={onSelectedCrossTeamSlugsChange}
-									className="inline-flex max-w-full flex-wrap justify-start"
-								>
-									{availableCrossTeamTargets.map((teamOption) => (
-										<ToggleGroupItem
-											key={teamOption._id}
-											value={teamOption.slug}
-											aria-label={teamOption.name}
-											className="h-11 rounded-full border-border/70 bg-transparent px-3.5 text-xs sm:h-9 lg:text-sm"
-										>
-											{teamOption.name}
-										</ToggleGroupItem>
-									))}
-								</ToggleGroup>
-								{selectedCrossTeamSlugs.length === 0 && (
-									<p className="text-xs text-muted-foreground lg:text-sm">
-										{t("googleChat.crossTeamTargetTeamsRequired")}
-									</p>
+					{addableExtras.length > 0 ? (
+						<DropdownMenu modal={false}>
+							<DropdownMenuTrigger
+								className={cn(
+									assignmentChipClass,
+									"ml-auto h-9 border border-dashed text-muted-foreground hover:bg-muted/40 hover:text-foreground data-open:bg-muted/40 data-open:text-foreground",
+									// On a phone the row only fits on one line with the bare "+".
+									"@max-[25rem]:w-9 @max-[25rem]:px-0",
 								)}
-								<div className="flex items-start gap-3 rounded-xl border border-sky-200/70 bg-background/70 p-3 dark:border-sky-900/40">
-									<Checkbox
-										id="cross-team-exclude-teammates"
-										checked={excludeTeammates}
-										onCheckedChange={(checked) =>
-											onExcludeTeammatesChange(checked === true)
-										}
-									/>
-									<div className="flex flex-col gap-1">
-										<Label
-											htmlFor="cross-team-exclude-teammates"
-											className="cursor-pointer text-xs font-medium text-sky-800 lg:text-sm dark:text-sky-200"
-										>
-											{t("googleChat.crossTeamExcludeTeammatesToggle")}
-										</Label>
-										<p className="text-xs text-muted-foreground lg:text-sm">
-											{t("googleChat.crossTeamExcludeTeammatesDescription")}
-										</p>
-									</div>
-								</div>
-							</>
-						) : (
-							<p className="text-xs text-muted-foreground lg:text-sm">
-								{t("googleChat.crossTeamNoTeamsAvailable")}
-							</p>
-						)}
-					</section>
-				)}
+							>
+								<Plus className="size-4 shrink-0" aria-hidden="true" />
+								<span className="leading-none @max-[25rem]:sr-only">
+									{t("pr.addExtra")}
+								</span>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end" className="w-56">
+								{addableExtras.map((extra) => (
+									<DropdownMenuItem key={extra.label} onSelect={extra.add}>
+										<extra.icon />
+										{extra.label}
+									</DropdownMenuItem>
+								))}
+							</DropdownMenuContent>
+						</DropdownMenu>
+					) : null}
+				</div>
 
-				{showReviewerSlots && (
-					<section className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/18 p-3 sm:p-4 lg:p-5">
-						<div className="flex flex-wrap gap-2" aria-live="polite">
-							<Badge variant="secondary" className="max-w-full">
-								{t("pr.multipleAssignmentSummaryEnabled", {
-									count: reviewerCount,
-								})}
-							</Badge>
+				{/* Two or more: how each one is picked, under the count that opened it. */}
+				<Collapsible
+					open={!hideMultiAssignmentSection && isMultiAssignmentEnabled}
+					className="contents"
+				>
+					<CollapsibleContent>
+						<div className="sm:pl-32">
+							<ReviewerSlotsConfigurator
+								mode={mode}
+								reviewerCount={reviewerCount}
+								minReviewerCount={2}
+								embedded
+								hideCountControl
+								allowReviewerCountChange={false}
+								selectedTagId={selectedTagId}
+								slots={slotConfigs.slice(0, reviewerCount)}
+								reviewers={reviewers}
+								tags={tags}
+								previews={reviewerSlotPreviews}
+								otherTeams={otherTeams}
+								onReviewerCountChange={onReviewerCountChange}
+								onSlotChange={onSlotChange}
+							/>
 						</div>
-						<ReviewerSlotsConfigurator
-							mode={mode}
-							reviewerCount={reviewerCount}
-							minReviewerCount={2}
-							embedded
-							selectedTagId={selectedTagId}
-							slots={slotConfigs.slice(0, reviewerCount)}
-							reviewers={reviewers}
-							tags={tags}
-							previews={reviewerSlotPreviews}
-							allowReviewerCountChange
-							onReviewerCountChange={onReviewerCountChange}
-							onSlotChange={onSlotChange}
-						/>
-					</section>
-				)}
+					</CollapsibleContent>
+				</Collapsible>
 
-				{showDuplicateAlert && duplicateAssignment && (
-					<Alert variant="destructive">
-						<AlertCircle className="h-4 w-4" aria-hidden="true" />
-						<AlertDescription>
-							{t("messages.duplicatePRAssigned", {
-								reviewer: duplicateAssignment.reviewerName,
-								date: new Date(
-									duplicateAssignment.timestamp,
-								).toLocaleDateString(),
-							})}
-						</AlertDescription>
-					</Alert>
-				)}
+				{/* Added lines stack under the controls that add them, in the order
+				    added; the ✕ turns the option off, so a closed row is gone. */}
+				<Collapsible open={showContextInput} className="contents">
+					<CollapsibleContent>
+						<ExtraRow
+							label={t("pr.chipContext")}
+							icon={Link2}
+							onRemove={() => {
+								setShowContextInput(false);
+								onContextUrlChange("");
+							}}
+						>
+							<FieldLabel htmlFor="assignment-context-url" className="sr-only">
+								{t("googleChat.contextUrlLabel")}
+							</FieldLabel>
+							<InputGroup className="h-10 rounded-2xl border-control-border bg-background/70">
+								<InputGroupInput
+									id="assignment-context-url"
+									placeholder={t("placeholders.contextUrl")}
+									value={contextUrl}
+									onChange={(event) => onContextUrlChange(event.target.value)}
+									autoComplete="off"
+									inputMode="url"
+									spellCheck={false}
+									autoFocus
+								/>
+							</InputGroup>
+						</ExtraRow>
+					</CollapsibleContent>
+				</Collapsible>
+
+				<Collapsible open={enableCustomMessage} className="contents">
+					<CollapsibleContent>
+						<ExtraRow
+							label={t("pr.chipMessage")}
+							icon={MessageSquareText}
+							onRemove={() => {
+								onEnableCustomMessageChange(false);
+								onCustomMessageChange("");
+							}}
+						>
+							<ChatMessageCustomizer
+								prUrl={prUrl}
+								onPrUrlChange={onPrUrlChange}
+								contextUrl={contextUrl}
+								onContextUrlChange={onContextUrlChange}
+								enabled={enableCustomMessage}
+								onEnabledChange={onEnableCustomMessageChange}
+								message={customMessage}
+								onMessageChange={onCustomMessageChange}
+								nextReviewerName={
+									resolvedNamesForMessage || activeNextReviewer?.name
+								}
+								embedded
+								showPrUrlField={false}
+								showContextUrlField={false}
+								showCustomizeToggle={false}
+							/>
+						</ExtraRow>
+					</CollapsibleContent>
+				</Collapsible>
 			</div>
 		</div>
 	);

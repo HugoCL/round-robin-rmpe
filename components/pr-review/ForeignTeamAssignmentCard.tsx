@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
+import { ViewReviewersLink } from "./layouts/ReviewersPanelContext";
 import { usePRReview } from "./PRReviewContext";
 
 export function ForeignTeamAssignmentCard() {
@@ -42,9 +44,11 @@ export function ForeignTeamAssignmentCard() {
 				<p className="text-sm text-muted-foreground">
 					{t("team.foreignTeamPromptDescription")}
 				</p>
+				<ViewReviewersLink />
 			</div>
 			<div className="mt-4 grid gap-3">
 				<Input
+					id={PR_URL_INPUT_ID}
 					value={prUrl}
 					onChange={(event) => setPrUrl(event.target.value)}
 					placeholder={t("placeholders.githubPrUrl")}
@@ -60,7 +64,9 @@ export function ForeignTeamAssignmentCard() {
 						checked={urgent}
 						onCheckedChange={setUrgent}
 					/>
-					<Label htmlFor="foreign-team-urgent">{t("pr.urgent")}</Label>
+					<Label htmlFor="foreign-team-urgent" className="cursor-pointer">
+						{t("pr.urgent")}
+					</Label>
 				</div>
 				<Button
 					onClick={handleAssign}

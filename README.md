@@ -24,8 +24,9 @@ fairly. The interface is available in Spanish (default) and English.
 - Tags (for example `frontend`, `backend`) with an independent rotation per tag.
 - Force-assign a specific reviewer, or mark an assignment as urgent.
 - Duplicate PR detection, and undo for the last assignment.
-- Cross-team assignment: request a review from another team's pool and notify
-  both teams' Google Chat spaces.
+- Cross-team assignment: each reviewer can come from another team, picked by
+  that team's own rotation, and every team involved is notified in its Google
+  Chat space.
 - Assignment history, a live feed and a "my assignments" view, all updated in
   real time through Convex.
 

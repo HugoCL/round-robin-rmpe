@@ -218,7 +218,10 @@ export function EmailPolicyForm() {
 						onCheckedChange={setAllowClerkTestEmails}
 					/>
 					<div className="min-w-0 space-y-0.5">
-						<label htmlFor={clerkTestId} className="text-sm font-medium">
+						<label
+							htmlFor={clerkTestId}
+							className="cursor-pointer text-sm font-medium"
+						>
 							{t("emailAccess.clerkTestLabel")}
 						</label>
 						<p className="text-xs text-muted-foreground">

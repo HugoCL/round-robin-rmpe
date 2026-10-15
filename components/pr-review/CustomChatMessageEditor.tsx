@@ -70,7 +70,7 @@ export function CustomChatMessageEditor({
 				<div className="pt-2 border-t border-muted/50 flex items-center justify-between">
 					<Label
 						htmlFor={toggleId}
-						className="text-xs text-muted-foreground flex items-center gap-1"
+						className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground"
 					>
 						<MessageSquare className="h-3 w-3" />{" "}
 						{t("googleChat.customizeToggle")}

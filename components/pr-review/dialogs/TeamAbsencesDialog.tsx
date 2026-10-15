@@ -267,7 +267,7 @@ function TeamAbsencesTimeline() {
 												style={style}
 												className={cn(
 													cellClass,
-													"cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+													"transition-colors focus-visible:outline-2 focus-visible:outline-ring",
 													overBar
 														? "relative z-[2] hover:bg-foreground/15 focus-visible:bg-foreground/15"
 														: "hover:bg-muted focus-visible:bg-muted",
@@ -445,7 +445,7 @@ function TimelineBar({
 			style={style}
 			className={cn(
 				className,
-				"cursor-pointer hover:brightness-95 focus-visible:outline-2 focus-visible:outline-ring",
+				"hover:brightness-95 focus-visible:outline-2 focus-visible:outline-ring",
 			)}
 			onClick={onSelect}
 		/>

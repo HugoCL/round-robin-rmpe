@@ -174,7 +174,7 @@ export const sendGoogleChatMessage = action({
 			customMessage,
 			urgent = false,
 		},
-	): Promise<{ success: boolean; error?: string }> => {
+	): Promise<{ success: boolean; partial?: boolean; error?: string }> => {
 		// Normalize / sanitize potentially empty or whitespace chat IDs early to avoid rendering `<users/>`
 		reviewerChatId = reviewerChatId?.trim() || undefined;
 		assignerChatId = assignerChatId?.trim() || undefined;
@@ -355,6 +355,7 @@ export const sendGoogleChatMessage = action({
 			if (deliveryProblems) {
 				return {
 					success: false,
+					partial: true,
 					error: describePartialChatDelivery(
 						delivery.deliveredSlugs,
 						deliveryProblems,
@@ -409,7 +410,7 @@ export const sendGoogleChatGroupMessage = action({
 			customMessage,
 			urgent = false,
 		},
-	): Promise<{ success: boolean; error?: string }> => {
+	): Promise<{ success: boolean; partial?: boolean; error?: string }> => {
 		if (reviewers.length === 0) {
 			return { success: false, error: "No reviewers provided" };
 		}
@@ -547,6 +548,7 @@ export const sendGoogleChatGroupMessage = action({
 			if (deliveryProblems) {
 				return {
 					success: false,
+					partial: true,
 					error: describePartialChatDelivery(
 						delivery.deliveredSlugs,
 						deliveryProblems,

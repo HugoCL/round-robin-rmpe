@@ -492,7 +492,10 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 										</Select>
 									</div>
 									<div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2">
-										<Label htmlFor={`required-${question.clientKey}`}>
+										<Label
+											htmlFor={`required-${question.clientKey}`}
+											className="cursor-pointer"
+										>
 											{t("admin.required")}
 										</Label>
 										<Switch

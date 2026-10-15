@@ -47,9 +47,14 @@ export function KeyboardShortcutsHelp({
 			note: t("shortcuts.anywhere"),
 		},
 		{
+			key: "Enter",
+			description: t("shortcuts.enterAssigns"),
+			note: t("shortcuts.inPrUrlField"),
+		},
+		{
 			key: "A",
 			description: t("shortcuts.assignPR"),
-			note: t("shortcuts.onlyAvailable"),
+			note: t("shortcuts.assignNote"),
 		},
 		{
 			key: "S",
@@ -80,7 +85,7 @@ export function KeyboardShortcutsHelp({
 			>
 				<DialogHeader>
 					<DialogTitle>{t("shortcuts.title")}</DialogTitle>
-					<DialogDescription>{t("shortcuts.description")}</DialogDescription>
+					<DialogDescription>{t("shortcuts.globalNote")}</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-4">
 					<div className="calm-list">
@@ -107,11 +112,6 @@ export function KeyboardShortcutsHelp({
 								</KbdGroup>
 							</div>
 						))}
-					</div>
-					<div className="calm-subtle-panel p-3">
-						<p className="text-sm text-muted-foreground">
-							<strong>{t("shortcuts.note")}</strong> {t("shortcuts.globalNote")}
-						</p>
 					</div>
 				</div>
 			</DialogContent>
