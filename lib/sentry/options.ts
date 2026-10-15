@@ -1,4 +1,4 @@
-import { scrubEvent } from "@/lib/sentry/scrubEvent";
+import { scrubEvent, scrubSpan } from "@/lib/sentry/scrubEvent";
 
 const IDENTIFYING_HEADER_TERMS = [
 	"forwarded",
@@ -27,5 +27,5 @@ export const sentryOptions = {
 		graphQL: { document: false, variables: false },
 	},
 	beforeSend: scrubEvent,
-	beforeSendTransaction: scrubEvent,
+	beforeSendSpan: scrubSpan,
 };
