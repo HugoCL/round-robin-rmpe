@@ -299,3 +299,79 @@ test("returns a span without user data when span scrubbing throws", () => {
 		attributes: {},
 	});
 });
+
+test("replaces class instances instead of passing them through", () => {
+	class Contact {
+		value = "ana@example.com";
+	}
+	const event: Event = {
+		message: "boom",
+		extra: {
+			contact: new Contact(),
+			contacts: [new Contact(), "bob@example.org"],
+			when: new Date(0),
+		},
+	};
+
+	assert.deepEqual(scrubEvent(event), {
+		message: "boom",
+		extra: {
+			contact: "[Object]",
+			contacts: ["[Object]", "[email]"],
+			when: "[Object]",
+		},
+	});
+});
+
+test("replaces class instances inside streamed span attributes", () => {
+	class Contact {
+		value = "ana@example.com";
+	}
+	const span = {
+		trace_id: "c9bc5fc9ccce44c2aa6723096581478b",
+		span_id: "a299d7251c3ecc78",
+		name: "assign",
+		start_timestamp: 1,
+		end_timestamp: 2,
+		status: "ok" as const,
+		is_segment: false,
+		attributes: {
+			contact: new Contact() as never,
+			contacts: [new Contact()] as never,
+			"app.step": "assign",
+		},
+	};
+
+	assert.deepEqual(scrubSpan(span).attributes, {
+		contact: "[Object]",
+		contacts: ["[Object]"],
+		"app.step": "assign",
+	});
+});
+
+test("redacts double-quoted local parts in events and spans", () => {
+	const event: Event = {
+		message: 'sent to "ana perez"@example.com and "bob%40x"%40example.org.',
+		extra: { plain: 'say "hello" and "world" to everyone' },
+	};
+	assert.deepEqual(scrubEvent(event), {
+		message: "sent to [email] and [email].",
+		extra: { plain: 'say "hello" and "world" to everyone' },
+	});
+
+	const span = {
+		trace_id: "c9bc5fc9ccce44c2aa6723096581478b",
+		span_id: "a299d7251c3ecc78",
+		name: 'GET /team/"ana perez"@example.com',
+		start_timestamp: 1,
+		end_timestamp: 2,
+		status: "ok" as const,
+		is_segment: true,
+		attributes: { "app.owner": '"carl smith"@example.net' },
+	};
+	assert.deepEqual(scrubSpan(span), {
+		...span,
+		name: "GET /team/[email]",
+		attributes: { "app.owner": "[email]" },
+	});
+});

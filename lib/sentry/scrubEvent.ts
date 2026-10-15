@@ -8,13 +8,15 @@ const EMAIL_PLACEHOLDER = "[email]";
 const CIRCULAR_PLACEHOLDER = "[Circular]";
 const TRUNCATED_PLACEHOLDER = "[Truncated]";
 const DROPPED_PLACEHOLDER = "[event dropped by privacy scrubber]";
+const OPAQUE_PLACEHOLDER = "[Object]";
 const MAX_DEPTH = 20;
 
 // Bounded quantifiers keep matching linear on long strings. `=`, `&` and `?`
 // stay out of the local part so query keys survive (`owner=[email]&page=2`).
 // The TLD must be alphabetic so `react@19.1.0` is not mistaken for an address.
+// A quoted local part may hold spaces and any character but a quote.
 const EMAIL_PATTERN =
-	/[\w.%+\-'!#$*^`{|}~]{1,64}(?:@|%40)(?:[A-Za-z0-9-]{1,63}(?:\.|%2E)){1,10}[A-Za-z]{2,24}/gi;
+	/(?:"[^"\r\n]{1,64}"|[\w.%+\-'!#$*^`{|}~]{1,64})(?:@|%40)(?:[A-Za-z0-9-]{1,63}(?:\.|%2E)){1,10}[A-Za-z]{2,24}/gi;
 
 const DENIED_HEADERS = new Set([
 	"authorization",
@@ -35,6 +37,10 @@ const IDENTITY_ATTRIBUTES = new Set([
 	"vercel.proxy.client_ip",
 ]);
 const REQUEST_HEADER_ATTRIBUTE_PREFIX = "http.request.header.";
+
+export function redactEmails(text: string): string {
+	return text.replace(EMAIL_PATTERN, EMAIL_PLACEHOLDER);
+}
 
 function isDeniedHeader(name: string): boolean {
 	const lower = name.toLowerCase();
@@ -65,11 +71,13 @@ function redactValue(
 	ancestors: WeakSet<object>,
 ): unknown {
 	if (typeof value === "string") {
-		return value.replace(EMAIL_PATTERN, EMAIL_PLACEHOLDER);
+		return redactEmails(value);
 	}
 	if (typeof value !== "object" || value === null) return value;
 	const isArray = Array.isArray(value);
-	if (!isArray && !isPlainObject(value)) return value;
+	// Streamed span attributes are serialized after beforeSendSpan, so a class
+	// instance could expose fields this walk never visited.
+	if (!isArray && !isPlainObject(value)) return OPAQUE_PLACEHOLDER;
 	if (ancestors.has(value)) return CIRCULAR_PLACEHOLDER;
 	if (depth >= MAX_DEPTH) return TRUNCATED_PLACEHOLDER;
 
