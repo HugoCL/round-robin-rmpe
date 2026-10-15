@@ -72,3 +72,32 @@ test("class instances used as span attributes never reach the transport", async 
 	assert.ok(!payload.includes("ana@example.com"), "no address survives");
 	assert.ok(!payload.includes("example.com"), "no domain survives");
 });
+
+test("a root span name with an email is scrubbed from the trace header and baggage", async () => {
+	envelopes.length = 0;
+	let baggage = "";
+	let sentryTrace = "";
+
+	Sentry.startSpan({ name: "GET /team/ana.perez@example.com" }, () => {
+		const traceData = Sentry.getTraceData();
+		baggage = traceData.baggage ?? "";
+		sentryTrace = traceData["sentry-trace"] ?? "";
+	});
+	await Sentry.flush(2000);
+
+	const headers = envelopes.map(([header]) => header);
+	const traces = headers.flatMap((header) => header.trace ?? []);
+	assert.ok(traces.length > 0, "an envelope carried a trace header");
+	assert.deepEqual(
+		traces.map((trace) => (trace as { transaction?: string }).transaction),
+		traces.map(() => "GET /team/[email]"),
+	);
+	assert.ok(sentryTrace.length > 0, "trace data was produced");
+	assert.ok(baggage.includes("sentry-transaction="), "baggage has a name");
+	assert.ok(!baggage.includes("example.com"), "baggage has no address");
+	assert.ok(!baggage.includes("example%2Ecom"), "baggage has no encoded one");
+	assert.ok(
+		!JSON.stringify(headers).includes("example.com"),
+		"no envelope header has an address",
+	);
+});

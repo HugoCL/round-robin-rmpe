@@ -1,3 +1,4 @@
+import { scrubDscIntegration } from "@/lib/sentry/scrubDsc";
 import { scrubEvent, scrubSpan } from "@/lib/sentry/scrubEvent";
 
 const IDENTIFYING_HEADER_TERMS = [
@@ -28,4 +29,5 @@ export const sentryOptions = {
 	},
 	beforeSend: scrubEvent,
 	beforeSendSpan: scrubSpan,
+	integrations: [scrubDscIntegration()],
 };
