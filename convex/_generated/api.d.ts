@@ -37,6 +37,7 @@ import type * as pushActions from "../pushActions.js";
 import type * as queries from "../queries.js";
 import type * as reviewerLookup from "../reviewerLookup.js";
 import type * as seed from "../seed.js";
+import type * as sessionDiagnostics from "../sessionDiagnostics.js";
 import type * as suggestions from "../suggestions.js";
 import type * as surveys from "../surveys.js";
 import type * as teamRoles from "../teamRoles.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   queries: typeof queries;
   reviewerLookup: typeof reviewerLookup;
   seed: typeof seed;
+  sessionDiagnostics: typeof sessionDiagnostics;
   suggestions: typeof suggestions;
   surveys: typeof surveys;
   teamRoles: typeof teamRoles;
