@@ -21,7 +21,7 @@ export function PageHeader({ teamSlug }: PageHeaderProps) {
 	// the screen pinned over the assignment card.
 	return (
 		<header className="relative z-40 border-b border-border/60 bg-background/95 backdrop-blur-sm lg:sticky lg:top-0">
-			<div className="mx-auto flex w-full max-w-screen-2xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
+			<div className="mx-auto flex w-full max-w-screen-2xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6 lg:px-8 3xl:max-w-7xl 3xl:px-6">
 				<div className="flex min-w-0 flex-1 items-center gap-1 sm:flex-none">
 					<h1 className="shrink-0 text-2xl font-semibold tracking-tight md:text-3xl">
 						La Lista
