@@ -4,6 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Wider than a MacBook Pro 16" at its default scaling (1728 px), so the team
+   page splits into two columns only on external monitors. */
+@theme {
+	--breakpoint-3xl: 112.5rem;
+}
+
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);

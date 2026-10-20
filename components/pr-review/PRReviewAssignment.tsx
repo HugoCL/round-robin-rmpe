@@ -356,7 +356,7 @@ export default function PRReviewAssignment({
 						</a>
 					)}
 					<PageHeader teamSlug={teamSlug} />
-					<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-3 pb-4 sm:px-6 lg:pb-6">
+					<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-3 pb-4 sm:px-6 lg:pb-6 3xl:max-w-7xl">
 						<div
 							className="notice-stack page-enter mt-3 sm:mt-5 lg:mt-6"
 							role="region"
