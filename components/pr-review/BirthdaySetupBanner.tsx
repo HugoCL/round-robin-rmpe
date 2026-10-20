@@ -146,7 +146,7 @@ export function BirthdaySetupBanner() {
 							type="button"
 							variant="ghost"
 							size="icon"
-							className="size-8 cursor-pointer"
+							className="size-8"
 							onClick={() => setDismissed(true)}
 							aria-label={tAnnouncements("dismiss")}
 						>

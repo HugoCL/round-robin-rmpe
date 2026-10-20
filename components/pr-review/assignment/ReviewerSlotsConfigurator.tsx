@@ -8,7 +8,10 @@ import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
+	SelectSeparator,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
@@ -16,9 +19,12 @@ import { WithTooltip } from "@/components/ui/tooltip";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { isEligibleForAssignment } from "@/lib/reviewerEligibility";
 import type { Reviewer } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export const MIN_BATCH_SLOTS = 1;
 export const MAX_BATCH_SLOTS = 5;
+/** Select value of an "Otros equipos" option: the prefix plus the team slug. */
+const OTHER_TEAM_VALUE_PREFIX = "team:";
 
 export type ReviewerSlotStrategy =
 	| "random"
@@ -31,6 +37,8 @@ export type ReviewerSlotConfig = {
 	strategy: ReviewerSlotStrategy;
 	reviewerId?: Id<"reviewers">;
 	tagId?: Id<"tags">;
+	/** Another team this reviewer comes from, by its own rotation; none means this team. */
+	teamSlug?: string;
 };
 
 export type ReviewerSlotPreview = {
@@ -46,12 +54,16 @@ type Props = {
 	reviewerCount: number;
 	minReviewerCount?: number;
 	allowReviewerCountChange?: boolean;
+	/** The count is set elsewhere (the card's segmented control). */
+	hideCountControl?: boolean;
 	embedded?: boolean;
 	selectedTagId?: Id<"tags">;
 	slots: ReviewerSlotConfig[];
 	reviewers: Reviewer[];
 	tags: Doc<"tags">[];
 	previews: ReviewerSlotPreview[];
+	/** Teams a reviewer can come from besides this one. */
+	otherTeams?: { slug: string; name: string }[];
 	onReviewerCountChange: (next: number) => void;
 	onSlotChange: (index: number, patch: Partial<ReviewerSlotConfig>) => void;
 };
@@ -61,12 +73,14 @@ export function ReviewerSlotsConfigurator({
 	reviewerCount,
 	minReviewerCount = MIN_BATCH_SLOTS,
 	allowReviewerCountChange = true,
+	hideCountControl = false,
 	embedded = false,
 	selectedTagId,
 	slots,
 	reviewers,
 	tags,
 	previews,
+	otherTeams = [],
 	onReviewerCountChange,
 	onSlotChange,
 }: Props) {
@@ -80,68 +94,72 @@ export function ReviewerSlotsConfigurator({
 
 	return (
 		<section className={containerClass}>
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-				<div className="space-y-1 sm:max-w-[70%]">
-					<Label htmlFor="reviewer-slots-count">
-						{t("pr.reviewersToAssign")}
-					</Label>
-					<p className="text-xs text-muted-foreground">
-						{t("pr.reviewersToAssignDescription")}
-					</p>
-				</div>
-				<div
-					className="inline-flex items-center gap-1 self-start rounded-md border bg-background p-1"
-					id="reviewer-slots-count"
-					aria-label={t("pr.reviewersToAssign")}
-				>
-					<WithTooltip label={t("pr.decreaseReviewerCount")}>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							className="size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"
-							onClick={() =>
-								onReviewerCountChange(
-									Math.max(minReviewerCount, reviewerCount - 1),
-								)
-							}
-							disabled={
-								!allowReviewerCountChange || reviewerCount <= minReviewerCount
-							}
-							aria-label={t("pr.decreaseReviewerCount")}
-						>
-							<Minus className="h-4 w-4" aria-hidden="true" />
-						</Button>
-					</WithTooltip>
-					<span
-						className="min-w-8 text-center text-sm font-medium"
-						aria-live="polite"
+			{hideCountControl ? null : (
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+					<div className="space-y-1 sm:max-w-[70%]">
+						<Label htmlFor="reviewer-slots-count">
+							{t("pr.reviewersToAssign")}
+						</Label>
+						<p className="text-xs text-muted-foreground">
+							{t("pr.reviewersToAssignDescription")}
+						</p>
+					</div>
+					<div
+						className="inline-flex items-center gap-1 self-start rounded-md border bg-background p-1"
+						id="reviewer-slots-count"
+						aria-label={t("pr.reviewersToAssign")}
 					>
-						{reviewerCount}
-					</span>
-					<WithTooltip label={t("pr.increaseReviewerCount")}>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							className="size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"
-							onClick={() =>
-								onReviewerCountChange(
-									Math.min(MAX_BATCH_SLOTS, reviewerCount + 1),
-								)
-							}
-							disabled={
-								!allowReviewerCountChange || reviewerCount >= MAX_BATCH_SLOTS
-							}
-							aria-label={t("pr.increaseReviewerCount")}
+						<WithTooltip label={t("pr.decreaseReviewerCount")}>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								className="size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"
+								onClick={() =>
+									onReviewerCountChange(
+										Math.max(minReviewerCount, reviewerCount - 1),
+									)
+								}
+								disabled={
+									!allowReviewerCountChange || reviewerCount <= minReviewerCount
+								}
+								aria-label={t("pr.decreaseReviewerCount")}
+							>
+								<Minus className="h-4 w-4" aria-hidden="true" />
+							</Button>
+						</WithTooltip>
+						<span
+							className="min-w-8 text-center text-sm font-medium"
+							aria-live="polite"
 						>
-							<Plus className="h-4 w-4" aria-hidden="true" />
-						</Button>
-					</WithTooltip>
+							{reviewerCount}
+						</span>
+						<WithTooltip label={t("pr.increaseReviewerCount")}>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								className="size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"
+								onClick={() =>
+									onReviewerCountChange(
+										Math.min(MAX_BATCH_SLOTS, reviewerCount + 1),
+									)
+								}
+								disabled={
+									!allowReviewerCountChange || reviewerCount >= MAX_BATCH_SLOTS
+								}
+								aria-label={t("pr.increaseReviewerCount")}
+							>
+								<Plus className="h-4 w-4" aria-hidden="true" />
+							</Button>
+						</WithTooltip>
+					</div>
 				</div>
-			</div>
+			)}
 
-			<div className="space-y-3">
+			<div
+				className={hideCountControl ? "grid gap-4 sm:grid-cols-2" : "space-y-5"}
+			>
 				{slots.map((slot, slotIndex) => {
 					const slotPreview = previews.find(
 						(preview) => preview.slotIndex === slotIndex,
@@ -173,48 +191,116 @@ export function ReviewerSlotsConfigurator({
 						slot.strategy === "tag_random_selected" && !selectedTagId;
 
 					return (
-						<fieldset
-							key={slot.id}
-							className="min-w-0 space-y-2 rounded-xl border bg-card/70 px-2.5 pb-3 pt-2 sm:px-3 md:px-4 md:pb-4 md:pt-3"
-						>
-							<legend className="ml-2 bg-card/70 px-2 text-sm font-semibold leading-none">
+						<fieldset key={slot.id} className="min-w-0 space-y-2">
+							<legend
+								className={cn(
+									"mb-2 text-sm font-semibold",
+									hideCountControl && "mb-1 text-xs text-muted-foreground",
+								)}
+							>
 								{t("pr.reviewerSlotLegend", { index: slotIndex + 1 })}
 							</legend>
 
-							<div className="flex min-w-0 flex-col gap-2 md:flex-row">
+							{/* Compact (two slots per row): the selects stack instead of
+							    sharing a column that cannot hold both. */}
+							<div
+								className={cn(
+									"flex min-w-0 flex-col gap-2",
+									!hideCountControl && "md:flex-row",
+								)}
+							>
 								<div className="min-w-0 space-y-1 md:flex-1">
-									<Label htmlFor={strategySelectId}>
+									<Label
+										htmlFor={strategySelectId}
+										className={cn(hideCountControl && "sr-only")}
+									>
 										{t("pr.slotTypeLabel")}
 									</Label>
 									<Select
-										value={slot.strategy}
+										value={
+											slot.teamSlug
+												? `${OTHER_TEAM_VALUE_PREFIX}${slot.teamSlug}`
+												: slot.strategy
+										}
 										onValueChange={(value) =>
-											onSlotChange(slotIndex, {
-												strategy: value as ReviewerSlotStrategy,
-												reviewerId: undefined,
-												tagId: undefined,
-											})
+											onSlotChange(
+												slotIndex,
+												value.startsWith(OTHER_TEAM_VALUE_PREFIX)
+													? {
+															strategy: "random",
+															teamSlug: value.slice(
+																OTHER_TEAM_VALUE_PREFIX.length,
+															),
+															reviewerId: undefined,
+															tagId: undefined,
+														}
+													: {
+															strategy: value as ReviewerSlotStrategy,
+															teamSlug: undefined,
+															reviewerId: undefined,
+															tagId: undefined,
+														},
+											)
 										}
 									>
 										<SelectTrigger
 											id={strategySelectId}
 											className="w-full min-w-0 data-[size=default]:h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:data-[size=default]:h-9"
 										>
-											<SelectValue placeholder={t("pr.slotTypePlaceholder")} />
+											<SelectValue placeholder={t("pr.slotTypePlaceholder")}>
+												{slot.teamSlug
+													? (otherTeams.find(
+															(team) => team.slug === slot.teamSlug,
+														)?.name ?? slot.teamSlug)
+													: otherTeams.length > 0
+														? t("pr.fromOwnTeam", {
+																strategy:
+																	strategyOptions.find(
+																		(option) => option.value === slot.strategy,
+																	)?.label ?? "",
+															})
+														: undefined}
+											</SelectValue>
 										</SelectTrigger>
 										<SelectContent>
-											{strategyOptions.map((option) => (
-												<SelectItem key={option.value} value={option.value}>
-													{option.label}
-												</SelectItem>
-											))}
+											<SelectGroup>
+												{otherTeams.length > 0 ? (
+													<SelectLabel>{t("pr.ownTeamGroup")}</SelectLabel>
+												) : null}
+												{strategyOptions.map((option) => (
+													<SelectItem key={option.value} value={option.value}>
+														{option.label}
+													</SelectItem>
+												))}
+											</SelectGroup>
+											{otherTeams.length > 0 ? (
+												<>
+													<SelectSeparator />
+													<SelectGroup>
+														<SelectLabel>{t("pr.otherTeamsGroup")}</SelectLabel>
+														{otherTeams.map((team) => (
+															<SelectItem
+																key={team.slug}
+																value={`${OTHER_TEAM_VALUE_PREFIX}${team.slug}`}
+															>
+																{team.name}
+															</SelectItem>
+														))}
+													</SelectGroup>
+												</>
+											) : null}
 										</SelectContent>
 									</Select>
 								</div>
 
 								{requiresTag && (
 									<div className="min-w-0 space-y-1 md:flex-1">
-										<Label htmlFor={tagSelectId}>{t("pr.slotTagLabel")}</Label>
+										<Label
+											htmlFor={tagSelectId}
+											className={cn(hideCountControl && "sr-only")}
+										>
+											{t("pr.slotTagLabel")}
+										</Label>
 										<Select
 											value={slot.tagId}
 											onValueChange={(value) =>
@@ -242,7 +328,10 @@ export function ReviewerSlotsConfigurator({
 
 								{requiresReviewer && (
 									<div className="min-w-0 space-y-1 md:flex-1">
-										<Label htmlFor={reviewerSelectId}>
+										<Label
+											htmlFor={reviewerSelectId}
+											className={cn(hideCountControl && "sr-only")}
+										>
 											{t("pr.slotReviewerLabel")}
 										</Label>
 										<Select

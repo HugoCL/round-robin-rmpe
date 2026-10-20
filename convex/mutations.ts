@@ -7,7 +7,10 @@ import {
 	type ChatThreadLink,
 	mergeChatThreadLinks,
 } from "../lib/assignmentHistory";
-import { resolveAssignmentSlots } from "../lib/assignmentResolver";
+import {
+	resolveAssignmentSlots,
+	resolveAssignmentSlotsPerTeam,
+} from "../lib/assignmentResolver";
 import { resolveBroadcastTeamSlugs } from "../lib/chatBroadcast";
 import { undoRemovesReviewedPR } from "../lib/historyUndo";
 import {
@@ -1444,6 +1447,7 @@ const assignPRBatchInternalArgs = {
 			strategy: v.string(), // "random" | "specific" | "tag_random_selected" | "tag_random_other"
 			reviewerId: v.optional(v.id("reviewers")),
 			tagId: v.optional(v.id("tags")),
+			teamSlug: v.optional(v.string()),
 		}),
 	),
 	prUrl: v.optional(v.string()),
@@ -1502,6 +1506,7 @@ async function executeAssignPRBatch(
 			strategy: string;
 			reviewerId?: Id<"reviewers">;
 			tagId?: Id<"tags">;
+			teamSlug?: string;
 		}>;
 		prUrl?: string;
 		contextUrl?: string;
@@ -1522,9 +1527,12 @@ async function executeAssignPRBatch(
 	actionByReviewerId = actor.actionByReviewerId;
 	const actionByName = actor.actionByName;
 	const assigner = actor.assigner;
+	// Slots that name a team ask that team for its own reviewers (the card);
+	// without one, every chosen team forms a single pool (the agent API).
+	const perTeam = crossTeamReview && slots.some((slot) => slot.teamSlug);
 	const normalizedAdditionalTeamSlugs = [
 		...new Set(
-			additionalTeamSlugs
+			(perTeam ? slots.map((slot) => slot.teamSlug ?? "") : additionalTeamSlugs)
 				.map((slug) => slug.trim())
 				.filter((slug) => slug.length > 0 && slug !== teamSlug),
 		),
@@ -1536,10 +1544,12 @@ async function executeAssignPRBatch(
 				),
 			)
 		: [];
-	const reviewerPoolTeams =
-		crossTeamReview && excludeTeammates
-			? selectedAdditionalTeams
-			: [team, ...selectedAdditionalTeams];
+	const asksOwnTeam = perTeam
+		? slots.some((slot) => !slot.teamSlug || slot.teamSlug === teamSlug)
+		: !(crossTeamReview && excludeTeammates);
+	const reviewerPoolTeams = asksOwnTeam
+		? [team, ...selectedAdditionalTeams]
+		: selectedAdditionalTeams;
 	const reviewerPoolTeamIds =
 		reviewerPoolTeams.length > 0
 			? reviewerPoolTeams.map((item) => item._id)
@@ -1660,22 +1670,42 @@ async function executeAssignPRBatch(
 		byId.set(reviewer._id, reviewer);
 	}
 
-	const resolution = resolveAssignmentSlots({
-		mode: mode === "tag" ? "tag" : "regular",
-		selectedTagId,
-		slots,
-		reviewers: reviewersForAssignment.map((reviewer) => ({
-			...reviewer,
-			effectiveIsAbsent:
-				availabilityByReviewerId.get(reviewer._id)?.effectiveIsAbsent ??
-				isReviewerEffectivelyAbsentForTeam(
-					reviewer,
-					reviewerTimezoneTeamById.get(reviewer._id) ?? team,
-					availabilityNow,
+	const resolverReviewers = reviewersForAssignment.map((reviewer) => ({
+		...reviewer,
+		effectiveIsAbsent:
+			availabilityByReviewerId.get(reviewer._id)?.effectiveIsAbsent ??
+			isReviewerEffectivelyAbsentForTeam(
+				reviewer,
+				reviewerTimezoneTeamById.get(reviewer._id) ?? team,
+				availabilityNow,
+			),
+	}));
+	const resolution = perTeam
+		? resolveAssignmentSlotsPerTeam({
+				mode: mode === "tag" ? "tag" : "regular",
+				selectedTagId,
+				slots,
+				sourceTeamSlug: teamSlug,
+				reviewersByTeam: new Map(
+					reviewersByTeam.map(({ reviewerPoolTeam }) => [
+						reviewerPoolTeam.slug,
+						resolverReviewers.filter(
+							(reviewer) =>
+								reviewerTeamById.get(reviewer._id) === reviewerPoolTeam._id,
+						),
+					]),
 				),
-		})),
-		excludedReviewerId: actionByReviewerId,
-	});
+				requesterEmail: actionByReviewerId
+					? (await ctx.db.get(actionByReviewerId))?.email
+					: undefined,
+			})
+		: resolveAssignmentSlots({
+				mode: mode === "tag" ? "tag" : "regular",
+				selectedTagId,
+				slots,
+				reviewers: resolverReviewers,
+				excludedReviewerId: actionByReviewerId,
+			});
 
 	if (resolution.resolved.length === 0) {
 		return {

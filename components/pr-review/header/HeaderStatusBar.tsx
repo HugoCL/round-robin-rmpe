@@ -19,11 +19,11 @@ import { countRegularAssignmentsUntilReviewer } from "@/lib/assignmentResolver";
 import { findNextScheduledAbsence } from "@/lib/plannedAbsences";
 import { isIncludedInTagRotations } from "@/lib/reviewerEligibility";
 import { cn } from "@/lib/utils";
+import { describeReturn } from "../describeReturn";
 import { MarkAbsentDialog } from "../dialogs/MarkAbsentDialog";
 import { usePRReview } from "../PRReviewContext";
 
-const PILL_CLASS =
-	"h-9 cursor-pointer gap-2 rounded-full px-3 text-sm font-normal";
+const PILL_CLASS = "h-9 gap-2 rounded-full px-3 text-sm font-normal";
 
 function getPrNumber(prUrl?: string | null) {
 	return prUrl?.match(/(?:pull|pulls|merge_requests)\/(\d+)(?:[/?#]|$)/i)?.[1];
@@ -101,6 +101,7 @@ export function HeaderStatusBar() {
 		onMarkAvailable,
 		onSetExcludedFromReviewPool,
 		plannedAbsences,
+		teamTimezone,
 	} = usePRReview();
 	const [now] = useState(() => Date.now());
 	const [statusOpen, setStatusOpen] = useState(false);
@@ -138,11 +139,7 @@ export function HeaderStatusBar() {
 	}, [currentReviewer, reviewers]);
 	const returningLabel =
 		currentReviewer?.manualIsAbsent && currentReviewer.absentUntil
-			? t("partTime.returningOn", {
-					date: new Date(currentReviewer.absentUntil).toLocaleDateString(
-						locale,
-					),
-				})
+			? describeReturn(t, locale, teamTimezone, currentReviewer.absentUntil)
 			: currentReviewer?.manualIsAbsent
 				? t("partTime.noReturnDate")
 				: null;
@@ -281,7 +278,7 @@ export function HeaderStatusBar() {
 								type="button"
 								variant="outline"
 								size="sm"
-								className="cursor-pointer self-start"
+								className="self-start"
 								onClick={() => {
 									setStatusOpen(false);
 									setAbsentDialogOpen(true);

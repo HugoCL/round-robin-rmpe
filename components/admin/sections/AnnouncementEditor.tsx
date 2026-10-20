@@ -300,7 +300,10 @@ export function AnnouncementEditor({
 										)
 									}
 								/>
-								<label htmlFor={`team-${team._id}`} className="text-sm">
+								<label
+									htmlFor={`team-${team._id}`}
+									className="cursor-pointer text-sm"
+								>
 									{team.name}
 								</label>
 							</li>
@@ -392,13 +395,17 @@ export function AnnouncementEditor({
 	if (isMobile) {
 		return (
 			<Drawer open={open} onOpenChange={onOpenChange}>
-				<DrawerContent className="max-h-[90vh] overflow-y-auto">
-					<DrawerHeader>
+				{/* The body scrolls, not the drawer: vaul's backdrop extension hangs off
+				    the drawer's bottom edge and would cover whatever scrolls past it. */}
+				<DrawerContent className="max-h-[90vh] overflow-hidden">
+					<DrawerHeader className="shrink-0">
 						<DrawerTitle>{title}</DrawerTitle>
 						<DrawerDescription>{description}</DrawerDescription>
 					</DrawerHeader>
-					{body}
-					<DrawerFooter>{footer}</DrawerFooter>
+					<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+						{body}
+					</div>
+					<DrawerFooter className="shrink-0">{footer}</DrawerFooter>
 				</DrawerContent>
 			</Drawer>
 		);

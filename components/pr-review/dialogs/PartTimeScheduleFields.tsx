@@ -41,7 +41,9 @@ export function PartTimeScheduleFields({
 		<div className="flex flex-col gap-3">
 			<Field orientation="horizontal" data-disabled={disabled || undefined}>
 				<FieldContent>
-					<FieldLabel htmlFor={switchId}>{t("partTime.title")}</FieldLabel>
+					<FieldLabel htmlFor={switchId} className="cursor-pointer">
+						{t("partTime.title")}
+					</FieldLabel>
 					<FieldDescription>{t("partTime.description")}</FieldDescription>
 				</FieldContent>
 				<Switch
