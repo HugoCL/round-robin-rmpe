@@ -18,7 +18,11 @@ import {
 } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { ASSIGNMENT_FORM_ID, PR_URL_INPUT_ID } from "@/lib/assignmentFocus";
+import {
+	ASSIGNMENT_FORM_ID,
+	PR_URL_INPUT_ID,
+	submitAssignmentOrFocus,
+} from "@/lib/assignmentFocus";
 import type { ParsedPrUrl } from "@/lib/prUrl";
 import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -444,6 +448,7 @@ export function AssignmentControlsPanel({
 								showPrUrlField={false}
 								showContextUrlField={false}
 								showCustomizeToggle={false}
+								onSubmitShortcut={submitAssignmentOrFocus}
 							/>
 						</ExtraRow>
 					</CollapsibleContent>

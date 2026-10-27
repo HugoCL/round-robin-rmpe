@@ -664,6 +664,7 @@
 	"shortcuts": {
 		"enterAssigns": "Asignar el PR",
 		"inPrUrlField": "Desde el campo de la URL del PR",
+		"inMessageField": "Desde el mensaje; Ctrl + Enter en Windows y Linux",
 		"title": "Atajos de teclado",
 		"assign": "Asignar siguiente revisor",
 		"skip": "Omitir revisor actual",
