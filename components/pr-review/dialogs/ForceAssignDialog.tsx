@@ -356,6 +356,7 @@ export function ForceAssignDialog({
 						}
 						compact
 						autoTemplate={getDefaultPRChatMessageTemplate(locale)}
+						onSubmitShortcut={() => void handleConfirm()}
 					/>
 					{hasPrUrlError ? (
 						<p className="text-xs text-destructive">{t("pr.prUrlInvalid")}</p>

@@ -620,6 +620,7 @@
 	"shortcuts": {
 		"enterAssigns": "Assign the PR",
 		"inPrUrlField": "From the PR URL field",
+		"inMessageField": "From the message; Ctrl + Enter on Windows and Linux",
 		"title": "Keyboard Shortcuts",
 		"assign": "Assign next reviewer",
 		"skip": "Skip current reviewer",

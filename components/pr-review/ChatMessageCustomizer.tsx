@@ -32,6 +32,7 @@ export interface ChatMessageCustomizerProps {
 	showPrUrlField?: boolean;
 	showContextUrlField?: boolean;
 	showCustomizeToggle?: boolean;
+	onSubmitShortcut?: () => void;
 }
 
 export function ChatMessageCustomizer({
@@ -51,6 +52,7 @@ export function ChatMessageCustomizer({
 	showPrUrlField = true,
 	showContextUrlField = true,
 	showCustomizeToggle = true,
+	onSubmitShortcut,
 }: ChatMessageCustomizerProps) {
 	const t = useTranslations();
 	const locale = useLocale();
@@ -237,6 +239,19 @@ export function ChatMessageCustomizer({
 							onMessageChange(e.target.value);
 							setUserEdited(true);
 						}}
+						onKeyDown={(event) => {
+							if (
+								!onSubmitShortcut ||
+								event.key !== "Enter" ||
+								!(event.metaKey || event.ctrlKey)
+							)
+								return;
+							event.preventDefault();
+							onSubmitShortcut();
+						}}
+						aria-keyshortcuts={
+							onSubmitShortcut ? "Meta+Enter Control+Enter" : undefined
+						}
 						placeholder={t("googleChat.textareaPlaceholder")}
 					/>
 

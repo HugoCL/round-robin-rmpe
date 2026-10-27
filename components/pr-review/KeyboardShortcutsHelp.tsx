@@ -52,6 +52,11 @@ export function KeyboardShortcutsHelp({
 			note: t("shortcuts.inPrUrlField"),
 		},
 		{
+			key: "⌘ + Enter",
+			description: t("shortcuts.enterAssigns"),
+			note: t("shortcuts.inMessageField"),
+		},
+		{
 			key: "A",
 			description: t("shortcuts.assignPR"),
 			note: t("shortcuts.assignNote"),
