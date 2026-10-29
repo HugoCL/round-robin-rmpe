@@ -137,6 +137,27 @@ async function persistAssignmentChatThreadLinks(
 	}
 }
 
+/**
+ * Chat failures come back to the client as `{ success: false, error }` and
+ * would otherwise leave no trace in Convex logs, so every failed or partial
+ * delivery is logged here. `error` carries slugs, HTTP status and the response
+ * body, never the webhook URL.
+ */
+function logChatDeliveryFailure(
+	action: string,
+	details: {
+		teamSlug: string;
+		kind: "not-configured" | "failed" | "partial";
+		error: string;
+		deliveredSlugs?: string[];
+		prUrl?: string;
+	},
+) {
+	console.error(
+		`[${action}] Google Chat delivery ${details.kind}: ${JSON.stringify(details)}`,
+	);
+}
+
 // Google Chat integration action
 export const sendGoogleChatMessage = action({
 	args: {
@@ -186,12 +207,16 @@ export const sendGoogleChatMessage = action({
 			teamSlug;
 
 		if (webhookTargets.length === 0) {
-			return {
-				success: false,
-				error:
-					describeChatDeliveryProblems([], missingWebhookSlugs) ||
-					"Google Chat webhook URL not configured for this team",
-			};
+			const error =
+				describeChatDeliveryProblems([], missingWebhookSlugs) ||
+				"Google Chat webhook URL not configured for this team";
+			logChatDeliveryFailure("sendGoogleChatMessage", {
+				teamSlug,
+				kind: "not-configured",
+				error,
+				prUrl,
+			});
+			return { success: false, error };
 		}
 
 		try {
@@ -304,11 +329,15 @@ export const sendGoogleChatMessage = action({
 			);
 
 			if (delivery.deliveredSlugs.length === 0) {
-				return {
-					success: false,
-					error:
-						deliveryProblems || "Google Chat message could not be delivered",
-				};
+				const error =
+					deliveryProblems || "Google Chat message could not be delivered";
+				logChatDeliveryFailure("sendGoogleChatMessage", {
+					teamSlug,
+					kind: "failed",
+					error,
+					prUrl,
+				});
+				return { success: false, error };
 			}
 
 			if (reviewerEmail.trim()) {
@@ -353,14 +382,18 @@ export const sendGoogleChatMessage = action({
 			}
 
 			if (deliveryProblems) {
-				return {
-					success: false,
-					partial: true,
-					error: describePartialChatDelivery(
-						delivery.deliveredSlugs,
-						deliveryProblems,
-					),
-				};
+				const error = describePartialChatDelivery(
+					delivery.deliveredSlugs,
+					deliveryProblems,
+				);
+				logChatDeliveryFailure("sendGoogleChatMessage", {
+					teamSlug,
+					kind: "partial",
+					error,
+					deliveredSlugs: delivery.deliveredSlugs,
+					prUrl,
+				});
+				return { success: false, partial: true, error };
 			}
 
 			return { success: true };
@@ -428,12 +461,16 @@ export const sendGoogleChatGroupMessage = action({
 			teamSlug;
 
 		if (webhookTargets.length === 0) {
-			return {
-				success: false,
-				error:
-					describeChatDeliveryProblems([], missingWebhookSlugs) ||
-					"Google Chat webhook URL not configured for this team",
-			};
+			const error =
+				describeChatDeliveryProblems([], missingWebhookSlugs) ||
+				"Google Chat webhook URL not configured for this team";
+			logChatDeliveryFailure("sendGoogleChatGroupMessage", {
+				teamSlug,
+				kind: "not-configured",
+				error,
+				prUrl,
+			});
+			return { success: false, error };
 		}
 
 		try {
@@ -492,11 +529,15 @@ export const sendGoogleChatGroupMessage = action({
 			);
 
 			if (delivery.deliveredSlugs.length === 0) {
-				return {
-					success: false,
-					error:
-						deliveryProblems || "Google Chat message could not be delivered",
-				};
+				const error =
+					deliveryProblems || "Google Chat message could not be delivered";
+				logChatDeliveryFailure("sendGoogleChatGroupMessage", {
+					teamSlug,
+					kind: "failed",
+					error,
+					prUrl,
+				});
+				return { success: false, error };
 			}
 
 			await persistAssignmentChatThreadLinks(ctx, {
@@ -546,14 +587,18 @@ export const sendGoogleChatGroupMessage = action({
 			}
 
 			if (deliveryProblems) {
-				return {
-					success: false,
-					partial: true,
-					error: describePartialChatDelivery(
-						delivery.deliveredSlugs,
-						deliveryProblems,
-					),
-				};
+				const error = describePartialChatDelivery(
+					delivery.deliveredSlugs,
+					deliveryProblems,
+				);
+				logChatDeliveryFailure("sendGoogleChatGroupMessage", {
+					teamSlug,
+					kind: "partial",
+					error,
+					deliveredSlugs: delivery.deliveredSlugs,
+					prUrl,
+				});
+				return { success: false, partial: true, error };
 			}
 
 			return { success: true };
