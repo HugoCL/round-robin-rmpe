@@ -51,6 +51,17 @@ export function submitAssignmentOrFocus() {
 	return focusPrUrlInput();
 }
 
+/** The hero's "assign to someone else" link, which the F shortcut clicks. */
+export const FORCE_ASSIGN_TRIGGER_ID = "assignment-force-assign";
+
+/** Opens the force-assign dialog through its link, so the card owns the state. */
+export function openForceAssign() {
+	const trigger = document.getElementById(FORCE_ASSIGN_TRIGGER_ID);
+	if (!(trigger instanceof HTMLButtonElement) || trigger.disabled) return false;
+	trigger.click();
+	return true;
+}
+
 const OVERLAY_SELECTOR =
 	'[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]';
 

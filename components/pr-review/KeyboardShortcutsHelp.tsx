@@ -72,6 +72,11 @@ export function KeyboardShortcutsHelp({
 			note: t("shortcuts.alwaysAvailable"),
 		},
 		{
+			key: "F",
+			description: t("shortcuts.forceAssignShortcut"),
+			note: t("shortcuts.alwaysAvailable"),
+		},
+		{
 			key: "?",
 			description: t("shortcuts.showHelp"),
 			note: t("shortcuts.anywhere"),

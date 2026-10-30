@@ -3,6 +3,7 @@ import {
 	focusPrUrlInput,
 	isOverlayOpen,
 	isTypingTarget,
+	openForceAssign,
 	submitAssignmentOrFocus,
 } from "@/lib/assignmentFocus";
 
@@ -60,6 +61,9 @@ export function useKeyboardShortcuts({
 						if (onShortcutTriggered) return onShortcutTriggered("skip", run);
 						void run();
 					}
+					break;
+				case "f":
+					if (openForceAssign()) event.preventDefault();
 					break;
 				case "u": {
 					event.preventDefault();
