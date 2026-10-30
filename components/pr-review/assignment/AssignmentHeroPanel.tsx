@@ -2,7 +2,16 @@ import { useQuery } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
+import { FORCE_ASSIGN_TRIGGER_ID } from "@/lib/assignmentFocus";
 import { reviewerHasBirthdayToday } from "@/lib/reviewerAvailability";
 import type { Reviewer } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -32,6 +41,8 @@ type AssignmentHeroPanelProps = {
 	isLoadingTagReviewer: boolean;
 	/** Picks the rotation the name comes from; sits on the name's line. */
 	rotationMenu?: ReactNode;
+	/** Opens the force-assign dialog; the link sits last on the line under the name. */
+	onPickSomeoneElse?: () => void;
 };
 
 /** From this many people on, first names only, so they still fit. */
@@ -48,6 +59,7 @@ export function AssignmentHeroPanel({
 	otherTeamNameByReviewerId,
 	isLoadingTagReviewer,
 	rotationMenu,
+	onPickSomeoneElse,
 }: AssignmentHeroPanelProps) {
 	const t = useTranslations();
 	const locale = useLocale();
@@ -133,6 +145,9 @@ export function AssignmentHeroPanel({
 			? null
 			: t("pr.allReviewersAbsent");
 
+	// What closes the line, so each item before it knows whether to add a "·".
+	const hasTail = !!reviewersPanel || !!onPickSomeoneElse;
+
 	return (
 		<div className="flex flex-col gap-2">
 			{/* From sm, no wrap: a long name yields width instead of pushing the chip
@@ -194,12 +209,14 @@ export function AssignmentHeroPanel({
 			</div>
 			{/* Also with nobody to assign: that is when the panel is needed most,
 			    e.g. a new team whose only reviewer is its creator. */}
-			{receiver || reviewersPanel ? (
+			{receiver || hasTail ? (
 				<p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground lg:text-base">
 					{receiver && isSelfNext && (
 						<>
 							<span>{t("pr.autoSkipNote")}</span>
-							<span aria-hidden="true">·</span>
+							{receiversByTeam.size > 0 || following || hasTail ? (
+								<span aria-hidden="true">·</span>
+							) : null}
 						</>
 					)}
 					{[...receiversByTeam].map(([team, names], index, groups) => (
@@ -210,7 +227,7 @@ export function AssignmentHeroPanel({
 									team,
 								})}
 							</span>
-							{index < groups.length - 1 || reviewersPanel ? (
+							{index < groups.length - 1 || hasTail ? (
 								<span aria-hidden="true">·</span>
 							) : null}
 						</span>
@@ -233,10 +250,37 @@ export function AssignmentHeroPanel({
 									</Badge>
 								)}
 							</span>
-							{reviewersPanel ? <span aria-hidden="true">·</span> : null}
+							{hasTail ? <span aria-hidden="true">·</span> : null}
 						</>
 					)}
 					<ViewReviewersLink />
+					{reviewersPanel && onPickSomeoneElse ? (
+						<span aria-hidden="true">·</span>
+					) : null}
+					{onPickSomeoneElse ? (
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										id={FORCE_ASSIGN_TRIGGER_ID}
+										type="button"
+										variant="link"
+										disabled={isAssigning}
+										onClick={onPickSomeoneElse}
+										className="h-auto p-0 text-sm text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground lg:text-base"
+									>
+										{t("pr.forceAssignLink")}
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p className="flex items-center gap-2">
+										{t("pr.forceAssignLinkHint")}
+										<Kbd>F</Kbd>
+									</p>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					) : null}
 				</p>
 			) : null}
 		</div>

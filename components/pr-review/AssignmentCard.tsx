@@ -702,6 +702,7 @@ export function AssignmentCard() {
 					upcomingAfterReceiver={heroShown.upcomingAfterReceiver}
 					multipleReceivers={heroShown.multipleReceivers}
 					isLoadingTagReviewer={isLoadingTagReviewer}
+					onPickSomeoneElse={() => setForceAssignOpen(true)}
 					rotationMenu={
 						<RotationMenu
 							tags={tags}
