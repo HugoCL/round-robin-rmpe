@@ -937,7 +937,7 @@ export const sendEventInvite = action({
 });
 
 // Send event start notification tagging all participants
-export const sendEventStartNotification = action({
+export const sendEventStartNotification = internalAction({
 	args: {
 		eventId: v.id("events"),
 		teamSlug: v.string(),
@@ -1053,7 +1053,7 @@ export const sendEventStartNotification = action({
 });
 
 // Process events that need start notifications (called by cron)
-export const processEventStartNotifications = action({
+export const processEventStartNotifications = internalAction({
 	args: {},
 	handler: async (ctx): Promise<{ processed: number; errors: string[] }> => {
 		const events = await ctx.runQuery(
@@ -1075,7 +1075,7 @@ export const processEventStartNotifications = action({
 			}
 
 			const result = await ctx.runAction(
-				api.actions.sendEventStartNotification,
+				internal.actions.sendEventStartNotification,
 				{
 					eventId: event._id,
 					teamSlug: eventTeam.slug,

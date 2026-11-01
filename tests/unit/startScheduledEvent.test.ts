@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import {
+	processEventStartNotifications,
+	sendEventStartNotification,
+} from "../../convex/actions";
 import { startEvent, startScheduledEvent } from "../../convex/mutations";
 
 // Convex registers functions as objects that keep the raw handler in
@@ -127,4 +131,18 @@ test("public startEvent reports a missing event before checking auth", async () 
 
 	assert.deepEqual(result, { success: false, error: "Event not found" });
 	assert.equal(patches.length, 0);
+});
+
+// The start transition skips user auth, so nothing that reaches it may be
+// callable by clients.
+test("the scheduled event-start path is internal-only", () => {
+	for (const fn of [
+		startScheduledEvent,
+		sendEventStartNotification,
+		processEventStartNotifications,
+	]) {
+		const flags = fn as unknown as { isInternal?: boolean; isPublic?: boolean };
+		assert.equal(flags.isInternal, true);
+		assert.notEqual(flags.isPublic, true);
+	}
 });
