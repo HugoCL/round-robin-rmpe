@@ -1,5 +1,5 @@
 import { cronJobs } from "convex/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
@@ -7,7 +7,7 @@ const crons = cronJobs();
 crons.interval(
 	"process-event-start-notifications",
 	{ minutes: 1 },
-	api.actions.processEventStartNotifications,
+	internal.actions.processEventStartNotifications,
 );
 
 // Auto-complete events that have exceeded their duration
