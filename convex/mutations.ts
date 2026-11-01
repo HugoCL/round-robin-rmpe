@@ -3548,7 +3548,36 @@ export const cleanupOldRecords = internalMutation({
 	},
 });
 
-// Mark event as started (called by cron or manually)
+// Shared by the public and internal start mutations. Callers are responsible
+// for authorization; this only applies the state transition.
+async function startEventImpl(
+	ctx: MutationCtx,
+	event: Doc<"events">,
+): Promise<{ success: true } | { success: false; error: string }> {
+	if (event.status !== "scheduled") {
+		return { success: false, error: "Event cannot be started" };
+	}
+
+	const now = Date.now();
+	const expectedEndTime = getEventExpectedEndTime(event);
+
+	if (expectedEndTime <= now) {
+		await ctx.db.patch(event._id, {
+			status: "completed",
+			expectedEndTime: undefined,
+		});
+		return { success: true };
+	}
+
+	await ctx.db.patch(event._id, {
+		status: "started",
+		expectedEndTime, // Precalculate end time for efficient queries
+	});
+
+	return { success: true };
+}
+
+// Mark event as started manually (requires an authenticated team member)
 export const startEvent = mutation({
 	args: {
 		eventId: v.id("events"),
@@ -3560,27 +3589,27 @@ export const startEvent = mutation({
 		}
 		await assertCanMutateTeamById(ctx, event.teamId);
 
-		if (event.status !== "scheduled") {
-			return { success: false, error: "Event cannot be started" };
+		return await startEventImpl(ctx, event);
+	},
+});
+
+// Mark event as started from the scheduler/cron. Scheduled functions run
+// without a user identity, so the public `startEvent` would always throw
+// "Unauthorized" there. This is internal-only (not callable by clients), so it
+// skips user auth. Idempotent: a missing event or one that is no longer
+// "scheduled" (already started, completed, cancelled) is a no-op reported as
+// `skipped` rather than an error.
+export const startScheduledEvent = internalMutation({
+	args: {
+		eventId: v.id("events"),
+	},
+	handler: async (ctx, { eventId }) => {
+		const event = await ctx.db.get(eventId);
+		if (event?.status !== "scheduled") {
+			return { success: true as const, skipped: true as const };
 		}
 
-		const now = Date.now();
-		const expectedEndTime = getEventExpectedEndTime(event);
-
-		if (expectedEndTime <= now) {
-			await ctx.db.patch(eventId, {
-				status: "completed",
-				expectedEndTime: undefined,
-			});
-			return { success: true };
-		}
-
-		await ctx.db.patch(eventId, {
-			status: "started",
-			expectedEndTime, // Precalculate end time for efficient queries
-		});
-
-		return { success: true };
+		return await startEventImpl(ctx, event);
 	},
 });
 

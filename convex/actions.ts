@@ -1007,14 +1007,23 @@ export const sendEventStartNotification = action({
 			notificationError = "Google Chat webhook URL not configured";
 		}
 
-		const startResult = await ctx.runMutation(api.mutations.startEvent, {
-			eventId,
-		});
+		// Internal mutation: the cron/scheduler has no user identity, so the
+		// public startEvent would throw "Unauthorized".
+		const startResult = await ctx.runMutation(
+			internal.mutations.startScheduledEvent,
+			{ eventId },
+		);
 		if (!startResult.success) {
 			return {
 				success: false,
 				error: startResult.error || notificationError,
 			};
+		}
+		if ("skipped" in startResult) {
+			// Already started, completed, cancelled or deleted by someone else:
+			// not an error, but nothing was started here so don't send a second
+			// push notification for it.
+			return { success: true };
 		}
 
 		// Send PWA push notifications to all participants (fire and forget)
