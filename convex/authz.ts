@@ -253,11 +253,22 @@ export async function assertCanAdministerTeamById(
 export async function assertTeamRetainsOwner(
 	ctx: AuthCtx,
 	teamId: Id<"teams">,
+	change: { excluding?: Id<"reviewers">; demoting?: Id<"reviewers"> } = {},
+): Promise<void> {
+	if (!(await teamRetainsOwnerAfter(ctx, teamId, change))) {
+		throw new Error("Team must keep at least one owner");
+	}
+}
+
+/** The same rule as a yes or no, for a caller that answers instead of failing. */
+export async function teamRetainsOwnerAfter(
+	ctx: AuthCtx,
+	teamId: Id<"teams">,
 	{
 		excluding,
 		demoting,
 	}: { excluding?: Id<"reviewers">; demoting?: Id<"reviewers"> } = {},
-): Promise<void> {
+): Promise<boolean> {
 	const reviewers = await ctx.db
 		.query("reviewers")
 		.withIndex("by_team", (q) => q.eq("teamId", teamId))
@@ -266,17 +277,13 @@ export async function assertTeamRetainsOwner(
 	// Nothing to preserve on a team that has no owner yet: every row predating
 	// the roles migration is `role: undefined`, and refusing here would make it
 	// impossible to remove anyone from a team the backfill has not reached.
-	if (!teamHasOwner(reviewers)) return;
+	if (!teamHasOwner(reviewers)) return true;
 
-	const retains = reviewers.some((reviewer) => {
+	return reviewers.some((reviewer) => {
 		if (excluding !== undefined && reviewer._id === excluding) return false;
 		if (demoting !== undefined && reviewer._id === demoting) return false;
 		return resolveReviewerRole(reviewer) === "owner";
 	});
-
-	if (!retains) {
-		throw new Error("Team must keep at least one owner");
-	}
 }
 
 export async function getMemberTeamIdsForEmail(

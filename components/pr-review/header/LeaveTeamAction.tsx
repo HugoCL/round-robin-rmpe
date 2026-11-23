@@ -7,7 +7,6 @@ import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { toast } from "@/hooks/use-toast";
-import { classifyConvexError } from "@/lib/convexErrors";
 
 /**
  * The way out of a team, at the foot of your own status. It asks once in
@@ -51,17 +50,16 @@ export function LeaveTeamAction({
 	const handleLeave = async () => {
 		setIsLeaving(true);
 		try {
-			await leaveMyTeam({ teamSlug });
+			const { outcome } = await leaveMyTeam({ teamSlug });
+			if (outcome === "onlyOwner") {
+				toast({ title: t("onlyOwner"), variant: "destructive" });
+				setIsLeaving(false);
+				return;
+			}
 			onLeft();
 			toast({ title: t("success", { team: team.name }) });
-		} catch (error) {
-			toast({
-				title:
-					classifyConvexError(error) === "lastOwner"
-						? t("onlyOwner")
-						: t("failed"),
-				variant: "destructive",
-			});
+		} catch {
+			toast({ title: t("failed"), variant: "destructive" });
 			setIsLeaving(false);
 		}
 	};
