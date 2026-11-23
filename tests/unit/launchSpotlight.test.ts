@@ -66,8 +66,8 @@ test("the newest unseen launch wins, whatever the order of the entries", () => {
 test("a launch stops being news after the spotlight window", () => {
 	const launch = [entry("2026-11-23", "custom-view")];
 	assert.equal(LAUNCH_SPOTLIGHT_DAYS, 30);
-	assert.ok(pickLaunchSpotlight(launch, [], "2026-12-23"));
-	assert.equal(pickLaunchSpotlight(launch, [], "2026-12-24"), null);
+	assert.ok(pickLaunchSpotlight(launch, [], "2026-12-22"));
+	assert.equal(pickLaunchSpotlight(launch, [], "2026-12-23"), null);
 });
 
 test("a launch dated in the future waits for its day", () => {

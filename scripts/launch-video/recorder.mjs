@@ -442,9 +442,21 @@ export async function recordLaunchVideo({
 
 	const width = OUTPUT_WIDTH;
 	const height = Math.round(VIEWPORT.height * SCALE);
-	const inputs = ["-f", "concat", "-safe", "0", "-i", concatFile];
+	// Frames differ in size by a pixel or two during a camera move. Without
+	// `-reinit_filter 0` ffmpeg rebuilds the filter graph on each change and
+	// drops the frames of the move.
+	const inputs = [
+		"-reinit_filter",
+		"0",
+		"-f",
+		"concat",
+		"-safe",
+		"0",
+		"-i",
+		concatFile,
+	];
 	const filters = [
-		`[0:v]fps=${FPS},scale=${width}:${height}:in_range=full:out_range=tv,pad=${width}:${height + OUTPUT_CAPTION_STRIP}:0:0:color=0x14161f[v0]`,
+		`[0:v]scale=${width}:${height}:in_range=full:out_range=tv,setsar=1,fps=${FPS},pad=${width}:${height + OUTPUT_CAPTION_STRIP}:0:0:color=0x14161f[v0]`,
 	];
 	captions.forEach((item, index) => {
 		const start = (item.start - startedAt).toFixed(2);
@@ -504,7 +516,6 @@ export async function recordLaunchVideo({
 		"4",
 		output.replace(/\.mp4$/, ".jpg"),
 	]);
-	if (process.env.LAUNCH_VIDEO_KEEP) console.log(workDir);
-	else rmSync(workDir, { recursive: true, force: true });
+	rmSync(workDir, { recursive: true, force: true });
 	console.log(`${output} (${total.toFixed(1)} s, ${frames.length} frames)`);
 }

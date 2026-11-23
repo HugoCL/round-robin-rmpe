@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { IconActionButton } from "@/components/ui/icon-action-button";
 import { api } from "@/convex/_generated/api";
+import { toast } from "@/hooks/use-toast";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
 	changelogEntries,
@@ -38,6 +39,7 @@ function localDateKey() {
  */
 export function LaunchSpotlight() {
 	const t = useTranslations("launch");
+	const tApp = useTranslations();
 	const preferences = useQuery(api.queries.getMyUserPreferences, {});
 	const markSeen = useMutation(api.mutations.updateMyUserPreferences);
 	const { editing, setEditing } = useWidgetLayout();
@@ -53,7 +55,8 @@ export function LaunchSpotlight() {
 	if (!preferences?.isAuthenticated) return null;
 	const entry = pickLaunchSpotlight(
 		changelogEntries,
-		[...preferences.seenLaunches, ...dismissed],
+		// A preview build can run against a backend from before this field.
+		[...(preferences.seenLaunches ?? []), ...dismissed],
 		today,
 	);
 	if (!entry) return null;
@@ -61,7 +64,16 @@ export function LaunchSpotlight() {
 
 	const dismiss = () => {
 		setDismissed((current) => [...current, id]);
-		void markSeen({ seenLaunch: id }).catch((error) => console.error(error));
+		void markSeen({ seenLaunch: id }).catch((error) => {
+			console.error("Failed to dismiss the launch:", error);
+			// Not saved, so it comes back now instead of on the next visit.
+			setDismissed((current) => current.filter((seen) => seen !== id));
+			toast({
+				title: tApp("common.error"),
+				description: tApp("mySettings.saveFailed"),
+				variant: "destructive",
+			});
+		});
 	};
 	// What the launch invites the person to do, when it is one click away.
 	const action =

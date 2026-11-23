@@ -71,7 +71,7 @@ export function pickLaunchSpotlight(
 	const fresh = entries.filter((entry): entry is SpotlightEntry => {
 		if (!entry.spotlight || seen.has(entry.spotlight.id)) return false;
 		const age = (todayMs - toUtcDay(entry.date)) / DAY_MS;
-		return age >= 0 && age <= LAUNCH_SPOTLIGHT_DAYS;
+		return age >= 0 && age < LAUNCH_SPOTLIGHT_DAYS;
 	});
 	return fresh.sort((a, b) => toUtcDay(b.date) - toUtcDay(a.date))[0] ?? null;
 }
