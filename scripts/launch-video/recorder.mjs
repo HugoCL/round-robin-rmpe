@@ -21,6 +21,9 @@ const SCALE = 2;
 const SLOWDOWN = 2.5;
 const FPS = 30;
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const FULL_VIEW = { x: 0, y: 0, zoom: 1 };
+
+const easeInOut = (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
 const pointerOverlay = () => {
 	const install = () => {
@@ -232,7 +235,8 @@ async function signIn(page, baseUrl) {
  * Seeds the demo teams and signs in the test user first. `prepare` then runs
  * off camera in the same context. `scenario` gets `clickOn(locator)` to move
  * the visible pointer and click, `caption(text)` to change the line under the
- * app, and `wait(ms)` in video time.
+ * app, `zoomOn(locator)` to ease the camera in on what matters (no locator
+ * eases back to the full view), and `wait(ms)` in video time.
  */
 export async function recordLaunchVideo({
 	output,
@@ -276,7 +280,7 @@ export async function recordLaunchVideo({
 		const steps = Math.round((travelMs * SLOWDOWN) / 16);
 		for (let step = 1; step <= steps; step++) {
 			const t = step / steps;
-			const eased = t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+			const eased = easeInOut(t);
 			await page.mouse.move(
 				pointer.x + (target.x - pointer.x) * eased,
 				pointer.y + (target.y - pointer.y) * eased,
@@ -288,6 +292,33 @@ export async function recordLaunchVideo({
 		await page.mouse.down();
 		await wait(80);
 		await page.mouse.up();
+	};
+
+	// A zoomed frame is a smaller clip captured at a higher scale, so it is as
+	// sharp as a full one. Rounding leaves it a pixel or two off the full size,
+	// which the encode evens out.
+	let cameraMove = { from: FULL_VIEW, to: FULL_VIEW, at: 0, seconds: 1 };
+	const cameraAt = (at) => {
+		const { from, to } = cameraMove;
+		const progress = (at - cameraMove.at) / cameraMove.seconds;
+		const eased = easeInOut(Math.min(Math.max(progress, 0), 1));
+		const mix = (key) => from[key] + (to[key] - from[key]) * eased;
+		return { x: mix("x"), y: mix("y"), zoom: mix("zoom") };
+	};
+	const zoomOn = async (locator, zoom = 1.35, travelMs = 900) => {
+		let to = FULL_VIEW;
+		if (locator) {
+			const box = await locator.boundingBox();
+			const corner = (center, size) =>
+				Math.min(Math.max(center - size / zoom / 2, 0), size - size / zoom);
+			to = {
+				zoom,
+				x: corner(box.x + box.width / 2, VIEWPORT.width),
+				y: corner(box.y + box.height / 2, VIEWPORT.height),
+			};
+		}
+		const at = now();
+		cameraMove = { from: cameraAt(at), to, at, seconds: travelMs / 1000 };
 	};
 
 	const frames = [];
@@ -302,11 +333,18 @@ export async function recordLaunchVideo({
 		captureLoop = (async () => {
 			while (capturing) {
 				const at = now();
+				const view = cameraAt(at);
 				const { data } = await cdp.send("Page.captureScreenshot", {
 					format: "jpeg",
 					quality: 92,
 					optimizeForSpeed: true,
-					clip: { x: 0, y: 0, ...VIEWPORT, scale: SCALE },
+					clip: {
+						x: view.x,
+						y: view.y,
+						width: VIEWPORT.width / view.zoom,
+						height: VIEWPORT.height / view.zoom,
+						scale: SCALE * view.zoom,
+					},
 				});
 				const file = join(workDir, `frame-${frames.length}.jpg`);
 				writeFileSync(file, Buffer.from(data, "base64"));
@@ -315,7 +353,15 @@ export async function recordLaunchVideo({
 		})();
 	};
 
-	await scenario({ page, baseUrl, clickOn, caption, wait, startCapture });
+	await scenario({
+		page,
+		baseUrl,
+		clickOn,
+		zoomOn,
+		caption,
+		wait,
+		startCapture,
+	});
 	caption("");
 	capturing = false;
 	await captureLoop;
@@ -361,7 +407,7 @@ export async function recordLaunchVideo({
 	const height = VIEWPORT.height * SCALE;
 	const inputs = ["-f", "concat", "-safe", "0", "-i", concatFile];
 	const filters = [
-		`[0:v]fps=${FPS},scale=in_range=full:out_range=tv,pad=${width}:${height + CAPTION_STRIP * SCALE}:0:0:color=0x14161f[v0]`,
+		`[0:v]fps=${FPS},scale=${width}:${height}:in_range=full:out_range=tv,pad=${width}:${height + CAPTION_STRIP * SCALE}:0:0:color=0x14161f[v0]`,
 	];
 	captions.forEach((item, index) => {
 		const start = (item.start - startedAt).toFixed(2);

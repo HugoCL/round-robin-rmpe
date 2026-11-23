@@ -11,7 +11,15 @@ await recordLaunchVideo({
 		await page.waitForURL(`${baseUrl}/es/demo-plataforma`);
 		await page.getByRole("button", { name: /Disponible/ }).waitFor();
 	},
-	scenario: async ({ page, baseUrl, clickOn, caption, wait, startCapture }) => {
+	scenario: async ({
+		page,
+		baseUrl,
+		clickOn,
+		zoomOn,
+		caption,
+		wait,
+		startCapture,
+	}) => {
 		const switcher = page.locator('button[aria-label*="Cambiar de equipo"]');
 
 		await page.reload();
@@ -23,9 +31,9 @@ await recordLaunchVideo({
 		await wait(2400);
 
 		await clickOn(switcher);
-		await page.getByRole("menu").waitFor();
+		await zoomOn(page.getByRole("menu"));
 		caption("Tus equipos aparecen primero");
-		await wait(2400);
+		await wait(2800);
 
 		await clickOn(page.getByRole("menuitemradio", { name: "Demo Pagos" }), 550);
 		await page.waitForURL(`${baseUrl}/es/demo-pagos`);
@@ -42,12 +50,13 @@ await recordLaunchVideo({
 			520,
 		);
 		await page.getByRole("button", { name: /Disponible/ }).waitFor();
+		await zoomOn();
 		caption("Listo, ya estás en su rotación");
-		await wait(2600);
+		await wait(3000);
 
 		await clickOn(switcher);
-		await page.getByRole("menu").waitFor();
+		await zoomOn(page.getByRole("menu"));
 		caption("Y cambias entre tus equipos cuando quieras");
-		await wait(3200);
+		await wait(3400);
 	},
 });
