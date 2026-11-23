@@ -615,11 +615,7 @@ export const leaveMyTeam = mutation({
 		await assertTeamRetainsOwner(ctx, team._id, { excluding: reviewer._id });
 		await deleteAbsencesForReviewer(ctx, reviewer._id);
 		await ctx.db.delete(reviewer._id);
-		await createSnapshot(
-			ctx,
-			team._id,
-			`Reviewer left: ${reviewer.name} (${reviewer.email})`,
-		);
+		await createSnapshot(ctx, team._id, `Reviewer left: ${reviewer.name}`);
 
 		return { success: true as const, wasMember: true, teamSlug: team.slug };
 	},

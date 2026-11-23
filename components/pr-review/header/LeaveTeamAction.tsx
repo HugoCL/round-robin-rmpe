@@ -23,21 +23,24 @@ export function LeaveTeamAction({
 	const t = useTranslations("team.leave");
 	const team = useQuery(api.queries.getTeam, { teamSlug });
 	const leaveMyTeam = useMutation(api.mutations.leaveMyTeam);
-	const [isConfirming, setIsConfirming] = useState(false);
+	const [step, setStep] = useState<"idle" | "confirming" | "cancelled">("idle");
 	const [isLeaving, setIsLeaving] = useState(false);
 	const titleId = useId();
 	const descriptionId = useId();
 
 	if (!team) return null;
 
-	if (!isConfirming) {
+	// Each step replaces the focused button, so focus moves with it: to the
+	// safe choice when asking, back to the action when the person stays.
+	if (step !== "confirming") {
 		return (
 			<Button
 				type="button"
 				variant="ghost"
 				size="sm"
 				className="-mx-2 self-start text-muted-foreground"
-				onClick={() => setIsConfirming(true)}
+				autoFocus={step === "cancelled"}
+				onClick={() => setStep("confirming")}
 			>
 				<LogOut aria-hidden="true" />
 				{t("cta")}
@@ -90,8 +93,9 @@ export function LeaveTeamAction({
 					type="button"
 					variant="ghost"
 					size="sm"
+					autoFocus
 					disabled={isLeaving}
-					onClick={() => setIsConfirming(false)}
+					onClick={() => setStep("cancelled")}
 				>
 					{t("cancel")}
 				</Button>
