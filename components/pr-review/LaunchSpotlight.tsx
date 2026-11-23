@@ -51,12 +51,12 @@ export function LaunchSpotlight() {
 	const [videoOpen, setVideoOpen] = useState(false);
 
 	// Nothing until the server says what this person has seen, so a dismissed
-	// launch never flashes on load.
-	if (!preferences?.isAuthenticated) return null;
+	// launch never flashes on load. A preview build can run against a backend
+	// from before `seenLaunches`, which could not save the dismissal either.
+	if (!preferences?.isAuthenticated || !preferences.seenLaunches) return null;
 	const entry = pickLaunchSpotlight(
 		changelogEntries,
-		// A preview build can run against a backend from before this field.
-		[...(preferences.seenLaunches ?? []), ...dismissed],
+		[...preferences.seenLaunches, ...dismissed],
 		today,
 	);
 	if (!entry) return null;
