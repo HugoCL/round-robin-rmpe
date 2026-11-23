@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import type { WidgetId } from "@/lib/widgetLayout";
 import { AssignmentCard } from "../AssignmentCard";
 import { ForeignTeamAssignmentCard } from "../ForeignTeamAssignmentCard";
+import { LaunchSpotlight } from "../LaunchSpotlight";
 import { usePRReview } from "../PRReviewContext";
 import { ReviewersPanel } from "../ReviewersPanel";
 import { WIDGETS } from "../widgets/registry";
@@ -120,6 +121,8 @@ export function LanesLayout() {
 									)}
 								</section>
 							) : null}
+							{/* In the page here on a narrow screen, in a corner on a wide one. */}
+							{lane === 0 ? <LaunchSpotlight /> : null}
 							<div className="flex flex-1 flex-col">
 								{ids.map((id, index) => {
 									const Widget = WIDGETS[id];

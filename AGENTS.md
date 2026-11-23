@@ -116,6 +116,7 @@ Every feature launch ships with a short video in its changelog entry (`video` in
   3. `pnpm exec next dev --turbopack --hostname localhost --port 3100` (any free port).
   4. `E2E_PORT=3100 LAUNCH_VIDEO_EMAIL=<Clerk test user, a +clerk_test address> node --env-file=.env.local scripts/launch-video/<scenario>.mjs`.
 * Captions are Spanish, short, and follow the UI copy rules in `DESIGN.md`.
+* A launch big enough to tell everyone about also gets a `spotlight` in its changelog entry. Each person then sees it once in a corner card when they open the list, until they dismiss it or 30 days pass. Keep it for changes that move what people see every day.
 * When the view holds other things, zoom in on what matters with `zoomOn` and ease back out for the result. Keep it mild; the default is 1.35x.
 
 <!-- BEGIN:nextjs-agent-rules -->

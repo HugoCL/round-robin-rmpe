@@ -12,6 +12,12 @@ await recordLaunchVideo({
 		await page.getByRole("button", { name: "Unirme al equipo" }).click();
 		await page.waitForURL(`${baseUrl}/es/demo-plataforma`);
 		await page.locator('[data-widget="rotation"] li').first().waitFor();
+		// The launch card announces this very feature; it is not part of the tour.
+		await page
+			.locator("[data-launch-spotlight]")
+			.getByRole("button", { name: "Descartar" })
+			.click({ timeout: 5000 })
+			.catch(() => {});
 		// A take starts from the default view, whatever the last one left saved.
 		await page.getByRole("button", { name: "Personalizar" }).click();
 		const reset = page.getByRole("button", { name: "Restablecer vista" });

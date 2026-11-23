@@ -1019,6 +1019,7 @@ export const getMyUserPreferences = query({
 		if (!identity) {
 			return {
 				...USER_PREFERENCE_DEFAULTS,
+				seenLaunches: [],
 				isAuthenticated: false,
 				exists: false,
 			};
@@ -1035,6 +1036,7 @@ export const getMyUserPreferences = query({
 		if (!existing) {
 			return {
 				...USER_PREFERENCE_DEFAULTS,
+				seenLaunches: [],
 				isAuthenticated: true,
 				exists: false,
 			};
@@ -1049,6 +1051,7 @@ export const getMyUserPreferences = query({
 			enableAgentSetupExperiment: existing.enableAgentSetupExperiment === true,
 			defaultAgentTeamSlug: existing.defaultAgentTeamSlug,
 			widgetLayout: existing.widgetLayout,
+			seenLaunches: existing.seenLaunches ?? [],
 			isAuthenticated: true,
 			exists: true,
 		};

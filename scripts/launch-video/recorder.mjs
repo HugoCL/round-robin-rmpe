@@ -10,9 +10,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { chromium } from "@playwright/test";
 
-const VIEWPORT = { width: 864, height: 540 };
-const CAPTION_STRIP = 64;
-const SCALE = 2;
+/** Every video comes out this wide, whatever viewport the scenario asks for. */
+const OUTPUT_WIDTH = 1728;
+const OUTPUT_CAPTION_STRIP = 128;
+const OUTPUT_CAPTION_FONT = 42;
+const DEFAULT_VIEWPORT = { width: 864, height: 540 };
 /**
  * A full-resolution frame takes ~75 ms to capture, so the session runs this
  * many times slower than the final video and every timestamp is compressed
@@ -50,15 +52,18 @@ const pointerOverlay = () => {
 		const ripple = root.querySelector("#launch-video-ripple");
 		let x = 0;
 		let y = 0;
-		window.addEventListener(
-			"mousemove",
-			(event) => {
-				x = event.clientX;
-				y = event.clientY;
-				cursor.style.transform = `translate(${x - 4}px, ${y - 2}px)`;
-			},
-			true,
-		);
+		// A native drag fires `dragover` in place of `mousemove`.
+		for (const type of ["mousemove", "dragover"]) {
+			window.addEventListener(
+				type,
+				(event) => {
+					x = event.clientX;
+					y = event.clientY;
+					cursor.style.transform = `translate(${x - 4}px, ${y - 2}px)`;
+				},
+				true,
+			);
+		}
 		window.addEventListener(
 			"mousedown",
 			() => {
@@ -234,22 +239,30 @@ async function signIn(page, baseUrl) {
  *
  * Seeds the demo teams and signs in the test user first. `prepare` then runs
  * off camera in the same context. `scenario` gets `clickOn(locator)` to move
- * the visible pointer and click, `caption(text)` to change the line under the
+ * the visible pointer and click, `dragTo(source, target)` to drag one element
+ * onto the top of another, `caption(text)` to change the line under the
  * app, `zoomOn(locator)` to ease the camera in on what matters (no locator
  * eases back to the full view), and `wait(ms)` in video time.
  */
 export async function recordLaunchVideo({
 	output,
 	posterAtSeconds,
+	// A layout that only shows on a wide screen needs a wider viewport; the
+	// frame is scaled so the video keeps its size.
+	viewport: VIEWPORT = DEFAULT_VIEWPORT,
 	prepare,
 	scenario,
 }) {
+	const SCALE = OUTPUT_WIDTH / VIEWPORT.width;
+	const CAPTION_STRIP = OUTPUT_CAPTION_STRIP / SCALE;
 	const baseUrl = `http://localhost:${process.env.E2E_PORT ?? "3000"}`;
 	const backend = localBackend();
 	await seedDemoTeams(backend);
 
 	const workDir = mkdtempSync(join(tmpdir(), "launch-video-"));
-	const browser = await chromium.launch();
+	// The new headless mode: the old one (the default) paints a white frame
+	// when a view transition starts at the end of a drag.
+	const browser = await chromium.launch({ channel: "chromium" });
 	const context = await browser.newContext({
 		viewport: VIEWPORT,
 		deviceScaleFactor: SCALE,
@@ -273,14 +286,10 @@ export async function recordLaunchVideo({
 	};
 
 	let pointer = { x: VIEWPORT.width / 2, y: VIEWPORT.height / 2 };
-	const clickOn = async (locator, travelMs = 650) => {
-		await locator.waitFor();
-		const box = await locator.boundingBox();
-		const target = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+	const glideTo = async (target, travelMs) => {
 		const steps = Math.round((travelMs * SLOWDOWN) / 16);
 		for (let step = 1; step <= steps; step++) {
-			const t = step / steps;
-			const eased = easeInOut(t);
+			const eased = easeInOut(step / steps);
 			await page.mouse.move(
 				pointer.x + (target.x - pointer.x) * eased,
 				pointer.y + (target.y - pointer.y) * eased,
@@ -288,14 +297,37 @@ export async function recordLaunchVideo({
 			await page.waitForTimeout(14);
 		}
 		pointer = target;
+	};
+	const clickOn = async (locator, travelMs = 650) => {
+		await locator.waitFor();
+		const box = await locator.boundingBox();
+		await glideTo(
+			{ x: box.x + box.width / 2, y: box.y + box.height / 2 },
+			travelMs,
+		);
 		await wait(260);
 		await page.mouse.down();
 		await wait(80);
 		await page.mouse.up();
 	};
+	/** Picks `source` up by its top-left corner and drops it on the top edge of `target`. */
+	const dragTo = async (source, target, travelMs = 1100) => {
+		await source.waitFor();
+		const from = await source.boundingBox();
+		await glideTo({ x: from.x + 72, y: from.y + 20 }, 650);
+		await wait(260);
+		await page.mouse.down();
+		// The browser starts a drag only once the pointer has moved a little.
+		await glideTo({ x: pointer.x + 12, y: pointer.y + 8 }, 120);
+		const onto = await target.boundingBox();
+		await glideTo({ x: onto.x + onto.width / 2, y: onto.y + 10 }, travelMs);
+		await glideTo({ x: pointer.x + 3, y: pointer.y + 2 }, 80);
+		await wait(450);
+		await page.mouse.up();
+	};
 
-	// A zoomed frame is a smaller clip captured at a higher scale, so it is as
-	// sharp as a full one.
+	// A zoomed frame is a smaller clip captured at a higher scale, so it comes
+	// out at the same size as a full one and just as sharp.
 	let cameraMove = { from: FULL_VIEW, to: FULL_VIEW, at: 0, seconds: 1 };
 	const cameraAt = (at) => {
 		const { from, to } = cameraMove;
@@ -356,6 +388,7 @@ export async function recordLaunchVideo({
 		page,
 		baseUrl,
 		clickOn,
+		dragTo,
 		zoomOn,
 		caption,
 		wait,
@@ -372,15 +405,20 @@ export async function recordLaunchVideo({
 	const captionFiles = [];
 	for (const [index, { text }] of captions.entries()) {
 		await page.evaluate(
-			({ text, fontFamily, height }) => {
+			({ text, fontFamily, height, fontSize }) => {
 				document.getElementById("launch-video-caption")?.remove();
 				const strip = document.createElement("div");
 				strip.id = "launch-video-caption";
 				strip.textContent = text;
-				strip.style.cssText = `position:fixed;left:0;top:0;width:100vw;height:${height}px;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:oklch(0.19 0.02 258);color:oklch(0.985 0.004 258);font:600 21px/1 ${fontFamily};letter-spacing:-0.02em;`;
+				strip.style.cssText = `position:fixed;left:0;top:0;width:100vw;height:${height}px;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:oklch(0.19 0.02 258);color:oklch(0.985 0.004 258);font:600 ${fontSize}px/1 ${fontFamily};letter-spacing:-0.02em;`;
 				document.documentElement.appendChild(strip);
 			},
-			{ text, fontFamily, height: CAPTION_STRIP },
+			{
+				text,
+				fontFamily,
+				height: CAPTION_STRIP,
+				fontSize: OUTPUT_CAPTION_FONT / SCALE,
+			},
 		);
 		const file = join(workDir, `caption-${index}.png`);
 		await page.locator("#launch-video-caption").screenshot({ path: file });
@@ -402,23 +440,11 @@ export async function recordLaunchVideo({
 	const concatFile = join(workDir, "frames.ffconcat");
 	writeFileSync(concatFile, concat.join("\n"));
 
-	const width = VIEWPORT.width * SCALE;
-	const height = VIEWPORT.height * SCALE;
-	// Frames differ in size by a pixel or two during a camera move. Without
-	// `-reinit_filter 0` ffmpeg rebuilds the filter graph on each change and
-	// drops the frames of the move.
-	const inputs = [
-		"-reinit_filter",
-		"0",
-		"-f",
-		"concat",
-		"-safe",
-		"0",
-		"-i",
-		concatFile,
-	];
+	const width = OUTPUT_WIDTH;
+	const height = Math.round(VIEWPORT.height * SCALE);
+	const inputs = ["-f", "concat", "-safe", "0", "-i", concatFile];
 	const filters = [
-		`[0:v]scale=${width}:${height}:in_range=full:out_range=tv,setsar=1,fps=${FPS},pad=${width}:${height + CAPTION_STRIP * SCALE}:0:0:color=0x14161f[v0]`,
+		`[0:v]fps=${FPS},scale=${width}:${height}:in_range=full:out_range=tv,pad=${width}:${height + OUTPUT_CAPTION_STRIP}:0:0:color=0x14161f[v0]`,
 	];
 	captions.forEach((item, index) => {
 		const start = (item.start - startedAt).toFixed(2);
@@ -478,6 +504,7 @@ export async function recordLaunchVideo({
 		"4",
 		output.replace(/\.mp4$/, ".jpg"),
 	]);
-	rmSync(workDir, { recursive: true, force: true });
+	if (process.env.LAUNCH_VIDEO_KEEP) console.log(workDir);
+	else rmSync(workDir, { recursive: true, force: true });
 	console.log(`${output} (${total.toFixed(1)} s, ${frames.length} frames)`);
 }

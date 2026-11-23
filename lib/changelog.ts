@@ -7,6 +7,8 @@
  * 3. Write in Spanish
  * 4. A feature launch carries a `video`, recorded with `scripts/launch-video/`
  *    (see AGENTS.md). It writes the MP4 and its poster to `public/changelog/`.
+ * 5. A launch big enough to tell everyone about also carries a `spotlight`.
+ *    Each person then sees it once when they open the list.
  *
  * Example:
  * {
@@ -27,6 +29,56 @@ export interface ChangelogEntry {
 	suggestedBy?: string;
 	/** Public paths of the launch video and the frame shown before it plays. */
 	video?: { src: string; poster: string };
+	/**
+	 * Marks a big launch. Each person sees it once when they open the list,
+	 * until they dismiss it or LAUNCH_SPOTLIGHT_DAYS have passed since `date`.
+	 * The entry stays in the changelog either way.
+	 */
+	spotlight?: LaunchSpotlight;
+}
+
+export interface LaunchSpotlight {
+	/** What gets stored as seen, so changing it shows the launch to everyone again. */
+	id: string;
+	/** One sentence under the title; the full `description` stays in the changelog. */
+	summary: string;
+}
+
+export type SpotlightEntry = ChangelogEntry & { spotlight: LaunchSpotlight };
+
+/** After this long a launch is no longer news, even to someone who never saw it. */
+export const LAUNCH_SPOTLIGHT_DAYS = 30;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function toUtcDay(dateKey: string): number {
+	const [year, month, day] = dateKey.split("-").map(Number);
+	return Date.UTC(year, month - 1, day);
+}
+
+/**
+ * The launch to show a person who has already seen `seenIds`: the newest
+ * spotlighted entry that is out, still recent on `today` (YYYY-MM-DD), and
+ * not seen.
+ */
+export function pickLaunchSpotlight(
+	entries: readonly ChangelogEntry[],
+	seenIds: readonly string[],
+	today: string,
+): SpotlightEntry | null {
+	const seen = new Set(seenIds);
+	const todayMs = toUtcDay(today);
+	const fresh = entries.filter((entry): entry is SpotlightEntry => {
+		if (!entry.spotlight || seen.has(entry.spotlight.id)) return false;
+		const age = (todayMs - toUtcDay(entry.date)) / DAY_MS;
+		return age >= 0 && age <= LAUNCH_SPOTLIGHT_DAYS;
+	});
+	return fresh.sort((a, b) => toUtcDay(b.date) - toUtcDay(a.date))[0] ?? null;
+}
+
+/** Whether `id` names a launch, so nothing else can be stored as seen. */
+export function isLaunchSpotlightId(id: string): boolean {
+	return changelogEntries.some((entry) => entry.spotlight?.id === id);
 }
 
 /** Frame size of what `scripts/launch-video/recorder.mjs` produces. */
@@ -48,6 +100,22 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
+	{
+		date: "2026-11-23",
+		type: "feature",
+		title: "Arma tu propia vista de la lista",
+		description:
+			"La lista ya no se queda en una columna angosta: en pantallas anchas se reparte en carriles, con la rotación, las ausencias, tu semana y tus revisiones al lado de la asignación. Con «Personalizar» arrastras cada widget a donde lo quieras, agregas los que te sirvan y quitas los que no usas. Tu vista se guarda solo para ti y es la misma en todos tus equipos.",
+		video: {
+			src: "/changelog/custom-view.mp4",
+			poster: "/changelog/custom-view.jpg",
+		},
+		spotlight: {
+			id: "custom-view",
+			summary:
+				"La lista ahora usa todo el ancho de tu pantalla y puedes mover, agregar y quitar sus widgets.",
+		},
+	},
 	{
 		date: "2026-11-23",
 		type: "feature",

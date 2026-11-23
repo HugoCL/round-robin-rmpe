@@ -11,6 +11,7 @@ import {
 	resolveAssignmentSlots,
 	resolveAssignmentSlotsPerTeam,
 } from "../lib/assignmentResolver";
+import { isLaunchSpotlightId } from "../lib/changelog";
 import { resolveBroadcastTeamSlugs } from "../lib/chatBroadcast";
 import { undoRemovesReviewedPR } from "../lib/historyUndo";
 import {
@@ -719,8 +720,10 @@ export const updateMyUserPreferences = mutation({
 		enableAgentSetupExperiment: v.optional(v.boolean()),
 		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
 		widgetLayout: v.optional(v.union(v.null(), widgetLayoutValidator)),
+		/** A launch spotlight this person dismissed; added to the ones already seen. */
+		seenLaunch: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => {
+	handler: async (ctx, { seenLaunch, ...args }) => {
 		const identity = await requireIdentity(ctx);
 
 		const existingRows = await ctx.db
@@ -731,7 +734,17 @@ export const updateMyUserPreferences = mutation({
 			.collect();
 		const primary = selectLatestUserPreference(existingRows);
 		const now = Date.now();
-		const patch = resolvePreferencePatch(args);
+		// Appended here, not sent whole by the client, so a dismissal on another
+		// device is never overwritten. Only real launch ids are kept.
+		const seen = primary?.seenLaunches ?? [];
+		const patch = {
+			...resolvePreferencePatch(args),
+			...(seenLaunch !== undefined &&
+			isLaunchSpotlightId(seenLaunch) &&
+			!seen.includes(seenLaunch)
+				? { seenLaunches: [...seen, seenLaunch] }
+				: {}),
+		};
 
 		if (!primary) {
 			const createdId = await ctx.db.insert("userPreferences", {

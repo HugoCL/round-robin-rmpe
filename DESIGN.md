@@ -231,6 +231,15 @@ The team page is the assignment card plus the person's widgets, laid out in lane
 
 The layout is saved per person (`userPreferences.widgetLayout`), the same on every team. A widget whose feature is off, or that has nothing to show on a team (Tags on a team without tags), is hidden and keeps its place.
 
+### Launch Spotlight
+
+A big launch is announced once per person by `LaunchSpotlight`: a card with the video poster, the title, one sentence, the action the launch invites, and a ✕ labelled "Descartar".
+
+- **Never a modal, and never over the assignment card.** From `xl` it is fixed to the bottom-right corner, clear of the first lane. Below `xl` it sits in the page, under the assignment card. It does not take focus and it does not dim the page.
+- **One at a time, and only for big changes.** A changelog entry opts in with `spotlight`. Everything else stays in the changelog and the notices sheet.
+- **Gone for good once dismissed.** Dismissal is stored per person. The entry stays in the changelog.
+- When it floats it is the one floating surface on the page, so it is opaque (`bg-popover`) and carries the shell shadow, not a `calm-*` translucent fill.
+
 ### Inputs / Fields
 - **Style**: `rounded-2xl border border-border/70 bg-background/70` (`calm-input-surface`). Filled with a soft translucent background, not an outlined-only field.
 - **Focus**: `ring-2 ring-primary/50` — a soft glow, not a hard 2px border swap.

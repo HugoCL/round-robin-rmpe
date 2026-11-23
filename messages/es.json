@@ -1140,6 +1140,13 @@
 		"noChanges": "No hay cambios registrados aún.",
 		"suggestedBy": "Sugerido por {name}"
 	},
+	"launch": {
+		"new": "Nuevo",
+		"dismiss": "Descartar",
+		"watch": "Ver video",
+		"watchTitled": "Ver el video de «{title}»",
+		"customizeView": "Personalizar mi vista"
+	},
 	"survey": {
 		"shortcut": "Encuestas",
 		"bannerTitle": "Nos encantaría tu feedback",

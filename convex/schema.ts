@@ -30,6 +30,8 @@ export default defineSchema({
 		enableAgentSetupExperiment: v.optional(v.boolean()),
 		defaultAgentTeamSlug: v.optional(v.string()),
 		widgetLayout: v.optional(widgetLayoutValidator),
+		/** Spotlight ids from lib/changelog.ts this person has dismissed. */
+		seenLaunches: v.optional(v.array(v.string())),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
