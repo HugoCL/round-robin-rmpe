@@ -108,13 +108,13 @@
 
 Every feature launch ships with a short video in its changelog entry (`video` in `lib/changelog.ts`), made and reviewed before the feature's PR merges.
 
-* The repository is public, so a video shows seeded demo teams only, never real teams or people. `scripts/launch-video/recorder.mjs` refuses any Convex deployment that is not local.
+* The repository is public, so a video shows seeded demo teams only, never real teams or people. `scripts/launch-video/recorder.mjs` seeds and records against this checkout's local Convex backend only, and stops if the app reaches any other backend.
 * Each launch gets a scenario file next to the recorder (see `scripts/launch-video/multi-team-membership.mjs`). The recorder drives the real app, draws the pointer, burns the captions in under the picture, and writes the MP4 and its poster to `public/changelog/`. It needs `ffmpeg`.
 * To record, in a checkout whose `.env.local` holds only the Clerk keys:
   1. `CONVEX_AGENT_MODE=anonymous pnpm exec convex dev --typecheck disable` starts a local backend and writes its URL to `.env.local`. Discard the changes it makes to `convex/_generated/` and the `convex/tsconfig.json` it creates.
   2. `CONVEX_AGENT_MODE=anonymous pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN <Clerk issuer URL>`.
   3. `pnpm exec next dev --turbopack --hostname localhost --port 3100` (any free port).
-  4. `E2E_PORT=3100 LAUNCH_VIDEO_EMAIL=<existing Clerk test user> node --env-file=.env.local scripts/launch-video/<scenario>.mjs`.
+  4. `E2E_PORT=3100 LAUNCH_VIDEO_EMAIL=<Clerk test user, a +clerk_test address> node --env-file=.env.local scripts/launch-video/<scenario>.mjs`.
 * Captions are Spanish, short, and follow the UI copy rules in `DESIGN.md`.
 
 <!-- BEGIN:nextjs-agent-rules -->

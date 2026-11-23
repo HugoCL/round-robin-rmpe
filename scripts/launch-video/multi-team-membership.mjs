@@ -1,21 +1,9 @@
-import { execFileSync } from "node:child_process";
-import { assertLocalBackend, recordLaunchVideo, signIn } from "./recorder.mjs";
-
-const baseUrl = `http://localhost:${process.env.E2E_PORT ?? "3000"}`;
-const email = process.env.LAUNCH_VIDEO_EMAIL;
-if (!email)
-	throw new Error("Set LAUNCH_VIDEO_EMAIL to an existing Clerk user.");
-
-assertLocalBackend();
-execFileSync("pnpm", ["exec", "convex", "run", "seed:seed", "{}"], {
-	stdio: "ignore",
-});
+import { recordLaunchVideo } from "./recorder.mjs";
 
 await recordLaunchVideo({
 	output: "public/changelog/multi-team-membership.mp4",
 	posterAtSeconds: 6,
-	prepare: async (page) => {
-		await signIn(page, { baseUrl, email });
+	prepare: async ({ page, baseUrl }) => {
 		await page.goto(`${baseUrl}/es/onboarding`);
 		await page.getByRole("combobox").click();
 		await page.getByRole("option", { name: "Demo Plataforma" }).click();
@@ -23,7 +11,7 @@ await recordLaunchVideo({
 		await page.waitForURL(`${baseUrl}/es/demo-plataforma`);
 		await page.getByRole("button", { name: /Disponible/ }).waitFor();
 	},
-	scenario: async ({ page, clickOn, caption, wait, startCapture }) => {
+	scenario: async ({ page, baseUrl, clickOn, caption, wait, startCapture }) => {
 		const switcher = page.locator('button[aria-label*="Cambiar de equipo"]');
 
 		await page.reload();

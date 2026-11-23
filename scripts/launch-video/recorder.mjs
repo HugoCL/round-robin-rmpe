@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { chromium } from "@playwright/test";
@@ -14,6 +20,7 @@ const SCALE = 2;
  */
 const SLOWDOWN = 2.5;
 const FPS = 30;
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 const pointerOverlay = () => {
 	const install = () => {
@@ -68,21 +75,81 @@ const pointerOverlay = () => {
 	}
 };
 
+const LOCAL_BACKEND_STATE = ".convex/local/default/config.json";
+
 /**
  * Launch videos show seeded demo teams only, and recording one writes to the
- * backend, so this refuses any deployment that is not a local one.
+ * backend. The backend comes from the state `convex dev` keeps for this
+ * checkout's local deployment, never from the environment, where a deploy key
+ * or a cloud URL would point the same commands somewhere else.
  */
-export function assertLocalBackend() {
-	const deployment = process.env.CONVEX_DEPLOYMENT ?? "";
-	if (!/^(anonymous|local):/.test(deployment)) {
+function localBackend() {
+	let state;
+	try {
+		state = JSON.parse(readFileSync(LOCAL_BACKEND_STATE, "utf8"));
+	} catch {
 		throw new Error(
-			`Launch videos record against a local Convex backend, got "${deployment}". See AGENTS.md.`,
+			`No local Convex backend in ${LOCAL_BACKEND_STATE}. See AGENTS.md.`,
 		);
 	}
+	return {
+		url: `http://127.0.0.1:${state.ports.cloud}`,
+		adminKey: state.adminKey,
+	};
 }
 
-/** Signs in an existing Clerk user without the hosted sign-in form. */
-export async function signIn(page, { baseUrl, email }) {
+/** `--url` with `--admin-key` makes the CLI skip every deployment variable. */
+function seedDemoTeams(backend) {
+	execFileSync(
+		"pnpm",
+		[
+			"exec",
+			"convex",
+			"run",
+			"seed:seed",
+			"{}",
+			"--url",
+			backend.url,
+			"--admin-key",
+			backend.adminKey,
+		],
+		{ stdio: "ignore" },
+	);
+}
+
+/**
+ * The app runs as its own process with its own Convex URL, so the recording
+ * browser gets no route to any backend other than the seeded local one.
+ */
+async function allowOnlyLocalBackend(context, { baseUrl, backend }) {
+	const app = new URL(baseUrl);
+	const convex = new URL(backend.url);
+	const refuse = (url) => {
+		console.error(
+			`The app at ${baseUrl} reached ${url}, not the local Convex backend at ${backend.url}. Start it with the .env.local that \`convex dev\` wrote.`,
+		);
+		process.exit(1);
+	};
+	await context.routeWebSocket(
+		(url) =>
+			url.host !== app.host &&
+			!(LOOPBACK_HOSTS.has(url.hostname) && url.port === convex.port),
+		(socket) => refuse(socket.url()),
+	);
+	await context.route(
+		(url) => /\.convex\.(cloud|site)$/.test(url.hostname),
+		(route) => refuse(route.request().url()),
+	);
+}
+
+/** Signs in the Clerk test user without the hosted sign-in form. */
+async function signIn(page, baseUrl) {
+	const email = process.env.LAUNCH_VIDEO_EMAIL ?? "";
+	if (!email.includes("+clerk_test@")) {
+		throw new Error(
+			"Set LAUNCH_VIDEO_EMAIL to a Clerk test user (a +clerk_test address). Its profile name appears in the video.",
+		);
+	}
 	const clerk = async (path, init) => {
 		const response = await fetch(`https://api.clerk.com/v1${path}`, {
 			...init,
@@ -115,9 +182,10 @@ export async function signIn(page, { baseUrl, email }) {
 /**
  * Records `scenario` into an MP4 with burned-in captions and a poster frame.
  *
- * `prepare` runs first in the same signed-in context, off camera. `scenario`
- * gets `clickOn(locator)` to move the visible pointer and click, `caption(text)`
- * to change the line under the app, and `wait(ms)` in video time.
+ * Seeds the demo teams and signs in the test user first. `prepare` then runs
+ * off camera in the same context. `scenario` gets `clickOn(locator)` to move
+ * the visible pointer and click, `caption(text)` to change the line under the
+ * app, and `wait(ms)` in video time.
  */
 export async function recordLaunchVideo({
 	output,
@@ -125,14 +193,20 @@ export async function recordLaunchVideo({
 	prepare,
 	scenario,
 }) {
+	const baseUrl = `http://localhost:${process.env.E2E_PORT ?? "3000"}`;
+	const backend = localBackend();
+	seedDemoTeams(backend);
+
 	const workDir = mkdtempSync(join(tmpdir(), "launch-video-"));
 	const browser = await chromium.launch();
 	const context = await browser.newContext({
 		viewport: VIEWPORT,
 		deviceScaleFactor: SCALE,
 	});
+	await allowOnlyLocalBackend(context, { baseUrl, backend });
 	const page = await context.newPage();
-	await prepare(page);
+	await signIn(page, baseUrl);
+	await prepare({ page, baseUrl });
 	await context.addInitScript(pointerOverlay);
 
 	const now = () => Date.now() / 1000 / SLOWDOWN;
@@ -193,7 +267,7 @@ export async function recordLaunchVideo({
 		})();
 	};
 
-	await scenario({ page, clickOn, caption, wait, startCapture });
+	await scenario({ page, baseUrl, clickOn, caption, wait, startCapture });
 	caption("");
 	capturing = false;
 	await captureLoop;
