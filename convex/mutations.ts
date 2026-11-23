@@ -2327,7 +2327,9 @@ export const attachGoogleChatThreadUrlToAssignmentHistory = mutation({
 	},
 });
 
-// Create an active PR assignment row (called from UI after assignPR succeeds)
+// Create an active PR assignment row (called from UI after assignPR succeeds).
+// The assigner is the person asking: the row shows up in the assignee's
+// reviews under that name, so nobody can file one in someone else's.
 export const createActivePRAssignment = mutation({
 	args: {
 		teamSlug: v.string(),
@@ -2350,11 +2352,14 @@ export const createActivePRAssignment = mutation({
 			crossTeamReview = false,
 		},
 	) => {
+		const email = normalizeEmail((await requireIdentity(ctx)).email);
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 		// Basic validation: ensure reviewers exist
-		const assignee = await ctx.db.get(assigneeId);
-		const assigner = await ctx.db.get(assignerId);
+		const assignee = await ctx.db.get("reviewers", assigneeId);
+		const assigner = await ctx.db.get("reviewers", assignerId);
 		if (!assignee || !assigner) throw new Error("Reviewer(s) not found");
+		if (email === null || normalizeEmail(assigner.email) !== email)
+			throw new Error("Not the assigner");
 		const now = Date.now();
 		const id = await ctx.db.insert("prAssignments", {
 			teamId: team._id,
