@@ -12,6 +12,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { api } from "@/convex/_generated/api";
 import { useTeamWeeklyPrCount } from "@/hooks/useTeamWeeklyPrCount";
@@ -23,6 +24,7 @@ import { describeReturn } from "../describeReturn";
 import { MarkAbsentDialog } from "../dialogs/MarkAbsentDialog";
 import { usePRReview } from "../PRReviewContext";
 import { JoinTeamButton } from "./JoinTeamButton";
+import { LeaveTeamAction } from "./LeaveTeamAction";
 
 const PILL_CLASS = "h-9 gap-2 rounded-full px-3 text-sm font-normal";
 
@@ -287,6 +289,15 @@ export function HeaderStatusBar() {
 							>
 								{t("absent.planCta")}
 							</Button>
+						) : null}
+						{teamSlug && !isForeignTeamView ? (
+							<>
+								<Separator />
+								<LeaveTeamAction
+									teamSlug={teamSlug}
+									onLeft={() => setStatusOpen(false)}
+								/>
+							</>
 						) : null}
 					</PopoverContent>
 				</Popover>

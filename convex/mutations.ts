@@ -587,6 +587,44 @@ export const joinMyselfToTeam = mutation({
 	},
 });
 
+export const leaveMyTeam = mutation({
+	args: { teamSlug: v.string() },
+	returns: v.object({
+		success: v.literal(true),
+		wasMember: v.boolean(),
+		teamSlug: v.string(),
+	}),
+	handler: async (ctx, { teamSlug }) => {
+		const identity = await requireIdentity(ctx);
+		const normalizedEmail = normalizeEmail(identity.email);
+		if (!normalizedEmail) {
+			throw new Error("Unable to resolve user email");
+		}
+
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const reviewer = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team_email", (q) =>
+				q.eq("teamId", team._id).eq("email", normalizedEmail),
+			)
+			.first();
+		if (!reviewer) {
+			return { success: true as const, wasMember: false, teamSlug: team.slug };
+		}
+
+		await assertTeamRetainsOwner(ctx, team._id, { excluding: reviewer._id });
+		await deleteAbsencesForReviewer(ctx, reviewer._id);
+		await ctx.db.delete(reviewer._id);
+		await createSnapshot(
+			ctx,
+			team._id,
+			`Reviewer left: ${reviewer.name} (${reviewer.email})`,
+		);
+
+		return { success: true as const, wasMember: true, teamSlug: team.slug };
+	},
+});
+
 // Update team settings (including webhook URL)
 export const updateTeamSettings = mutation({
 	args: {

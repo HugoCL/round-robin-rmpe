@@ -366,11 +366,22 @@
 		"join": {
 			"cta": "Join team",
 			"title": "Join {team}",
-			"description": "You enter the rotation and can receive PRs right away. To leave, ask a team owner.",
+			"description": "You enter the rotation and can receive PRs right away. You can leave whenever you want from your status.",
 			"confirm": "Join",
 			"joining": "Joining…",
 			"success": "You are now part of {team}",
 			"failed": "We could not add you to the team. Try again."
+		},
+		"leave": {
+			"cta": "Leave team",
+			"title": "Leave {team}",
+			"description": "You leave the rotation and your planned absences are deleted. You can join again whenever you want.",
+			"confirm": "Leave",
+			"leaving": "Leaving…",
+			"cancel": "Stay",
+			"success": "You left {team}",
+			"failed": "We could not remove you from the team. Try again.",
+			"onlyOwner": "You are the only owner of this team. Name another owner before you leave."
 		},
 		"switcher": {
 			"title": "Select a team",
