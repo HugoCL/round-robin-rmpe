@@ -407,6 +407,15 @@
 		"creatingEllipsis": "Creando…",
 		"errorProvideName": "Por favor ingresa un nombre de equipo.",
 		"createError": "Falló la creación del equipo",
+		"join": {
+			"cta": "Unirme al equipo",
+			"title": "Unirte a {team}",
+			"description": "Entras a la rotación y puedes recibir PRs desde ahora. Para salir, pídeselo a una persona propietaria del equipo.",
+			"confirm": "Unirme",
+			"joining": "Uniéndome…",
+			"success": "Ya eres parte de {team}",
+			"failed": "No pudimos sumarte al equipo. Inténtalo de nuevo."
+		},
 		"switcher": {
 			"title": "Selecciona un equipo",
 			"description": "Elige el equipo con el que quieres trabajar.",
@@ -418,6 +427,9 @@
 			"tickerAriaLabel": "Ticker en vivo con las asignaciones de PR más recientes de todos los equipos.",
 			"tickerAnnouncement": "Nueva asignación: {teamName} - {assignerName} a {assigneeName}.",
 			"tickerNewAssignment": "Nueva asignación",
+			"myTeamsGroup": "Tus equipos",
+			"otherTeamsGroup": "Otros equipos",
+			"triggerLabel": "Equipo actual: {team}. Cambiar de equipo",
 			"teamListTitle": "Equipos disponibles",
 			"emptyTitle": "Aún no hay equipos",
 			"emptyDescription": "Crea tu primer equipo para comenzar a asignar revisiones de PR."

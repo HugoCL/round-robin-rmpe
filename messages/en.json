@@ -363,6 +363,15 @@
 		"creatingEllipsis": "Creating…",
 		"errorProvideName": "Please provide a team name.",
 		"createError": "Failed to create team",
+		"join": {
+			"cta": "Join team",
+			"title": "Join {team}",
+			"description": "You enter the rotation and can receive PRs right away. To leave, ask a team owner.",
+			"confirm": "Join",
+			"joining": "Joining…",
+			"success": "You are now part of {team}",
+			"failed": "We could not add you to the team. Try again."
+		},
 		"switcher": {
 			"title": "Select a team",
 			"description": "Choose the team you want to work with.",
@@ -374,6 +383,9 @@
 			"tickerAriaLabel": "Live ticker with the latest PR assignments across teams.",
 			"tickerAnnouncement": "New assignment: {teamName} - {assignerName} to {assigneeName}.",
 			"tickerNewAssignment": "New assignment",
+			"myTeamsGroup": "Your teams",
+			"otherTeamsGroup": "Other teams",
+			"triggerLabel": "Current team: {team}. Switch team",
 			"teamListTitle": "Available teams",
 			"emptyTitle": "No teams yet",
 			"emptyDescription": "Create your first team to start assigning PR reviews."
