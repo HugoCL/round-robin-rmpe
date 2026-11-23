@@ -1,6 +1,12 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+// Ids are plain strings so a widget removed in a later release cannot make
+// stored rows fail validation; normalizeWidgetLayout is the guard on read/write.
+export const widgetLayoutValidator = v.object({
+	lanes: v.array(v.array(v.string())),
+});
+
 export default defineSchema({
 	teams: defineTable({
 		name: v.string(),
@@ -23,6 +29,7 @@ export default defineSchema({
 		alwaysSendGoogleChatMessage: v.optional(v.boolean()),
 		enableAgentSetupExperiment: v.optional(v.boolean()),
 		defaultAgentTeamSlug: v.optional(v.string()),
+		widgetLayout: v.optional(widgetLayoutValidator),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "@/hooks/use-toast";
+import { normalizeWidgetLayout, type WidgetLayout } from "@/lib/widgetLayout";
 
 export type UserPreferences = {
 	showAssignments: boolean;
@@ -14,12 +15,15 @@ export type UserPreferences = {
 	hideMultiAssignmentSection: boolean;
 	enableAgentSetupExperiment: boolean;
 	defaultAgentTeamSlug?: string;
+	/** undefined means never customised: render DEFAULT_WIDGET_LAYOUT. */
+	widgetLayout?: WidgetLayout;
 };
 
 type UserPreferencePatch = Partial<
-	Omit<UserPreferences, "defaultAgentTeamSlug">
+	Omit<UserPreferences, "defaultAgentTeamSlug" | "widgetLayout">
 > & {
 	defaultAgentTeamSlug?: string | null;
+	widgetLayout?: WidgetLayout | null;
 };
 
 const USER_PREFERENCE_DEFAULTS: UserPreferences = {
@@ -30,6 +34,7 @@ const USER_PREFERENCE_DEFAULTS: UserPreferences = {
 	hideMultiAssignmentSection: false,
 	enableAgentSetupExperiment: false,
 	defaultAgentTeamSlug: undefined,
+	widgetLayout: undefined,
 };
 
 const LEGACY_LOCAL_STORAGE_KEYS = [
@@ -87,7 +92,9 @@ function isSamePreferenceState(a: UserPreferences, b: UserPreferences) {
 		a.showEmails === b.showEmails &&
 		a.hideMultiAssignmentSection === b.hideMultiAssignmentSection &&
 		a.enableAgentSetupExperiment === b.enableAgentSetupExperiment &&
-		a.defaultAgentTeamSlug === b.defaultAgentTeamSlug
+		a.defaultAgentTeamSlug === b.defaultAgentTeamSlug &&
+		JSON.stringify(a.widgetLayout?.lanes) ===
+			JSON.stringify(b.widgetLayout?.lanes)
 	);
 }
 
@@ -115,6 +122,9 @@ function resolvePatch(patch: UserPreferencePatch): UserPreferencePatch {
 	if (patch.defaultAgentTeamSlug !== undefined) {
 		resolved.defaultAgentTeamSlug = patch.defaultAgentTeamSlug;
 	}
+	if (patch.widgetLayout !== undefined) {
+		resolved.widgetLayout = patch.widgetLayout;
+	}
 
 	return resolved;
 }
@@ -133,6 +143,8 @@ export function useUserPreferences() {
 		useState<UserPreferences | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
 	const didBootstrapRef = useRef(false);
+	const pendingWritesRef = useRef(0);
+	const writeFailedRef = useRef(false);
 
 	const serverPreferences = useMemo<UserPreferences | null>(() => {
 		if (!preferenceQuery) return null;
@@ -145,6 +157,9 @@ export function useUserPreferences() {
 			enableAgentSetupExperiment:
 				preferenceQuery.enableAgentSetupExperiment === true,
 			defaultAgentTeamSlug: preferenceQuery.defaultAgentTeamSlug,
+			widgetLayout: preferenceQuery.widgetLayout
+				? normalizeWidgetLayout(preferenceQuery.widgetLayout)
+				: undefined,
 		};
 	}, [preferenceQuery]);
 
@@ -208,22 +223,38 @@ export function useUserPreferences() {
 						? undefined
 						: (resolvedPatch.defaultAgentTeamSlug ??
 							previousPreferences.defaultAgentTeamSlug),
+				widgetLayout:
+					resolvedPatch.widgetLayout === null
+						? undefined
+						: (resolvedPatch.widgetLayout ?? previousPreferences.widgetLayout),
 			};
 
+			// The next patch may come before this one renders.
+			preferencesRef.current = nextPreferences;
 			setOptimisticPreferences(nextPreferences);
+			pendingWritesRef.current += 1;
 			setIsSaving(true);
 			try {
 				await updatePreferencesMutation(resolvedPatch);
 			} catch (error) {
 				console.error("Failed to update user preferences:", error);
-				setOptimisticPreferences(previousPreferences);
+				writeFailedRef.current = true;
 				toast({
 					title: t("common.error"),
 					description: t("mySettings.saveFailed"),
 					variant: "destructive",
 				});
 			} finally {
-				setIsSaving(false);
+				pendingWritesRef.current -= 1;
+				if (pendingWritesRef.current === 0) {
+					setIsSaving(false);
+					// A failed write must not take a later, saved one down with it:
+					// once nothing is in flight, show what the server has.
+					if (writeFailedRef.current) {
+						writeFailedRef.current = false;
+						setOptimisticPreferences(null);
+					}
+				}
 			}
 		},
 		[t, updatePreferencesMutation],

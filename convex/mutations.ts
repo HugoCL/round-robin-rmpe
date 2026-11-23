@@ -26,6 +26,7 @@ import {
 	isIncludedInTagRotations,
 } from "../lib/reviewerEligibility";
 import { pickTeamOwnerCandidate, resolveReviewerRole } from "../lib/teamRoles";
+import { normalizeWidgetLayout } from "../lib/widgetLayout";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -55,6 +56,7 @@ import {
 	findReviewerByEmailAnyTeam,
 	resolveAssignmentActor,
 } from "./reviewerLookup";
+import { widgetLayoutValidator } from "./schema";
 
 const GLOBAL_REVIEWED_PR_COUNTER_KEY = "reviewed_pr_total";
 type UserPreferenceFlags = {
@@ -65,12 +67,14 @@ type UserPreferenceFlags = {
 	hideMultiAssignmentSection: boolean;
 	enableAgentSetupExperiment: boolean;
 	defaultAgentTeamSlug?: string;
+	widgetLayout?: { lanes: string[][] };
 };
 
 type UserPreferencePatch = Partial<
-	Omit<UserPreferenceFlags, "defaultAgentTeamSlug">
+	Omit<UserPreferenceFlags, "defaultAgentTeamSlug" | "widgetLayout">
 > & {
 	defaultAgentTeamSlug?: string | null;
+	widgetLayout?: { lanes: string[][] } | null;
 };
 
 type AssignmentSource = "ui" | "agent";
@@ -83,6 +87,7 @@ const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	hideMultiAssignmentSection: false,
 	enableAgentSetupExperiment: false,
 	defaultAgentTeamSlug: undefined,
+	widgetLayout: undefined,
 };
 
 const weekdayValidator = v.union(
@@ -256,6 +261,12 @@ function resolvePreferencePatch(
 	if (patch.defaultAgentTeamSlug !== undefined) {
 		resolved.defaultAgentTeamSlug =
 			patch.defaultAgentTeamSlug?.trim() || undefined;
+	}
+	if (patch.widgetLayout !== undefined) {
+		resolved.widgetLayout =
+			patch.widgetLayout === null
+				? undefined
+				: normalizeWidgetLayout(patch.widgetLayout);
 	}
 	return resolved;
 }
@@ -662,6 +673,7 @@ export const bootstrapMyUserPreferences = mutation({
 		hideMultiAssignmentSection: v.optional(v.boolean()),
 		enableAgentSetupExperiment: v.optional(v.boolean()),
 		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
+		widgetLayout: v.optional(v.union(v.null(), widgetLayoutValidator)),
 	},
 	handler: async (ctx, args) => {
 		const identity = await requireIdentity(ctx);
@@ -706,6 +718,7 @@ export const updateMyUserPreferences = mutation({
 		hideMultiAssignmentSection: v.optional(v.boolean()),
 		enableAgentSetupExperiment: v.optional(v.boolean()),
 		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
+		widgetLayout: v.optional(v.union(v.null(), widgetLayoutValidator)),
 	},
 	handler: async (ctx, args) => {
 		const identity = await requireIdentity(ctx);
@@ -2346,16 +2359,22 @@ export const createActivePRAssignment = mutation({
 	},
 });
 
-// Complete an assignment (either assignee or assigner can complete directly now)
+// Complete an assignment. Either party can, and who is asking comes from the
+// session, never from an argument.
 export const completePRAssignment = mutation({
-	args: { id: v.id("prAssignments"), reviewerId: v.id("reviewers") },
-	handler: async (ctx, { id, reviewerId }) => {
+	args: { id: v.id("prAssignments") },
+	handler: async (ctx, { id }) => {
+		const email = normalizeEmail((await requireIdentity(ctx)).email);
 		const row = await ctx.db.get(id);
 		if (!row) throw new Error("Assignment not found");
-		// Allow either party related to the assignment to complete it
-		if (row.assigneeId !== reviewerId && row.assignerId !== reviewerId) {
-			throw new Error("Not participant");
-		}
+		const parties = await Promise.all([
+			ctx.db.get("reviewers", row.assigneeId),
+			ctx.db.get("reviewers", row.assignerId),
+		]);
+		const isParticipant =
+			email !== null &&
+			parties.some((party) => normalizeEmail(party?.email) === email);
+		if (!isParticipant) throw new Error("Not participant");
 		// Delete active assignment row on completion.
 		await ctx.db.delete(id);
 		return { success: true };

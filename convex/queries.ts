@@ -115,6 +115,7 @@ type UserPreferenceFlags = {
 	hideMultiAssignmentSection: boolean;
 	enableAgentSetupExperiment: boolean;
 	defaultAgentTeamSlug?: string;
+	widgetLayout?: { lanes: string[][] };
 };
 
 const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
@@ -125,6 +126,7 @@ const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	hideMultiAssignmentSection: false,
 	enableAgentSetupExperiment: false,
 	defaultAgentTeamSlug: undefined,
+	widgetLayout: undefined,
 };
 
 function selectLatestUserPreference(
@@ -1046,6 +1048,7 @@ export const getMyUserPreferences = query({
 			hideMultiAssignmentSection: existing.hideMultiAssignmentSection,
 			enableAgentSetupExperiment: existing.enableAgentSetupExperiment === true,
 			defaultAgentTeamSlug: existing.defaultAgentTeamSlug,
+			widgetLayout: existing.widgetLayout,
 			isAuthenticated: true,
 			exists: true,
 		};
@@ -1420,26 +1423,32 @@ export const getLastMessages = query({
 	},
 });
 
-// Active PR assignments for a reviewer (as assignee)
+/** More open reviews than this for one person is a backlog no list helps with. */
+const ACTIVE_ASSIGNMENTS_SHOWN = 100;
+
+// Active PR assignments for the signed-in person (as assignee) on this team.
+// The caller comes from the session, never from an argument.
 export const getActiveAssignmentsForReviewer = query({
-	args: { teamSlug: v.string(), email: v.string() },
-	handler: async (ctx, { teamSlug, email }) => {
+	args: { teamSlug: v.string() },
+	handler: async (ctx, { teamSlug }) => {
+		const email = normalizeEmail((await ctx.auth.getUserIdentity())?.email);
+		if (!email) return [];
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
-		// Find reviewer by email
 		const reviewer = await ctx.db
 			.query("reviewers")
 			.withIndex("by_team_email", (q) =>
-				q.eq("teamId", team._id).eq("email", email.toLowerCase()),
+				q.eq("teamId", team._id).eq("email", email),
 			)
 			.first();
 		if (!reviewer) return [];
+		// Every row for this reviewer counts, including the ones another team
+		// sent: those carry the sender's team in `teamId`.
 		const rows = await ctx.db
 			.query("prAssignments")
 			.withIndex("by_assignee", (q) => q.eq("assigneeId", reviewer._id))
-			.collect();
+			.take(ACTIVE_ASSIGNMENTS_SHOWN);
 		const enriched: EnrichedAssignment[] = [];
 		for (const row of rows) {
-			if (row.teamId !== team._id) continue;
 			const assignee = await ctx.db.get(row.assigneeId as Id<"reviewers">);
 			const assigner = await ctx.db.get(row.assignerId as Id<"reviewers">);
 			enriched.push({
@@ -1467,16 +1476,17 @@ export const getActiveAssignmentsForReviewer = query({
 	},
 });
 
-// Active PR assignments created by reviewer (as assigner)
+// Active PR assignments the signed-in person created (as assigner) on this team.
 export const getActiveAssignmentsByReviewer = query({
-	args: { teamSlug: v.string(), email: v.string() },
-	handler: async (ctx, { teamSlug, email }) => {
+	args: { teamSlug: v.string() },
+	handler: async (ctx, { teamSlug }) => {
+		const email = normalizeEmail((await ctx.auth.getUserIdentity())?.email);
+		if (!email) return [];
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
-		// Find reviewer by email
 		const reviewer = await ctx.db
 			.query("reviewers")
 			.withIndex("by_team_email", (q) =>
-				q.eq("teamId", team._id).eq("email", email.toLowerCase()),
+				q.eq("teamId", team._id).eq("email", email),
 			)
 			.first();
 		if (!reviewer) return [];

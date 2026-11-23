@@ -21,16 +21,26 @@ import { SnapshotDialog } from "./dialogs/SnapshotDialog";
 import { PageHeader } from "./header/PageHeader";
 import { useAssignmentNotificationAudio } from "./hooks/useAssignmentNotificationAudio";
 import { useShortcutDialogFlow } from "./hooks/useShortcutDialogFlow";
-import { CompactLayout } from "./layouts/CompactLayout";
+import { LanesLayout } from "./layouts/LanesLayout";
 import { PRReviewProvider } from "./PRReviewContext";
 import { PRReviewGuard } from "./PRReviewGuard";
 import { TeamBirthdaySection } from "./TeamBirthdaySection";
+import {
+	useWidgetLayout,
+	WidgetLayoutProvider,
+} from "./widgets/WidgetLayoutContext";
 
 interface BackupEntry {
 	key: string;
 	description: string;
 	timestamp: number;
 	formattedDate?: string;
+}
+
+/** Events show in the notice lane unless the person's view already has the Events widget. */
+function EventsNotice() {
+	const { isShown } = useWidgetLayout();
+	return isShown("events") ? null : <ActiveEventsList />;
 }
 
 export default function PRReviewAssignment({
@@ -347,71 +357,77 @@ export default function PRReviewAssignment({
 			}}
 		>
 			<PRReviewProvider value={providerValue}>
-				<div className="flex min-h-dvh flex-col">
-					{accessContext?.isForeignTeam === true ? null : (
-						<a
-							href={`#${PR_URL_INPUT_ID}`}
-							onClick={(event) => {
-								if (focusPrUrlInput()) event.preventDefault();
-							}}
-							className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
-						>
-							{t("shortcuts.focusPrUrl")}
-						</a>
-					)}
-					<PageHeader teamSlug={teamSlug} />
-					<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-3 pb-4 sm:px-6 lg:pb-6 3xl:max-w-7xl">
-						<div
-							className="notice-stack page-enter mt-3 sm:mt-5 lg:mt-6"
-							role="region"
-							aria-label={t("common.notices")}
-						>
-							<ActiveEventsList />
-							<TeamBirthdaySection teamSlug={teamSlug} />
-						</div>
-						<CompactLayout />
-					</main>
-
-					<input
-						id={IMPORT_INPUT_ID}
-						type="file"
-						accept=".json"
-						title={t("history.import")}
-						aria-label={t("history.import")}
-						onChange={importFileHandler}
-						className="hidden"
-					/>
-
-					<AgentSetupDialog />
-					<SnapshotDialog
-						isOpen={snapshotDialogOpen}
-						onOpenChange={setSnapshotDialogOpen}
-						snapshots={snapshots}
-						isLoading={snapshotsLoading}
-						onRestore={handleRestoreSnapshot}
-					/>
-
-					<ShortcutConfirmationDialog
-						isOpen={shortcutFlow.shortcutDialogOpen}
-						action={shortcutFlow.pendingShortcut}
-						currentReviewerName={nextReviewer?.name}
-						isSelfNext={
-							!!userInfo?.email &&
-							nextReviewer?.email.toLowerCase() === userInfo.email.toLowerCase()
-						}
-						undoCopy={lastAssignmentUndoCopy(
-							t,
-							assignmentFeed.items,
-							assignmentHistory,
+				<WidgetLayoutProvider
+					stored={preferences.widgetLayout}
+					onChange={(widgetLayout) => void updatePreferences({ widgetLayout })}
+				>
+					<div className="flex min-h-dvh flex-col">
+						{accessContext?.isForeignTeam === true ? null : (
+							<a
+								href={`#${PR_URL_INPUT_ID}`}
+								onClick={(event) => {
+									if (focusPrUrlInput()) event.preventDefault();
+								}}
+								className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+							>
+								{t("shortcuts.focusPrUrl")}
+							</a>
 						)}
-						onConfirm={() => void shortcutFlow.handleConfirmShortcut()}
-						onCancel={shortcutFlow.handleCancelShortcut}
-						onOpenChange={(open) => {
-							if (!open) shortcutFlow.handleCancelShortcut();
-							else shortcutFlow.setShortcutDialogOpen(true);
-						}}
-					/>
-				</div>
+						<PageHeader teamSlug={teamSlug} />
+						<main className="mx-auto flex w-full max-w-[110rem] flex-1 flex-col px-3 pb-4 sm:px-6 lg:px-8 lg:pb-6">
+							<div
+								className="notice-stack page-enter mt-3 sm:mt-5 lg:mt-6"
+								role="region"
+								aria-label={t("common.notices")}
+							>
+								<EventsNotice />
+								<TeamBirthdaySection teamSlug={teamSlug} />
+							</div>
+							<LanesLayout />
+						</main>
+
+						<input
+							id={IMPORT_INPUT_ID}
+							type="file"
+							accept=".json"
+							title={t("history.import")}
+							aria-label={t("history.import")}
+							onChange={importFileHandler}
+							className="hidden"
+						/>
+
+						<AgentSetupDialog />
+						<SnapshotDialog
+							isOpen={snapshotDialogOpen}
+							onOpenChange={setSnapshotDialogOpen}
+							snapshots={snapshots}
+							isLoading={snapshotsLoading}
+							onRestore={handleRestoreSnapshot}
+						/>
+
+						<ShortcutConfirmationDialog
+							isOpen={shortcutFlow.shortcutDialogOpen}
+							action={shortcutFlow.pendingShortcut}
+							currentReviewerName={nextReviewer?.name}
+							isSelfNext={
+								!!userInfo?.email &&
+								nextReviewer?.email.toLowerCase() ===
+									userInfo.email.toLowerCase()
+							}
+							undoCopy={lastAssignmentUndoCopy(
+								t,
+								assignmentFeed.items,
+								assignmentHistory,
+							)}
+							onConfirm={() => void shortcutFlow.handleConfirmShortcut()}
+							onCancel={shortcutFlow.handleCancelShortcut}
+							onOpenChange={(open) => {
+								if (!open) shortcutFlow.handleCancelShortcut();
+								else shortcutFlow.setShortcutDialogOpen(true);
+							}}
+						/>
+					</div>
+				</WidgetLayoutProvider>
 			</PRReviewProvider>
 		</PRReviewGuard>
 	);
