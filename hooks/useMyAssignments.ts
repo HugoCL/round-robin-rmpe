@@ -5,15 +5,17 @@ import { api } from "@/convex/_generated/api";
 
 export function useMyAssignments() {
 	const { userInfo, teamSlug } = usePRReview();
-	const email = userInfo?.email;
+	// The server reads who is asking from the session; this only skips the
+	// queries while nobody is signed in.
+	const signedIn = Boolean(userInfo?.email);
 
 	const assignedToMe = useQuery(
 		api.queries.getActiveAssignmentsForReviewer,
-		email && teamSlug ? { teamSlug, email } : "skip",
+		signedIn && teamSlug ? { teamSlug } : "skip",
 	);
 	const iAssigned = useQuery(
 		api.queries.getActiveAssignmentsByReviewer,
-		email && teamSlug ? { teamSlug, email } : "skip",
+		signedIn && teamSlug ? { teamSlug } : "skip",
 	);
 
 	const complete = useMutation(api.mutations.completePRAssignment);

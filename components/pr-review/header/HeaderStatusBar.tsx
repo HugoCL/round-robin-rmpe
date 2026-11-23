@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { describeReturn } from "../describeReturn";
 import { MarkAbsentDialog } from "../dialogs/MarkAbsentDialog";
 import { usePRReview } from "../PRReviewContext";
+import { useWidgetLayout } from "../widgets/WidgetLayoutContext";
 import { JoinTeamButton } from "./JoinTeamButton";
 import { LeaveTeamAction } from "./LeaveTeamAction";
 
@@ -45,7 +46,7 @@ function formatAssignedWhen(timestamp: number, locale: string) {
 	}).format(timestamp);
 }
 
-function LastPrRow({
+export function LastPrRow({
 	label,
 	pr,
 	locale,
@@ -106,6 +107,7 @@ export function HeaderStatusBar() {
 		plannedAbsences,
 		teamTimezone,
 	} = usePRReview();
+	const showsMyWeekWidget = useWidgetLayout().isShown("myWeek");
 	const [now] = useState(() => Date.now());
 	const [statusOpen, setStatusOpen] = useState(false);
 	const [absentDialogOpen, setAbsentDialogOpen] = useState(false);
@@ -305,66 +307,69 @@ export function HeaderStatusBar() {
 				<JoinTeamButton teamSlug={teamSlug} />
 			) : null}
 
-			<Popover>
-				<PopoverTrigger asChild>
-					<Button
-						variant="outline"
-						size="sm"
-						aria-label={t("headerStatus.myWeek")}
-						className={cn(
-							PILL_CLASS,
-							"border-border/70 bg-transparent max-sm:size-9 max-sm:px-0",
-						)}
-					>
-						<CalendarDays
-							className="size-4 text-muted-foreground"
-							aria-hidden="true"
-						/>
-						<span className="max-sm:sr-only">{t("headerStatus.myWeek")}</span>
-						<ChevronDown
-							className="size-4 text-muted-foreground max-sm:hidden"
-							aria-hidden="true"
-						/>
-					</Button>
-				</PopoverTrigger>
-				<PopoverContent align="start" className="gap-3">
-					<p className="font-medium">{t("headerStatus.thisWeek")}</p>
-					<dl className="grid grid-cols-[1fr_auto] items-baseline gap-x-6 gap-y-2.5">
-						<dt className="text-muted-foreground">
-							{t("headerStatus.receivedLabel")}
-						</dt>
-						<dd className="text-right font-medium tabular-nums">
-							{stats?.received ?? "–"}
-						</dd>
-						<dt className="text-muted-foreground">
-							{t("headerStatus.sentLabel")}
-						</dt>
-						<dd className="text-right font-medium tabular-nums">
-							{stats?.sent ?? "–"}
-						</dd>
-						{currentReviewer ? (
-							<>
-								<LastPrRow
-									label={t("headerStatus.lastReceived")}
-									pr={stats?.lastReceived}
-									locale={locale}
-								/>
-								<LastPrRow
-									label={t("headerStatus.lastSent")}
-									pr={stats?.lastSent}
-									locale={locale}
-								/>
-							</>
-						) : null}
-						<dt className="text-muted-foreground">
-							{t("headerStatus.teamTotal")}
-						</dt>
-						<dd className="text-right font-medium tabular-nums">
-							{new Intl.NumberFormat(locale).format(teamWeeklyCount)}
-						</dd>
-					</dl>
-				</PopoverContent>
-			</Popover>
+			{/* The My week widget shows the same numbers; one place is enough. */}
+			{showsMyWeekWidget ? null : (
+				<Popover>
+					<PopoverTrigger asChild>
+						<Button
+							variant="outline"
+							size="sm"
+							aria-label={t("headerStatus.myWeek")}
+							className={cn(
+								PILL_CLASS,
+								"border-border/70 bg-transparent max-sm:size-9 max-sm:px-0",
+							)}
+						>
+							<CalendarDays
+								className="size-4 text-muted-foreground"
+								aria-hidden="true"
+							/>
+							<span className="max-sm:sr-only">{t("headerStatus.myWeek")}</span>
+							<ChevronDown
+								className="size-4 text-muted-foreground max-sm:hidden"
+								aria-hidden="true"
+							/>
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent align="start" className="gap-3">
+						<p className="font-medium">{t("headerStatus.thisWeek")}</p>
+						<dl className="grid grid-cols-[1fr_auto] items-baseline gap-x-6 gap-y-2.5">
+							<dt className="text-muted-foreground">
+								{t("headerStatus.receivedLabel")}
+							</dt>
+							<dd className="text-right font-medium tabular-nums">
+								{stats?.received ?? "–"}
+							</dd>
+							<dt className="text-muted-foreground">
+								{t("headerStatus.sentLabel")}
+							</dt>
+							<dd className="text-right font-medium tabular-nums">
+								{stats?.sent ?? "–"}
+							</dd>
+							{currentReviewer ? (
+								<>
+									<LastPrRow
+										label={t("headerStatus.lastReceived")}
+										pr={stats?.lastReceived}
+										locale={locale}
+									/>
+									<LastPrRow
+										label={t("headerStatus.lastSent")}
+										pr={stats?.lastSent}
+										locale={locale}
+									/>
+								</>
+							) : null}
+							<dt className="text-muted-foreground">
+								{t("headerStatus.teamTotal")}
+							</dt>
+							<dd className="text-right font-medium tabular-nums">
+								{new Intl.NumberFormat(locale).format(teamWeeklyCount)}
+							</dd>
+						</dl>
+					</PopoverContent>
+				</Popover>
+			)}
 
 			{currentReviewer ? (
 				<MarkAbsentDialog

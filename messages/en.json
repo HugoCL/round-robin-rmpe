@@ -1096,6 +1096,13 @@
 		"noChanges": "No changes recorded yet.",
 		"suggestedBy": "Suggested by {name}"
 	},
+	"launch": {
+		"new": "New",
+		"dismiss": "Dismiss",
+		"watch": "Watch video",
+		"watchTitled": "Watch the video for “{title}”",
+		"customizeView": "Customize my view"
+	},
 	"survey": {
 		"shortcut": "Surveys",
 		"bannerTitle": "We’d love your feedback",
@@ -1410,5 +1417,73 @@
 				"backfill_assignment_history_names": "Fills in missing names in the history."
 			}
 		}
+	},
+	"widgets": {
+		"personalize": "Customize",
+		"editing": "Customizing your view",
+		"editHint": "Drag a widget or use the arrows.",
+		"addGroup": "Widgets to add",
+		"add": "Add {name}",
+		"reset": "Reset view",
+		"resetDone": "Back to the default view.",
+		"done": "Done",
+		"moveUp": "Move {name} up",
+		"moveDown": "Move {name} down",
+		"moveToPreviousLane": "Move {name} to the previous lane",
+		"moveToNextLane": "Move {name} to the next lane",
+		"remove": "Remove {name}",
+		"removed": "Removed {name}.",
+		"undo": "Undo",
+		"titles": {
+			"history": "History",
+			"rotation": "Rotation",
+			"myWeek": "My week",
+			"absences": "Absences",
+			"events": "Events",
+			"myReviews": "My reviews",
+			"teamLoad": "Team load",
+			"tags": "Tags",
+			"birthdays": "Birthdays",
+			"otherTeams": "Other teams"
+		},
+		"rotation": {
+			"available": "{available} of {total} available",
+			"you": "you",
+			"next": "up next",
+			"nextYou": "you're up",
+			"inPrs": "in {count, plural, one {# PR} other {# PRs}}",
+			"countHint": "{count, plural, one {# PR received} other {# PRs received}} since the last reset"
+		},
+		"myWeek": {
+			"summary": "You received <b>{received}</b> {received, plural, one {PR} other {PRs}} and sent <b>{sent}</b>. The team is at <b>{team}</b>."
+		},
+		"absences": {
+			"window": "next 2 weeks",
+			"empty": "Nobody is away in the next two weeks.",
+			"range": "{start} to {end}",
+			"openEnded": "from {start}, no return date"
+		},
+		"myReviews": {
+			"empty": "You have no PRs to review.",
+			"from": "From {name}, {when}",
+			"markDone": "Mark {pr} as reviewed",
+			"markDoneFailed": "Could not mark the PR. Try again."
+		},
+		"teamLoad": {
+			"since": "since the last reset"
+		},
+		"tags": {
+			"nextUp": "who is next",
+			"nobody": "Nobody available"
+		},
+		"birthdays": {
+			"empty": "Nobody has added a birthday yet.",
+			"today": "Today"
+		},
+		"otherTeams": {
+			"empty": "There are no other teams."
+		},
+		"lane": "Lane {number}",
+		"moved": "{name} is now in lane {lane}, position {position}."
 	}
 }

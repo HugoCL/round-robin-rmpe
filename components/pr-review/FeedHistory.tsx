@@ -1,13 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import {
-	ChevronDown,
-	FileText,
-	History,
-	Undo2,
-	UsersRound,
-} from "lucide-react";
+import { ChevronDown, FileText, Undo2, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
@@ -20,7 +14,6 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
 import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
@@ -37,6 +30,8 @@ import { UndoConfirmContent } from "./assignment/UndoConfirmContent";
 import { HistoryChatThreadLinks } from "./HistoryChatThreadLinks";
 import { usePRReview } from "./PRReviewContext";
 import { TagBadge } from "./TagBadge";
+import { WidgetEmpty } from "./widgets/parts";
+import { WidgetFrame } from "./widgets/WidgetFrame";
 
 function getPRNumber(prUrl?: string) {
 	return prUrl?.match(/(?:pull|pulls|merge_requests)\/(\d+)(?:[/?#]|$)/i)?.[1];
@@ -45,10 +40,11 @@ function getPRNumber(prUrl?: string) {
 /** Entries shown before "show more": enough to prove the last assignments went out. */
 const HISTORY_PREVIEW_COUNT = 5;
 
-export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
+export function FeedHistory() {
 	const t = useTranslations();
 	const locale = useLocale();
 	const {
+		teamSlug,
 		userInfo,
 		reviewers,
 		myAssignmentsOnly,
@@ -157,9 +153,9 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 			<article
 				key={item.id}
 				data-history-entry
-				className="group relative grid grid-cols-[3.5rem_minmax(0,1fr)] px-4 pt-4 lg:px-5"
+				className="group relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-3 pt-3 first:pt-1"
 			>
-				<div className="relative z-10 flex justify-center pt-0.5">
+				<div className="relative z-10 pt-0.5">
 					<Avatar size="lg">
 						<AvatarFallback className="bg-muted font-semibold text-foreground">
 							{item.reviewerCount > 1 ? (
@@ -172,7 +168,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 				</div>
 
 				<div
-					className={cn("min-w-0 pb-4", !isLast && "border-b border-border/70")}
+					className={cn("min-w-0 pb-3", !isLast && "border-b border-border/70")}
 				>
 					<div className="flex flex-wrap items-start justify-between gap-2">
 						<div className="min-w-0">
@@ -339,18 +335,12 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 	};
 
 	return (
-		<section className="calm-section page-enter w-full">
-			<div className="calm-section-header">
-				<div className="flex min-w-0 items-center gap-2">
-					<History className="text-muted-foreground" aria-hidden="true" />
-					<h2 className="text-lg font-semibold lg:text-xl">
-						{t("pr.history")}
-					</h2>
-				</div>
+		<WidgetFrame
+			actions={
 				<div className="flex items-center gap-2">
 					<label
 						htmlFor="history-my-assignments-toggle"
-						className="cursor-pointer whitespace-nowrap text-xs text-muted-foreground lg:text-sm"
+						className="cursor-pointer whitespace-nowrap text-xs text-muted-foreground"
 					>
 						{t("history.myAssignmentsOnlyLabel")}
 					</label>
@@ -362,21 +352,17 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 						}}
 					/>
 				</div>
-			</div>
-
-			<div role="region" aria-label={t("pr.history")}>
+			}
+		>
+			<div>
 				{filteredAssignmentHistory.length === 0 ? (
-					<Empty className="m-4 border border-border/70 bg-muted/20 p-6 lg:p-8">
-						<EmptyHeader>
-							<EmptyDescription>{t("pr.noAssignments")}</EmptyDescription>
-						</EmptyHeader>
-					</Empty>
+					<WidgetEmpty>{t("pr.noAssignments")}</WidgetEmpty>
 				) : (
 					<Collapsible open={showAll} onOpenChange={setShowAll}>
 						<div className="relative">
 							<div
 								aria-hidden="true"
-								className="absolute top-9 bottom-9 left-11 w-px bg-border/80 lg:left-12"
+								className="absolute top-8 bottom-8 left-5 w-px bg-border/80"
 							/>
 							{previewHistory.map((item, index) =>
 								renderEntry(
@@ -393,7 +379,7 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 							</CollapsibleContent>
 						</div>
 						{hasHiddenHistory ? (
-							<div className="border-t border-border/70 p-2 text-center">
+							<div className="border-t border-border/70 pt-2 text-center">
 								<CollapsibleTrigger asChild>
 									<Button variant="ghost" size="sm">
 										{t(showAll ? "history.showLess" : "history.showMore")}
@@ -411,6 +397,6 @@ export function FeedHistory({ teamSlug }: { teamSlug?: string }) {
 					</Collapsible>
 				)}
 			</div>
-		</section>
+		</WidgetFrame>
 	);
 }

@@ -2,8 +2,10 @@ import { useTranslations } from "next-intl";
 import { TeamSwitcher } from "@/components/TeamSwitcher";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { usePRReview } from "../PRReviewContext";
+import { WidgetEditBar } from "../widgets/WidgetEditBar";
 import { HeaderMenu } from "./HeaderMenu";
 import { HeaderStatusBar } from "./HeaderStatusBar";
+import { PersonalizeButton } from "./PersonalizeButton";
 
 interface PageHeaderProps {
 	teamSlug?: string;
@@ -18,10 +20,12 @@ export function PageHeader({ teamSlug }: PageHeaderProps) {
 	const { isForeignTeamView } = usePRReview();
 
 	// Sticky only from lg: on a phone the wrapped header would keep a third of
-	// the screen pinned over the assignment card.
+	// the screen pinned over the assignment card. The blur waits for lg too: it
+	// would make the header the containing block of the edit bar, which is
+	// fixed to the bottom of the screen on phones.
 	return (
-		<header className="relative z-40 border-b border-border/60 bg-background/95 backdrop-blur-sm lg:sticky lg:top-0">
-			<div className="mx-auto flex w-full max-w-screen-2xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6 lg:px-8 3xl:max-w-7xl 3xl:px-6">
+		<header className="relative z-40 border-b border-border/60 bg-background/95 lg:sticky lg:top-0 lg:backdrop-blur-sm">
+			<div className="mx-auto flex w-full max-w-[110rem] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
 				<div className="flex min-w-0 flex-1 items-center gap-1 sm:flex-none">
 					<h1 className="shrink-0 text-2xl font-semibold tracking-tight md:text-3xl">
 						La Lista
@@ -44,6 +48,7 @@ export function PageHeader({ teamSlug }: PageHeaderProps) {
 					className="ml-auto flex items-center gap-1"
 					aria-label={t("common.options")}
 				>
+					<PersonalizeButton />
 					<ThemeToggle />
 					<HeaderMenu />
 				</nav>
@@ -53,6 +58,7 @@ export function PageHeader({ teamSlug }: PageHeaderProps) {
 					</p>
 				) : null}
 			</div>
+			<WidgetEditBar />
 		</header>
 	);
 }

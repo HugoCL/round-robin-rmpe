@@ -1140,6 +1140,13 @@
 		"noChanges": "No hay cambios registrados aún.",
 		"suggestedBy": "Sugerido por {name}"
 	},
+	"launch": {
+		"new": "Nuevo",
+		"dismiss": "Descartar",
+		"watch": "Ver video",
+		"watchTitled": "Ver el video de «{title}»",
+		"customizeView": "Personalizar mi vista"
+	},
 	"survey": {
 		"shortcut": "Encuestas",
 		"bannerTitle": "Nos encantaría tu feedback",
@@ -1454,5 +1461,73 @@
 				"backfill_assignment_history_names": "Rellena nombres faltantes en el historial."
 			}
 		}
+	},
+	"widgets": {
+		"personalize": "Personalizar",
+		"editing": "Personalizando tu vista",
+		"editHint": "Arrastra un widget o usa las flechas.",
+		"addGroup": "Widgets para agregar",
+		"add": "Agregar {name}",
+		"reset": "Restablecer vista",
+		"resetDone": "Volviste a la vista por defecto.",
+		"done": "Listo",
+		"moveUp": "Subir {name}",
+		"moveDown": "Bajar {name}",
+		"moveToPreviousLane": "Mover {name} al carril anterior",
+		"moveToNextLane": "Mover {name} al carril siguiente",
+		"remove": "Quitar {name}",
+		"removed": "Quitaste {name}.",
+		"undo": "Deshacer",
+		"titles": {
+			"history": "Historial",
+			"rotation": "Rotación",
+			"myWeek": "Mi semana",
+			"absences": "Ausencias",
+			"events": "Eventos",
+			"myReviews": "Mis revisiones",
+			"teamLoad": "Carga del equipo",
+			"tags": "Tags",
+			"birthdays": "Cumpleaños",
+			"otherTeams": "Otros equipos"
+		},
+		"rotation": {
+			"available": "{available} de {total} disponibles",
+			"you": "tú",
+			"next": "le toca",
+			"nextYou": "te toca",
+			"inPrs": "en {count, plural, one {# PR} other {# PRs}}",
+			"countHint": "{count, plural, one {# PR recibido} other {# PRs recibidos}} desde el último reinicio"
+		},
+		"myWeek": {
+			"summary": "Recibiste <b>{received}</b> {received, plural, one {PR} other {PRs}} y enviaste <b>{sent}</b>. El equipo lleva <b>{team}</b>."
+		},
+		"absences": {
+			"window": "próximas 2 semanas",
+			"empty": "Nadie falta en las próximas dos semanas.",
+			"range": "del {start} al {end}",
+			"openEnded": "desde el {start}, sin fecha de regreso"
+		},
+		"myReviews": {
+			"empty": "No tienes PRs por revisar.",
+			"from": "De {name}, {when}",
+			"markDone": "Marcar {pr} como revisado",
+			"markDoneFailed": "No se pudo marcar el PR. Inténtalo de nuevo."
+		},
+		"teamLoad": {
+			"since": "desde el último reinicio"
+		},
+		"tags": {
+			"nextUp": "a quién le toca",
+			"nobody": "Nadie disponible"
+		},
+		"birthdays": {
+			"empty": "Nadie ha agregado su cumpleaños todavía.",
+			"today": "Hoy"
+		},
+		"otherTeams": {
+			"empty": "No hay otros equipos."
+		},
+		"lane": "Carril {number}",
+		"moved": "{name} quedó en el carril {lane}, posición {position}."
 	}
 }

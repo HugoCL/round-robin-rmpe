@@ -14,7 +14,7 @@ export { HeaderOptionsDrawer } from "./HeaderOptionsDrawer";
 // Header
 export { PageHeader } from "./header/PageHeader";
 // Layouts
-export { CompactLayout } from "./layouts/CompactLayout";
+export { LanesLayout } from "./layouts/LanesLayout";
 export { default as PRReviewAssignment } from "./PRReviewAssignment";
 export { RecentAssignments } from "./RecentAssignments";
 export { ReviewersPanel } from "./ReviewersPanel";

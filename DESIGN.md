@@ -185,7 +185,7 @@ The body carries a subtle top-bloom (`radial-gradient` at 9% primary) that tints
 
 ### Shadow Vocabulary
 - **Shell Ambient** (`0 24px 80px -48px rgba(15,23,42,0.35)`): Used on `calm-shell`. Top-level page panels — PageHeader, AssignmentCard. The most elevated feel without visible hard edges.
-- **Section Ambient** (`0 20px 72px -52px rgba(15,23,42,0.35)`): Used on `calm-section`. FeedHistory panel, secondary content areas. Slightly softer than Shell.
+- **Section Ambient** (`0 20px 72px -52px rgba(15,23,42,0.35)`): Used on `calm-section`. Secondary content areas outside the team page. Slightly softer than Shell.
 - **Panel Ambient** (`0 18px 60px -42px rgba(15,23,42,0.28)`): Used on `calm-panel`. Tertiary surfaces, nested panels.
 - **Subtle Panel** (no shadow): `calm-subtle-panel` — background tint + border only, no shadow. Used for quiet inset surfaces.
 
@@ -213,12 +213,32 @@ The footer action row uses custom `rounded-full` toggle chips, not shadcn Button
 This is the signature of the system. Rather than ad-hoc `bg-white rounded-xl shadow` cards, every panel uses a named utility class:
 
 - **`calm-shell`**: `rounded-3xl border border-border/70 bg-background/82 shadow-[shell-ambient] backdrop-blur-sm`. Top-level shells — PageHeader, the main AssignmentCard wrapper.
-- **`calm-section`**: `rounded-3xl border border-border/70 bg-background/78 p-5 shadow-[section-ambient] backdrop-blur-sm`. Major content sections — FeedHistory, Events.
+- **`calm-section`**: `rounded-3xl border border-border/70 bg-background/78 p-5 shadow-[section-ambient] backdrop-blur-sm`. Major content sections on secondary pages. Not used for widgets on the team page (see Lanes and Widgets).
 - **`calm-panel`**: `rounded-2xl border border-border/70 bg-background/72 shadow-[panel-ambient] backdrop-blur-sm`. Secondary panels.
 - **`calm-subtle-panel`**: `rounded-2xl border border-border/60 bg-muted/28 backdrop-blur-sm`. Quiet inset surfaces with no shadow — used for subtle data containers.
 - **`calm-list`**: `divide-y divide-border/60 rounded-2xl border border-border/60 bg-background/60 overflow-hidden`. Feed list container. Items inside use `hover:bg-muted/30` — never a card per item.
 
 **Nesting rule:** `calm-shell` never nests inside `calm-shell`. `calm-section` may appear inside `calm-shell` only if the shell has no other padding. Never nest `calm-section` inside `calm-section`.
+
+### Lanes and Widgets
+The team page is the assignment card plus the person's widgets, laid out in lanes: three from `2xl` (1536px), two from `lg` (the third lane goes under the second) and one below. The first lane is `45rem` wide so the card never stretches (see The Reviewer Name Rule); the other lanes share the rest, up to a `110rem` page.
+
+- **The card is the only card.** `AssignmentCard` keeps `calm-shell`, pinned at the top of the first lane; it is not a widget and cannot be moved or removed. Every widget is flat: a title row (`h2`, `text-base font-semibold`, an optional muted fact beside it, its own controls at the end) and the content under it. Widgets in a lane are separated by a `border-border/70` hairline, never by boxes.
+- **Each widget has its own form.** A list for the rotation, ordered by who has received the fewest PRs and with no position numbers (only the first place is certain), a sentence for My week, a strip of weekdays for Absences, thin bars for Team load. Never the same tile repeated, and never a big number over a label.
+- **Structure shows only while customizing.** "Personalizar" in the header turns each widget into a dashed box (`bg-muted/40`, `outline-dashed outline-control-border/70`) with arrows and a remove button, and shows the edit bar: under the header on desktop, fixed to the bottom on phones. At rest there is no handle, outline or edit control.
+- **Dragging is never the only way.** Every move has an arrow button, so it works with a keyboard and on touch. A blue 4px line marks where a dragged widget will land.
+- **Widget rows** use `widgetRowClass`: flat at rest, `hover:bg-muted/40`, `rounded-xl`, `min-h-10`.
+
+The layout is saved per person (`userPreferences.widgetLayout`), the same on every team. A widget whose feature is off, or that has nothing to show on a team (Tags on a team without tags), is hidden and keeps its place.
+
+### Launch Spotlight
+
+A big launch is announced once per person by `LaunchSpotlight`: a card with the video poster, the title, one sentence, the action the launch invites, and a ✕ labelled "Descartar".
+
+- **Never a modal, and never over the assignment card.** From `xl` it is fixed to the bottom-right corner, clear of the first lane. Below `xl` it sits in the page, under the assignment card. It does not take focus and it does not dim the page.
+- **One at a time, and only for big changes.** A changelog entry opts in with `spotlight`. Everything else stays in the changelog and the notices sheet.
+- **Gone for good once dismissed.** Dismissal is stored per person. The entry stays in the changelog.
+- When it floats it is the one floating surface on the page, so it is opaque (`bg-popover`) and carries the shell shadow, not a `calm-*` translucent fill.
 
 ### Inputs / Fields
 - **Style**: `rounded-2xl border border-border/70 bg-background/70` (`calm-input-surface`). Filled with a soft translucent background, not an outlined-only field.

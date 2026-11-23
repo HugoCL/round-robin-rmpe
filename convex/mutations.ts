@@ -11,6 +11,7 @@ import {
 	resolveAssignmentSlots,
 	resolveAssignmentSlotsPerTeam,
 } from "../lib/assignmentResolver";
+import { isLaunchSpotlightId } from "../lib/changelog";
 import { resolveBroadcastTeamSlugs } from "../lib/chatBroadcast";
 import { undoRemovesReviewedPR } from "../lib/historyUndo";
 import {
@@ -26,6 +27,7 @@ import {
 	isIncludedInTagRotations,
 } from "../lib/reviewerEligibility";
 import { pickTeamOwnerCandidate, resolveReviewerRole } from "../lib/teamRoles";
+import { normalizeWidgetLayout } from "../lib/widgetLayout";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -55,6 +57,7 @@ import {
 	findReviewerByEmailAnyTeam,
 	resolveAssignmentActor,
 } from "./reviewerLookup";
+import { widgetLayoutValidator } from "./schema";
 
 const GLOBAL_REVIEWED_PR_COUNTER_KEY = "reviewed_pr_total";
 type UserPreferenceFlags = {
@@ -65,12 +68,14 @@ type UserPreferenceFlags = {
 	hideMultiAssignmentSection: boolean;
 	enableAgentSetupExperiment: boolean;
 	defaultAgentTeamSlug?: string;
+	widgetLayout?: { lanes: string[][] };
 };
 
 type UserPreferencePatch = Partial<
-	Omit<UserPreferenceFlags, "defaultAgentTeamSlug">
+	Omit<UserPreferenceFlags, "defaultAgentTeamSlug" | "widgetLayout">
 > & {
 	defaultAgentTeamSlug?: string | null;
+	widgetLayout?: { lanes: string[][] } | null;
 };
 
 type AssignmentSource = "ui" | "agent";
@@ -83,6 +88,7 @@ const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
 	hideMultiAssignmentSection: false,
 	enableAgentSetupExperiment: false,
 	defaultAgentTeamSlug: undefined,
+	widgetLayout: undefined,
 };
 
 const weekdayValidator = v.union(
@@ -256,6 +262,12 @@ function resolvePreferencePatch(
 	if (patch.defaultAgentTeamSlug !== undefined) {
 		resolved.defaultAgentTeamSlug =
 			patch.defaultAgentTeamSlug?.trim() || undefined;
+	}
+	if (patch.widgetLayout !== undefined) {
+		resolved.widgetLayout =
+			patch.widgetLayout === null
+				? undefined
+				: normalizeWidgetLayout(patch.widgetLayout);
 	}
 	return resolved;
 }
@@ -662,6 +674,7 @@ export const bootstrapMyUserPreferences = mutation({
 		hideMultiAssignmentSection: v.optional(v.boolean()),
 		enableAgentSetupExperiment: v.optional(v.boolean()),
 		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
+		widgetLayout: v.optional(v.union(v.null(), widgetLayoutValidator)),
 	},
 	handler: async (ctx, args) => {
 		const identity = await requireIdentity(ctx);
@@ -706,8 +719,11 @@ export const updateMyUserPreferences = mutation({
 		hideMultiAssignmentSection: v.optional(v.boolean()),
 		enableAgentSetupExperiment: v.optional(v.boolean()),
 		defaultAgentTeamSlug: v.optional(v.union(v.string(), v.null())),
+		widgetLayout: v.optional(v.union(v.null(), widgetLayoutValidator)),
+		/** A launch spotlight this person dismissed; added to the ones already seen. */
+		seenLaunch: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => {
+	handler: async (ctx, { seenLaunch, ...args }) => {
 		const identity = await requireIdentity(ctx);
 
 		const existingRows = await ctx.db
@@ -718,7 +734,17 @@ export const updateMyUserPreferences = mutation({
 			.collect();
 		const primary = selectLatestUserPreference(existingRows);
 		const now = Date.now();
-		const patch = resolvePreferencePatch(args);
+		// Appended here, not sent whole by the client, so a dismissal on another
+		// device is never overwritten. Only real launch ids are kept.
+		const seen = primary?.seenLaunches ?? [];
+		const patch = {
+			...resolvePreferencePatch(args),
+			...(seenLaunch !== undefined &&
+			isLaunchSpotlightId(seenLaunch) &&
+			!seen.includes(seenLaunch)
+				? { seenLaunches: [...seen, seenLaunch] }
+				: {}),
+		};
 
 		if (!primary) {
 			const createdId = await ctx.db.insert("userPreferences", {
@@ -2301,7 +2327,9 @@ export const attachGoogleChatThreadUrlToAssignmentHistory = mutation({
 	},
 });
 
-// Create an active PR assignment row (called from UI after assignPR succeeds)
+// Create an active PR assignment row (called from UI after assignPR succeeds).
+// The assigner is the person asking: the row shows up in the assignee's
+// reviews under that name, so nobody can file one in someone else's.
 export const createActivePRAssignment = mutation({
 	args: {
 		teamSlug: v.string(),
@@ -2324,11 +2352,14 @@ export const createActivePRAssignment = mutation({
 			crossTeamReview = false,
 		},
 	) => {
+		const email = normalizeEmail((await requireIdentity(ctx)).email);
 		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
 		// Basic validation: ensure reviewers exist
-		const assignee = await ctx.db.get(assigneeId);
-		const assigner = await ctx.db.get(assignerId);
+		const assignee = await ctx.db.get("reviewers", assigneeId);
+		const assigner = await ctx.db.get("reviewers", assignerId);
 		if (!assignee || !assigner) throw new Error("Reviewer(s) not found");
+		if (email === null || normalizeEmail(assigner.email) !== email)
+			throw new Error("Not the assigner");
 		const now = Date.now();
 		const id = await ctx.db.insert("prAssignments", {
 			teamId: team._id,
@@ -2346,16 +2377,22 @@ export const createActivePRAssignment = mutation({
 	},
 });
 
-// Complete an assignment (either assignee or assigner can complete directly now)
+// Complete an assignment. Either party can, and who is asking comes from the
+// session, never from an argument.
 export const completePRAssignment = mutation({
-	args: { id: v.id("prAssignments"), reviewerId: v.id("reviewers") },
-	handler: async (ctx, { id, reviewerId }) => {
+	args: { id: v.id("prAssignments") },
+	handler: async (ctx, { id }) => {
+		const email = normalizeEmail((await requireIdentity(ctx)).email);
 		const row = await ctx.db.get(id);
 		if (!row) throw new Error("Assignment not found");
-		// Allow either party related to the assignment to complete it
-		if (row.assigneeId !== reviewerId && row.assignerId !== reviewerId) {
-			throw new Error("Not participant");
-		}
+		const parties = await Promise.all([
+			ctx.db.get("reviewers", row.assigneeId),
+			ctx.db.get("reviewers", row.assignerId),
+		]);
+		const isParticipant =
+			email !== null &&
+			parties.some((party) => normalizeEmail(party?.email) === email);
+		if (!isParticipant) throw new Error("Not participant");
 		// Delete active assignment row on completion.
 		await ctx.db.delete(id);
 		return { success: true };
