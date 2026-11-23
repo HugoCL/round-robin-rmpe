@@ -295,8 +295,7 @@ export async function recordLaunchVideo({
 	};
 
 	// A zoomed frame is a smaller clip captured at a higher scale, so it is as
-	// sharp as a full one. Rounding leaves it a pixel or two off the full size,
-	// which the encode evens out.
+	// sharp as a full one.
 	let cameraMove = { from: FULL_VIEW, to: FULL_VIEW, at: 0, seconds: 1 };
 	const cameraAt = (at) => {
 		const { from, to } = cameraMove;
@@ -405,9 +404,21 @@ export async function recordLaunchVideo({
 
 	const width = VIEWPORT.width * SCALE;
 	const height = VIEWPORT.height * SCALE;
-	const inputs = ["-f", "concat", "-safe", "0", "-i", concatFile];
+	// Frames differ in size by a pixel or two during a camera move. Without
+	// `-reinit_filter 0` ffmpeg rebuilds the filter graph on each change and
+	// drops the frames of the move.
+	const inputs = [
+		"-reinit_filter",
+		"0",
+		"-f",
+		"concat",
+		"-safe",
+		"0",
+		"-i",
+		concatFile,
+	];
 	const filters = [
-		`[0:v]fps=${FPS},scale=${width}:${height}:in_range=full:out_range=tv,pad=${width}:${height + CAPTION_STRIP * SCALE}:0:0:color=0x14161f[v0]`,
+		`[0:v]scale=${width}:${height}:in_range=full:out_range=tv,setsar=1,fps=${FPS},pad=${width}:${height + CAPTION_STRIP * SCALE}:0:0:color=0x14161f[v0]`,
 	];
 	captions.forEach((item, index) => {
 		const start = (item.start - startedAt).toFixed(2);
