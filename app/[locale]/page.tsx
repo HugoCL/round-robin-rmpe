@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { ArrowRight, Lightbulb, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { LandingAssignmentTicker } from "@/components/LandingAssignmentTicker";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import { pickLandingTeamSlug } from "@/lib/teamMembership";
 
 function getTeamInitials(name: string) {
 	return name
@@ -25,6 +26,7 @@ export default function Page() {
 	const locale = useLocale();
 	const router = useRouter();
 	const { user, isLoaded: userLoaded } = useUser();
+	const convexAuth = useConvexAuth();
 	const teams = useQuery(api.queries.getTeams);
 	const onboardingState = useQuery(api.queries.getMyOnboardingState);
 	const reviewedPRsCount = useQuery(api.queries.getGlobalReviewedPRCount);
@@ -39,20 +41,40 @@ export default function Page() {
 		!onboardingState.isAdmin &&
 		!onboardingState.hasTeams;
 
+	// The membership query answers "signed out" until Convex has the session,
+	// and redirecting on that answer would skip the person's own teams.
+	const memberTeamSlugs =
+		convexAuth.isLoading ||
+		(convexAuth.isAuthenticated && !onboardingState?.isAuthenticated)
+			? undefined
+			: (onboardingState?.memberTeamSlugs ?? []);
+
 	useEffect(() => {
-		if (userLoaded && user && teams && teams.length > 0 && !redirecting) {
+		if (
+			userLoaded &&
+			user &&
+			teams &&
+			teams.length > 0 &&
+			memberTeamSlugs &&
+			!redirecting
+		) {
+			let lastTeamSlug: string | null = null;
 			try {
-				const lastTeam = window.localStorage.getItem("la-lista-last-team");
-				const targetTeam = teams.find((t) => t.slug === lastTeam) || teams[0];
-				if (targetTeam) {
-					setRedirecting(true);
-					router.push(`/${locale}/${targetTeam.slug}`);
-				}
+				lastTeamSlug = window.localStorage.getItem("la-lista-last-team");
 			} catch (e) {
-				console.warn("Failed to retrieve or redirect to last visited team:", e);
+				console.warn("Failed to retrieve the last visited team:", e);
+			}
+			const targetSlug = pickLandingTeamSlug({
+				teams,
+				memberTeamSlugs,
+				lastTeamSlug,
+			});
+			if (targetSlug) {
+				setRedirecting(true);
+				router.push(`/${locale}/${targetSlug}`);
 			}
 		}
-	}, [userLoaded, user, teams, locale, router, redirecting]);
+	}, [userLoaded, user, teams, memberTeamSlugs, locale, router, redirecting]);
 
 	const isRedirecting = userLoaded && user && teams && teams.length > 0;
 	if (isLoading || isRedirecting || redirecting) {

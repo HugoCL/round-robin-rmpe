@@ -26,6 +26,7 @@ import {
 	changelogEntries,
 	changelogTypeColors,
 	changelogTypeLabels,
+	LAUNCH_VIDEO_SIZE,
 } from "@/lib/changelog";
 
 function formatDate(dateStr: string, locale: string): string {
@@ -83,6 +84,21 @@ function ChangelogContent({ entries }: { entries: ChangelogEntry[] }) {
 							<p className="text-sm text-muted-foreground leading-relaxed">
 								{entry.description}
 							</p>
+							{entry.video && (
+								// Captions are burned into the picture and there is no
+								// sound, so the video needs no text track.
+								<video
+									controls
+									playsInline
+									preload="none"
+									poster={entry.video.poster}
+									aria-label={entry.title}
+									{...LAUNCH_VIDEO_SIZE}
+									className="mt-3 h-auto w-full rounded-xl border border-border/60"
+								>
+									<source src={entry.video.src} type="video/mp4" />
+								</video>
+							)}
 							{entry.suggestedBy && (
 								<p className="mt-2 text-xs text-muted-foreground">
 									{t("suggestedBy", { name: entry.suggestedBy })}

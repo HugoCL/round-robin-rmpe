@@ -59,7 +59,11 @@ export default function PRReviewAssignment({
 	const { hasTags, refreshTags } = useConvexTags(teamSlug);
 	const userInfo: UserInfo | null = user
 		? {
-				email: user.emailAddresses[0]?.emailAddress || "",
+				// The primary address is the one the server knows the person by.
+				email:
+					user.primaryEmailAddress?.emailAddress ||
+					user.emailAddresses[0]?.emailAddress ||
+					"",
 				firstName: user.firstName || undefined,
 				lastName: user.lastName || undefined,
 				fullName: user.fullName || undefined,

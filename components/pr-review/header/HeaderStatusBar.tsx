@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { describeReturn } from "../describeReturn";
 import { MarkAbsentDialog } from "../dialogs/MarkAbsentDialog";
 import { usePRReview } from "../PRReviewContext";
+import { JoinTeamButton } from "./JoinTeamButton";
 
 const PILL_CLASS = "h-9 gap-2 rounded-full px-3 text-sm font-normal";
 
@@ -289,6 +290,8 @@ export function HeaderStatusBar() {
 						) : null}
 					</PopoverContent>
 				</Popover>
+			) : teamSlug ? (
+				<JoinTeamButton teamSlug={teamSlug} />
 			) : null}
 
 			<Popover>

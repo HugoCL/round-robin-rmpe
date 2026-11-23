@@ -45,7 +45,7 @@ export const config = {
 		"/(es|en)/:path*",
 		// Enable redirects that add missing locales
 		// Exclude Next.js app icons/metadata routes and files with extensions
-		"/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+		"/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|mp4|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
 		// Include API routes for auth
 		"/api/:path*",
 	],
