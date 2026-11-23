@@ -98,23 +98,47 @@ function localBackend() {
 	};
 }
 
-/** `--url` with `--admin-key` makes the CLI skip every deployment variable. */
-function seedDemoTeams(backend) {
-	execFileSync(
-		"pnpm",
-		[
-			"exec",
-			"convex",
-			"run",
-			"seed:seed",
-			"{}",
-			"--url",
-			backend.url,
-			"--admin-key",
-			backend.adminKey,
-		],
-		{ stdio: "ignore" },
-	);
+/**
+ * `--url` with `--admin-key` makes the CLI skip every deployment variable.
+ * The team switcher lists every team in the backend, so one that holds
+ * anything besides the teams just seeded would put its names in the video.
+ */
+async function seedDemoTeams(backend) {
+	const seeded = JSON.parse(
+		execFileSync(
+			"pnpm",
+			[
+				"exec",
+				"convex",
+				"run",
+				"seed:seed",
+				"{}",
+				"--url",
+				backend.url,
+				"--admin-key",
+				backend.adminKey,
+			],
+			{ encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+		),
+	).map((team) => team.slug);
+	const response = await fetch(`${backend.url}/api/query`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			path: "queries:getTeams",
+			args: {},
+			format: "json",
+		}),
+	});
+	const { value: teams } = await response.json();
+	const others = teams
+		.map((team) => team.slug)
+		.filter((slug) => !seeded.includes(slug));
+	if (others.length > 0) {
+		throw new Error(
+			`The local Convex backend also holds ${others.join(", ")}. Record against one that holds only the seeded demo teams.`,
+		);
+	}
 }
 
 /**
@@ -142,6 +166,25 @@ async function allowOnlyLocalBackend(context, { baseUrl, backend }) {
 	);
 }
 
+/**
+ * The sign-in page makes no Convex call on the server, so the socket its
+ * client opens shows which backend the app process uses before any page that
+ * reads or writes through it.
+ */
+async function assertAppUsesBackend(page, { baseUrl, backend }) {
+	const { port } = new URL(backend.url);
+	const socket = page.waitForEvent(
+		"websocket",
+		(candidate) => new URL(candidate.url()).port === port,
+	);
+	await page.goto(`${baseUrl}/es/sign-in`);
+	await socket.catch(() => {
+		throw new Error(
+			`The app at ${baseUrl} never connected to the local Convex backend at ${backend.url}.`,
+		);
+	});
+}
+
 /** Signs in the Clerk test user without the hosted sign-in form. */
 async function signIn(page, baseUrl) {
 	const email = process.env.LAUNCH_VIDEO_EMAIL ?? "";
@@ -166,14 +209,18 @@ async function signIn(page, baseUrl) {
 	const users = await clerk(
 		`/users?email_address=${encodeURIComponent(email)}`,
 	);
-	if (users.length !== 1) {
+	const user = users.length === 1 ? users[0] : undefined;
+	const primaryEmail = user?.email_addresses.find(
+		(address) => address.id === user.primary_email_address_id,
+	)?.email_address;
+	if (primaryEmail !== email) {
 		throw new Error(
-			`Expected one Clerk user for ${email}, got ${users.length}`,
+			`Expected one Clerk user whose primary email is ${email}, got ${users.length}`,
 		);
 	}
 	const { token } = await clerk("/sign_in_tokens", {
 		method: "POST",
-		body: JSON.stringify({ user_id: users[0].id, expires_in_seconds: 120 }),
+		body: JSON.stringify({ user_id: user.id, expires_in_seconds: 120 }),
 	});
 	await page.goto(`${baseUrl}/es/sign-in?__clerk_ticket=${token}`);
 	await page.waitForURL((url) => !url.pathname.includes("sign-in"));
@@ -195,7 +242,7 @@ export async function recordLaunchVideo({
 }) {
 	const baseUrl = `http://localhost:${process.env.E2E_PORT ?? "3000"}`;
 	const backend = localBackend();
-	seedDemoTeams(backend);
+	await seedDemoTeams(backend);
 
 	const workDir = mkdtempSync(join(tmpdir(), "launch-video-"));
 	const browser = await chromium.launch();
@@ -205,6 +252,7 @@ export async function recordLaunchVideo({
 	});
 	await allowOnlyLocalBackend(context, { baseUrl, backend });
 	const page = await context.newPage();
+	await assertAppUsesBackend(page, { baseUrl, backend });
 	await signIn(page, baseUrl);
 	await prepare({ page, baseUrl });
 	await context.addInitScript(pointerOverlay);
