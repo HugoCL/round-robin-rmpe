@@ -410,11 +410,22 @@
 		"join": {
 			"cta": "Unirme al equipo",
 			"title": "Unirte a {team}",
-			"description": "Entras a la rotación y puedes recibir PRs desde ahora. Para salir, pídeselo a una persona propietaria del equipo.",
+			"description": "Entras a la rotación y puedes recibir PRs desde ahora. Puedes salir cuando quieras desde tu estado.",
 			"confirm": "Unirme",
 			"joining": "Uniéndome…",
 			"success": "Ya eres parte de {team}",
 			"failed": "No pudimos sumarte al equipo. Inténtalo de nuevo."
+		},
+		"leave": {
+			"cta": "Salir del equipo",
+			"title": "Salir de {team}",
+			"description": "Dejas la rotación y se borran tus ausencias planificadas. Puedes volver a unirte cuando quieras.",
+			"confirm": "Salir",
+			"leaving": "Saliendo…",
+			"cancel": "Me quedo",
+			"success": "Saliste de {team}",
+			"failed": "No pudimos sacarte del equipo. Inténtalo de nuevo.",
+			"onlyOwner": "Eres la única persona propietaria de este equipo. Nombra a otra antes de salir."
 		},
 		"switcher": {
 			"title": "Selecciona un equipo",

@@ -51,9 +51,9 @@ export const changelogEntries: ChangelogEntry[] = [
 	{
 		date: "2026-11-23",
 		type: "feature",
-		title: "Ya puedes ser parte de más de un equipo",
+		title: "Únete a otro equipo y sal cuando quieras, por tu cuenta",
 		description:
-			"Si trabajas con más de un equipo, ahora te sumas tú: entra al otro equipo desde el selector y toca «Unirme al equipo», sin pedirle a nadie que te agregue. El selector muestra primero tus equipos y después el resto, y desde ahí también puedes crear uno nuevo.",
+			"Si trabajas con más de un equipo, ahora te sumas tú: entra al otro equipo desde el selector y toca «Unirme al equipo», sin pedirle a nadie que te agregue. Y cuando ya no te corresponda, sales tú también: abre tu estado y toca «Salir del equipo». El selector muestra primero tus equipos y después el resto, y desde ahí también puedes crear uno nuevo.",
 		video: {
 			src: "/changelog/multi-team-membership.mp4",
 			poster: "/changelog/multi-team-membership.jpg",

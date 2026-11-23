@@ -54,9 +54,20 @@ await recordLaunchVideo({
 		caption("Listo, ya estás en su rotación");
 		await wait(3000);
 
-		await clickOn(switcher);
-		await zoomOn(page.getByRole("menu"));
-		caption("Y cambias entre tus equipos cuando quieras");
-		await wait(3400);
+		await clickOn(page.getByRole("button", { name: /Disponible/ }));
+		await zoomOn(switcher);
+		caption("Y sales cuando quieras desde tu estado");
+		await wait(2400);
+
+		await clickOn(page.getByRole("button", { name: "Salir del equipo" }));
+		await wait(2400);
+		await clickOn(
+			page.getByRole("button", { name: "Salir", exact: true }),
+			520,
+		);
+		await join.waitFor();
+		await zoomOn();
+		caption("Sin pedírselo a nadie");
+		await wait(3200);
 	},
 });

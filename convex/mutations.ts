@@ -49,6 +49,7 @@ import {
 	isAdminEmail,
 	normalizeEmail,
 	requireIdentity,
+	teamRetainsOwnerAfter,
 } from "./authz";
 import {
 	findReviewerByEmailAnyTeam,
@@ -584,6 +585,50 @@ export const joinMyselfToTeam = mutation({
 			teamSlug: team.slug,
 			reviewerId,
 		};
+	},
+});
+
+export const leaveMyTeam = mutation({
+	args: { teamSlug: v.string() },
+	returns: v.object({
+		outcome: v.union(
+			v.literal("left"),
+			v.literal("notMember"),
+			v.literal("onlyOwner"),
+		),
+	}),
+	handler: async (ctx, { teamSlug }) => {
+		const identity = await requireIdentity(ctx);
+		const normalizedEmail = normalizeEmail(identity.email);
+		if (!normalizedEmail) {
+			throw new Error("Unable to resolve user email");
+		}
+
+		const team = await getTeamBySlugOrThrow(ctx, teamSlug);
+		const reviewer = await ctx.db
+			.query("reviewers")
+			.withIndex("by_team_email", (q) =>
+				q.eq("teamId", team._id).eq("email", normalizedEmail),
+			)
+			.first();
+		if (!reviewer) {
+			return { outcome: "notMember" as const };
+		}
+
+		// Answered, not thrown: a production deployment hides error text from
+		// the client, and this is something the person can act on.
+		const retainsOwner = await teamRetainsOwnerAfter(ctx, team._id, {
+			excluding: reviewer._id,
+		});
+		if (!retainsOwner) {
+			return { outcome: "onlyOwner" as const };
+		}
+
+		await deleteAbsencesForReviewer(ctx, reviewer._id);
+		await ctx.db.delete(reviewer._id);
+		await createSnapshot(ctx, team._id, `Reviewer left: ${reviewer.name}`);
+
+		return { outcome: "left" as const };
 	},
 });
 
