@@ -202,7 +202,7 @@ All buttons share `rounded-full` (9999px). This is a system-wide convention — 
 - **Primary** (solid blue): `bg-primary text-primary-foreground rounded-full px-6 py-2.5`. The Assign PR button stretches full-width in its container. No icon except where it aids clarity (Plus for create actions).
 - **Hover / Focus**: Darker primary (`oklch(0.46 0.19 258)`). Focus: `ring-2 ring-primary/50`. No scale transform on primary — transform reserved for icon-hint secondary CTAs.
 - **Outline**: `border border-border/70 bg-background/70 rounded-full`. The dominant secondary variant. In the header bar only "Mi semana" keeps it: an occasional lookup, so the border marks a secondary action.
-- **Ghost**: `bg-transparent hover:bg-muted/40 rounded-full`. Icon actions in icon bars (ThemeToggle, the header menu), and the header controls that read as text: the team switcher, the second crumb after "La Lista /", and your status ("Disponible · te toca en 2 PRs"). The hover background shows where to click.
+- **Ghost**: `bg-transparent hover:bg-muted/40 rounded-full`. Icon actions in icon bars (ThemeToggle, the header menu), and the header controls that read as text: the team switcher, the second crumb after "La Lista /", and your status ("Disponible · te toca en 2 PRs"). The hover background shows where to click. On a team you are not part of, the status slot holds "Unirme al equipo" instead, in primary text because it is an action; it opens a popover that confirms before joining. The team switcher is a menu, not a select: "Tus equipos", then "Otros equipos", then "Crear equipo".
 - **Destructive**: Red palette. Confined to confirmation dialogs; never appears inline as a primary action.
 
 ### Chips (Action Toggles)
