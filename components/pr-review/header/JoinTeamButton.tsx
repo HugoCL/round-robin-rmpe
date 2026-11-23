@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { UserPlus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Popover,
@@ -23,6 +23,8 @@ export function JoinTeamButton({ teamSlug }: { teamSlug: string }) {
 	const team = useQuery(api.queries.getTeam, { teamSlug });
 	const joinMyselfToTeam = useMutation(api.mutations.joinMyselfToTeam);
 	const [isJoining, setIsJoining] = useState(false);
+	const titleId = useId();
+	const descriptionId = useId();
 
 	if (
 		!team ||
@@ -55,9 +57,18 @@ export function JoinTeamButton({ teamSlug }: { teamSlug: string }) {
 					{t("cta")}
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent align="start" className="gap-3">
-				<p className="font-medium">{t("title", { team: team.name })}</p>
-				<p className="text-pretty text-muted-foreground">{t("description")}</p>
+			<PopoverContent
+				align="start"
+				className="gap-3"
+				aria-labelledby={titleId}
+				aria-describedby={descriptionId}
+			>
+				<p id={titleId} className="font-medium">
+					{t("title", { team: team.name })}
+				</p>
+				<p id={descriptionId} className="text-pretty text-muted-foreground">
+					{t("description")}
+				</p>
 				<Button
 					type="button"
 					size="sm"
