@@ -5,6 +5,8 @@
  * 1. Add a new object at the BEGINNING of the array (newest first)
  * 2. Use the format: { date: "YYYY-MM-DD", type: "feature" | "fix" | "improvement", title: "Título", description: "Descripción detallada", suggestedBy?: "Nombre" }
  * 3. Write in Spanish
+ * 4. A feature launch carries a `video`, recorded with `scripts/launch-video/`
+ *    (see AGENTS.md). It writes the MP4 and its poster to `public/changelog/`.
  *
  * Example:
  * {
@@ -23,7 +25,12 @@ export interface ChangelogEntry {
 	title: string;
 	description: string;
 	suggestedBy?: string;
+	/** Public paths of the launch video and the frame shown before it plays. */
+	video?: { src: string; poster: string };
 }
+
+/** Frame size of what `scripts/launch-video/recorder.mjs` produces. */
+export const LAUNCH_VIDEO_SIZE = { width: 1728, height: 1208 };
 
 export const changelogTypeLabels: Record<ChangelogType, string> = {
 	feature: "Nueva función",
@@ -41,6 +48,17 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
+	{
+		date: "2026-11-23",
+		type: "feature",
+		title: "Ya puedes ser parte de más de un equipo",
+		description:
+			"Si trabajas con más de un equipo, ahora te sumas tú: entra al otro equipo desde el selector y toca «Unirme al equipo», sin pedirle a nadie que te agregue. El selector muestra primero tus equipos y después el resto, y desde ahí también puedes crear uno nuevo.",
+		video: {
+			src: "/changelog/multi-team-membership.mp4",
+			poster: "/changelog/multi-team-membership.jpg",
+		},
+	},
 	{
 		date: "2026-10-08",
 		type: "feature",
