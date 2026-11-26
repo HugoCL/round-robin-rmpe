@@ -1,34 +1,42 @@
 "use client"
 
-import { Collapsible as CollapsiblePrimitive } from "radix-ui"
+import {
+  CollapsiblePanel as CollapsiblePanelPrimitive,
+  Collapsible as CollapsiblePrimitive,
+  CollapsibleTrigger as CollapsibleTriggerPrimitive,
+} from "@ui-sdk/react/collapsible"
+import type * as React from "react"
+import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
-function Collapsible({
-  ...props
-}: React.ComponentProps<typeof CollapsiblePrimitive.Root>) {
-  return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
+function Collapsible(props: React.ComponentProps<typeof CollapsiblePrimitive>) {
+  return <CollapsiblePrimitive {...props} />
 }
 
 function CollapsibleTrigger({
+  asChild,
+  children,
   ...props
-}: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>) {
+}: Omit<React.ComponentProps<typeof CollapsibleTriggerPrimitive>, "children"> &
+  AsChildProps & { children?: React.ReactNode }) {
   return (
-    <CollapsiblePrimitive.CollapsibleTrigger
-      data-slot="collapsible-trigger"
-      {...props}
-    />
+    <CollapsibleTriggerPrimitive {...props} {...asChildProps(asChild, children)} />
   )
 }
 
+/**
+ * ui-sdk's CollapsiblePanel under Radix's name. Closed, it unmounts after its
+ * exit animation, as Radix's did. tw-animate's collapsible keyframes read
+ * Radix's height variable, so it's fed from ui-sdk's.
+ */
 function CollapsibleContent({
   className,
   ...props
-}: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {
+}: React.ComponentProps<typeof CollapsiblePanelPrimitive>) {
   return (
-    <CollapsiblePrimitive.CollapsibleContent
-      data-slot="collapsible-content"
+    <CollapsiblePanelPrimitive
       className={cn(
-        "overflow-hidden motion-safe:data-closed:animate-collapsible-up motion-safe:data-open:animate-collapsible-down",
+        "overflow-hidden [--radix-collapsible-content-height:var(--collapsible-panel-height)] motion-safe:data-closed:animate-collapsible-up motion-safe:data-open:animate-collapsible-down",
         className
       )}
       {...props}
