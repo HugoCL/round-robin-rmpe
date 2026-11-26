@@ -49,7 +49,9 @@ export default function TeamPage() {
 			<div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4 py-10">
 				<div className="calm-section page-enter max-w-xl text-center space-y-3">
 					<p className="calm-kicker">La Lista</p>
-					<h1 className="text-2xl font-semibold">{t("onboarding.title")}</h1>
+					<h1 className="text-2xl font-semibold md:text-3xl">
+						{t("onboarding.title")}
+					</h1>
 					<p className="text-muted-foreground">
 						{t("onboarding.teamRequiredDescription")}
 					</p>
@@ -77,7 +79,9 @@ export default function TeamPage() {
 			<div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4 py-10">
 				<div className="calm-section page-enter max-w-xl text-center">
 					<p className="calm-kicker">La Lista</p>
-					<h1 className="text-3xl font-bold">{t("team.notFoundTitle")}</h1>
+					<h1 className="text-2xl font-semibold md:text-3xl">
+						{t("team.notFoundTitle")}
+					</h1>
 					<p className="text-muted-foreground">
 						{t.rich("team.notFoundDescription", {
 							slug: teamSlug,
