@@ -15,21 +15,16 @@ import { useTranslations } from "next-intl"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { WithTooltip } from "@/components/ui/tooltip"
-import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 function Dialog(props: React.ComponentProps<typeof DialogPrimitive>) {
   return <DialogPrimitive {...props} />
 }
 
-function DialogTrigger({
-  asChild,
-  children,
-  ...props
-}: React.ComponentProps<typeof DialogTriggerPrimitive> & AsChildProps) {
-  return (
-    <DialogTriggerPrimitive {...props} {...asChildProps(asChild, children)} />
-  )
+function DialogTrigger(
+  props: React.ComponentProps<typeof DialogTriggerPrimitive>
+) {
+  return <DialogTriggerPrimitive {...props} />
 }
 
 /** Kept for call sites from the Radix version: ui-sdk renders in place. */
@@ -37,12 +32,10 @@ function DialogPortal({ children }: { children?: React.ReactNode }) {
   return <>{children}</>
 }
 
-function DialogClose({
-  asChild,
-  children,
-  ...props
-}: React.ComponentProps<typeof DialogClosePrimitive> & AsChildProps) {
-  return <DialogClosePrimitive {...props} {...asChildProps(asChild, children)} />
+function DialogClose(
+  props: React.ComponentProps<typeof DialogClosePrimitive>
+) {
+  return <DialogClosePrimitive {...props} />
 }
 
 function DialogOverlay({
@@ -65,10 +58,10 @@ function DialogCloseButton() {
 
   return (
     <WithTooltip label={t("close")} className="absolute top-4 right-4">
-      <DialogClose asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={t("close")}>
-          <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
-        </Button>
+      <DialogClose
+        render={<Button variant="ghost" size="icon-sm" aria-label={t("close")} />}
+      >
+        <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
       </DialogClose>
     </WithTooltip>
   )
@@ -218,9 +211,7 @@ function DialogFooter({
     >
       {children}
       {showCloseButton && (
-        <DialogClose asChild>
-          <Button variant="outline">Close</Button>
-        </DialogClose>
+        <DialogClose render={<Button variant="outline" />}>Close</DialogClose>
       )}
     </div>
   )

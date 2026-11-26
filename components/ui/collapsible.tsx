@@ -6,22 +6,16 @@ import {
   CollapsibleTrigger as CollapsibleTriggerPrimitive,
 } from "@ui-sdk/react/collapsible"
 import type * as React from "react"
-import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 function Collapsible(props: React.ComponentProps<typeof CollapsiblePrimitive>) {
   return <CollapsiblePrimitive {...props} />
 }
 
-function CollapsibleTrigger({
-  asChild,
-  children,
-  ...props
-}: Omit<React.ComponentProps<typeof CollapsibleTriggerPrimitive>, "children"> &
-  AsChildProps & { children?: React.ReactNode }) {
-  return (
-    <CollapsibleTriggerPrimitive {...props} {...asChildProps(asChild, children)} />
-  )
+function CollapsibleTrigger(
+  props: React.ComponentProps<typeof CollapsibleTriggerPrimitive>
+) {
+  return <CollapsibleTriggerPrimitive {...props} />
 }
 
 /**

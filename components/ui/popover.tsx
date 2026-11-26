@@ -7,7 +7,6 @@ import {
 } from "@ui-sdk/react/popover"
 import * as React from "react"
 
-import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 /** The element a `PopoverAnchor` placed, for the content to open against. */
@@ -30,15 +29,10 @@ function Popover(props: React.ComponentProps<typeof PopoverPrimitive>) {
   )
 }
 
-function PopoverTrigger({
-  asChild,
-  children,
-  ...props
-}: Omit<React.ComponentProps<typeof PopoverTriggerPrimitive>, "children"> &
-  AsChildProps & { children?: React.ReactNode }) {
-  return (
-    <PopoverTriggerPrimitive {...props} {...asChildProps(asChild, children)} />
-  )
+function PopoverTrigger(
+  props: React.ComponentProps<typeof PopoverTriggerPrimitive>
+) {
+  return <PopoverTriggerPrimitive {...props} />
 }
 
 function PopoverContent({

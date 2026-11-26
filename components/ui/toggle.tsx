@@ -37,7 +37,7 @@ type ToggleProps = Omit<
 
 /**
  * ui-sdk's Toggle with La Lista's look. It forwards every prop and the ref,
- * so it can be a tooltip trigger's `asChild` child. `onPressedChange` gets
+ * so it can be a tooltip trigger's `render` element. `onPressedChange` gets
  * only the new state, and its return value is ignored. Inside a group a
  * disabled toggle stays focusable with `aria-disabled`, so the disabled look
  * also follows `data-disabled`.

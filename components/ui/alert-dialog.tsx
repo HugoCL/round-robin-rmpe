@@ -12,7 +12,6 @@ import {
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { type RadixFocusProps, useRadixFocus } from "@/components/ui/dialog"
-import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 /**
@@ -24,15 +23,10 @@ function AlertDialog(props: React.ComponentProps<typeof AlertDialogPrimitive>) {
   return <AlertDialogPrimitive {...props} />
 }
 
-function AlertDialogTrigger({
-  asChild,
-  children,
-  ...props
-}: Omit<React.ComponentProps<typeof AlertDialogTriggerPrimitive>, "children"> &
-  AsChildProps & { children?: React.ReactNode }) {
-  return (
-    <AlertDialogTriggerPrimitive {...props} {...asChildProps(asChild, children)} />
-  )
+function AlertDialogTrigger(
+  props: React.ComponentProps<typeof AlertDialogTriggerPrimitive>
+) {
+  return <AlertDialogTriggerPrimitive {...props} />
 }
 
 /** Kept for call sites from the Radix version: ui-sdk renders in place. */
@@ -181,7 +175,7 @@ function AlertDialogDescription({
 
 type AlertDialogButtonProps = Omit<
   React.ComponentProps<typeof Button>,
-  "asChild" | "type"
+  "render" | "type"
 >
 
 /**

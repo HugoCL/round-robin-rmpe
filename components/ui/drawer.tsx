@@ -12,7 +12,6 @@ import {
 import * as React from "react"
 
 import { type RadixFocusProps, useRadixFocus } from "@/components/ui/dialog"
-import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 type DrawerSide = "top" | "right" | "bottom" | "left"
@@ -38,14 +37,10 @@ function Drawer({
   )
 }
 
-function DrawerTrigger({
-  asChild,
-  children,
-  ...props
-}: React.ComponentProps<typeof DrawerTriggerPrimitive> & AsChildProps) {
-  return (
-    <DrawerTriggerPrimitive {...props} {...asChildProps(asChild, children)} />
-  )
+function DrawerTrigger(
+  props: React.ComponentProps<typeof DrawerTriggerPrimitive>
+) {
+  return <DrawerTriggerPrimitive {...props} />
 }
 
 /** Kept for call sites from the vaul version: ui-sdk renders in place. */
@@ -53,14 +48,10 @@ function DrawerPortal({ children }: { children?: React.ReactNode }) {
   return <>{children}</>
 }
 
-function DrawerClose({
-  asChild,
-  children,
-  ...props
-}: React.ComponentProps<typeof DrawerClosePrimitive> & AsChildProps) {
-  return (
-    <DrawerClosePrimitive {...props} {...asChildProps(asChild, children)} />
-  )
+function DrawerClose(
+  props: React.ComponentProps<typeof DrawerClosePrimitive>
+) {
+  return <DrawerClosePrimitive {...props} />
 }
 
 /** The drawer sets the backdrop's opacity as it moves, so no fade here. */

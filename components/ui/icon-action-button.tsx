@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Shared geometry for icon bars. Exported for the few triggers that need to be
- * a bare `Button` (e.g. `CollapsibleTrigger asChild`) yet must match the bar.
+ * a bare `Button` (e.g. a `CollapsibleTrigger` rendered as one) yet must match the bar.
  */
 export const iconActionButtonClass =
 	"size-9 shrink-0 rounded-full text-muted-foreground hover:bg-muted/40 hover:text-foreground";

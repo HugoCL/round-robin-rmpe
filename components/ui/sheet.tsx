@@ -16,7 +16,6 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { type RadixFocusProps, useRadixFocus } from "@/components/ui/dialog"
 import { WithTooltip } from "@/components/ui/tooltip"
-import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 /**
@@ -28,22 +27,16 @@ function Sheet(props: React.ComponentProps<typeof SheetPrimitive>) {
   return <SheetPrimitive {...props} />
 }
 
-function SheetTrigger({
-  asChild,
-  children,
-  ...props
-}: React.ComponentProps<typeof SheetTriggerPrimitive> & AsChildProps) {
-  return (
-    <SheetTriggerPrimitive {...props} {...asChildProps(asChild, children)} />
-  )
+function SheetTrigger(
+  props: React.ComponentProps<typeof SheetTriggerPrimitive>
+) {
+  return <SheetTriggerPrimitive {...props} />
 }
 
-function SheetClose({
-  asChild,
-  children,
-  ...props
-}: React.ComponentProps<typeof SheetClosePrimitive> & AsChildProps) {
-  return <SheetClosePrimitive {...props} {...asChildProps(asChild, children)} />
+function SheetClose(
+  props: React.ComponentProps<typeof SheetClosePrimitive>
+) {
+  return <SheetClosePrimitive {...props} />
 }
 
 function SheetOverlay({
@@ -66,10 +59,10 @@ function SheetCloseButton() {
 
   return (
     <WithTooltip label={t("close")} className="absolute top-4 right-4">
-      <SheetClose asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={t("close")}>
-          <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
-        </Button>
+      <SheetClose
+        render={<Button variant="ghost" size="icon-sm" aria-label={t("close")} />}
+      >
+        <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
       </SheetClose>
     </WithTooltip>
   )

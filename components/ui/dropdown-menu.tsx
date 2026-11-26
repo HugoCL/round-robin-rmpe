@@ -19,7 +19,6 @@ import {
   MenuTrigger as MenuTriggerPrimitive,
 } from "@ui-sdk/react/menu"
 import * as React from "react"
-import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 /**
@@ -38,13 +37,10 @@ function DropdownMenuPortal({ children }: { children?: React.ReactNode }) {
   return <>{children}</>
 }
 
-function DropdownMenuTrigger({
-  asChild,
-  children,
-  ...props
-}: Omit<React.ComponentProps<typeof MenuTriggerPrimitive>, "children"> &
-  AsChildProps & { children?: React.ReactNode }) {
-  return <MenuTriggerPrimitive {...props} {...asChildProps(asChild, children)} />
+function DropdownMenuTrigger(
+  props: React.ComponentProps<typeof MenuTriggerPrimitive>
+) {
+  return <MenuTriggerPrimitive {...props} />
 }
 
 function DropdownMenuContent({
@@ -117,14 +113,10 @@ function DropdownMenuItem({
   className,
   inset,
   variant = "default",
-  asChild,
-  children,
   onSelect,
   textValue,
   ...props
-}: Omit<React.ComponentProps<typeof MenuItemPrimitive>, "children" | "onSelect"> &
-  AsChildProps & {
-    children?: React.ReactNode
+}: Omit<React.ComponentProps<typeof MenuItemPrimitive>, "onSelect"> & {
     inset?: boolean
     variant?: "default" | "destructive"
     onSelect?: (event: Event) => void
@@ -142,7 +134,6 @@ function DropdownMenuItem({
         className
       )}
       {...props}
-      {...asChildProps(asChild, children)}
     />
   )
 }

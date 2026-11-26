@@ -8,7 +8,6 @@ import {
 } from "@ui-sdk/react/tooltip"
 import * as React from "react"
 
-import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 /** The delay set by the nearest `TooltipProvider`. */
@@ -47,15 +46,10 @@ function Tooltip({
   return <TooltipPrimitive delay={delay ?? delayDuration ?? inherited} {...props} />
 }
 
-function TooltipTrigger({
-  asChild,
-  children,
-  ...props
-}: Omit<React.ComponentProps<typeof TooltipTriggerPrimitive>, "children"> &
-  AsChildProps & { children?: React.ReactNode }) {
-  return (
-    <TooltipTriggerPrimitive {...props} {...asChildProps(asChild, children)} />
-  )
+function TooltipTrigger(
+  props: React.ComponentProps<typeof TooltipTriggerPrimitive>
+) {
+  return <TooltipTriggerPrimitive {...props} />
 }
 
 /** The arrow's box: a 10px square, as Radix measured its arrow. */
