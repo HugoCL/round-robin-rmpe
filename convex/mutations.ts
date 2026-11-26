@@ -241,6 +241,7 @@ async function maybeScheduleAgentAssignmentChat(
 
 function resolvePreferencePatch(
 	patch: UserPreferencePatch,
+	storedWidgetLayout?: StoredWidgetLayout,
 ): Partial<UserPreferenceFlags> {
 	const resolved: Partial<UserPreferenceFlags> = {};
 	if (typeof patch.showAssignments === "boolean") {
@@ -269,7 +270,7 @@ function resolvePreferencePatch(
 		resolved.widgetLayout =
 			patch.widgetLayout === null
 				? undefined
-				: normalizeWidgetLayout(patch.widgetLayout);
+				: normalizeWidgetLayout(patch.widgetLayout, storedWidgetLayout);
 	}
 	return resolved;
 }
@@ -740,7 +741,7 @@ export const updateMyUserPreferences = mutation({
 		// device is never overwritten. Only real launch ids are kept.
 		const seen = primary?.seenLaunches ?? [];
 		const patch = {
-			...resolvePreferencePatch(args),
+			...resolvePreferencePatch(args, primary?.widgetLayout),
 			...(seenLaunch !== undefined &&
 			isLaunchSpotlightId(seenLaunch) &&
 			!seen.includes(seenLaunch)

@@ -8,7 +8,7 @@ import { getInitials } from "@/lib/initials";
 import { getMonthDayInTimeZone } from "@/lib/reviewerAvailability";
 import type { WidgetSize } from "@/lib/widgetLayout";
 import { usePRReview } from "../PRReviewContext";
-import { WidgetEmpty, widgetRowClass } from "./parts";
+import { WidgetEmpty, WidgetMore, widgetRowClass } from "./parts";
 import { useWidgetSize, WidgetFrame } from "./WidgetFrame";
 
 /** A whole year of birthdays is the team: large stops at twelve. */
@@ -25,7 +25,7 @@ export function BirthdaysWidget() {
 	// Month and day as one sortable number; a date already past this year sorts
 	// after every date still to come.
 	const todayRank = today.month * 100 + today.day;
-	const upcoming = reviewers
+	const birthdays = reviewers
 		.flatMap((reviewer) => {
 			if (!reviewer.birthdayMonth || !reviewer.birthdayDay) return [];
 			const rank = reviewer.birthdayMonth * 100 + reviewer.birthdayDay;
@@ -39,8 +39,8 @@ export function BirthdaysWidget() {
 				},
 			];
 		})
-		.sort((a, b) => a.order - b.order)
-		.slice(0, shownCount);
+		.sort((a, b) => a.order - b.order);
+	const upcoming = birthdays.slice(0, shownCount);
 	const dayFormat = new Intl.DateTimeFormat(locale, {
 		timeZone: "UTC",
 		day: "numeric",
@@ -52,26 +52,29 @@ export function BirthdaysWidget() {
 			{upcoming.length === 0 ? (
 				<WidgetEmpty>{t("widgets.birthdays.empty")}</WidgetEmpty>
 			) : (
-				<ul>
-					{upcoming.map(({ reviewer, month, day, isToday }) => (
-						<li key={reviewer._id} className={widgetRowClass}>
-							<Avatar size="sm">
-								<AvatarFallback>{getInitials(reviewer.name)}</AvatarFallback>
-							</Avatar>
-							<span className="min-w-0 flex-1 truncate">{reviewer.name}</span>
-							{isToday ? (
-								<Badge variant="secondary">
-									{t("widgets.birthdays.today")}
-								</Badge>
-							) : (
-								<span className="text-xs text-muted-foreground">
-									{/* A leap year, so 29 Feb formats as itself. */}
-									{dayFormat.format(new Date(Date.UTC(2024, month - 1, day)))}
-								</span>
-							)}
-						</li>
-					))}
-				</ul>
+				<>
+					<ul>
+						{upcoming.map(({ reviewer, month, day, isToday }) => (
+							<li key={reviewer._id} className={widgetRowClass}>
+								<Avatar size="sm">
+									<AvatarFallback>{getInitials(reviewer.name)}</AvatarFallback>
+								</Avatar>
+								<span className="min-w-0 flex-1 truncate">{reviewer.name}</span>
+								{isToday ? (
+									<Badge variant="secondary">
+										{t("widgets.birthdays.today")}
+									</Badge>
+								) : (
+									<span className="text-xs text-muted-foreground">
+										{/* A leap year, so 29 Feb formats as itself. */}
+										{dayFormat.format(new Date(Date.UTC(2024, month - 1, day)))}
+									</span>
+								)}
+							</li>
+						))}
+					</ul>
+					<WidgetMore count={birthdays.length - upcoming.length} />
+				</>
 			)}
 		</WidgetFrame>
 	);

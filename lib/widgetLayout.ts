@@ -103,8 +103,16 @@ function normalizeSizes(raw: unknown): WidgetLayout["sizes"] {
  * assignment card (every layout stored before it could move) gets it back at
  * the top of the first lane. Sizes a widget has no form for are dropped.
  * Anything that is not `{ lanes: unknown[] }` yields the default layout.
+ *
+ * `stored` is what the person has saved, for a write. A client from before
+ * the card could move (a tab left open across the release) sends lanes with
+ * no card and no sizes; such a write keeps the card's lane and the sizes from
+ * `stored` instead of putting both back to their defaults.
  */
-export function normalizeWidgetLayout(raw: unknown): WidgetLayout {
+export function normalizeWidgetLayout(
+	raw: unknown,
+	stored?: unknown,
+): WidgetLayout {
 	const rawLanes =
 		typeof raw === "object" && raw !== null
 			? (raw as { lanes?: unknown }).lanes
@@ -122,8 +130,17 @@ export function normalizeWidgetLayout(raw: unknown): WidgetLayout {
 			lane.push(id);
 		}
 	});
-	if (!seen.has(ASSIGNMENT_ID)) lanes[0].unshift(ASSIGNMENT_ID);
-	return withSizes(lanes, normalizeSizes((raw as { sizes?: unknown }).sizes));
+	if (seen.has(ASSIGNMENT_ID)) {
+		return withSizes(lanes, normalizeSizes((raw as { sizes?: unknown }).sizes));
+	}
+	const previous = stored === undefined ? null : normalizeWidgetLayout(stored);
+	const place = previous && findWidget(previous, ASSIGNMENT_ID);
+	if (!place) {
+		lanes[0].unshift(ASSIGNMENT_ID);
+		return withSizes(lanes, normalizeSizes((raw as { sizes?: unknown }).sizes));
+	}
+	lanes[place.lane].splice(place.index, 0, ASSIGNMENT_ID);
+	return withSizes(lanes, previous.sizes);
 }
 
 export function findWidget(

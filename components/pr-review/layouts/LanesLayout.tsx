@@ -58,8 +58,15 @@ const SPOTLIGHT_CORNER = [
 export function LanesLayout() {
 	const t = useTranslations("widgets");
 	const { teamSlug } = usePRReview();
-	const { lanes, stacked, sizeOf, editing, move, draggingId, setDraggingId } =
-		useWidgetLayout();
+	const {
+		lanes,
+		cardPinned,
+		sizeOf,
+		editing,
+		move,
+		draggingId,
+		setDraggingId,
+	} = useWidgetLayout();
 	const [reviewersOpen, setReviewersOpen] = useState(false);
 	const reviewersOpenerRef = useRef<HTMLElement | null>(null);
 	const [hovered, setHovered] = useState<DropTarget | null>(null);
@@ -137,7 +144,7 @@ export function LanesLayout() {
 					// as in the lanes, so a card at the top of the first lane stays
 					// mounted, with what was typed in it, when the window crosses lg.
 					const shown: WidgetId[] =
-						stacked && lane === 0 ? [ASSIGNMENT_ID, ...ids] : ids;
+						cardPinned && lane === 0 ? [ASSIGNMENT_ID, ...ids] : ids;
 					return (
 						<div
 							// biome-ignore lint/suspicious/noArrayIndexKey: a lane is its position
@@ -156,7 +163,7 @@ export function LanesLayout() {
 							<div className="flex flex-1 flex-col">
 								{shown.map((id, position) => {
 									const Widget = WIDGETS[id];
-									const pinned = stacked && id === ASSIGNMENT_ID;
+									const pinned = cardPinned && id === ASSIGNMENT_ID;
 									return (
 										<Fragment key={id}>
 											{!pinned && showMarker?.before === id ? marker : null}

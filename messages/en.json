@@ -1492,7 +1492,7 @@
 			"summary": "You received <b>{received}</b> {received, plural, one {PR} other {PRs}} and sent <b>{sent}</b>. The team is at <b>{team}</b>."
 		},
 		"absences": {
-			"summary": "<b>{names}</b> {count, plural, one {is} other {are}} away.",
+			"summary": "<b>{names}</b> {count, plural, one {is} other {are}} away in the next two weeks.",
 			"window": "next 2 weeks",
 			"empty": "Nobody is away in the next two weeks.",
 			"range": "{start} to {end}",

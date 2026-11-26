@@ -1023,6 +1023,9 @@ export const getMyUserPreferences = query({
 			return {
 				...USER_PREFERENCE_DEFAULTS,
 				seenLaunches: [],
+				// A build of the app ahead of its backend reads this before it offers
+				// what an older backend could not save.
+				widgetSizes: true,
 				isAuthenticated: false,
 				exists: false,
 			};
@@ -1040,6 +1043,9 @@ export const getMyUserPreferences = query({
 			return {
 				...USER_PREFERENCE_DEFAULTS,
 				seenLaunches: [],
+				// A build of the app ahead of its backend reads this before it offers
+				// what an older backend could not save.
+				widgetSizes: true,
 				isAuthenticated: true,
 				exists: false,
 			};
@@ -1055,6 +1061,9 @@ export const getMyUserPreferences = query({
 			defaultAgentTeamSlug: existing.defaultAgentTeamSlug,
 			widgetLayout: existing.widgetLayout,
 			seenLaunches: existing.seenLaunches ?? [],
+			// A build of the app ahead of its backend reads this before it offers
+			// what an older backend could not save.
+			widgetSizes: true,
 			isAuthenticated: true,
 			exists: true,
 		};

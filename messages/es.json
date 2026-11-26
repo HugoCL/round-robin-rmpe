@@ -1533,7 +1533,7 @@
 			"summary": "Recibiste <b>{received}</b> {received, plural, one {PR} other {PRs}} y enviaste <b>{sent}</b>. El equipo lleva <b>{team}</b>."
 		},
 		"absences": {
-			"summary": "{count, plural, one {Falta} other {Faltan}} <b>{names}</b>.",
+			"summary": "En las próximas dos semanas {count, plural, one {falta} other {faltan}} <b>{names}</b>.",
 			"window": "próximas 2 semanas",
 			"empty": "Nadie falta en las próximas dos semanas.",
 			"range": "del {start} al {end}",

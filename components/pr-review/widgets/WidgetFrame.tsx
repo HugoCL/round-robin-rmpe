@@ -204,9 +204,9 @@ function WidgetSizeControl({
 	title: string;
 }) {
 	const t = useTranslations("widgets");
-	const { resize } = useWidgetLayout();
+	const { resize, canResize } = useWidgetLayout();
 	const options = WIDGET_SIZE_OPTIONS[slot.id];
-	if (options.length < 2) return null;
+	if (!canResize || options.length < 2) return null;
 
 	return (
 		<div

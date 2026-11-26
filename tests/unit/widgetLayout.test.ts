@@ -329,3 +329,32 @@ test("a size alone makes the layout a customised one", () => {
 		true,
 	);
 });
+
+test("a write from a client without the card keeps the stored card lane and sizes", () => {
+	const stored: WidgetLayout = {
+		lanes: [["history"], ["rotation", "assignment", "absences"], ["myWeek"]],
+		sizes: { rotation: "small" },
+	};
+	// What an old tab sends after moving a widget: no card, no sizes.
+	const legacy = {
+		lanes: [["history", "myWeek"], ["rotation", "absences"], []],
+	};
+	assert.deepEqual(normalizeWidgetLayout(legacy, stored), {
+		lanes: [["history", "myWeek"], ["rotation", "assignment", "absences"], []],
+		sizes: { rotation: "small" },
+	});
+	assert.deepEqual(normalizeWidgetLayout(legacy, undefined).lanes[0], [
+		"assignment",
+		"history",
+		"myWeek",
+	]);
+});
+
+test("a write that carries the card is taken as sent, whatever is stored", () => {
+	const stored: WidgetLayout = {
+		lanes: [["history"], ["assignment"], []],
+		sizes: { history: "large" },
+	};
+	const sent: WidgetLayout = { lanes: [["assignment", "history"], [], []] };
+	assert.deepEqual(normalizeWidgetLayout(sent, stored), sent);
+});

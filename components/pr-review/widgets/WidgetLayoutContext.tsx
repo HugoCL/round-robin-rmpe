@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
 import {
 	createContext,
@@ -15,6 +16,7 @@ import {
 import { flushSync } from "react-dom";
 import { useFeatureEnabled } from "@/components/AppConfigProvider";
 import { ToastAction } from "@/components/ui/toast";
+import { api } from "@/convex/_generated/api";
 import { toast } from "@/hooks/use-toast";
 import {
 	DEFAULT_WIDGET_LAYOUT,
@@ -37,7 +39,7 @@ type DropTarget = { lane: number; before: WidgetId | null };
 interface WidgetLayoutContextValue {
 	/**
 	 * What each lane shows: the stored layout minus what this team cannot show
-	 * and, while the lanes are stacked, minus the assignment card.
+	 * and, while it is pinned, minus the assignment card.
 	 */
 	lanes: WidgetId[][];
 	/**
@@ -45,6 +47,13 @@ interface WidgetLayoutContextValue {
 	 * pinned first, wherever the layout has it: on a phone it is the page.
 	 */
 	stacked: boolean;
+	/**
+	 * False against a backend from before sizes and the movable card (a preview
+	 * build ahead of it): it could save neither, so neither is on offer and the
+	 * card stays pinned.
+	 */
+	canResize: boolean;
+	cardPinned: boolean;
 	sizeOf: (id: WidgetId) => WidgetSize;
 	/** Widgets this team can show that are not in the view. */
 	addable: WidgetId[];
@@ -91,7 +100,8 @@ function transition(update: () => void): Promise<void> {
 	return viewTransition.updateCallbackDone;
 }
 
-const LANES_QUERY = "(min-width: 1024px)";
+// Tailwind's lg, in rem like the classes that stack the lanes.
+const LANES_QUERY = "(min-width: 64rem)";
 
 function subscribeToLanes(onChange: () => void) {
 	const query = window.matchMedia(LANES_QUERY);
@@ -115,6 +125,8 @@ export function WidgetLayoutProvider({
 	const eventsEnabled = useFeatureEnabled("events");
 	const birthdaysEnabled = useFeatureEnabled("birthdays");
 	const crossTeamEnabled = useFeatureEnabled("crossTeamAssignment");
+	const canResize =
+		useQuery(api.queries.getMyUserPreferences, {})?.widgetSizes === true;
 	const [editing, setEditing] = useState(false);
 	const [draggingId, setDraggingId] = useState<WidgetId | null>(null);
 	const [announcement, setAnnouncement] = useState("");
@@ -125,6 +137,7 @@ export function WidgetLayoutProvider({
 		() => !window.matchMedia(LANES_QUERY).matches,
 		() => false,
 	);
+	const cardPinned = stacked || !canResize;
 
 	const layout = stored ?? DEFAULT_WIDGET_LAYOUT;
 
@@ -175,7 +188,7 @@ export function WidgetLayoutProvider({
 	// it was on a team (or after a feature toggle) that can show it.
 	const available = useMemo(() => {
 		const unavailable: Record<WidgetId, boolean> = {
-			assignment: stacked,
+			assignment: cardPinned,
 			history: false,
 			rotation: false,
 			absences: false,
@@ -189,7 +202,7 @@ export function WidgetLayoutProvider({
 		};
 		return new Set(WIDGET_IDS.filter((id) => !unavailable[id]));
 	}, [
-		stacked,
+		cardPinned,
 		hasTags,
 		isForeignTeamView,
 		eventsEnabled,
@@ -271,6 +284,8 @@ export function WidgetLayoutProvider({
 		() => ({
 			lanes,
 			stacked,
+			canResize,
+			cardPinned,
 			sizeOf: (id) => widgetSize(layout, id),
 			addable,
 			isShown: (id) => lanes.some((lane) => lane.includes(id)),
@@ -292,6 +307,8 @@ export function WidgetLayoutProvider({
 		[
 			lanes,
 			stacked,
+			canResize,
+			cardPinned,
 			layout,
 			addable,
 			stored,
