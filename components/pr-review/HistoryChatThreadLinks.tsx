@@ -29,14 +29,14 @@ export function HistoryChatThreadLinks({
 					key={`${link.teamSlug}-${link.url}`}
 					variant="ghost"
 					size="xs"
-					asChild
+					render={
+						<Link href={link.url} target="_blank" rel="noreferrer noopener" />
+					}
 				>
-					<Link href={link.url} target="_blank" rel="noreferrer noopener">
-						<MessageSquare aria-hidden="true" />
-						{links.length > 1
-							? t("common.viewChatThreadForTeam", { team: link.teamName })
-							: t("common.viewChatThread")}
-					</Link>
+					<MessageSquare aria-hidden="true" />
+					{links.length > 1
+						? t("common.viewChatThreadForTeam", { team: link.teamName })
+						: t("common.viewChatThread")}
 				</Button>
 			))}
 		</>

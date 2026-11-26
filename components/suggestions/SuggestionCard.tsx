@@ -83,12 +83,12 @@ export function SuggestionCard({
 					</p>
 				</div>
 				<Button
-					asChild
+					render={<Link href={suggestionPath} />}
 					variant="outline"
 					size="sm"
 					className="shrink-0 rounded-full"
 				>
-					<Link href={suggestionPath}>{t("suggestions.openDetail")}</Link>
+					{t("suggestions.openDetail")}
 				</Button>
 			</div>
 			<div className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -103,11 +103,14 @@ export function SuggestionCard({
 						<ArrowUp className="h-4 w-4" />
 						{suggestion.upvoteCount}
 					</Button>
-					<Button asChild variant="outline" size="sm" className="rounded-full">
-						<Link href={suggestionPath}>
-							<MessageSquare className="h-4 w-4" />
-							{suggestion.commentCount}
-						</Link>
+					<Button
+						render={<Link href={suggestionPath} />}
+						variant="outline"
+						size="sm"
+						className="rounded-full"
+					>
+						<MessageSquare className="h-4 w-4" />
+						{suggestion.commentCount}
 					</Button>
 				</div>
 				<Button

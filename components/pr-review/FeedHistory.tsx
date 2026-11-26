@@ -204,26 +204,30 @@ export function FeedHistory() {
 								{canManageCurrentTeam ? (
 									<AlertDialog>
 										<Tooltip>
-											<TooltipTrigger asChild>
-												<AlertDialogTrigger asChild>
-													<Button
-														variant="ghost"
-														size="icon-xs"
-														className="text-muted-foreground hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:data-open:opacity-100"
-														aria-label={
-															prNumber
-																? t("history.undoEntryPr", {
-																		number: prNumber,
-																		name: reviewerNames,
-																	})
-																: t("history.undoEntry", {
-																		name: reviewerNames,
-																	})
+											<TooltipTrigger
+												render={
+													<AlertDialogTrigger
+														render={
+															<Button
+																variant="ghost"
+																size="icon-xs"
+																className="text-muted-foreground hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:data-open:opacity-100"
+																aria-label={
+																	prNumber
+																		? t("history.undoEntryPr", {
+																				number: prNumber,
+																				name: reviewerNames,
+																			})
+																		: t("history.undoEntry", {
+																				name: reviewerNames,
+																			})
+																}
+															/>
 														}
-													>
-														<Undo2 aria-hidden="true" />
-													</Button>
-												</AlertDialogTrigger>
+													/>
+												}
+											>
+												<Undo2 aria-hidden="true" />
 											</TooltipTrigger>
 											<TooltipContent>{t("history.undoAction")}</TooltipContent>
 										</Tooltip>
@@ -316,15 +320,19 @@ export function FeedHistory() {
 
 					<div className="mt-3 flex flex-wrap items-center gap-1 empty:hidden">
 						{item.contextUrl ? (
-							<Button variant="ghost" size="xs" asChild>
-								<Link
-									href={item.contextUrl}
-									target="_blank"
-									rel="noreferrer noopener"
-								>
-									<FileText aria-hidden="true" />
-									{t("common.viewContext")}
-								</Link>
+							<Button
+								variant="ghost"
+								size="xs"
+								render={
+									<Link
+										href={item.contextUrl}
+										target="_blank"
+										rel="noreferrer noopener"
+									/>
+								}
+							>
+								<FileText aria-hidden="true" />
+								{t("common.viewContext")}
 							</Button>
 						) : null}
 						<HistoryChatThreadLinks item={item} />
@@ -380,17 +388,17 @@ export function FeedHistory() {
 						</div>
 						{hasHiddenHistory ? (
 							<div className="border-t border-border/70 pt-2 text-center">
-								<CollapsibleTrigger asChild>
-									<Button variant="ghost" size="sm">
-										{t(showAll ? "history.showLess" : "history.showMore")}
-										<ChevronDown
-											className={cn(
-												"transition-transform",
-												showAll && "rotate-180",
-											)}
-											aria-hidden="true"
-										/>
-									</Button>
+								<CollapsibleTrigger
+									render={<Button variant="ghost" size="sm" />}
+								>
+									{t(showAll ? "history.showLess" : "history.showMore")}
+									<ChevronDown
+										className={cn(
+											"transition-transform",
+											showAll && "rotate-180",
+										)}
+										aria-hidden="true"
+									/>
 								</CollapsibleTrigger>
 							</div>
 						) : null}

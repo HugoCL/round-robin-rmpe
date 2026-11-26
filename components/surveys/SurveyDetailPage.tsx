@@ -157,8 +157,12 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 		return (
 			<main className="container mx-auto max-w-3xl px-4 py-12">
 				<p className="text-muted-foreground">{t("admin.notFound")}</p>
-				<Button asChild className="mt-4" variant="outline">
-					<Link href={`/${locale}/surveys`}>{t("admin.backToList")}</Link>
+				<Button
+					render={<Link href={`/${locale}/surveys`} />}
+					className="mt-4"
+					variant="outline"
+				>
+					{t("admin.backToList")}
 				</Button>
 			</main>
 		);
@@ -278,8 +282,12 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 	return (
 		<main className="container mx-auto max-w-5xl space-y-8 px-4 py-8 md:py-12">
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<Button asChild variant="ghost" size="sm">
-					<Link href={`/${locale}/surveys`}>{t("admin.backToList")}</Link>
+				<Button
+					render={<Link href={`/${locale}/surveys`} />}
+					variant="ghost"
+					size="sm"
+				>
+					{t("admin.backToList")}
 				</Button>
 				<div className="flex flex-wrap gap-2">
 					{isDraft ? (
@@ -613,10 +621,12 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<h2 className="text-xl font-semibold">{t("admin.resultsTitle")}</h2>
 					{!isDraft ? (
-						<Button asChild variant="ghost" size="sm">
-							<Link href={publicResultsPath} target="_blank">
-								{t("admin.openPublicResults")}
-							</Link>
+						<Button
+							render={<Link href={publicResultsPath} target="_blank" />}
+							variant="ghost"
+							size="sm"
+						>
+							{t("admin.openPublicResults")}
 						</Button>
 					) : null}
 				</div>

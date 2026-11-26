@@ -2,7 +2,6 @@ import { Button as ButtonPrimitive } from "@ui-sdk/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 import type * as React from "react"
 
-import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -42,8 +41,9 @@ const buttonVariants = cva(
 )
 
 type ButtonProps = Omit<React.ComponentProps<"button">, "onClick"> &
-  VariantProps<typeof buttonVariants> &
-  AsChildProps & {
+  VariantProps<typeof buttonVariants> & {
+    /** Renders this element instead of a `<button>`, with the button's props. */
+    render?: React.ReactElement
     onClick?: React.MouseEventHandler<HTMLButtonElement>
   }
 
@@ -58,10 +58,8 @@ function Button({
   className,
   variant = "default",
   size = "default",
-  asChild = false,
   type = "submit",
   onClick,
-  children,
   ...props
 }: ButtonProps) {
   return (
@@ -82,7 +80,6 @@ function Button({
           : undefined
       }
       {...props}
-      {...asChildProps(asChild, children)}
     />
   )
 }
