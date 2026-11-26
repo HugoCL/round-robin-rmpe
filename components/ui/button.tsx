@@ -1,7 +1,8 @@
+import { Button as ButtonPrimitive } from "@ui-sdk/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
-import { Slot } from "radix-ui"
-import * as React from "react"
+import type * as React from "react"
 
+import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -40,25 +41,48 @@ const buttonVariants = cva(
   }
 )
 
+type ButtonProps = Omit<React.ComponentProps<"button">, "onClick"> &
+  VariantProps<typeof buttonVariants> &
+  AsChildProps & {
+    onClick?: React.MouseEventHandler<HTMLButtonElement>
+  }
+
+/**
+ * ui-sdk's Button with La Lista's look. It keeps the native button's
+ * behavior callers rely on: `type` defaults to `"submit"` as it does in HTML,
+ * and `onClick`'s return value is ignored, so a Promise doesn't turn on
+ * ui-sdk's pending state and an error still reaches the console (ui-sdk keeps
+ * it in the button's state otherwise).
+ */
 function Button({
   className,
   variant = "default",
   size = "default",
   asChild = false,
+  type = "submit",
+  onClick,
+  children,
   ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
-  const Comp = asChild ? Slot.Root : "button"
-
+}: ButtonProps) {
   return (
-    <Comp
-      data-slot="button"
+    <ButtonPrimitive
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
+      type={type}
+      onClick={
+        onClick
+          ? (event) => {
+              try {
+                onClick(event as React.MouseEvent<HTMLButtonElement>)
+              } catch (error) {
+                reportError(error)
+              }
+            }
+          : undefined
+      }
       {...props}
+      {...asChildProps(asChild, children)}
     />
   )
 }
