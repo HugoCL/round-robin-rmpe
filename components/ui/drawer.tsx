@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
+import { InsideDrawer } from "@/components/ui/portal-container"
 import { cn } from "@/lib/utils"
 
 function Drawer({
@@ -62,7 +63,7 @@ function DrawerContent({
         {...props}
       >
         <div className="mx-auto mt-2 hidden h-1.5 w-16 shrink-0 rounded-full bg-muted-foreground/25 group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
-        {children}
+        <InsideDrawer>{children}</InsideDrawer>
       </DrawerPrimitive.Content>
     </DrawerPortal>
   )

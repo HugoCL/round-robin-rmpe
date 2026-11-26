@@ -14,15 +14,26 @@ import {
 import { useTranslations } from "next-intl"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { PortalLayer, RadixLayerBridge } from "@/components/ui/portal-container"
+import {
+  OutsideDrawer,
+  PortalLayer,
+  RadixLayerBridge,
+} from "@/components/ui/portal-container"
 import { WithTooltip } from "@/components/ui/tooltip"
 import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 type DialogProps = React.ComponentProps<typeof DialogPrimitive>
 
+/** Whether the open dialog is modal, for the content's Radix layer bridge. */
+const DialogModalContext = React.createContext(true)
+
 function Dialog(props: DialogProps) {
-  return <DialogPrimitive {...props} />
+  return (
+    <DialogModalContext.Provider value={props.modal !== false}>
+      <DialogPrimitive {...props} />
+    </DialogModalContext.Provider>
+  )
 }
 
 function DialogTrigger({
@@ -55,7 +66,7 @@ function DialogOverlay({
   return (
     <DialogBackdropPrimitive
       className={cn(
-        "fixed inset-0 isolate z-50 bg-background/72 backdrop-blur-xs duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:duration-0",
+        "pointer-events-auto fixed inset-0 isolate z-50 bg-background/72 backdrop-blur-xs duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:duration-0",
         className
       )}
       {...props}
@@ -106,9 +117,14 @@ function useRadixFocus(
       ? ("content" as const)
       : onOpenAutoFocus
         ? () => {
-            // A handler that prevents the default focuses something itself.
-            const prevented = runFocusHandler(onOpenAutoFocus, content.current)
-            return prevented ? null : content.current
+            // A handler that prevents the default focuses something itself;
+            // ui-sdk would focus the content in place of a null.
+            const el = content.current
+            const prevented = runFocusHandler(onOpenAutoFocus, el)
+            const active = el?.ownerDocument.activeElement
+            return prevented && active instanceof HTMLElement && el?.contains(active)
+              ? active
+              : el
           }
         : undefined
   const finalFocus = onCloseAutoFocus
@@ -142,6 +158,7 @@ function DialogContent({
     children?: React.ReactNode
     showCloseButton?: boolean
   }) {
+  const modal = React.useContext(DialogModalContext)
   const contentRef = React.useRef<HTMLElement | null>(null)
   const focus = useRadixFocus({ onOpenAutoFocus, onCloseAutoFocus }, contentRef)
   const setRefs = React.useCallback(
@@ -154,25 +171,25 @@ function DialogContent({
   )
 
   return (
-    <>
+    <OutsideDrawer>
       <DialogOverlay />
       <DialogContentPrimitive
         ref={setRefs}
         initialFocus={initialFocus ?? focus.initialFocus}
         finalFocus={finalFocus ?? focus.finalFocus}
         className={cn(
-          "calm-shell fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 bg-background/96 p-6 text-sm text-foreground duration-200 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
+          "calm-shell pointer-events-auto fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 bg-background/96 p-6 text-sm text-foreground duration-200 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
           className
         )}
         {...props}
       >
-        <RadixLayerBridge />
+        <RadixLayerBridge modal={modal} />
         <PortalLayer>
           {children}
           {showCloseButton ? <DialogCloseButton /> : null}
         </PortalLayer>
       </DialogContentPrimitive>
-    </>
+    </OutsideDrawer>
   )
 }
 
