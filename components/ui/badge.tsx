@@ -1,7 +1,8 @@
+import { renderElement } from "@ui-sdk/react/primitive"
 import { cva, type VariantProps } from "class-variance-authority"
-import { Slot } from "radix-ui"
-import * as React from "react"
+import type * as React from "react"
 
+import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
@@ -27,22 +28,30 @@ const badgeVariants = cva(
   }
 )
 
+/**
+ * A span, or with `asChild` its single child element, through ui-sdk's
+ * `renderElement` (no hooks, so it still renders in Server Components).
+ */
 function Badge({
   className,
   variant = "default",
   asChild = false,
+  children,
   ...props
 }: React.ComponentProps<"span"> &
-  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot.Root : "span"
-
-  return (
-    <Comp
-      data-slot="badge"
-      data-variant={variant}
-      className={cn(badgeVariants({ variant }), className)}
-      {...props}
-    />
+  VariantProps<typeof badgeVariants> &
+  AsChildProps) {
+  const { render, children: content } = asChildProps(asChild, children)
+  return renderElement(
+    "span",
+    {
+      "data-slot": "badge",
+      "data-variant": variant,
+      className: cn(badgeVariants({ variant }), className),
+      children: content,
+      ...props,
+    },
+    render
   )
 }
 
