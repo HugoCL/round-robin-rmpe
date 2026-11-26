@@ -273,10 +273,10 @@ export function AssignmentHeroPanel({
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent>
-									<p className="flex items-center gap-2">
+									<span className="flex items-center gap-2">
 										{t("pr.forceAssignLinkHint")}
 										<Kbd>F</Kbd>
-									</p>
+									</span>
 								</TooltipContent>
 							</Tooltip>
 						</TooltipProvider>

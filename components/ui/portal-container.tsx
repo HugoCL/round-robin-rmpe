@@ -99,7 +99,18 @@ function usePortalContainer(): HTMLElement | undefined {
  *   bridge's scope pauses the one below while the popup is open and leaves the
  *   focus itself to ui-sdk.
  */
-function RadixLayerBridge({ modal = false }: { modal?: boolean }) {
+function RadixLayerBridge({
+  modal = false,
+  focusScope = true,
+}: {
+  modal?: boolean
+  /**
+   * Whether to pause the Radix focus scope below. A tooltip leaves it off: it
+   * never takes focus, and pausing a sheet's trap while a focused control
+   * shows its tooltip would let Tab leave the sheet.
+   */
+  focusScope?: boolean
+}) {
   return (
     <>
       <DismissableLayer
@@ -107,12 +118,14 @@ function RadixLayerBridge({ modal = false }: { modal?: boolean }) {
         disableOutsidePointerEvents={modal}
         data-slot="radix-layer-bridge"
       />
-      <FocusScope
-        hidden
-        onMountAutoFocus={preventDefault}
-        onUnmountAutoFocus={preventDefault}
-        data-slot="radix-focus-bridge"
-      />
+      {focusScope ? (
+        <FocusScope
+          hidden
+          onMountAutoFocus={preventDefault}
+          onUnmountAutoFocus={preventDefault}
+          data-slot="radix-focus-bridge"
+        />
+      ) : null}
     </>
   )
 }

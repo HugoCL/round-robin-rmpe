@@ -146,6 +146,7 @@
 		[data-slot="menu-content"],
 		[data-slot="select-content"],
 		[data-slot="toast-region"],
+		[data-slot="tooltip-content"],
 		[data-slot="portal-layer"]
 	) {
 		font-family: --theme(
