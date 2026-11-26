@@ -77,16 +77,21 @@ function Select(allProps: SelectProps) {
   const controlled = "value" in allProps
   return (
     <ItemRegistryContext.Provider value={registry}>
-      <SelectPrimitive<string>
-        {...(controlled ? { value: value || null } : {})}
-        defaultValue={defaultValue || undefined}
-        onValueChange={(next) => {
-          if (typeof next === "string") onValueChange?.(next)
-        }}
-        {...props}
-      >
-        {children}
-      </SelectPrimitive>
+      {/* The trigger, the hidden form input and the in-place list are
+          siblings. Grouping them keeps a parent's `space-y-*` margin off the
+          trigger, as when the list lived in a portal. */}
+      <div data-slot="select" className="contents">
+        <SelectPrimitive<string>
+          {...(controlled ? { value: value || null } : {})}
+          defaultValue={defaultValue || undefined}
+          onValueChange={(next) => {
+            if (typeof next === "string") onValueChange?.(next)
+          }}
+          {...props}
+        >
+          {children}
+        </SelectPrimitive>
+      </div>
     </ItemRegistryContext.Provider>
   )
 }
