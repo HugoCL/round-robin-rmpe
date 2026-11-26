@@ -30,11 +30,11 @@ export function LanguageSwitcher() {
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="outline" size="sm" className="h-8 px-2">
-					<Globe className="h-4 w-4 mr-1" />
-					{currentLanguage ? t(currentLanguage.nameKey) : ""}
-				</Button>
+			<DropdownMenuTrigger
+				render={<Button variant="outline" size="sm" className="h-8 px-2" />}
+			>
+				<Globe className="h-4 w-4 mr-1" />
+				{currentLanguage ? t(currentLanguage.nameKey) : ""}
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
 				{languages.map((language) => (

@@ -346,14 +346,16 @@ export function ActiveEventsList() {
 						) : null}
 						{creator ? (
 							<DropdownMenu modal={false}>
-								<DropdownMenuTrigger asChild>
-									<IconActionButton
-										id={eventActionsId(event._id)}
-										label={t("reviewersPanel.moreActions")}
-										className="size-8 text-muted-foreground"
-									>
-										<Ellipsis />
-									</IconActionButton>
+								<DropdownMenuTrigger
+									render={
+										<IconActionButton
+											id={eventActionsId(event._id)}
+											label={t("reviewersPanel.moreActions")}
+											className="size-8 text-muted-foreground"
+										/>
+									}
+								>
+									<Ellipsis />
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="end" className="w-56">
 									{event.status === "scheduled" && addable.length > 0 ? (

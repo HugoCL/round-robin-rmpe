@@ -159,10 +159,14 @@ export function ReviewersPanel({
 										}
 									/>
 									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<IconActionButton label={t("reviewersPanel.moreActions")}>
-												<Ellipsis />
-											</IconActionButton>
+										<DropdownMenuTrigger
+											render={
+												<IconActionButton
+													label={t("reviewersPanel.moreActions")}
+												/>
+											}
+										>
+											<Ellipsis />
 										</DropdownMenuTrigger>
 										<DropdownMenuContent align="end" className="w-56">
 											<DropdownMenuCheckboxItem

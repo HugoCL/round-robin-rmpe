@@ -47,15 +47,17 @@ export function JoinTeamButton({ teamSlug }: { teamSlug: string }) {
 
 	return (
 		<Popover>
-			<PopoverTrigger asChild>
-				<Button
-					variant="ghost"
-					size="sm"
-					className="h-9 gap-2 rounded-full px-3 text-sm font-medium text-primary hover:bg-primary/8 hover:text-primary aria-expanded:bg-primary/8 aria-expanded:text-primary max-sm:-ml-3 dark:hover:bg-primary/12"
-				>
-					<UserPlus className="size-4" aria-hidden="true" />
-					{t("cta")}
-				</Button>
+			<PopoverTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="sm"
+						className="h-9 gap-2 rounded-full px-3 text-sm font-medium text-primary hover:bg-primary/8 hover:text-primary aria-expanded:bg-primary/8 aria-expanded:text-primary max-sm:-ml-3 dark:hover:bg-primary/12"
+					/>
+				}
+			>
+				<UserPlus className="size-4" aria-hidden="true" />
+				{t("cta")}
 			</PopoverTrigger>
 			<PopoverContent
 				align="start"

@@ -264,13 +264,15 @@ export function ReviewersTable({
 
 				{canEdit ? (
 					<DropdownMenu modal={false}>
-						<DropdownMenuTrigger asChild>
-							<IconActionButton
-								label={t("reviewersPanel.moreActions")}
-								className="size-7 text-muted-foreground"
-							>
-								<Ellipsis />
-							</IconActionButton>
+						<DropdownMenuTrigger
+							render={
+								<IconActionButton
+									label={t("reviewersPanel.moreActions")}
+									className="size-7 text-muted-foreground"
+								/>
+							}
+						>
+							<Ellipsis />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="w-56">
 							{reviewer.manualIsAbsent ? (

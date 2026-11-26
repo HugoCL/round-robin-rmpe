@@ -226,11 +226,11 @@ export function TeamsSection() {
 											</span>
 										</Badge>
 									)}
-									<CollapsibleTrigger asChild>
-										<Button type="button" variant="ghost" size="sm">
-											<Users aria-hidden="true" />
-											{t("teams.members", { count: team.memberCount })}
-										</Button>
+									<CollapsibleTrigger
+										render={<Button type="button" variant="ghost" size="sm" />}
+									>
+										<Users aria-hidden="true" />
+										{t("teams.members", { count: team.memberCount })}
 									</CollapsibleTrigger>
 								</div>
 								<CollapsibleContent>

@@ -41,26 +41,28 @@ export function TeamSwitcher({ teamSlug }: { teamSlug?: string }) {
 
 	return (
 		<DropdownMenu modal={false}>
-			<DropdownMenuTrigger asChild>
-				{/* The second crumb after the product name: where you are, not one more
-				    bordered control competing with your status. */}
-				<Button
-					variant="ghost"
-					aria-label={
-						currentTeam
-							? t("team.switcher.triggerLabel", { team: currentTeam.name })
-							: undefined
-					}
-					className="h-9 max-w-full gap-1.5 rounded-full px-2.5 text-sm font-medium hover:bg-muted/40 data-open:bg-muted sm:text-base dark:hover:bg-muted/50"
-				>
-					<span className="truncate">
-						{currentTeam?.name ?? t("placeholders.selectTeam")}
-					</span>
-					<ChevronsUpDown
-						className="size-4 shrink-0 text-muted-foreground"
-						aria-hidden="true"
+			{/* The second crumb after the product name: where you are, not one more
+			    bordered control competing with your status. */}
+			<DropdownMenuTrigger
+				render={
+					<Button
+						variant="ghost"
+						aria-label={
+							currentTeam
+								? t("team.switcher.triggerLabel", { team: currentTeam.name })
+								: undefined
+						}
+						className="h-9 max-w-full gap-1.5 rounded-full px-2.5 text-sm font-medium hover:bg-muted/40 data-open:bg-muted sm:text-base dark:hover:bg-muted/50"
 					/>
-				</Button>
+				}
+			>
+				<span className="truncate">
+					{currentTeam?.name ?? t("placeholders.selectTeam")}
+				</span>
+				<ChevronsUpDown
+					className="size-4 shrink-0 text-muted-foreground"
+					aria-hidden="true"
+				/>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-64">
 				<DropdownMenuRadioGroup
@@ -90,11 +92,9 @@ export function TeamSwitcher({ teamSlug }: { teamSlug?: string }) {
 					) : null}
 				</DropdownMenuRadioGroup>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem asChild>
-					<Link href={`/${locale}/create-team`}>
-						<Plus />
-						{t("team.createButton")}
-					</Link>
+				<DropdownMenuItem render={<Link href={`/${locale}/create-team`} />}>
+					<Plus />
+					{t("team.createButton")}
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

@@ -39,21 +39,23 @@ export function UrgentToggle({
 	return (
 		<TooltipProvider>
 			<Tooltip>
-				<TooltipTrigger asChild>
-					<Toggle
-						id={id}
-						pressed={pressed}
-						onPressedChange={onPressedChange}
-						variant="outline"
-						size="sm"
-						aria-label={t("googleChat.urgentToggle")}
-						className={cn(assignmentChipClass, pressed && urgentActiveClass)}
-					>
-						<AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
-						<span className="min-w-0 truncate leading-none">
-							{t("googleChat.urgentToggle")}
-						</span>
-					</Toggle>
+				<TooltipTrigger
+					render={
+						<Toggle
+							id={id}
+							pressed={pressed}
+							onPressedChange={onPressedChange}
+							variant="outline"
+							size="sm"
+							aria-label={t("googleChat.urgentToggle")}
+							className={cn(assignmentChipClass, pressed && urgentActiveClass)}
+						/>
+					}
+				>
+					<AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+					<span className="min-w-0 truncate leading-none">
+						{t("googleChat.urgentToggle")}
+					</span>
 				</TooltipTrigger>
 				{/* Beside the chip, so keyboard focus does not cover the PR field above. */}
 				<TooltipContent side="right" className="max-w-64 text-xs">

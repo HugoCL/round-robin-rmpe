@@ -53,8 +53,8 @@ export function AgentSetupDialog() {
 						<AgentSetupBody />
 					</div>
 					<DrawerFooter className="shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
-						<DrawerClose asChild>
-							<Button variant="outline">{t("common.close")}</Button>
+						<DrawerClose render={<Button variant="outline" />}>
+							{t("common.close")}
 						</DrawerClose>
 					</DrawerFooter>
 				</DrawerContent>

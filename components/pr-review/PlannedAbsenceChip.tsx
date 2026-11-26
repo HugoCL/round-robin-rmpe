@@ -119,18 +119,20 @@ export function PlannedAbsenceChip({
 	return (
 		<>
 			<Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-				<PopoverTrigger asChild>
-					<button
-						type="button"
-						className={cn(
-							PILL_CLASS,
-							"transition-colors hover:bg-amber-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-							className,
-						)}
-						aria-label={`${label}. ${detail}`}
-					>
-						{content}
-					</button>
+				<PopoverTrigger
+					render={
+						<button
+							type="button"
+							className={cn(
+								PILL_CLASS,
+								"transition-colors hover:bg-amber-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+								className,
+							)}
+							aria-label={`${label}. ${detail}`}
+						/>
+					}
+				>
+					{content}
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-64 gap-3 p-3">
 					<div className="grid gap-0.5">

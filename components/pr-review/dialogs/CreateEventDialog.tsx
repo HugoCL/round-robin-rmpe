@@ -290,17 +290,19 @@ export function CreateEventDialog({
 					<div className="grid gap-2">
 						<Label>{t("events.date")}</Label>
 						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className={cn(
-										"w-full justify-start text-left font-normal",
-										!date && "text-muted-foreground",
-									)}
-								>
-									<Calendar className="mr-2 h-4 w-4" />
-									{date ? formatDate(date) : t("events.selectDate")}
-								</Button>
+							<PopoverTrigger
+								render={
+									<Button
+										variant="outline"
+										className={cn(
+											"w-full justify-start text-left font-normal",
+											!date && "text-muted-foreground",
+										)}
+									/>
+								}
+							>
+								<Calendar className="mr-2 h-4 w-4" />
+								{date ? formatDate(date) : t("events.selectDate")}
 							</PopoverTrigger>
 							<PopoverContent className="w-auto p-0" align="start">
 								<CalendarComponent

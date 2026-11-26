@@ -123,23 +123,25 @@ export function BirthdaySetupBanner() {
 							{t("setupDescription")}
 						</AlertDescription>
 					</div>
-					<CollapsibleTrigger asChild>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							aria-label={t("setupAction")}
-						>
-							<span className="hidden sm:inline">{t("setupAction")}</span>
-							<ChevronDown
-								data-icon="inline-end"
-								className={
-									open
-										? "rotate-180 transition-transform"
-										: "transition-transform"
-								}
+					<CollapsibleTrigger
+						render={
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								aria-label={t("setupAction")}
 							/>
-						</Button>
+						}
+					>
+						<span className="hidden sm:inline">{t("setupAction")}</span>
+						<ChevronDown
+							data-icon="inline-end"
+							className={
+								open
+									? "rotate-180 transition-transform"
+									: "transition-transform"
+							}
+						/>
 					</CollapsibleTrigger>
 					<WithTooltip label={tAnnouncements("dismiss")}>
 						<Button

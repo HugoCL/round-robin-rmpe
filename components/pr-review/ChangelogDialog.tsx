@@ -145,8 +145,8 @@ export function ChangelogDialog({
 						<ChangelogContent entries={changelogEntries} />
 					</div>
 					<DrawerFooter>
-						<DrawerClose asChild>
-							<Button variant="outline">{tCommon("close")}</Button>
+						<DrawerClose render={<Button variant="outline" />}>
+							{tCommon("close")}
 						</DrawerClose>
 					</DrawerFooter>
 				</DrawerContent>
