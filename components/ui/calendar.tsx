@@ -132,6 +132,7 @@ function Calendar({
   weekStartsOn,
   showOutsideDays = true,
   pendingStart,
+  onMonthChange,
   ...props
 }: CalendarProps) {
   const appLocale = useLocale()
@@ -143,6 +144,15 @@ function Calendar({
       locale={locale}
       weekStartsOn={weekStartsOn ?? dateLocale.options?.weekStartsOn ?? 0}
       showOutsideDays={showOutsideDays}
+      onMonthChange={(month, details) => {
+        // As in the day picker, pressing a day of the month before or after
+        // picks it without turning the month. Keys and Previous/Next still do.
+        if (details.reason === "item-press") {
+          details.cancel()
+          return
+        }
+        onMonthChange?.(month, details)
+      }}
       className={cn(
         "w-fit group/calendar bg-background p-3 [--cell-radius:var(--radius-4xl)] [--cell-size:--spacing(8)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent rtl:**:[[data-slot=calendar-next]>svg]:rotate-180 rtl:**:[[data-slot=calendar-previous]>svg]:rotate-180",
         className
