@@ -26,10 +26,11 @@ function CollapsibleTrigger({
 
 /**
  * ui-sdk's CollapsiblePanel under Radix's name. Closed, it unmounts after its
- * exit animation, as Radix's did. tw-animate's collapsible keyframes read
- * Radix's height variable, so it's fed from ui-sdk's. Without motion, ui-sdk
- * leaves a closing panel up for a moment before unmounting it; it hides at
- * once instead, as with Radix.
+ * exit animation, as Radix's did. Its height transitions on ui-sdk's measured
+ * --collapsible-panel-height (the curve of tw-animate's collapsible keyframes),
+ * so a panel already open when it mounts doesn't animate, as with Radix.
+ * Without motion, ui-sdk leaves a closing panel up for a moment before
+ * unmounting it; it hides at once instead.
  */
 function CollapsibleContent({
   className,
@@ -38,7 +39,7 @@ function CollapsibleContent({
   return (
     <CollapsiblePanelPrimitive
       className={cn(
-        "overflow-hidden [--radix-collapsible-content-height:var(--collapsible-panel-height)] motion-safe:data-closed:animate-collapsible-up motion-safe:data-open:animate-collapsible-down motion-reduce:data-closed:hidden",
+        "h-(--collapsible-panel-height) overflow-hidden ease-[ease-out] data-ending-style:h-0 data-starting-style:h-0 motion-safe:transition-[height] motion-safe:duration-200 motion-reduce:data-closed:hidden",
         className
       )}
       {...props}
