@@ -21,7 +21,9 @@ function ToastProvider({ children }: { children?: React.ReactNode }) {
 
 /**
  * Where toasts show: across the top on phones, bottom right from `sm` up.
- * ui-sdk renders a `section` with the toasts in an `ol` inside it.
+ * ui-sdk renders a `section` with the toasts in an `ol` inside it. The region
+ * stays in the top layer even when empty, so it lets presses through and only
+ * the toasts take them, as Radix's viewport did.
  */
 function ToastViewport({
 	className,
@@ -30,7 +32,7 @@ function ToastViewport({
 	return (
 		<ToastRegion
 			className={cn(
-				"fixed top-0 right-0 z-[100] flex max-h-screen w-full p-4 sm:top-auto sm:bottom-0 md:max-w-[420px] [&>ol]:relative [&>ol]:flex [&>ol]:w-full [&>ol]:flex-col-reverse sm:[&>ol]:flex-col",
+				"pointer-events-none fixed top-0 right-0 z-[100] flex max-h-screen w-full p-4 sm:top-auto sm:bottom-0 md:max-w-[420px] [&>ol]:relative [&>ol]:flex [&>ol]:w-full [&>ol]:flex-col-reverse sm:[&>ol]:flex-col",
 				className,
 			)}
 			{...props}
