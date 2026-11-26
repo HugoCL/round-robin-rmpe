@@ -76,8 +76,27 @@ function DropdownMenuContent({
   )
 }
 
+/**
+ * The label of the nearest `DropdownMenuGroup`. ui-sdk's group label names the
+ * enclosing radio group before a group nested in it, so a group labels itself.
+ */
+const GroupLabelContext = React.createContext<{
+  id: string
+  setLabelled: (labelled: boolean) => void
+} | null>(null)
+
 function DropdownMenuGroup(props: React.ComponentProps<typeof MenuGroupPrimitive>) {
-  return <MenuGroupPrimitive {...props} />
+  const id = React.useId()
+  const [labelled, setLabelled] = React.useState(false)
+  const label = React.useMemo(() => ({ id, setLabelled }), [id])
+  return (
+    <GroupLabelContext.Provider value={label}>
+      <MenuGroupPrimitive
+        aria-labelledby={labelled ? id : undefined}
+        {...props}
+      />
+    </GroupLabelContext.Provider>
+  )
 }
 
 /**
@@ -244,16 +263,32 @@ function DropdownMenuLabel({
 }: React.ComponentProps<typeof MenuGroupLabelPrimitive> & {
   inset?: boolean
 }) {
-  return (
-    <MenuGroupLabelPrimitive
-      data-inset={inset}
-      className={cn(
-        "px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground data-inset:pl-9.5",
-        className
-      )}
-      {...props}
-    />
-  )
+  const group = React.useContext(GroupLabelContext)
+  const setLabelled = group?.setLabelled
+  React.useLayoutEffect(() => {
+    if (!setLabelled) return
+    setLabelled(true)
+    return () => setLabelled(false)
+  }, [setLabelled])
+  const labelProps = {
+    "data-inset": inset,
+    className: cn(
+      "px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground data-inset:pl-9.5",
+      className
+    ),
+  }
+  if (group) {
+    const { render: _render, ...divProps } = props
+    return (
+      <div
+        id={group.id}
+        data-slot="menu-group-label"
+        {...labelProps}
+        {...(divProps as React.ComponentProps<"div">)}
+      />
+    )
+  }
+  return <MenuGroupLabelPrimitive {...labelProps} {...props} />
 }
 
 function DropdownMenuSeparator({
