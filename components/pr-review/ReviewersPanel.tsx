@@ -213,7 +213,7 @@ export function ReviewersPanel({
 							>
 								<ToggleGroupItem
 									value="regular"
-									className="px-3 text-sm data-[state=on]:bg-primary/12 data-[state=on]:font-medium data-[state=on]:text-primary"
+									className="px-3 text-sm data-[pressed]:bg-primary/12 data-[pressed]:font-medium data-[pressed]:text-primary"
 								>
 									{t("pr.assignmentModeRegularShort")}
 								</ToggleGroupItem>
@@ -221,7 +221,7 @@ export function ReviewersPanel({
 									<ToggleGroupItem
 										key={tag._id}
 										value={tag._id}
-										className="gap-1.5 px-3 text-sm data-[state=on]:bg-primary/12 data-[state=on]:font-medium data-[state=on]:text-primary"
+										className="gap-1.5 px-3 text-sm data-[pressed]:bg-primary/12 data-[pressed]:font-medium data-[pressed]:text-primary"
 									>
 										<span
 											className="size-2 rounded-full"
