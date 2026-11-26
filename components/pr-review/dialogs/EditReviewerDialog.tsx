@@ -320,8 +320,8 @@ export function EditReviewerDialog({
 	if (isMobile) {
 		return (
 			<Drawer open={open} onOpenChange={handleOpenChange}>
-				<DrawerContent className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:max-h-[92dvh]">
-					<DrawerHeader className="shrink-0 text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left">
+				<DrawerContent className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[side=bottom]:max-h-[92dvh]">
+					<DrawerHeader className="shrink-0 text-left group-data-[side=bottom]/drawer-content:text-left">
 						{header(DrawerTitle, DrawerDescription)}
 					</DrawerHeader>
 					<form

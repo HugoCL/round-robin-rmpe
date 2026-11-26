@@ -210,7 +210,7 @@ export function HeaderOptionsDrawer({
 	if (isMobile) {
 		return (
 			<Drawer open={open} onOpenChange={setOpen}>
-				{/* The body scrolls, not the drawer: vaul's backdrop extension hangs off
+				{/* The body scrolls, not the drawer: the block that covers a drag past the edge hangs off
 				    the drawer's bottom edge and would cover whatever scrolls past it. */}
 				<DrawerContent
 					className="max-h-[90vh] overflow-hidden"
