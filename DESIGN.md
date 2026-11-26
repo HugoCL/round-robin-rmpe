@@ -198,6 +198,13 @@ The body carries a subtle top-bloom (`radial-gradient` at 9% primary) that tints
 
 ## 5. Components
 
+### Primitives
+The wrappers in `components/ui/` are [UI SDK](https://ui-sdk.dev) primitives (`@ui-sdk/react`) styled with the app's own Tailwind tokens and classes. UI SDK brings behavior only (focus, keyboard, popups, ARIA); every look in this document comes from La Lista's classes, so the design language does not depend on it.
+
+- **State is styled through attributes**, never through component props: `data-open` / `data-closed` on anything that opens, `data-checked` on switches, checkboxes and radios, `data-pressed` (and `aria-pressed`) on toggles, `data-selected` on tabs and calendar days, `data-highlighted` on the active menu item or select option. Open, closed, checked and disabled use the `data-open:`-style variants; selected and pressed need the bracket form (`data-[selected]:`, `data-[pressed]:`).
+- **To render a part as another element, pass it to `render`** (`<DialogTrigger render={<Button variant="outline" />}>`). There is no `asChild`.
+- Popups (dialogs, sheets, the phone drawer, menus, selects, popovers, tooltips, toasts) paint in the browser's top layer and follow the elevation rules above and the motion rule in the overview.
+
 ### Buttons
 All buttons share `rounded-full` (9999px). This is a system-wide convention — not a single exception. Pill shape is the only shape.
 
@@ -208,7 +215,7 @@ All buttons share `rounded-full` (9999px). This is a system-wide convention — 
 - **Destructive**: Red palette. Confined to confirmation dialogs; never appears inline as a primary action.
 
 ### Chips (Action Toggles)
-The footer action row uses custom `rounded-full` toggle chips, not shadcn Button — height 40px (`h-10`), `px-3`, `text-xs`, `border-border/70`. Selected state swaps to solid primary background via inline style (not a Tailwind class, as color is computed from the tag's user-defined hex).
+The footer action row uses custom `rounded-full` toggle chips, not the Button component — height 40px (`h-10`), `px-3`, `text-xs`, `border-border/70`. Selected state swaps to solid primary background via inline style (not a Tailwind class, as color is computed from the tag's user-defined hex).
 
 ### Cards / Containers — The Calm Surface System
 
