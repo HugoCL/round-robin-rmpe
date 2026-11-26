@@ -51,7 +51,7 @@ export function TeamSwitcher({ teamSlug }: { teamSlug?: string }) {
 							? t("team.switcher.triggerLabel", { team: currentTeam.name })
 							: undefined
 					}
-					className="h-9 max-w-full gap-1.5 rounded-full px-2.5 text-sm font-medium hover:bg-muted/40 data-[state=open]:bg-muted sm:text-base dark:hover:bg-muted/50"
+					className="h-9 max-w-full gap-1.5 rounded-full px-2.5 text-sm font-medium hover:bg-muted/40 data-open:bg-muted sm:text-base dark:hover:bg-muted/50"
 				>
 					<span className="truncate">
 						{currentTeam?.name ?? t("placeholders.selectTeam")}
