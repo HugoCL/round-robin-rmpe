@@ -12,7 +12,6 @@ import {
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { type RadixFocusProps, useRadixFocus } from "@/components/ui/dialog"
-import { OutsideDrawer, RadixLayerBridge } from "@/components/ui/portal-container"
 import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
@@ -48,7 +47,7 @@ function AlertDialogOverlay({
   return (
     <AlertDialogBackdropPrimitive
       className={cn(
-        "pointer-events-auto fixed inset-0 z-50 bg-background/72 backdrop-blur-xs duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:duration-0",
+        "fixed inset-0 z-50 bg-background/72 backdrop-blur-xs duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:duration-0",
         className
       )}
       {...props}
@@ -83,7 +82,7 @@ function AlertDialogContent({
   )
 
   return (
-    <OutsideDrawer>
+    <>
       <AlertDialogOverlay />
       <AlertDialogContentPrimitive
         ref={setRefs}
@@ -91,15 +90,14 @@ function AlertDialogContent({
         finalFocus={finalFocus ?? focus.finalFocus}
         data-size={size}
         className={cn(
-          "calm-shell group/alert-dialog-content pointer-events-auto fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-6 bg-background/96 p-6 text-foreground duration-200 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
+          "calm-shell group/alert-dialog-content fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-6 bg-background/96 p-6 text-foreground duration-200 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
           className
         )}
         {...props}
       >
-        <RadixLayerBridge modal />
         {children}
       </AlertDialogContentPrimitive>
-    </OutsideDrawer>
+    </>
   )
 }
 

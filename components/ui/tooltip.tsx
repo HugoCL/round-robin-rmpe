@@ -7,9 +7,7 @@ import {
   TooltipTrigger as TooltipTriggerPrimitive,
 } from "@ui-sdk/react/tooltip"
 import * as React from "react"
-import { createPortal } from "react-dom"
 
-import { RadixLayerBridge } from "@/components/ui/portal-container"
 import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
@@ -60,16 +58,6 @@ function TooltipTrigger({
   )
 }
 
-/**
- * Lets Escape close the tooltip alone inside a Radix sheet or drawer. It
- * renders in `document.body`: a tooltip closes as Tab leaves its trigger, while
- * focus is briefly on the body, and a node removed then from inside a sheet
- * makes Radix's focus trap pull focus back to the sheet itself.
- */
-function TooltipLayerBridge() {
-  return createPortal(<RadixLayerBridge focusScope={false} />, document.body)
-}
-
 /** The arrow's box: a 10px square, as Radix measured its arrow. */
 const ARROW_LENGTH = 10
 
@@ -98,17 +86,12 @@ function TooltipContent({
       )}
       {...props}
     >
-      {(state) => (
-        <>
-          {state.open ? <TooltipLayerBridge /> : null}
-          {children}
-          {/* A square turned 45°, its center 2px inside the edge facing the trigger. */}
-          <TooltipArrowPrimitive
-            render={<span />}
-            className="z-50 size-2.5 rotate-45 rounded-[2px] bg-foreground data-[side=bottom]:-top-[3px] data-[side=left]:-right-[3px] data-[side=right]:-left-[3px] data-[side=top]:-bottom-[3px]"
-          />
-        </>
-      )}
+      {children}
+      {/* A square turned 45°, its center 2px inside the edge facing the trigger. */}
+      <TooltipArrowPrimitive
+        render={<span />}
+        className="z-50 size-2.5 rotate-45 rounded-[2px] bg-foreground data-[side=bottom]:-top-[3px] data-[side=left]:-right-[3px] data-[side=right]:-left-[3px] data-[side=top]:-bottom-[3px]"
+      />
     </TooltipContentPrimitive>
   )
 }

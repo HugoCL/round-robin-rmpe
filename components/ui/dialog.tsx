@@ -14,22 +14,12 @@ import {
 import { useTranslations } from "next-intl"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { OutsideDrawer, RadixLayerBridge } from "@/components/ui/portal-container"
 import { WithTooltip } from "@/components/ui/tooltip"
 import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
-type DialogProps = React.ComponentProps<typeof DialogPrimitive>
-
-/** Whether the open dialog is modal, for the content's Radix layer bridge. */
-const DialogModalContext = React.createContext(true)
-
-function Dialog(props: DialogProps) {
-  return (
-    <DialogModalContext.Provider value={props.modal !== false}>
-      <DialogPrimitive {...props} />
-    </DialogModalContext.Provider>
-  )
+function Dialog(props: React.ComponentProps<typeof DialogPrimitive>) {
+  return <DialogPrimitive {...props} />
 }
 
 function DialogTrigger({
@@ -62,7 +52,7 @@ function DialogOverlay({
   return (
     <DialogBackdropPrimitive
       className={cn(
-        "pointer-events-auto fixed inset-0 isolate z-50 bg-background/72 backdrop-blur-xs duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:duration-0",
+        "fixed inset-0 isolate z-50 bg-background/72 backdrop-blur-xs duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:duration-0",
         className
       )}
       {...props}
@@ -157,7 +147,6 @@ function DialogContent({
     children?: React.ReactNode
     showCloseButton?: boolean
   }) {
-  const modal = React.useContext(DialogModalContext)
   const contentRef = React.useRef<HTMLElement | null>(null)
   const focus = useRadixFocus({ onOpenAutoFocus, onCloseAutoFocus }, contentRef)
   const setRefs = React.useCallback(
@@ -170,23 +159,22 @@ function DialogContent({
   )
 
   return (
-    <OutsideDrawer>
+    <>
       <DialogOverlay />
       <DialogContentPrimitive
         ref={setRefs}
         initialFocus={initialFocus ?? focus.initialFocus}
         finalFocus={finalFocus ?? focus.finalFocus}
         className={cn(
-          "calm-shell pointer-events-auto fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 bg-background/96 p-6 text-sm text-foreground duration-200 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
+          "calm-shell fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 bg-background/96 p-6 text-sm text-foreground duration-200 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
           className
         )}
         {...props}
       >
-        <RadixLayerBridge modal={modal} />
         {children}
         {showCloseButton ? <DialogCloseButton /> : null}
       </DialogContentPrimitive>
-    </OutsideDrawer>
+    </>
   )
 }
 
@@ -194,8 +182,7 @@ function DialogContent({
  * `onOpenAutoFocus` for dialogs whose first focusable control has a tooltip
  * (often the close button): focusing it opens the tooltip, which then takes the
  * first Escape. Focusing the dialog itself keeps Escape and Tab working.
- * ui-sdk's DialogContent maps it to `initialFocus="content"`; Radix-based
- * contents (the drawer) still call it as an event handler.
+ * The dialog, sheet and drawer contents map it to `initialFocus="content"`.
  */
 function focusDialogItself(event: Event) {
   event.preventDefault()

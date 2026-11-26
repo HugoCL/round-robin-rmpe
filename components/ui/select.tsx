@@ -14,7 +14,6 @@ import {
   SelectValue as SelectValuePrimitive,
 } from "@ui-sdk/react/select"
 import * as React from "react"
-import { RadixLayerBridge } from "@/components/ui/portal-container"
 import { cn } from "@/lib/utils"
 
 /**
@@ -191,13 +190,7 @@ function SelectContent({
       )}
       {...props}
     >
-      {(state) => (
-        <>
-          {/* Only while open: the list stays mounted while closed. */}
-          {state.open ? <RadixLayerBridge /> : null}
-          {children}
-        </>
-      )}
+      {children}
     </SelectContentPrimitive>
   )
 }

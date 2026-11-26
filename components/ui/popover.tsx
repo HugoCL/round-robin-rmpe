@@ -7,7 +7,6 @@ import {
 } from "@ui-sdk/react/popover"
 import * as React from "react"
 
-import { RadixLayerBridge } from "@/components/ui/portal-container"
 import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
@@ -69,7 +68,6 @@ function PopoverContent({
       )}
       {...props}
     >
-      <RadixLayerBridge />
       {children}
     </PopoverContentPrimitive>
   )

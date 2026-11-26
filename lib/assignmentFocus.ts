@@ -72,12 +72,11 @@ const OVERLAY_SELECTOR =
 export function isOverlayOpen(target: EventTarget | null) {
 	if (target instanceof Element && target.closest(OVERLAY_SELECTOR))
 		return true;
-	// Radix (the sheet and drawer) marks an open overlay with data-state="open",
-	// ui-sdk with data-open. A ui-sdk tooltip has role="tooltip", so it never
-	// counts.
+	// ui-sdk marks an open overlay with data-open. A tooltip has role="tooltip",
+	// so it never counts.
 	return Boolean(
 		document.querySelector(
-			':is([role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]):is([data-state="open"], [data-open])',
+			':is([role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"])[data-open]',
 		),
 	);
 }

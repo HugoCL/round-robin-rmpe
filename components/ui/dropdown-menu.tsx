@@ -19,7 +19,6 @@ import {
   MenuTrigger as MenuTriggerPrimitive,
 } from "@ui-sdk/react/menu"
 import * as React from "react"
-import { RadixLayerBridge } from "@/components/ui/portal-container"
 import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
@@ -70,7 +69,6 @@ function DropdownMenuContent({
       )}
       {...props}
     >
-      <RadixLayerBridge />
       {children}
     </MenuContentPrimitive>
   )
@@ -364,7 +362,6 @@ function DropdownMenuSubContent({
       )}
       {...props}
     >
-      <RadixLayerBridge />
       {children}
     </MenuSubContentPrimitive>
   )
