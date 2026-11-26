@@ -22,6 +22,8 @@ export function Toaster() {
 			side={fromSm ? "bottom" : "top"}
 			align="end"
 			maxVisible={1}
+			// F8 reached the toasts before ui-sdk (Radix's hotkey); keep it.
+			shortcut="F8"
 		>
 			{(item) => {
 				const data = item.data as ToastData | undefined;
