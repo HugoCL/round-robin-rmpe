@@ -139,16 +139,15 @@
 		background-color: color-mix(in oklab, var(--primary) 24%, transparent);
 	}
 	/* ui-sdk popups render in place, not in a portal at <body>, so they would
-	   inherit the text styles around their trigger. Start them, and the Radix
-	   portals inside them, from the page's defaults, as a portal did. */
+	   inherit the text styles around their trigger. Start them from the page's
+	   defaults, as a portal did. */
 	:where(
 		[data-slot="dialog-content"],
 		[data-slot="menu-content"],
 		[data-slot="select-content"],
 		[data-slot="toast-region"],
 		[data-slot="tooltip-content"],
-		[data-slot="popover-content"],
-		[data-slot="portal-layer"]
+		[data-slot="popover-content"]
 	) {
 		font-family: --theme(
 			--default-font-family,

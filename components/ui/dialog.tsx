@@ -14,11 +14,7 @@ import {
 import { useTranslations } from "next-intl"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import {
-  OutsideDrawer,
-  PortalLayer,
-  RadixLayerBridge,
-} from "@/components/ui/portal-container"
+import { OutsideDrawer, RadixLayerBridge } from "@/components/ui/portal-container"
 import { WithTooltip } from "@/components/ui/tooltip"
 import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
@@ -184,10 +180,8 @@ function DialogContent({
         {...props}
       >
         <RadixLayerBridge modal={modal} />
-        <PortalLayer>
-          {children}
-          {showCloseButton ? <DialogCloseButton /> : null}
-        </PortalLayer>
+        {children}
+        {showCloseButton ? <DialogCloseButton /> : null}
       </DialogContentPrimitive>
     </OutsideDrawer>
   )
