@@ -131,7 +131,9 @@ function WithTooltip({
   className?: string
 }) {
   return (
-    <Tooltip>
+    // The span host has no name of its own; the tooltip names it (the control
+    // inside keeps its own aria-label).
+    <Tooltip type="label">
       <TooltipTriggerPrimitive
         render={<span className={cn("inline-flex", className)} />}
       >
