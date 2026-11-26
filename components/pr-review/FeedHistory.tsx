@@ -157,7 +157,7 @@ export function FeedHistory() {
 			>
 				<div className="relative z-10 pt-0.5">
 					<Avatar size="lg">
-						<AvatarFallback className="bg-muted font-semibold text-foreground">
+						<AvatarFallback className="font-medium">
 							{item.reviewerCount > 1 ? (
 								<UsersRound className="size-5" aria-hidden="true" />
 							) : (
