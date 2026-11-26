@@ -23,6 +23,9 @@ import {
  */
 export const AssignmentCardHost = createContext<HTMLElement | null>(null);
 
+/** The field that had the focus when the card's place went away, by host. */
+const focusedInCard = new WeakMap<HTMLElement, HTMLElement>();
+
 /**
  * The assignment card in its place among the widgets. It keeps its own
  * surface and has no title at rest; while customizing it takes the dashed box
@@ -39,7 +42,17 @@ export function AssignmentWidget() {
 	const host = useContext(AssignmentCardHost);
 	const place = useRef<HTMLDivElement>(null);
 	useLayoutEffect(() => {
-		if (host) place.current?.appendChild(host);
+		if (!host) return;
+		place.current?.appendChild(host);
+		// The place the card left took the focus with it. Without it back, the
+		// next letter typed would be a shortcut, and "a" assigns.
+		focusedInCard.get(host)?.focus({ preventScroll: true });
+		focusedInCard.delete(host);
+		return () => {
+			const focused = document.activeElement;
+			if (focused instanceof HTMLElement && host.contains(focused))
+				focusedInCard.set(host, focused);
+		};
 	}, [host]);
 
 	return (
