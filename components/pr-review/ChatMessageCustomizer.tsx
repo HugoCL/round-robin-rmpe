@@ -322,7 +322,7 @@ export function ChatMessageCustomizer({
 						>
 							{isGenerating ? (
 								<>
-									<Sparkles className="h-3 w-3 mr-1 animate-pulse" />{" "}
+									<Sparkles className="h-3 w-3 mr-1 motion-safe:animate-pulse" />{" "}
 									{t("googleChat.generating")}
 								</>
 							) : (
