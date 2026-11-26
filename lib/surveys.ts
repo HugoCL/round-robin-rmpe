@@ -193,11 +193,11 @@ export function getPmfVeryDisappointedPercent(
 }
 
 const LIKERT_OPTIONS: SurveyOption[] = [
-	{ value: "1", label: "1 — Muy en desacuerdo" },
-	{ value: "2", label: "2 — En desacuerdo" },
-	{ value: "3", label: "3 — Neutral" },
-	{ value: "4", label: "4 — De acuerdo" },
-	{ value: "5", label: "5 — Muy de acuerdo" },
+	{ value: "1", label: "1 · Muy en desacuerdo" },
+	{ value: "2", label: "2 · En desacuerdo" },
+	{ value: "3", label: "3 · Neutral" },
+	{ value: "4", label: "4 · De acuerdo" },
+	{ value: "5", label: "5 · Muy de acuerdo" },
 ];
 
 /** Prefer Spanish content, then English leftovers, then an already-migrated value. */
@@ -244,22 +244,21 @@ export function getPmfTemplateQuestions(): SurveyQuestionInput[] {
 		{
 			order: 1,
 			type: "likert",
-			prompt:
-				"La Lista me ayuda a ser más productivo/a en el proceso de review.",
+			prompt: "La Lista me ayuda a avanzar más rápido al revisar PRs.",
 			options: LIKERT_OPTIONS,
 			required: true,
 		},
 		{
 			order: 2,
 			type: "likert",
-			prompt: "La Lista reduce el tiempo que toma poner un PR en review.",
+			prompt: "La Lista reduce el tiempo que toma mandar un PR a revisión.",
 			options: LIKERT_OPTIONS,
 			required: true,
 		},
 		{
 			order: 3,
 			type: "likert",
-			prompt: "La Lista reduce la fricción de “¿quién debería revisar esto?”.",
+			prompt: "La Lista evita tener que pensar quién debería revisar cada PR.",
 			options: LIKERT_OPTIONS,
 			required: true,
 		},

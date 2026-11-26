@@ -47,13 +47,13 @@ export function SlotConfigurator({
 	const strategyOptions: Array<{ value: SlotStrategy; label: string }> =
 		mode === "regular"
 			? [
-					{ value: "random", label: "Aleatorio (round-robin)" },
-					{ value: "specific", label: "Revisor específico" },
+					{ value: "random", label: "Según rotación" },
+					{ value: "specific", label: "Elegir persona" },
 				]
 			: [
-					{ value: "tag_random_selected", label: "Etiqueta seleccionada" },
-					{ value: "tag_random_other", label: "Otra etiqueta" },
-					{ value: "specific", label: "Revisor específico" },
+					{ value: "tag_random_selected", label: "Por tag (el elegido arriba)" },
+					{ value: "tag_random_other", label: "Por otro tag" },
+					{ value: "specific", label: "Elegir persona" },
 				];
 
 	return (
@@ -145,7 +145,7 @@ export function SlotConfigurator({
 									className="w-full text-xs px-2 py-1.5 rounded border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
 								>
 									<option value="" disabled>
-										Seleccionar etiqueta...
+										Elige un tag…
 									</option>
 									{tags.map((tag) => (
 										<option key={tag._id} value={tag._id}>
@@ -167,7 +167,7 @@ export function SlotConfigurator({
 									className="w-full text-xs px-2 py-1.5 rounded border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
 								>
 									<option value="" disabled>
-										Seleccionar revisor...
+										Elige una persona…
 									</option>
 									{availableReviewers.map((r) => (
 										<option key={r._id} value={r._id}>
@@ -209,8 +209,8 @@ export function SlotConfigurator({
 										</Badge>
 										<span className="text-muted-foreground truncate">
 											{slot.strategy === "tag_random_selected" && !selectedTagId
-												? "Selecciona una etiqueta primero"
-												: preview?.reason || "Pendiente..."}
+												? "Elige un tag primero"
+												: preview?.reason || "Pendiente…"}
 										</span>
 									</>
 								)}

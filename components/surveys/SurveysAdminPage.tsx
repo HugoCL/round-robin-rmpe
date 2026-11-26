@@ -87,10 +87,10 @@ export function SurveysAdminPage() {
 			const deadlineAt = Date.now() + 14 * 24 * 60 * 60 * 1000;
 			const surveyId = await createSurvey({
 				title: usePmfTemplate
-					? "Chequeo de product–market fit"
+					? "Encuesta de product-market fit"
 					: "Nueva encuesta",
 				description: usePmfTemplate
-					? "Ayúdanos a entender si La Lista está lista para más equipos."
+					? "Cuéntanos qué tal te funciona La Lista y si vale la pena compartirla con más equipos."
 					: undefined,
 				deadlineAt,
 				usePmfTemplate,

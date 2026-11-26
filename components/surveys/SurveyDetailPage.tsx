@@ -156,7 +156,7 @@ export function SurveyDetailPage({ surveyId }: { surveyId: Id<"surveys"> }) {
 	if (detail === null) {
 		return (
 			<main className="container mx-auto max-w-3xl px-4 py-12">
-				<p className="text-muted-foreground">Survey not found.</p>
+				<p className="text-muted-foreground">{t("admin.notFound")}</p>
 				<Button asChild className="mt-4" variant="outline">
 					<Link href={`/${locale}/surveys`}>{t("admin.backToList")}</Link>
 				</Button>
