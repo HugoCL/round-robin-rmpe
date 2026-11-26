@@ -1,16 +1,27 @@
 "use client";
 
-import { useId, useState } from "react";
+import {
+	createContext,
+	useContext,
+	useId,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import { cn } from "@/lib/utils";
-import { AssignmentCard } from "../AssignmentCard";
-import { ForeignTeamAssignmentCard } from "../ForeignTeamAssignmentCard";
-import { usePRReview } from "../PRReviewContext";
 import {
 	useWidgetBox,
 	useWidgetSlot,
 	WidgetEditHeader,
 	widgetEditingClass,
 } from "./WidgetFrame";
+
+/**
+ * The element the card is rendered into, once, above the lanes. Each place
+ * the card can be adopts it, so the form and what was typed in it survive a
+ * move to another lane and the window crossing lg.
+ */
+export const AssignmentCardHost = createContext<HTMLElement | null>(null);
 
 /**
  * The assignment card in its place among the widgets. It keeps its own
@@ -20,12 +31,16 @@ import {
  */
 export function AssignmentWidget() {
 	const slot = useWidgetSlot();
-	const { isForeignTeamView } = usePRReview();
 	const { movable, dragging, props } = useWidgetBox(slot);
 	const headingId = useId();
 	const editing = movable && slot !== null;
 	// Mounted by a move while customizing, it is already where the eye is.
 	const [enters] = useState(!movable);
+	const host = useContext(AssignmentCardHost);
+	const place = useRef<HTMLDivElement>(null);
+	useLayoutEffect(() => {
+		if (host) place.current?.appendChild(host);
+	}, [host]);
 
 	return (
 		<section
@@ -40,9 +55,11 @@ export function AssignmentWidget() {
 			)}
 		>
 			{editing ? <WidgetEditHeader slot={slot} headingId={headingId} /> : null}
-			<div className={editing ? "mt-2" : undefined} inert={editing}>
-				{isForeignTeamView ? <ForeignTeamAssignmentCard /> : <AssignmentCard />}
-			</div>
+			<div
+				ref={place}
+				className={editing ? "mt-2" : undefined}
+				inert={editing}
+			/>
 		</section>
 	);
 }

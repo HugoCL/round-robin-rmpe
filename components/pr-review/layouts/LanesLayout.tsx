@@ -2,11 +2,15 @@
 
 import { useTranslations } from "next-intl";
 import { type DragEvent, Fragment, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { ASSIGNMENT_ID, type WidgetId } from "@/lib/widgetLayout";
+import { AssignmentCard } from "../AssignmentCard";
+import { ForeignTeamAssignmentCard } from "../ForeignTeamAssignmentCard";
 import { LaunchSpotlight } from "../LaunchSpotlight";
 import { usePRReview } from "../PRReviewContext";
 import { ReviewersPanel } from "../ReviewersPanel";
+import { AssignmentCardHost } from "../widgets/AssignmentWidget";
 import { WIDGETS } from "../widgets/registry";
 import { WidgetSlotProvider } from "../widgets/WidgetFrame";
 import { useWidgetLayout } from "../widgets/WidgetLayoutContext";
@@ -57,7 +61,11 @@ const SPOTLIGHT_CORNER = [
  */
 export function LanesLayout() {
 	const t = useTranslations("widgets");
-	const { teamSlug } = usePRReview();
+	const { teamSlug, isForeignTeamView } = usePRReview();
+	// Client only: the page mounts after the session and its data have loaded.
+	const [cardHost] = useState(() =>
+		typeof document === "undefined" ? null : document.createElement("div"),
+	);
 	const {
 		lanes,
 		cardPinned,
@@ -123,79 +131,95 @@ export function LanesLayout() {
 				},
 			}}
 		>
-			<div
-				// Past the lanes a drop does nothing, so the marker goes too.
-				onDragLeave={(event) => {
-					if (!event.currentTarget.contains(event.relatedTarget as Node | null))
-						setHovered(null);
-				}}
-				className={cn(
-					"mt-3 grid grid-cols-1 gap-x-7 sm:mt-5 lg:mt-6",
-					GRID_CLASS[cardLane],
-					// While customizing, every lane reaches the bottom so an empty or
-					// short one is still a place to drop.
-					editing ? "items-stretch max-lg:pb-40" : "items-start",
-				)}
-			>
-				{lanes.map((ids, lane) => {
-					const showMarker =
-						target?.lane === lane && !isNoOp(target) ? target : null;
-					// Stacked, the card is pinned first. It goes through the same list
-					// as in the lanes, so a card at the top of the first lane stays
-					// mounted, with what was typed in it, when the window crosses lg.
-					const shown: WidgetId[] =
-						cardPinned && lane === 0 ? [ASSIGNMENT_ID, ...ids] : ids;
-					return (
-						<div
-							// biome-ignore lint/suspicious/noArrayIndexKey: a lane is its position
-							key={lane}
-							role={editing ? "group" : undefined}
-							aria-label={editing ? t("lane", { number: lane + 1 }) : undefined}
-							onDragOver={editing ? onDragOver(lane) : undefined}
-							onDrop={editing ? onDrop : undefined}
-							className={cn(
-								"flex min-w-0 flex-col",
-								LANE_CLASS[lane],
-								(ids.length > 0 || editing) && LANE_DIVIDER[lane],
-								editing && "min-h-24",
-							)}
-						>
-							<div className="flex flex-1 flex-col">
-								{shown.map((id, position) => {
-									const Widget = WIDGETS[id];
-									const pinned = cardPinned && id === ASSIGNMENT_ID;
-									return (
-										<Fragment key={id}>
-											{!pinned && showMarker?.before === id ? marker : null}
-											<WidgetSlotProvider
-												value={
-													pinned
-														? null
-														: {
-																id,
-																lane,
-																index: ids.indexOf(id),
-																size: sizeOf(id),
-																afterCard:
-																	shown[position - 1] === ASSIGNMENT_ID,
-															}
-												}
-											>
-												<Widget />
-											</WidgetSlotProvider>
-											{/* In the page under the card on a narrow screen, in a corner on a wide one. */}
-											{id === ASSIGNMENT_ID ? (
-												<LaunchSpotlight className={SPOTLIGHT_CORNER[lane]} />
-											) : null}
-										</Fragment>
-									);
-								})}
-								{showMarker?.before === null ? marker : null}
+			{cardHost
+				? createPortal(
+						isForeignTeamView ? (
+							<ForeignTeamAssignmentCard />
+						) : (
+							<AssignmentCard />
+						),
+						cardHost,
+					)
+				: null}
+			<AssignmentCardHost.Provider value={cardHost}>
+				<div
+					// Past the lanes a drop does nothing, so the marker goes too.
+					onDragLeave={(event) => {
+						if (
+							!event.currentTarget.contains(event.relatedTarget as Node | null)
+						)
+							setHovered(null);
+					}}
+					className={cn(
+						"mt-3 grid grid-cols-1 gap-x-7 sm:mt-5 lg:mt-6",
+						GRID_CLASS[cardLane],
+						// While customizing, every lane reaches the bottom so an empty or
+						// short one is still a place to drop.
+						editing ? "items-stretch max-lg:pb-40" : "items-start",
+					)}
+				>
+					{lanes.map((ids, lane) => {
+						const showMarker =
+							target?.lane === lane && !isNoOp(target) ? target : null;
+						// Stacked, the card is pinned first. It goes through the same list
+						// as in the lanes, so a card at the top of the first lane stays
+						// mounted, with what was typed in it, when the window crosses lg.
+						const shown: WidgetId[] =
+							cardPinned && lane === 0 ? [ASSIGNMENT_ID, ...ids] : ids;
+						return (
+							<div
+								// biome-ignore lint/suspicious/noArrayIndexKey: a lane is its position
+								key={lane}
+								role={editing ? "group" : undefined}
+								aria-label={
+									editing ? t("lane", { number: lane + 1 }) : undefined
+								}
+								onDragOver={editing ? onDragOver(lane) : undefined}
+								onDrop={editing ? onDrop : undefined}
+								className={cn(
+									"flex min-w-0 flex-col",
+									LANE_CLASS[lane],
+									(ids.length > 0 || editing) && LANE_DIVIDER[lane],
+									editing && "min-h-24",
+								)}
+							>
+								<div className="flex flex-1 flex-col">
+									{shown.map((id, position) => {
+										const Widget = WIDGETS[id];
+										const pinned = cardPinned && id === ASSIGNMENT_ID;
+										return (
+											<Fragment key={id}>
+												{!pinned && showMarker?.before === id ? marker : null}
+												<WidgetSlotProvider
+													value={
+														pinned
+															? null
+															: {
+																	id,
+																	lane,
+																	index: ids.indexOf(id),
+																	size: sizeOf(id),
+																	afterCard:
+																		shown[position - 1] === ASSIGNMENT_ID,
+																}
+													}
+												>
+													<Widget />
+												</WidgetSlotProvider>
+												{/* In the page under the card on a narrow screen, in a corner on a wide one. */}
+												{id === ASSIGNMENT_ID ? (
+													<LaunchSpotlight className={SPOTLIGHT_CORNER[lane]} />
+												) : null}
+											</Fragment>
+										);
+									})}
+									{showMarker?.before === null ? marker : null}
+								</div>
 							</div>
-						</div>
-					);
-				})}
-			</div>
+						);
+					})}
+				</div>
+			</AssignmentCardHost.Provider>
 			<ReviewersPanel
 				teamSlug={teamSlug}
 				open={reviewersOpen}

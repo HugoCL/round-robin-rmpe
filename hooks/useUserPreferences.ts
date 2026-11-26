@@ -7,7 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { toast } from "@/hooks/use-toast";
 import {
 	DEFAULT_WIDGET_LAYOUT,
-	normalizeWidgetLayout,
+	resolveWidgetLayoutWrite,
 	type WidgetLayout,
 } from "@/lib/widgetLayout";
 
@@ -160,9 +160,11 @@ export function useUserPreferences() {
 			enableAgentSetupExperiment:
 				preferenceQuery.enableAgentSetupExperiment === true,
 			defaultAgentTeamSlug: preferenceQuery.defaultAgentTeamSlug,
-			widgetLayout: preferenceQuery.widgetLayout
-				? normalizeWidgetLayout(preferenceQuery.widgetLayout)
-				: undefined,
+			// A backend from before this client's resets stores the default
+			// spelled out; either way the default view is `undefined` here.
+			widgetLayout: resolveWidgetLayoutWrite(
+				preferenceQuery.widgetLayout ?? DEFAULT_WIDGET_LAYOUT,
+			),
 		};
 	}, [preferenceQuery]);
 
