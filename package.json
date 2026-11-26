@@ -59,6 +59,8 @@
 		"@radix-ui/react-toggle-group": "^1.1.19",
 		"@radix-ui/react-tooltip": "^1.2.16",
 		"@tailwindcss/postcss": "^4.3.3",
+		"@ui-sdk/core": "0.1.0-beta.16",
+		"@ui-sdk/react": "0.1.0-beta.16",
 		"ai": "^7.0.70",
 		"autoprefixer": "^10.5.4",
 		"class-variance-authority": "^0.7.1",

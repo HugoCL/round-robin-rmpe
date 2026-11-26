@@ -8,7 +8,7 @@
 * **Language:** TypeScript
 * **Backend & Database:** Convex (Real-time database and serverless functions)
 * **Authentication:** Clerk
-* **Styling:** Tailwind CSS, shadcn/ui (Radix UI), `class-variance-authority`
+* **Styling:** Tailwind CSS, `class-variance-authority`; UI primitives moving from shadcn/ui (Radix UI) to [UI SDK](https://ui-sdk.dev) (`@ui-sdk/react` + `@ui-sdk/core`, beta). See "UI primitives: UI SDK" below.
 * **Internationalization:** `next-intl`
 * **Linting & Formatting:** Biome
 * **AI Integration:** Vercel AI SDK
@@ -103,6 +103,19 @@
 * **State Management:** Use Convex `useQuery` and `useMutation` for server state. Use React `useState` / `useReducer` for local UI state.
 * **Internationalization:** All user-facing text must be localized using `next-intl`. Add keys to `messages/{locale}.json`.
 * **Imports:** Use absolute imports via the `@/` alias (e.g., `@/components/ui/button`).
+
+## UI primitives: UI SDK
+
+The wrappers in `components/ui/` are moving from Radix/shadcn (plus some base-ui, vaul and Radix Toast) to [UI SDK](https://ui-sdk.dev) (Vercel): unstyled, accessible primitives that handle focus, keyboard, selection, popups and ARIA. The look stays La Lista's own Tailwind classes; UI SDK only replaces behavior. Migrated so far: Button, Dialog, Select, Dropdown Menu (UI SDK Menu) and the toast stack.
+
+* Before using a UI SDK component, read `node_modules/@ui-sdk/react/docs/llms.txt`, then only the component pages you need (`docs/components/<name>.md`), plus `popups.md`, `styling-and-animation.md`, `forms.md` and `parts-and-composition.md` for anything that opens or submits. Always read the copy in `node_modules` (the installed version), not docs from the web or another repo. To build a component it does not ship, search `docs/core.md` by heading (it is large) and read `rendering.md` next to it.
+* Import each component from its entry (`@ui-sdk/react/dialog`), never from a package root.
+* Keep the exported names and props of the `components/ui/*` wrappers so call sites stay unchanged; map Radix-only props inside the wrapper. `asChild` on the migrated wrappers maps to UI SDK's `render` prop.
+* Do not import `@ui-sdk/core/web.css`: it restyles bare `a`, `code`, `kbd` and `hr` app-wide, and La Lista keeps its own look. `app/globals.css` declares `@layer ui-sdk;` on its first line so Tailwind utilities win over the small CSS UI SDK injects.
+* Style parts by `data-slot` and state attributes (`data-open`, `data-closed`, `data-checked`, `data-highlighted`, `data-side`) and the CSS variables each component page lists (`--transform-origin`, `--anchor-width`, `--available-height`). The shadcn `data-open:`/`data-closed:`/`data-checked:`/`data-disabled:` Tailwind variants match both Radix's `data-state` and UI SDK's bare attributes.
+* UI SDK popups (dialog, menu, select, toast) render in place, in the browser's top layer, without portals. A still-Radix popup (tooltip, popover, alert dialog, sheet, drawer) opened from inside one portals into it through `PortalContainerContext` (`components/ui/portal-container.tsx`); keep that wiring until every popup is migrated.
+* The packages are pinned (exact) to `0.1.0-beta.16`, the newest beta past pnpm's `minimumReleaseAge` on 2026-11-26. Bump `@ui-sdk/react` and `@ui-sdk/core` together, to the same version, and never loosen the pnpm policy to get a newer one.
+* The shadcn CLI is no longer used to add or update primitives. The `shadcn` package stays only for `shadcn/tailwind.css` (custom variants and utilities) imported in `globals.css`.
 
 ## Launch Videos
 
