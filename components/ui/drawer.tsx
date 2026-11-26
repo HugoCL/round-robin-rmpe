@@ -26,8 +26,9 @@ function Drawer({
   direction?: DrawerSide
 }) {
   // The pointer driver follows a finger the way vaul did and rests exactly at
-  // the edge. ui-sdk's default on touch screens, native scroll snapping, rests
-  // a fraction of a pixel off with the backdrop not quite at full dim.
+  // the edge. In testing, ui-sdk's default on touch screens (native scroll
+  // snapping) rested a fraction of a pixel off with the backdrop not quite at
+  // full dim, and synthesized touch swipes didn't move it.
   return (
     <DrawerPrimitive
       side={side ?? direction ?? "bottom"}
