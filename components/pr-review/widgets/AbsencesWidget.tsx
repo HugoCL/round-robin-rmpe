@@ -74,7 +74,8 @@ export function AbsencesWidget() {
 
 	return (
 		<WidgetFrame
-			meta={t("widgets.absences.window")}
+			// Small says the window in its sentence.
+			meta={size === "small" ? undefined : t("widgets.absences.window")}
 			actions={
 				<TeamAbsencesDialog
 					trigger={

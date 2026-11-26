@@ -143,6 +143,29 @@ export function normalizeWidgetLayout(
 	return withSizes(lanes, previous.sizes);
 }
 
+/**
+ * What a write stores: nothing for the default view. `null` is how a client
+ * from before the card says "my default order", which says nothing about the
+ * card or the sizes, so both stay as stored. This client resets by sending
+ * the whole default layout.
+ */
+export function resolveWidgetLayoutWrite(
+	sent: unknown,
+	stored?: unknown,
+): WidgetLayout | undefined {
+	const layout = normalizeWidgetLayout(
+		sent === null
+			? {
+					lanes: DEFAULT_WIDGET_LAYOUT.lanes.map((lane) =>
+						lane.filter((id) => id !== ASSIGNMENT_ID),
+					),
+				}
+			: sent,
+		stored,
+	);
+	return isDefaultWidgetLayout(layout) ? undefined : layout;
+}
+
 export function findWidget(
 	layout: WidgetLayout,
 	id: WidgetId,

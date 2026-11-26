@@ -9,6 +9,7 @@ import {
 	normalizeWidgetLayout,
 	placedWidgets,
 	removeWidget,
+	resolveWidgetLayoutWrite,
 	setWidgetSize,
 	type WidgetLayout,
 	widgetSize,
@@ -357,4 +358,33 @@ test("a write that carries the card is taken as sent, whatever is stored", () =>
 	};
 	const sent: WidgetLayout = { lanes: [["assignment", "history"], [], []] };
 	assert.deepEqual(normalizeWidgetLayout(sent, stored), sent);
+});
+
+test("an old client's null keeps the stored card lane and sizes", () => {
+	const stored: WidgetLayout = {
+		lanes: [["history"], ["rotation", "absences", "teamLoad"], ["assignment"]],
+		sizes: { rotation: "small" },
+	};
+	// An old tab removed Team Load: back to its default order, so it sends null.
+	assert.deepEqual(resolveWidgetLayoutWrite(null, stored), {
+		lanes: [
+			["history"],
+			["rotation", "absences"],
+			["assignment", "myWeek", "myReviews", "events"],
+		],
+		sizes: { rotation: "small" },
+	});
+	assert.equal(resolveWidgetLayoutWrite(null, undefined), undefined);
+});
+
+test("a reset from this client stores nothing, whatever was stored", () => {
+	const stored: WidgetLayout = {
+		lanes: [["history"], ["assignment"], []],
+		sizes: { history: "large" },
+	};
+	assert.equal(
+		resolveWidgetLayoutWrite(DEFAULT_WIDGET_LAYOUT, stored),
+		undefined,
+	);
+	assert.deepEqual(resolveWidgetLayoutWrite(stored, undefined), stored);
 });

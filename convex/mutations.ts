@@ -27,7 +27,7 @@ import {
 	isIncludedInTagRotations,
 } from "../lib/reviewerEligibility";
 import { pickTeamOwnerCandidate, resolveReviewerRole } from "../lib/teamRoles";
-import { normalizeWidgetLayout } from "../lib/widgetLayout";
+import { resolveWidgetLayoutWrite } from "../lib/widgetLayout";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -267,10 +267,10 @@ function resolvePreferencePatch(
 			patch.defaultAgentTeamSlug?.trim() || undefined;
 	}
 	if (patch.widgetLayout !== undefined) {
-		resolved.widgetLayout =
-			patch.widgetLayout === null
-				? undefined
-				: normalizeWidgetLayout(patch.widgetLayout, storedWidgetLayout);
+		resolved.widgetLayout = resolveWidgetLayoutWrite(
+			patch.widgetLayout,
+			storedWidgetLayout,
+		);
 	}
 	return resolved;
 }

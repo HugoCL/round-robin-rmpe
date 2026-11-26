@@ -5,7 +5,11 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "@/hooks/use-toast";
-import { normalizeWidgetLayout, type WidgetLayout } from "@/lib/widgetLayout";
+import {
+	DEFAULT_WIDGET_LAYOUT,
+	normalizeWidgetLayout,
+	type WidgetLayout,
+} from "@/lib/widgetLayout";
 
 export type UserPreferences = {
 	showAssignments: boolean;
@@ -234,7 +238,15 @@ export function useUserPreferences() {
 			pendingWritesRef.current += 1;
 			setIsSaving(true);
 			try {
-				await updatePreferencesMutation(resolvedPatch);
+				await updatePreferencesMutation({
+					...resolvedPatch,
+					// Spelled out, not null: to the server null is an older client's
+					// default order, which leaves the card and the sizes as stored.
+					widgetLayout:
+						resolvedPatch.widgetLayout === null
+							? DEFAULT_WIDGET_LAYOUT
+							: resolvedPatch.widgetLayout,
+				});
 			} catch (error) {
 				console.error("Failed to update user preferences:", error);
 				writeFailedRef.current = true;
