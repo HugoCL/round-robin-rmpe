@@ -72,9 +72,10 @@ const OVERLAY_SELECTOR =
 export function isOverlayOpen(target: EventTarget | null) {
 	if (target instanceof Element && target.closest(OVERLAY_SELECTOR))
 		return true;
+	// Radix marks an open overlay with data-state="open", ui-sdk with data-open.
 	return Boolean(
 		document.querySelector(
-			'[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"], [role="menu"][data-state="open"], [data-radix-popper-content-wrapper]:not(:has([role="tooltip"]))',
+			':is([role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]):is([data-state="open"], [data-open]), [data-radix-popper-content-wrapper]:not(:has([role="tooltip"]))',
 		),
 	);
 }
