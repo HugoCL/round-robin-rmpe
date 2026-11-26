@@ -1,8 +1,6 @@
 "use client";
 
-import type { DateRange } from "@daypicker/react";
 import { format, parse } from "date-fns";
-import { enUS, es } from "date-fns/locale";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -54,6 +52,9 @@ export function formatDateKeyDay(key: string, locale: string): string {
 		year: year === new Date().getFullYear() ? undefined : "numeric",
 	}).format(new Date(Date.UTC(year, month - 1, day)));
 }
+
+/** A picked range; until its end is picked, `to` is unset and it covers its start. */
+type DateRange = { from: Date | undefined; to?: Date };
 
 function dateKeyToCalendarDate(key: string): Date {
 	return parse(key, DATE_KEY_FORMAT, new Date());
@@ -128,7 +129,6 @@ function MarkAbsentDialogBody({
 	const [returnTime, setReturnTime] = useState("");
 
 	const timeId = useId();
-	const dateLocale = locale.startsWith("es") ? es : enUS;
 
 	// Check if current user is marking themselves as absent
 	const isSelf =
@@ -217,8 +217,7 @@ function MarkAbsentDialogBody({
 		submitError === null &&
 		optionError === null;
 
-	const isDayDisabled = (date: Date) => {
-		const key = format(date, DATE_KEY_FORMAT);
+	const isDayUnavailable = (key: string) => {
 		if (compareDateKeys(key, todayKey) < 0) return true;
 		if (
 			isActiveEdit &&
@@ -249,6 +248,37 @@ function MarkAbsentDialogBody({
 			setReturnOption("none");
 		}
 		setRange(next);
+	};
+
+	// The calendar picks a range in two presses and reports it once both ends
+	// are in. These keep the summary below following each press, as it did:
+	// the first press starts a one-day range, pressing the only selected day
+	// clears it, and an active absence keeps its start.
+	const handleRangeStart = (anchor: string | null, cancel: () => void) => {
+		if (!anchor) return;
+		const day = dateKeyToCalendarDate(anchor);
+		if (isActiveEdit) {
+			cancel();
+			handleSelect(undefined, day);
+			return;
+		}
+		if (
+			range?.to &&
+			keyRange?.startDate === anchor &&
+			keyRange.endDate === anchor
+		) {
+			cancel();
+			handleSelect(undefined, day);
+			return;
+		}
+		handleSelect({ from: day, to: undefined }, day);
+	};
+
+	const handleRangeChange = (value: unknown) => {
+		// Presses always end a range with both ends.
+		if (!Array.isArray(value) || value.length !== 2) return;
+		const end = dateKeyToCalendarDate(value[1]);
+		handleSelect({ from: dateKeyToCalendarDate(value[0]), to: end }, end);
 	};
 
 	const handleOptionChange = (option: ReturnOption, checked: boolean) => {
@@ -430,14 +460,14 @@ function MarkAbsentDialogBody({
 				>
 					<Calendar
 						mode="range"
-						selected={range}
-						onSelect={handleSelect}
-						disabled={isDayDisabled}
-						excludeDisabled
-						resetOnSelect={!isActiveEdit}
-						defaultMonth={range?.from ?? dateKeyToCalendarDate(todayKey)}
-						today={dateKeyToCalendarDate(todayKey)}
-						locale={dateLocale}
+						value={keyRange ? [keyRange.startDate, keyRange.endDate] : null}
+						onValueChange={handleRangeChange}
+						onAnchorChange={(anchor, details) =>
+							handleRangeStart(anchor, details.cancel)
+						}
+						unavailable={isDayUnavailable}
+						defaultMonth={(keyRange?.startDate ?? todayKey).slice(0, 7)}
+						today={todayKey}
 						className="rounded-xl border border-border/60"
 					/>
 				</div>

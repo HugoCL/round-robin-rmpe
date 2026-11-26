@@ -8,7 +8,7 @@
 * **Language:** TypeScript
 * **Backend & Database:** Convex (Real-time database and serverless functions)
 * **Authentication:** Clerk
-* **Styling:** Tailwind CSS, `class-variance-authority`; UI primitives moving from shadcn/ui (Radix UI) to [UI SDK](https://ui-sdk.dev) (`@ui-sdk/react` + `@ui-sdk/core`, beta). See "UI primitives: UI SDK" below.
+* **Styling:** Tailwind CSS, `class-variance-authority`; UI primitives on [UI SDK](https://ui-sdk.dev) (`@ui-sdk/react` + `@ui-sdk/core`, beta), styled with La Lista's classes (they started as shadcn/ui). See "UI primitives: UI SDK" below.
 * **Internationalization:** `next-intl`
 * **Linting & Formatting:** Biome
 * **AI Integration:** Vercel AI SDK
@@ -35,7 +35,7 @@
   * `actions/`: Server Actions (e.g., AI generation).
   * `api/`: API routes (e.g., for AI streaming).
 * `components/`: React components.
-  * `ui/`: Reusable UI components (shadcn/ui).
+  * `ui/`: Reusable UI components (UI SDK wrappers).
   * `pr-review/`: Domain-specific components for the review tool.
 * `convex/`: Convex backend code.
   * `schema.ts`: Database schema definition.
@@ -106,7 +106,7 @@
 
 ## UI primitives: UI SDK
 
-The wrappers in `components/ui/` are moving from Radix/shadcn (plus some base-ui, vaul and Radix Toast) to [UI SDK](https://ui-sdk.dev) (Vercel): unstyled, accessible primitives that handle focus, keyboard, selection, popups and ARIA. The look stays La Lista's own Tailwind classes; UI SDK only replaces behavior. Migrated: Button, Dialog, Alert Dialog, Sheet, Drawer, Select, Dropdown Menu (UI SDK Menu), Popover, Tooltip, Collapsible, Avatar, Separator, Scroll Area, the toast stack, and the form primitives: Switch, Checkbox, Radio Group, Toggle, Toggle Group, Tabs, Label, Field, Input, Textarea and Input Group. Badge renders through UI SDK's `renderElement`. Only Calendar is still on another library (daypicker); the app no longer depends on Radix or vaul.
+The wrappers in `components/ui/` moved from Radix/shadcn (plus some base-ui, vaul, Radix Toast and daypicker) to [UI SDK](https://ui-sdk.dev) (Vercel): unstyled, accessible primitives that handle focus, keyboard, selection, popups and ARIA. The look stays La Lista's own Tailwind classes; UI SDK only replaces behavior. Every primitive is on it: Button, Dialog, Alert Dialog, Sheet, Drawer, Select, Dropdown Menu (UI SDK Menu), Popover, Tooltip, Collapsible, Avatar, Separator, Scroll Area, the toast stack, and the form primitives: Switch, Checkbox, Radio Group, Toggle, Toggle Group, Tabs, Label, Field, Input, Textarea, Input Group and Calendar. Badge renders through UI SDK's `renderElement`. The app no longer depends on Radix, vaul or daypicker (only `chrome-extension/` keeps its own Radix).
 
 * Before using a UI SDK component, read `node_modules/@ui-sdk/react/docs/llms.txt`, then only the component pages you need (`docs/components/<name>.md`), plus `popups.md`, `styling-and-animation.md`, `forms.md` and `parts-and-composition.md` for anything that opens or submits. Always read the copy in `node_modules` (the installed version), not docs from the web or another repo. To build a component it does not ship, search `docs/core.md` by heading (it is large) and read `rendering.md` next to it.
 * Import each component from its entry (`@ui-sdk/react/dialog`), never from a package root.
@@ -124,7 +124,8 @@ The wrappers in `components/ui/` are moving from Radix/shadcn (plus some base-ui
 * The Button wrapper keeps native semantics: `type` defaults to `"submit"`, and `onClick`'s return value is ignored so a Promise doesn't turn on ui-sdk's pending state (which also swallows errors into state). Menu item `onSelect`, toast actions and alert dialog Action/Cancel (Close parts rendered as our Button) follow the same rule. Opt into pending per call site only on purpose.
 * Tooltip: `TooltipProvider` only sets the delay for the tooltips inside it (ui-sdk groups tooltips without a provider). `sideOffset` excludes the arrow, as in Radix (the wrapper adds its 10px). The content renders as a `span`, so a trigger can sit in a `<p>`. `WithTooltip` keeps a span host as the trigger: it takes the hover of a disabled button (`disabled:pointer-events-none`) and carries `className`. Focus that a ui-sdk popup returns to a trigger doesn't open its tooltip.
 * The packages are pinned (exact) to `0.1.0-beta.16`, the newest beta past pnpm's `minimumReleaseAge` on 2026-11-26. Bump `@ui-sdk/react` and `@ui-sdk/core` together, to the same version, and never loosen the pnpm policy to get a newer one.
-* The shadcn CLI is no longer used to add or update primitives. The `shadcn` package stays only for `shadcn/tailwind.css` (custom variants and utilities) imported in `globals.css`.
+* Calendar values are ISO dates (`"2026-11-26"`); `toCalendarDate` and `fromCalendarDate` in `calendar.tsx` convert local `Date`s. The wrapper keeps the old day picker's look: it derives each day's marks from the value (not from UI SDK's preview of a range being picked), writes the month as `LLLL y` and weekdays as two letters with date-fns, and follows the app's locale, with the week starting as date-fns says (Monday in Spanish). The day cell (`td`) is the focusable gridcell. Days the user can't pick go in `unavailable` (they stay focusable); a range can't be ended past one. In a popover, open on the selected day (or today) with `initialFocus='[data-slot="calendar-day"][tabindex="0"]'`.
+* The shadcn CLI is no longer used to add or update primitives: `shadcn add` would bring Radix code back. The `shadcn` package stays only for `shadcn/tailwind.css` (custom variants and utilities) imported in `globals.css`, and `components.json` keeps `"style": "radix-maia"` because the CLI has no UI SDK style to name.
 
 ## Launch Videos
 

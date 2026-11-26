@@ -5,7 +5,11 @@ import { Calendar, Clock, Globe } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+	Calendar as CalendarComponent,
+	fromCalendarDate,
+	toCalendarDate,
+} from "@/components/ui/calendar";
 import {
 	Dialog,
 	DialogContent,
@@ -304,12 +308,22 @@ export function CreateEventDialog({
 								<Calendar className="mr-2 h-4 w-4" />
 								{date ? formatDate(date) : t("events.selectDate")}
 							</PopoverTrigger>
-							<PopoverContent className="w-auto p-0" align="start">
+							<PopoverContent
+								className="w-auto p-0"
+								align="start"
+								// The day picker opens on the selected day, or today.
+								initialFocus='[data-slot="calendar-day"][tabindex="0"]'
+							>
 								<CalendarComponent
-									mode="single"
-									selected={date}
-									onSelect={setDate}
-									autoFocus
+									value={date ? toCalendarDate(date) : null}
+									onValueChange={(value) =>
+										setDate(
+											typeof value === "string"
+												? fromCalendarDate(value)
+												: undefined,
+										)
+									}
+									deselectable
 								/>
 							</PopoverContent>
 						</Popover>
