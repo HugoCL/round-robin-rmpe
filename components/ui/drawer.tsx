@@ -25,7 +25,16 @@ function Drawer({
   /** vaul's name for `side`, kept for call sites. */
   direction?: DrawerSide
 }) {
-  return <DrawerPrimitive side={side ?? direction ?? "bottom"} {...props} />
+  // The pointer driver follows a finger the way vaul did and rests exactly at
+  // the edge. ui-sdk's default on touch screens, native scroll snapping, rests
+  // a fraction of a pixel off with the backdrop not quite at full dim.
+  return (
+    <DrawerPrimitive
+      side={side ?? direction ?? "bottom"}
+      driver="pointer"
+      {...props}
+    />
+  )
 }
 
 function DrawerTrigger({
@@ -104,7 +113,7 @@ function DrawerContent({
         initialFocus={initialFocus ?? focus.initialFocus}
         finalFocus={finalFocus ?? focus.finalFocus}
         className={cn(
-          "calm-shell group/drawer-content relative flex h-auto flex-col bg-background/96 p-2 text-sm text-foreground outline-none after:absolute after:bg-inherit after:content-[''] data-[side=bottom]:mt-24 data-[side=bottom]:max-h-[80vh] data-[side=bottom]:w-full data-[side=bottom]:rounded-b-none data-[side=bottom]:after:inset-x-0 data-[side=bottom]:after:top-full data-[side=bottom]:after:h-[200%] data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:rounded-l-none data-[side=left]:after:inset-y-0 data-[side=left]:after:right-full data-[side=left]:after:w-[200%] data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:rounded-r-none data-[side=right]:after:inset-y-0 data-[side=right]:after:left-full data-[side=right]:after:w-[200%] data-[side=top]:mb-24 data-[side=top]:max-h-[80vh] data-[side=top]:w-full data-[side=top]:rounded-t-none data-[side=top]:after:inset-x-0 data-[side=top]:after:bottom-full data-[side=top]:after:h-[200%] data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm",
+          "calm-shell group/drawer-content relative flex h-auto flex-col bg-background/96 p-2 text-sm text-foreground outline-none after:absolute after:bg-inherit after:content-[''] data-[side=bottom]:max-h-[80vh] data-[side=bottom]:w-full data-[side=bottom]:rounded-b-none data-[side=bottom]:after:inset-x-0 data-[side=bottom]:after:top-full data-[side=bottom]:after:h-[200%] data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:rounded-l-none data-[side=left]:after:inset-y-0 data-[side=left]:after:right-full data-[side=left]:after:w-[200%] data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:rounded-r-none data-[side=right]:after:inset-y-0 data-[side=right]:after:left-full data-[side=right]:after:w-[200%] data-[side=top]:max-h-[80vh] data-[side=top]:w-full data-[side=top]:rounded-t-none data-[side=top]:after:inset-x-0 data-[side=top]:after:bottom-full data-[side=top]:after:h-[200%] data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm",
           className
         )}
         {...props}
