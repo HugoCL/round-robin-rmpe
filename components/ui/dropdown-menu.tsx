@@ -52,6 +52,8 @@ function DropdownMenuContent({
   className,
   align = "start",
   sideOffset = 4,
+  // Radix's default; ui-sdk keeps a gap from the viewport edge otherwise.
+  collisionPadding = 0,
   children,
   ...props
 }: Omit<React.ComponentProps<typeof MenuContentPrimitive>, "children"> & {
@@ -61,6 +63,7 @@ function DropdownMenuContent({
     <MenuContentPrimitive
       sideOffset={sideOffset}
       align={align}
+      collisionPadding={collisionPadding}
       className={cn(
         "calm-panel z-50 max-h-(--available-height) w-(--anchor-width) min-w-48 origin-(--transform-origin) overflow-x-hidden overflow-y-auto bg-background/96 p-1 text-foreground duration-200 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-closed:overflow-hidden data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
         className
@@ -311,6 +314,7 @@ function DropdownMenuSubTrigger({
 
 function DropdownMenuSubContent({
   className,
+  collisionPadding = 0,
   children,
   ...props
 }: Omit<React.ComponentProps<typeof MenuSubContentPrimitive>, "children"> & {
@@ -318,6 +322,7 @@ function DropdownMenuSubContent({
 }) {
   return (
     <MenuSubContentPrimitive
+      collisionPadding={collisionPadding}
       className={cn(
         "calm-panel z-50 min-w-36 origin-(--transform-origin) overflow-hidden bg-background/96 p-1 text-foreground duration-200 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
         className
