@@ -216,7 +216,7 @@ export function useAssignment(teamSlug: string | null) {
 				let requiredTagId: string | undefined;
 				if (mode === "regular") {
 					if (slot.strategy !== "random") {
-						unresolved("Estrategia inválida");
+						unresolved("Esta opción no aplica en este modo");
 						continue;
 					}
 				} else {
@@ -225,14 +225,14 @@ export function useAssignment(teamSlug: string | null) {
 					} else if (slot.strategy === "tag_random_other") {
 						requiredTagId = slot.tagId;
 					} else {
-						unresolved("Estrategia inválida");
+						unresolved("Esta opción no aplica en este modo");
 						continue;
 					}
 					if (!requiredTagId) {
 						unresolved(
 							slot.strategy === "tag_random_selected"
-								? "Selecciona una etiqueta primero"
-								: "Selecciona una etiqueta para este espacio",
+								? "Elige un tag primero"
+								: "Elige un tag para esta fila",
 						);
 						continue;
 					}
@@ -344,12 +344,12 @@ export function useAssignment(teamSlug: string | null) {
 					}, 3000);
 				} else {
 					setStatus("error");
-					setErrorMessage("La asignación falló");
+					setErrorMessage("No pudimos asignar el PR");
 				}
 			} catch (err) {
 				setStatus("error");
 				setErrorMessage(
-					err instanceof Error ? err.message : "La asignación falló",
+					err instanceof Error ? err.message : "No pudimos asignar el PR",
 				);
 			}
 		},
@@ -467,14 +467,16 @@ export function useAssignment(teamSlug: string | null) {
 				setStatus("error");
 				setErrorMessage(
 					result?.failedCount > 0
-						? `${result.failedCount} de ${result.totalRequested} espacios fallaron`
-						: "No se pudieron asignar revisores",
+						? `No pudimos asignar ${result.failedCount} de ${result.totalRequested} revisores`
+						: "No pudimos asignar revisores",
 				);
 				return result;
 			} catch (err) {
 				setStatus("error");
 				setErrorMessage(
-					err instanceof Error ? err.message : "La asignación por lote falló",
+					err instanceof Error
+						? err.message
+						: "No pudimos completar la asignación múltiple",
 				);
 			}
 		},

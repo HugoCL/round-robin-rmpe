@@ -118,10 +118,15 @@ export function PRReviewGuard({
 						{t("pr.notAuthorizedTitle")}
 					</h2>
 					<p className="text-muted-foreground">
-						{t("pr.notAuthorizedDescription")} {t("pr.unauthorized")}{" "}
-						{userEmail}
+						{t("pr.notAuthorizedDescription")}
 					</p>
+					{userEmail ? (
+						<p className="mt-2 font-mono text-xs text-muted-foreground">
+							{userEmail}
+						</p>
+					) : null}
 					<form
+						className="mt-4"
 						action={async () => {
 							await onSignOut();
 						}}

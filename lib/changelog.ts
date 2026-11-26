@@ -140,7 +140,7 @@ export const changelogEntries: ChangelogEntry[] = [
 		type: "fix",
 		title: "El historial ya muestra quién asignó y los hilos de Chat",
 		description:
-			"Cuando asignabas un PR, el historial a veces no decía quién lo pidió — sobre todo si esa persona era de otro equipo — y el aviso de Google Chat no llegaba a los dos espacios. Ahora se guarda quién asignó aunque esté en otro roster, el mensaje sale al canal de quien pide y al de quien revisa, y en el historial aparecen los links a esos mensajes. Si pedías un revisor concreto por el agente, también queda marcado como asignación forzada en vez de rotación.",
+			"Cuando asignabas un PR, el historial a veces no decía quién lo pidió (sobre todo si esa persona era de otro equipo) y el aviso de Google Chat no llegaba a los dos espacios. Ahora se guarda quién asignó aunque esté en otro roster, el mensaje sale al canal de quien pide y al de quien revisa, y en el historial aparecen los links a esos mensajes. Si pedías un revisor concreto por el agente, también queda marcado como asignación forzada en vez de rotación.",
 	},
 	{
 		date: "2026-09-01",
@@ -238,9 +238,9 @@ export const changelogEntries: ChangelogEntry[] = [
 	{
 		date: "2026-07-25",
 		type: "improvement",
-		title: "Una experiencia más clara y confiable",
+		title: "Mejoras en equipos, avisos y detección de duplicados",
 		description:
-			"Pulimos la experiencia de equipos y el feedback al asignar PRs. También mejoramos la accesibilidad para zoom y movimiento reducido, y corregimos la detección de PRs duplicados para revisar todo el historial del equipo.",
+			"Mejoramos la vista de equipos y los avisos al asignar PRs, ajustamos la accesibilidad con zoom y movimiento reducido, y corregimos la detección de duplicados para que revise todo el historial del equipo.",
 	},
 	{
 		date: "2026-05-22",
@@ -262,7 +262,7 @@ export const changelogEntries: ChangelogEntry[] = [
 		type: "improvement",
 		title: "Diseño unificado en toda la app",
 		description:
-			"Unificamos el diseño de La Lista para que toda la experiencia se sienta parte de la misma app: dejamos atrás ese look más rígido (adios rounded: none) para dar paso a una interfaz mucho más clara y consistente.",
+			"Unificamos el diseño de La Lista para que toda la app hable el mismo idioma: dejamos atrás ese look más rígido (adiós rounded: none) por una interfaz más clara y consistente.",
 	},
 	{
 		date: "2026-03-19",

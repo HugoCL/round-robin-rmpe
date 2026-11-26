@@ -20,13 +20,13 @@ export function SignInView() {
 			</h2>
 			<p className="text-xs text-muted-foreground mb-4 max-w-[240px]">
 				Inicia sesión en la app web para usar la extensión. Tu sesión se
-				sincronizará automáticamente.
+				sincroniza sola.
 			</p>
 			<Button onClick={handleSignIn} size="lg">
 				Iniciar sesión en La Lista
 			</Button>
 			<p className="text-[10px] text-muted-foreground mt-3 max-w-[220px]">
-				Después de iniciar sesión, cierra y vuelve a abrir este popup.
+				Cuando termines, cierra y vuelve a abrir esta ventana.
 			</p>
 		</div>
 	);
