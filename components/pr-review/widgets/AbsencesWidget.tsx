@@ -16,10 +16,13 @@ import { formatDateKeyDay } from "../dialogs/MarkAbsentDialog";
 import { TeamAbsencesDialog } from "../dialogs/TeamAbsencesDialog";
 import { usePRReview } from "../PRReviewContext";
 import { WidgetEmpty } from "./parts";
-import { WidgetFrame } from "./WidgetFrame";
+import { useWidgetSize, WidgetFrame } from "./WidgetFrame";
 
 /** Two working weeks, starting today. */
 const DAY_COUNT = 10;
+
+/** Names the small size spells out before it counts the rest. */
+const SMALL_NAMES = 3;
 
 const toUtcDate = (key: DateKey) => {
 	const [year, month, day] = key.split("-").map(Number);
@@ -31,6 +34,7 @@ export function AbsencesWidget() {
 	const t = useTranslations();
 	const locale = useLocale();
 	const { reviewers, plannedAbsences, teamTimezone } = usePRReview();
+	const size = useWidgetSize();
 	const [now] = useState(() => Date.now());
 	const todayKey = getTodayDateKey(now, teamTimezone);
 	const days = useMemo(
@@ -52,6 +56,18 @@ export function AbsencesWidget() {
 		timeZone: "UTC",
 		weekday: "narrow",
 	});
+	const nameOf = (reviewerId: string) =>
+		reviewers.find((item) => item._id === reviewerId)?.name;
+	// Small is one sentence: who is away, without the days.
+	const away = rows.flatMap((row) => nameOf(row.reviewerId) ?? []);
+	const awayNames = new Intl.ListFormat(locale, { type: "conjunction" }).format(
+		away.length > SMALL_NAMES
+			? [
+					...away.slice(0, SMALL_NAMES),
+					t("widgets.moreInline", { count: away.length - SMALL_NAMES }),
+				]
+			: away,
+	);
 	// A new week starts a little apart, so the strip reads as two weeks.
 	const startsWeek = (index: number) =>
 		index > 0 && getWeekdayOfDateKey(days[index]) === "monday";
@@ -74,6 +90,16 @@ export function AbsencesWidget() {
 		>
 			{rows.length === 0 ? (
 				<WidgetEmpty>{t("widgets.absences.empty")}</WidgetEmpty>
+			) : size === "small" ? (
+				<p className="text-sm leading-relaxed text-pretty text-muted-foreground">
+					{t.rich("widgets.absences.summary", {
+						count: away.length,
+						names: awayNames,
+						b: (chunks) => (
+							<b className="font-medium text-foreground">{chunks}</b>
+						),
+					})}
+				</p>
 			) : (
 				<ul className="flex flex-col gap-1.5 text-sm">
 					<li aria-hidden="true" className="flex justify-end gap-[3px]">
@@ -91,9 +117,6 @@ export function AbsencesWidget() {
 						))}
 					</li>
 					{rows.map((row) => {
-						const reviewer = reviewers.find(
-							(item) => item._id === row.reviewerId,
-						);
 						const ranges = row.segments
 							.map((segment) =>
 								segment.endDate === null
@@ -114,10 +137,21 @@ export function AbsencesWidget() {
 								title={ranges}
 								className="flex items-center gap-3"
 							>
-								<span className="min-w-0 flex-1 truncate">
-									{reviewer?.name}
+								<span className="min-w-0 flex-1">
+									<span className="block truncate">
+										{nameOf(row.reviewerId)}
+									</span>
+									{/* Large spells out the dates the strip only draws. */}
+									<span
+										className={
+											size === "large"
+												? "block text-xs text-pretty text-muted-foreground"
+												: "sr-only"
+										}
+									>
+										{ranges}
+									</span>
 								</span>
-								<span className="sr-only">{ranges}</span>
 								<span aria-hidden="true" className="flex gap-[3px]">
 									{days.map((day, index) => (
 										<span

@@ -1,10 +1,11 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-// Ids are plain strings so a widget removed in a later release cannot make
+// Ids and sizes are plain strings so a widget removed in a later release cannot make
 // stored rows fail validation; normalizeWidgetLayout is the guard on read/write.
 export const widgetLayoutValidator = v.object({
 	lanes: v.array(v.array(v.string())),
+	sizes: v.optional(v.record(v.string(), v.string())),
 });
 
 export default defineSchema({

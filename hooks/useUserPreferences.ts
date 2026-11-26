@@ -93,8 +93,7 @@ function isSamePreferenceState(a: UserPreferences, b: UserPreferences) {
 		a.hideMultiAssignmentSection === b.hideMultiAssignmentSection &&
 		a.enableAgentSetupExperiment === b.enableAgentSetupExperiment &&
 		a.defaultAgentTeamSlug === b.defaultAgentTeamSlug &&
-		JSON.stringify(a.widgetLayout?.lanes) ===
-			JSON.stringify(b.widgetLayout?.lanes)
+		JSON.stringify(a.widgetLayout) === JSON.stringify(b.widgetLayout)
 	);
 }
 

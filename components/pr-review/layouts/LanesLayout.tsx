@@ -3,9 +3,7 @@
 import { useTranslations } from "next-intl";
 import { type DragEvent, Fragment, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { WidgetId } from "@/lib/widgetLayout";
-import { AssignmentCard } from "../AssignmentCard";
-import { ForeignTeamAssignmentCard } from "../ForeignTeamAssignmentCard";
+import { ASSIGNMENT_ID, type WidgetId } from "@/lib/widgetLayout";
 import { LaunchSpotlight } from "../LaunchSpotlight";
 import { usePRReview } from "../PRReviewContext";
 import { ReviewersPanel } from "../ReviewersPanel";
@@ -31,17 +29,46 @@ const LANE_DIVIDER = [
 ];
 
 /**
- * The team page: the assignment card pinned at the top of the first lane and
- * the person's widgets in lanes around it.
+ * The lane that holds the assignment card is the 45rem one, so the card is as
+ * wide wherever it goes as it is in the first lane.
+ */
+const GRID_CLASS = [
+	"lg:grid-cols-[minmax(0,45rem)_minmax(20rem,1fr)] 2xl:grid-cols-[45rem_minmax(0,1fr)_minmax(0,1fr)]",
+	"lg:grid-cols-[minmax(20rem,1fr)_minmax(0,45rem)] 2xl:grid-cols-[minmax(0,1fr)_45rem_minmax(0,1fr)]",
+	"lg:grid-cols-[minmax(20rem,1fr)_minmax(0,45rem)] 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_45rem]",
+];
+
+/**
+ * The launch card floats in the bottom corner the assignment card is not in:
+ * the left one when the card is in the last column. With the card in the
+ * middle of three lanes neither corner is clear of it, so the launch card
+ * stays in the page, under the card.
+ */
+const SPOTLIGHT_CORNER = [
+	"xl:right-4",
+	"xl:max-2xl:left-4 2xl:static 2xl:mt-6 2xl:w-auto 2xl:shadow-none",
+	"xl:left-4",
+];
+
+/**
+ * The team page: the assignment card and the person's widgets, in lanes. The
+ * card starts at the top of the first lane and moves like a widget; with the
+ * lanes stacked it is pinned first.
  */
 export function LanesLayout() {
 	const t = useTranslations("widgets");
-	const { teamSlug, isForeignTeamView } = usePRReview();
-	const { lanes, editing, move, draggingId, setDraggingId } = useWidgetLayout();
+	const { teamSlug } = usePRReview();
+	const { lanes, stacked, sizeOf, editing, move, draggingId, setDraggingId } =
+		useWidgetLayout();
 	const [reviewersOpen, setReviewersOpen] = useState(false);
 	const reviewersOpenerRef = useRef<HTMLElement | null>(null);
 	const [hovered, setHovered] = useState<DropTarget | null>(null);
 
+	// Stacked, the card is not in `lanes`: it is pinned above them.
+	const cardLane = Math.max(
+		lanes.findIndex((lane) => lane.includes(ASSIGNMENT_ID)),
+		0,
+	);
 	const target = draggingId ? hovered : null;
 	// Dropping a widget where it already is moves nothing, so it shows no marker.
 	const isNoOp = (candidate: DropTarget) => {
@@ -96,7 +123,8 @@ export function LanesLayout() {
 						setHovered(null);
 				}}
 				className={cn(
-					"mt-3 grid grid-cols-1 gap-x-7 sm:mt-5 lg:mt-6 lg:grid-cols-[minmax(0,45rem)_minmax(20rem,1fr)] 2xl:grid-cols-[45rem_minmax(0,1fr)_minmax(0,1fr)]",
+					"mt-3 grid grid-cols-1 gap-x-7 sm:mt-5 lg:mt-6",
+					GRID_CLASS[cardLane],
 					// While customizing, every lane reaches the bottom so an empty or
 					// short one is still a place to drop.
 					editing ? "items-stretch max-lg:pb-40" : "items-start",
@@ -105,6 +133,11 @@ export function LanesLayout() {
 				{lanes.map((ids, lane) => {
 					const showMarker =
 						target?.lane === lane && !isNoOp(target) ? target : null;
+					// Stacked, the card is pinned first. It goes through the same list
+					// as in the lanes, so a card at the top of the first lane stays
+					// mounted, with what was typed in it, when the window crosses lg.
+					const shown: WidgetId[] =
+						stacked && lane === 0 ? [ASSIGNMENT_ID, ...ids] : ids;
 					return (
 						<div
 							// biome-ignore lint/suspicious/noArrayIndexKey: a lane is its position
@@ -120,26 +153,33 @@ export function LanesLayout() {
 								editing && "min-h-24",
 							)}
 						>
-							{lane === 0 ? (
-								<section className="page-enter-soft mb-6">
-									{isForeignTeamView ? (
-										<ForeignTeamAssignmentCard />
-									) : (
-										<AssignmentCard />
-									)}
-								</section>
-							) : null}
-							{/* In the page here on a narrow screen, in a corner on a wide one. */}
-							{lane === 0 ? <LaunchSpotlight /> : null}
 							<div className="flex flex-1 flex-col">
-								{ids.map((id, index) => {
+								{shown.map((id, position) => {
 									const Widget = WIDGETS[id];
+									const pinned = stacked && id === ASSIGNMENT_ID;
 									return (
 										<Fragment key={id}>
-											{showMarker?.before === id ? marker : null}
-											<WidgetSlotProvider value={{ id, lane, index }}>
+											{!pinned && showMarker?.before === id ? marker : null}
+											<WidgetSlotProvider
+												value={
+													pinned
+														? null
+														: {
+																id,
+																lane,
+																index: ids.indexOf(id),
+																size: sizeOf(id),
+																afterCard:
+																	shown[position - 1] === ASSIGNMENT_ID,
+															}
+												}
+											>
 												<Widget />
 											</WidgetSlotProvider>
+											{/* In the page under the card on a narrow screen, in a corner on a wide one. */}
+											{id === ASSIGNMENT_ID ? (
+												<LaunchSpotlight className={SPOTLIGHT_CORNER[lane]} />
+											) : null}
 										</Fragment>
 									);
 								})}

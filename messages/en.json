@@ -1445,7 +1445,7 @@
 	"widgets": {
 		"personalize": "Customize",
 		"editing": "Customizing your view",
-		"editHint": "Drag a widget or use the arrows.",
+		"editHint": "Drag a widget, use the arrows or change its size.",
 		"addGroup": "Widgets to add",
 		"add": "Add {name}",
 		"reset": "Reset view",
@@ -1457,8 +1457,18 @@
 		"moveToNextLane": "Move {name} to the next lane",
 		"remove": "Remove {name}",
 		"removed": "Removed {name}.",
+		"more": "and {count} more",
+		"moreInline": "{count} more",
+		"resized": "{name} is now {size}.",
+		"size": {
+			"group": "Size of {name}",
+			"small": "Compact",
+			"medium": "Regular",
+			"large": "Large"
+		},
 		"undo": "Undo",
 		"titles": {
+			"assignment": "Assignment",
 			"history": "History",
 			"rotation": "Rotation",
 			"myWeek": "My week",
@@ -1482,6 +1492,7 @@
 			"summary": "You received <b>{received}</b> {received, plural, one {PR} other {PRs}} and sent <b>{sent}</b>. The team is at <b>{team}</b>."
 		},
 		"absences": {
+			"summary": "<b>{names}</b> {count, plural, one {is} other {are}} away.",
 			"window": "next 2 weeks",
 			"empty": "Nobody is away in the next two weeks.",
 			"range": "{start} to {end}",

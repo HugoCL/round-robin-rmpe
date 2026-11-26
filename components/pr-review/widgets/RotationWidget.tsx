@@ -22,10 +22,13 @@ import { cn } from "@/lib/utils";
 import { rotationQueue } from "../assignment/assignmentCard.utils";
 import { describeReturn } from "../describeReturn";
 import { usePRReview } from "../PRReviewContext";
-import { WidgetEmpty, widgetRowClass } from "./parts";
-import { WidgetFrame } from "./WidgetFrame";
+import { WidgetEmpty, WidgetMore, widgetRowClass } from "./parts";
+import { useWidgetSize, WidgetFrame } from "./WidgetFrame";
 
 const GENERAL = "general";
+
+/** Small shows who is next and the two after: the part people look for. */
+const SMALL_COUNT = 3;
 
 /**
  * Who the rotation picks next, the rest by fewest PRs received, then whoever
@@ -37,6 +40,7 @@ export function RotationWidget() {
 	const locale = useLocale();
 	const { teamSlug, reviewers, userInfo, teamTimezone } = usePRReview();
 	const { tags } = useConvexTags(teamSlug);
+	const small = useWidgetSize() === "small";
 	const [selectedTagId, setSelectedTagId] = useState<Id<"tags">>();
 	const tag = tags.find((item) => item._id === selectedTagId);
 	const tagId = tag?._id;
@@ -183,6 +187,19 @@ export function RotationWidget() {
 		>
 			{listed.length === 0 ? (
 				<WidgetEmpty>{t("reviewersPanel.emptyDescription")}</WidgetEmpty>
+			) : small && queue.length > 0 ? (
+				<>
+					<ul>
+						{queue
+							.slice(0, SMALL_COUNT)
+							.map((reviewer, index) =>
+								row(reviewer, index === 0 ? "next" : "in"),
+							)}
+					</ul>
+					<WidgetMore
+						count={listed.length - Math.min(queue.length, SMALL_COUNT)}
+					/>
+				</>
 			) : (
 				<>
 					<ul>

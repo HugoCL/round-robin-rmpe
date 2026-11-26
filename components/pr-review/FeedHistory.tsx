@@ -26,19 +26,25 @@ import { toast } from "@/hooks/use-toast";
 import { getInitials } from "@/lib/initials";
 import type { GroupedAssignmentHistoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import type { WidgetSize } from "@/lib/widgetLayout";
 import { UndoConfirmContent } from "./assignment/UndoConfirmContent";
 import { HistoryChatThreadLinks } from "./HistoryChatThreadLinks";
 import { usePRReview } from "./PRReviewContext";
 import { TagBadge } from "./TagBadge";
 import { WidgetEmpty } from "./widgets/parts";
-import { WidgetFrame } from "./widgets/WidgetFrame";
+import { useWidgetSize, WidgetFrame } from "./widgets/WidgetFrame";
+import { useWidgetLayout } from "./widgets/WidgetLayoutContext";
 
 function getPRNumber(prUrl?: string) {
 	return prUrl?.match(/(?:pull|pulls|merge_requests)\/(\d+)(?:[/?#]|$)/i)?.[1];
 }
 
 /** Entries shown before "show more": enough to prove the last assignments went out. */
-const HISTORY_PREVIEW_COUNT = 5;
+const HISTORY_PREVIEW_COUNT: Record<WidgetSize, number> = {
+	small: 3,
+	medium: 5,
+	large: 10,
+};
 
 export function FeedHistory() {
 	const t = useTranslations();
@@ -51,7 +57,11 @@ export function FeedHistory() {
 		toggleMyAssignmentsOnly,
 		canManageCurrentTeam,
 	} = usePRReview();
-	const [showAll, setShowAll] = useState(false);
+	const previewCount = HISTORY_PREVIEW_COUNT[useWidgetSize()];
+	const { editing } = useWidgetLayout();
+	const [expanded, setShowAll] = useState(false);
+	// While customizing the fold cannot be reached, and the size is the point.
+	const showAll = expanded && !editing;
 	const [undoingId, setUndoingId] = useState<string | null>(null);
 	const undoAssignment = useMutation(api.mutations.undoAssignmentFromHistory);
 
@@ -91,11 +101,8 @@ export function FeedHistory() {
 	}, [assignmentHistory, myAssignmentsOnly, reviewers, userInfo?.email]);
 
 	const myEmail = userInfo?.email?.toLowerCase().trim();
-	const previewHistory = filteredAssignmentHistory.slice(
-		0,
-		HISTORY_PREVIEW_COUNT,
-	);
-	const moreHistory = filteredAssignmentHistory.slice(HISTORY_PREVIEW_COUNT);
+	const previewHistory = filteredAssignmentHistory.slice(0, previewCount);
+	const moreHistory = filteredAssignmentHistory.slice(previewCount);
 	const hasHiddenHistory = moreHistory.length > 0;
 
 	const getTagBadge = (tagId: string) => {

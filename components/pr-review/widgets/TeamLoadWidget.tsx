@@ -2,8 +2,11 @@
 
 import { useTranslations } from "next-intl";
 import { usePRReview } from "../PRReviewContext";
-import { WidgetEmpty } from "./parts";
-import { WidgetFrame } from "./WidgetFrame";
+import { WidgetEmpty, WidgetMore } from "./parts";
+import { useWidgetSize, WidgetFrame } from "./WidgetFrame";
+
+/** Small shows who carries the most. */
+const SMALL_COUNT = 3;
 
 /** How the PRs have spread across the team since the counts were last reset. */
 export function TeamLoadWidget() {
@@ -13,6 +16,8 @@ export function TeamLoadWidget() {
 		(a, b) =>
 			b.assignmentCount - a.assignmentCount || a.createdAt - b.createdAt,
 	);
+	const shown =
+		useWidgetSize() === "small" ? ranked.slice(0, SMALL_COUNT) : ranked;
 	const max = Math.max(
 		1,
 		...ranked.map((reviewer) => reviewer.assignmentCount),
@@ -23,33 +28,36 @@ export function TeamLoadWidget() {
 			{ranked.length === 0 ? (
 				<WidgetEmpty>{t("reviewersPanel.emptyDescription")}</WidgetEmpty>
 			) : (
-				<ul className="grid grid-cols-[minmax(0,auto)_minmax(4rem,1fr)_auto] items-center gap-x-3 gap-y-2 text-sm">
-					{ranked.map((reviewer) => (
-						<li
-							key={reviewer._id}
-							className="col-span-full grid grid-cols-subgrid items-center"
-							title={t("widgets.rotation.countHint", {
-								count: reviewer.assignmentCount,
-							})}
-						>
-							<span className="max-w-40 truncate">{reviewer.name}</span>
-							<span
-								aria-hidden="true"
-								className="h-1.5 overflow-hidden rounded-full bg-muted"
+				<>
+					<ul className="grid grid-cols-[minmax(0,auto)_minmax(4rem,1fr)_auto] items-center gap-x-3 gap-y-2 text-sm">
+						{shown.map((reviewer) => (
+							<li
+								key={reviewer._id}
+								className="col-span-full grid grid-cols-subgrid items-center"
+								title={t("widgets.rotation.countHint", {
+									count: reviewer.assignmentCount,
+								})}
 							>
+								<span className="max-w-40 truncate">{reviewer.name}</span>
 								<span
-									className="block h-full rounded-full bg-primary/60"
-									style={{
-										width: `${(reviewer.assignmentCount / max) * 100}%`,
-									}}
-								/>
-							</span>
-							<span className="text-right text-xs text-muted-foreground tabular-nums">
-								{reviewer.assignmentCount}
-							</span>
-						</li>
-					))}
-				</ul>
+									aria-hidden="true"
+									className="h-1.5 overflow-hidden rounded-full bg-muted"
+								>
+									<span
+										className="block h-full rounded-full bg-primary/60"
+										style={{
+											width: `${(reviewer.assignmentCount / max) * 100}%`,
+										}}
+									/>
+								</span>
+								<span className="text-right text-xs text-muted-foreground tabular-nums">
+									{reviewer.assignmentCount}
+								</span>
+							</li>
+						))}
+					</ul>
+					<WidgetMore count={ranked.length - shown.length} />
+				</>
 			)}
 		</WidgetFrame>
 	);

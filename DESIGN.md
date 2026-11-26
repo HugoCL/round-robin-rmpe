@@ -230,21 +230,22 @@ This is the signature of the system. Rather than ad-hoc `bg-white rounded-xl sha
 **Nesting rule:** `calm-shell` never nests inside `calm-shell`. `calm-section` may appear inside `calm-shell` only if the shell has no other padding. Never nest `calm-section` inside `calm-section`.
 
 ### Lanes and Widgets
-The team page is the assignment card plus the person's widgets, laid out in lanes: three from `2xl` (1536px), two from `lg` (the third lane goes under the second) and one below. The first lane is `45rem` wide so the card never stretches (see The Reviewer Name Rule); the other lanes share the rest, up to a `110rem` page.
+The team page is the assignment card plus the person's widgets, laid out in lanes: three from `2xl` (1536px), two from `lg` (the third lane goes under the second) and one below. The lane that holds the card is `45rem` wide so the card never stretches (see The Reviewer Name Rule); the other lanes share the rest, up to a `110rem` page.
 
-- **The card is the only card.** `AssignmentCard` keeps `calm-shell`, pinned at the top of the first lane; it is not a widget and cannot be moved or removed. Every widget is flat: a title row (`h2`, `text-base font-semibold`, an optional muted fact beside it, its own controls at the end) and the content under it. Widgets in a lane are separated by a `border-border/70` hairline, never by boxes.
+- **The card is the only card.** `AssignmentCard` keeps `calm-shell` and starts at the top of the first lane. It moves like a widget, and its `45rem` lane moves with it, but it cannot be removed and has no sizes. Below `lg`, where the lanes stack, it is pinned first whatever the layout says: on a phone the card is the page. Every widget is flat: a title row (`h2`, `text-base font-semibold`, an optional muted fact beside it, its own controls at the end) and the content under it. Widgets in a lane are separated by a `border-border/70` hairline, never by boxes.
 - **Each widget has its own form.** A list for the rotation, ordered by who has received the fewest PRs and with no position numbers (only the first place is certain), a sentence for My week, a strip of weekdays for Absences, thin bars for Team load. Never the same tile repeated, and never a big number over a label.
-- **Structure shows only while customizing.** "Personalizar" in the header turns each widget into a dashed box (`bg-muted/40`, `outline-dashed outline-control-border/70`) with arrows and a remove button, and shows the edit bar: under the header on desktop, fixed to the bottom on phones. At rest there is no handle, outline or edit control.
+- **A size is how much a widget shows, not how wide it is.** The lane sets the width. Compacto is the widget's headline (who is next and the two after, the week as one sentence, who is away as one sentence), Amplio adds rows or detail (ten history entries, the dates of each absence). A widget only offers the sizes it has a form for, so some offer two and some none. A list cut short says how many it left out ("y 4 más").
+- **Structure shows only while customizing.** "Personalizar" in the header turns each widget into a dashed box (`bg-muted/40`, `outline-dashed outline-control-border/70`) with arrows, a remove button and, under the title, its sizes as one segmented choice, and shows the edit bar: under the header on desktop, fixed to the bottom on phones. At rest there is no handle, outline or edit control.
 - **Dragging is never the only way.** Every move has an arrow button, so it works with a keyboard and on touch. A blue 4px line marks where a dragged widget will land.
 - **Widget rows** use `widgetRowClass`: flat at rest, `hover:bg-muted/40`, `rounded-xl`, `min-h-10`.
 
-The layout is saved per person (`userPreferences.widgetLayout`), the same on every team. A widget whose feature is off, or that has nothing to show on a team (Tags on a team without tags), is hidden and keeps its place.
+The layout, sizes included, is saved per person (`userPreferences.widgetLayout`), the same on every team. A widget whose feature is off, or that has nothing to show on a team (Tags on a team without tags), is hidden and keeps its place.
 
 ### Launch Spotlight
 
 A big launch is announced once per person by `LaunchSpotlight`: a card with the video poster, the title, one sentence, the action the launch invites, and a ✕ labelled "Descartar".
 
-- **Never a modal, and never over the assignment card.** From `xl` it is fixed to the bottom-right corner, clear of the first lane. Below `xl` it sits in the page, under the assignment card. It does not take focus and it does not dim the page.
+- **Never a modal, and never over the assignment card.** From `xl` it is fixed to a bottom corner, clear of the card's lane: the right one, or the left one when the card is in the last column. With the card in the middle of three lanes neither corner is clear, so it sits in the page, under the card, as it does below `xl`. It does not take focus and it does not dim the page.
 - **One at a time, and only for big changes.** A changelog entry opts in with `spotlight`. Everything else stays in the changelog and the notices sheet.
 - **Gone for good once dismissed.** Dismissal is stored per person. The entry stays in the changelog.
 - When it floats it is the one floating surface on the page, so it is opaque (`bg-popover`) and carries the shell shadow, not a `calm-*` translucent fill.

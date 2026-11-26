@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import {
 	AGENT_ASSIGNMENT_CHAT_LOCALE,
 	shouldQueueAgentAssignmentChat,
@@ -60,6 +60,8 @@ import {
 import { widgetLayoutValidator } from "./schema";
 
 const GLOBAL_REVIEWED_PR_COUNTER_KEY = "reviewed_pr_total";
+type StoredWidgetLayout = Infer<typeof widgetLayoutValidator>;
+
 type UserPreferenceFlags = {
 	showAssignments: boolean;
 	myAssignmentsOnly: boolean;
@@ -68,14 +70,14 @@ type UserPreferenceFlags = {
 	hideMultiAssignmentSection: boolean;
 	enableAgentSetupExperiment: boolean;
 	defaultAgentTeamSlug?: string;
-	widgetLayout?: { lanes: string[][] };
+	widgetLayout?: StoredWidgetLayout;
 };
 
 type UserPreferencePatch = Partial<
 	Omit<UserPreferenceFlags, "defaultAgentTeamSlug" | "widgetLayout">
 > & {
 	defaultAgentTeamSlug?: string | null;
-	widgetLayout?: { lanes: string[][] } | null;
+	widgetLayout?: StoredWidgetLayout | null;
 };
 
 type AssignmentSource = "ui" | "agent";

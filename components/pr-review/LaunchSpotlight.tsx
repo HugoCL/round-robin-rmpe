@@ -21,6 +21,7 @@ import {
 	LAUNCH_VIDEO_SIZE,
 	pickLaunchSpotlight,
 } from "@/lib/changelog";
+import { cn } from "@/lib/utils";
 import { useWidgetLayout } from "./widgets/WidgetLayoutContext";
 
 function localDateKey() {
@@ -33,11 +34,16 @@ function localDateKey() {
  * A big launch, shown once to each person when they open the list, and gone
  * for good once dismissed. The launch stays in the changelog.
  *
- * It never covers the assignment card: from 1280px, where the first lane ends
- * before the corner does, it floats at the bottom right. On a narrower screen
- * it sits in the page under the card.
+ * It never covers the assignment card: from 1280px, where the card's lane ends
+ * before the far corner does, it floats at the bottom, on the side the card is
+ * not. On a narrower screen it sits in the page under the card.
  */
-export function LaunchSpotlight() {
+export function LaunchSpotlight({
+	className = "xl:right-4",
+}: {
+	/** The corner it floats in from xl. */
+	className?: string;
+}) {
 	const t = useTranslations("launch");
 	const tApp = useTranslations();
 	const preferences = useQuery(api.queries.getMyUserPreferences, {});
@@ -88,7 +94,10 @@ export function LaunchSpotlight() {
 				<aside
 					data-launch-spotlight={id}
 					aria-labelledby={titleId}
-					className="page-enter-soft z-30 flex gap-1 rounded-3xl border border-border/70 bg-popover p-3 text-popover-foreground [animation-delay:600ms] max-xl:mb-6 xl:fixed xl:right-4 xl:bottom-4 xl:w-[31rem] xl:shadow-[0_24px_80px_-32px_rgba(15,23,42,0.45)] print:hidden"
+					className={cn(
+						"page-enter-soft z-30 flex gap-1 rounded-3xl border border-border/70 bg-popover p-3 text-popover-foreground [animation-delay:600ms] max-xl:mt-6 xl:fixed xl:bottom-4 xl:w-[31rem] xl:shadow-[0_24px_80px_-32px_rgba(15,23,42,0.45)] print:hidden",
+						className,
+					)}
 				>
 					{entry.video ? (
 						<button

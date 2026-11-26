@@ -1486,7 +1486,7 @@
 	"widgets": {
 		"personalize": "Personalizar",
 		"editing": "Personalizando tu vista",
-		"editHint": "Arrastra un widget o usa las flechas.",
+		"editHint": "Arrastra un widget, usa las flechas o cambia su tamaño.",
 		"addGroup": "Widgets para agregar",
 		"add": "Agregar {name}",
 		"reset": "Restablecer vista",
@@ -1498,8 +1498,18 @@
 		"moveToNextLane": "Mover {name} al carril siguiente",
 		"remove": "Quitar {name}",
 		"removed": "Quitaste {name}.",
+		"more": "y {count} más",
+		"moreInline": "{count} más",
+		"resized": "{name} quedó en tamaño {size}.",
+		"size": {
+			"group": "Tamaño de {name}",
+			"small": "Compacto",
+			"medium": "Normal",
+			"large": "Amplio"
+		},
 		"undo": "Deshacer",
 		"titles": {
+			"assignment": "Asignación",
 			"history": "Historial",
 			"rotation": "Rotación",
 			"myWeek": "Mi semana",
@@ -1523,6 +1533,7 @@
 			"summary": "Recibiste <b>{received}</b> {received, plural, one {PR} other {PRs}} y enviaste <b>{sent}</b>. El equipo lleva <b>{team}</b>."
 		},
 		"absences": {
+			"summary": "{count, plural, one {Falta} other {Faltan}} <b>{names}</b>.",
 			"window": "próximas 2 semanas",
 			"empty": "Nadie falta en las próximas dos semanas.",
 			"range": "del {start} al {end}",

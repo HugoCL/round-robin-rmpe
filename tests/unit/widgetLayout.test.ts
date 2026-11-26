@@ -9,7 +9,9 @@ import {
 	normalizeWidgetLayout,
 	placedWidgets,
 	removeWidget,
+	setWidgetSize,
 	type WidgetLayout,
+	widgetSize,
 } from "../../lib/widgetLayout";
 
 const layout: WidgetLayout = {
@@ -34,21 +36,25 @@ test("normalize falls back to the default for anything that is not a layout", ()
 test("normalize returns a copy, not the shared default", () => {
 	const result = normalizeWidgetLayout(null);
 	result.lanes[0].push("tags");
-	assert.deepEqual(DEFAULT_WIDGET_LAYOUT.lanes[0], ["history"]);
+	assert.deepEqual(DEFAULT_WIDGET_LAYOUT.lanes[0], ["assignment", "history"]);
 });
 
 test("normalize drops unknown ids and non-string entries", () => {
 	const result = normalizeWidgetLayout({
 		lanes: [["history", "removedInLaterRelease", 7, null], ["rotation"], []],
 	});
-	assert.deepEqual(result.lanes, [["history"], ["rotation"], []]);
+	assert.deepEqual(result.lanes, [["assignment", "history"], ["rotation"], []]);
 });
 
 test("normalize keeps the first occurrence of a duplicated widget", () => {
 	const result = normalizeWidgetLayout({
 		lanes: [["history", "tags"], ["tags", "rotation", "history"], ["rotation"]],
 	});
-	assert.deepEqual(result.lanes, [["history", "tags"], ["rotation"], []]);
+	assert.deepEqual(result.lanes, [
+		["assignment", "history", "tags"],
+		["rotation"],
+		[],
+	]);
 });
 
 test("normalize merges lanes beyond the lane count into the last lane", () => {
@@ -63,7 +69,7 @@ test("normalize merges lanes beyond the lane count into the last lane", () => {
 	});
 	assert.equal(result.lanes.length, LANE_COUNT);
 	assert.deepEqual(result.lanes, [
-		["history"],
+		["assignment", "history"],
 		["rotation"],
 		["myWeek", "tags", "events"],
 	]);
@@ -71,24 +77,29 @@ test("normalize merges lanes beyond the lane count into the last lane", () => {
 
 test("normalize fills missing lanes with empty ones", () => {
 	assert.deepEqual(normalizeWidgetLayout({ lanes: [["tags"]] }).lanes, [
-		["tags"],
+		["assignment", "tags"],
 		[],
 		[],
 	]);
-	assert.deepEqual(normalizeWidgetLayout({ lanes: [] }).lanes, [[], [], []]);
+	assert.deepEqual(normalizeWidgetLayout({ lanes: [] }).lanes, [
+		["assignment"],
+		[],
+		[],
+	]);
 });
 
 test("normalize treats a malformed lane as empty", () => {
 	const result = normalizeWidgetLayout({ lanes: ["history", ["tags"], null] });
-	assert.deepEqual(result.lanes, [[], ["tags"], []]);
+	assert.deepEqual(result.lanes, [["assignment"], ["tags"], []]);
 });
 
 test("normalize leaves a valid layout unchanged", () => {
-	assert.deepEqual(normalizeWidgetLayout(layout), layout);
-	assert.deepEqual(
-		normalizeWidgetLayout(normalizeWidgetLayout(layout)),
-		layout,
-	);
+	const valid: WidgetLayout = {
+		lanes: [["history"], ["rotation", "assignment"], ["myWeek"]],
+		sizes: { history: "large", rotation: "small" },
+	};
+	assert.deepEqual(normalizeWidgetLayout(valid), valid);
+	assert.deepEqual(normalizeWidgetLayout(normalizeWidgetLayout(valid)), valid);
 	assert.deepEqual(
 		normalizeWidgetLayout(DEFAULT_WIDGET_LAYOUT),
 		DEFAULT_WIDGET_LAYOUT,
@@ -231,5 +242,90 @@ test("isDefaultWidgetLayout recognises the default and only the default", () => 
 			}),
 		),
 		false,
+	);
+});
+
+test("normalize puts the assignment card back at the top of a layout stored without it", () => {
+	assert.deepEqual(normalizeWidgetLayout(layout).lanes, [
+		["assignment", "history", "tags"],
+		["rotation", "absences", "events"],
+		["myWeek"],
+	]);
+});
+
+test("normalize keeps the assignment card where the person moved it", () => {
+	const result = normalizeWidgetLayout({
+		lanes: [["history"], [], ["myWeek", "assignment"]],
+	});
+	assert.deepEqual(result.lanes, [["history"], [], ["myWeek", "assignment"]]);
+});
+
+test("the assignment card moves but cannot be removed", () => {
+	const moved = moveWidget(DEFAULT_WIDGET_LAYOUT, "assignment", {
+		lane: 2,
+		before: "myWeek",
+	});
+	assert.deepEqual(findWidget(moved, "assignment"), { lane: 2, index: 0 });
+	assert.equal(isDefaultWidgetLayout(moved), false);
+	assert.deepEqual(removeWidget(moved, "assignment"), moved);
+});
+
+test("normalize keeps only sizes a widget has a form for", () => {
+	const result = normalizeWidgetLayout({
+		lanes: [["history", "tags"], ["rotation"], []],
+		sizes: {
+			rotation: "small",
+			history: "large",
+			myWeek: "medium",
+			tags: "large",
+			absences: "huge",
+			birthdays: 3,
+			removedInLaterRelease: "small",
+		},
+	});
+	assert.deepEqual(result.sizes, { history: "large", rotation: "small" });
+	assert.equal(
+		"sizes" in normalizeWidgetLayout({ lanes: [], sizes: { tags: "small" } }),
+		false,
+	);
+	assert.equal(
+		"sizes" in normalizeWidgetLayout({ lanes: [], sizes: 7 }),
+		false,
+	);
+});
+
+test("setWidgetSize stores a size, drops the default and ignores an unsupported one", () => {
+	const small = setWidgetSize(layout, "rotation", "small");
+	assert.equal(widgetSize(small, "rotation"), "small");
+	assert.equal(widgetSize(small, "history"), "medium");
+	assert.deepEqual(small.lanes, layout.lanes);
+	assert.deepEqual(setWidgetSize(small, "rotation", "medium"), layout);
+	assert.deepEqual(setWidgetSize(layout, "rotation", "large"), layout);
+	// The server normalises on write; the optimistic copy must serialise the same.
+	const both = setWidgetSize(small, "history", "large");
+	assert.equal(
+		JSON.stringify(both.sizes),
+		JSON.stringify(normalizeWidgetLayout(both).sizes),
+	);
+	assert.deepEqual(layout.sizes, undefined);
+});
+
+test("a size follows its widget on a move and is forgotten on a remove", () => {
+	const small = setWidgetSize(layout, "rotation", "small");
+	const moved = moveWidget(small, "rotation", { lane: 2, before: null });
+	assert.equal(widgetSize(moved, "rotation"), "small");
+	assert.deepEqual(removeWidget(moved, "rotation").sizes, undefined);
+	assert.equal(
+		widgetSize(removeWidget(small, "absences"), "rotation"),
+		"small",
+	);
+});
+
+test("a size alone makes the layout a customised one", () => {
+	const sized = setWidgetSize(DEFAULT_WIDGET_LAYOUT, "history", "small");
+	assert.equal(isDefaultWidgetLayout(sized), false);
+	assert.equal(
+		isDefaultWidgetLayout(setWidgetSize(sized, "history", "medium")),
+		true,
 	);
 });

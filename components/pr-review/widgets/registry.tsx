@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { WidgetId } from "@/lib/widgetLayout";
 import { FeedHistory } from "../FeedHistory";
 import { AbsencesWidget } from "./AbsencesWidget";
+import { AssignmentWidget } from "./AssignmentWidget";
 import { BirthdaysWidget } from "./BirthdaysWidget";
 import { EventsWidget } from "./EventsWidget";
 import { MyReviewsWidget } from "./MyReviewsWidget";
@@ -11,8 +12,9 @@ import { RotationWidget } from "./RotationWidget";
 import { TagsWidget } from "./TagsWidget";
 import { TeamLoadWidget } from "./TeamLoadWidget";
 
-/** Every widget a view can hold. Each one renders its own `WidgetFrame`. */
+/** Everything a lane can hold. Each widget renders its own `WidgetFrame`; the assignment card keeps its own surface. */
 export const WIDGETS: Record<WidgetId, ComponentType> = {
+	assignment: AssignmentWidget,
 	history: FeedHistory,
 	rotation: RotationWidget,
 	myWeek: MyWeekWidget,

@@ -9,23 +9,46 @@ import {
 	X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { createContext, type ReactNode, useContext, useId } from "react";
+import {
+	createContext,
+	type DragEvent,
+	type ReactNode,
+	useContext,
+	useId,
+} from "react";
 import { IconActionButton } from "@/components/ui/icon-action-button";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
-import { LANE_COUNT, type WidgetId } from "@/lib/widgetLayout";
+import {
+	ASSIGNMENT_ID,
+	DEFAULT_WIDGET_SIZE,
+	LANE_COUNT,
+	WIDGET_SIZE_OPTIONS,
+	type WidgetId,
+	type WidgetSize,
+} from "@/lib/widgetLayout";
 import { useWidgetLayout } from "./WidgetLayoutContext";
 
 /** Where the layout put the widget being rendered. */
-interface WidgetSlot {
+export interface WidgetSlot {
 	id: WidgetId;
 	lane: number;
 	index: number;
+	size: WidgetSize;
+	/** Right under the assignment card, whose own edge already separates them. */
+	afterCard: boolean;
 }
 
 const WidgetSlotContext = createContext<WidgetSlot | null>(null);
 
 export const WidgetSlotProvider = WidgetSlotContext.Provider;
+
+/** The slot of the widget being rendered, or null outside the lanes. */
+export const useWidgetSlot = () => useContext(WidgetSlotContext);
+
+/** The size the person picked for the widget being rendered. */
+export function useWidgetSize(): WidgetSize {
+	return useContext(WidgetSlotContext)?.size ?? DEFAULT_WIDGET_SIZE;
+}
 
 type Tool = "left" | "up" | "down" | "right" | "remove";
 
@@ -63,12 +86,16 @@ export const isKeyboardClick = (event: { detail: number }) =>
 const toolClass =
 	"relative size-8 scroll-mt-44 scroll-mb-44 after:absolute after:-inset-y-1 after:inset-x-0 disabled:opacity-30 max-lg:size-10";
 
-function WidgetTools({ slot, title }: { slot: WidgetSlot; title: string }) {
+export function WidgetTools({
+	slot,
+	title,
+}: {
+	slot: WidgetSlot;
+	title: string;
+}) {
 	const t = useTranslations("widgets");
-	const { lanes, move, remove } = useWidgetLayout();
-	// Below lg the lanes stack into one column, so up and down cross lanes and
-	// there is no left or right.
-	const stacked = !useMediaQuery("(min-width: 1024px)");
+	// Stacked, up and down cross lanes and there is no left or right.
+	const { lanes, stacked, move, remove } = useWidgetLayout();
 	const lane = lanes[slot.lane];
 	const previousLane = slot.lane > 0 ? slot.lane - 1 : null;
 	const nextLane = slot.lane < LANE_COUNT - 1 ? slot.lane + 1 : null;
@@ -143,26 +170,118 @@ function WidgetTools({ slot, title }: { slot: WidgetSlot; title: string }) {
 					<ArrowRight />
 				</IconActionButton>
 			)}
-			<IconActionButton
-				data-tool="remove"
-				label={t("remove", { name: title })}
-				className={toolClass}
-				onClick={(event) => {
-					const follow = isKeyboardClick(event);
-					const neighbour =
-						lane[slot.index + 1] ??
-						lane[slot.index - 1] ??
-						lanes.flat().find((id) => id !== slot.id);
-					void remove(slot.id).then(() => {
-						if (!follow) return;
-						if (neighbour) focusTool(neighbour, "remove");
-						else focusDone();
-					});
-				}}
-			>
-				<X />
-			</IconActionButton>
+			{slot.id === ASSIGNMENT_ID ? null : (
+				<IconActionButton
+					data-tool="remove"
+					label={t("remove", { name: title })}
+					className={toolClass}
+					onClick={(event) => {
+						const follow = isKeyboardClick(event);
+						const neighbour =
+							lane[slot.index + 1] ??
+							lane[slot.index - 1] ??
+							lanes.flat().find((id) => id !== slot.id);
+						void remove(slot.id).then(() => {
+							if (!follow) return;
+							if (neighbour) focusTool(neighbour, "remove");
+							else focusDone();
+						});
+					}}
+				>
+					<X />
+				</IconActionButton>
+			)}
 		</>
+	);
+}
+
+/** The sizes the widget has a form for, as one segmented choice. */
+function WidgetSizeControl({
+	slot,
+	title,
+}: {
+	slot: WidgetSlot;
+	title: string;
+}) {
+	const t = useTranslations("widgets");
+	const { resize } = useWidgetLayout();
+	const options = WIDGET_SIZE_OPTIONS[slot.id];
+	if (options.length < 2) return null;
+
+	return (
+		<div
+			role="group"
+			aria-label={t("size.group", { name: title })}
+			className="mt-2 flex w-fit rounded-full bg-background p-0.5 outline-1 -outline-offset-1 outline-border"
+		>
+			{options.map((size) => (
+				<button
+					key={size}
+					type="button"
+					aria-pressed={slot.size === size}
+					onClick={() => resize(slot.id, size)}
+					className={cn(
+						"relative h-8 rounded-full px-3 text-xs font-medium transition-[background-color,color,scale] duration-150 after:absolute after:-inset-y-1 after:inset-x-0 active:scale-[0.96] max-lg:h-9 max-lg:px-3.5",
+						slot.size === size
+							? "bg-primary text-primary-foreground"
+							: "text-muted-foreground hover:text-foreground",
+					)}
+				>
+					{t(`size.${size}`)}
+				</button>
+			))}
+		</div>
+	);
+}
+
+/** While customizing, a widget is a dashed box that can be dragged. */
+export const widgetEditingClass =
+	"-mx-2 cursor-grab rounded-2xl bg-muted/40 px-2 pt-1.5 pb-3 outline-[1.5px] -outline-offset-1 outline-control-border/70 outline-dashed not-first:mt-3";
+
+/** What makes a slot's element the thing that is dragged, found and animated. */
+export function useWidgetBox(slot: WidgetSlot | null) {
+	const { editing, draggingId, setDraggingId } = useWidgetLayout();
+	if (!slot) return { movable: false, dragging: false, props: {} };
+	return {
+		movable: editing,
+		dragging: draggingId === slot.id,
+		props: {
+			"data-widget": slot.id,
+			draggable: editing || undefined,
+			onDragStart: (event: DragEvent<HTMLElement>) => {
+				event.dataTransfer.effectAllowed = "move";
+				event.dataTransfer.setData("text/plain", slot.id);
+				setDraggingId(slot.id);
+			},
+			onDragEnd: () => setDraggingId(null),
+			style: { viewTransitionName: `widget-${slot.id}` },
+		},
+	};
+}
+
+/** The title row of a widget while customizing: grip, name and move controls. */
+export function WidgetEditHeader({
+	slot,
+	headingId,
+}: {
+	slot: WidgetSlot;
+	headingId: string;
+}) {
+	const t = useTranslations("widgets");
+	const title = t(`titles.${slot.id}`);
+	return (
+		<header className="flex min-h-9 items-center gap-2">
+			<GripVertical
+				className="-ml-1 size-4 shrink-0 text-muted-foreground"
+				aria-hidden="true"
+			/>
+			<h2 id={headingId} className="truncate text-base font-semibold">
+				{title}
+			</h2>
+			<div className="ml-auto flex shrink-0 items-center gap-0.5">
+				<WidgetTools slot={slot} title={title} />
+			</div>
+		</header>
 	);
 }
 
@@ -184,49 +303,44 @@ export function WidgetFrame({
 	const slot = useContext(WidgetSlotContext);
 	if (!slot) throw new Error("WidgetFrame must render inside a widget slot");
 	const t = useTranslations("widgets");
-	const { editing, draggingId, setDraggingId } = useWidgetLayout();
+	const { movable: editing, dragging, props } = useWidgetBox(slot);
 	const headingId = useId();
 	const title = t(`titles.${slot.id}`);
 
 	return (
 		<section
-			data-widget={slot.id}
+			{...props}
 			aria-labelledby={headingId}
-			draggable={editing || undefined}
-			onDragStart={(event) => {
-				event.dataTransfer.effectAllowed = "move";
-				event.dataTransfer.setData("text/plain", slot.id);
-				setDraggingId(slot.id);
-			}}
-			onDragEnd={() => setDraggingId(null)}
-			style={{ viewTransitionName: `widget-${slot.id}` }}
 			className={cn(
 				"@container relative min-w-0",
 				editing
-					? "-mx-2 cursor-grab rounded-2xl bg-muted/40 px-2 pt-1.5 pb-3 outline-[1.5px] -outline-offset-1 outline-control-border/70 outline-dashed not-first:mt-3"
-					: "not-first:mt-6 not-first:border-t not-first:border-border/70 not-first:pt-5",
-				draggingId === slot.id && "opacity-40",
+					? widgetEditingClass
+					: slot.afterCard
+						? "mt-6"
+						: "not-first:mt-6 not-first:border-t not-first:border-border/70 not-first:pt-5",
+				dragging && "opacity-40",
 			)}
 		>
-			<header className="flex min-h-9 items-center gap-2">
-				{editing ? (
-					<GripVertical
-						className="-ml-1 size-4 shrink-0 text-muted-foreground"
-						aria-hidden="true"
-					/>
-				) : null}
-				<h2 id={headingId} className="truncate text-base font-semibold">
-					{title}
-				</h2>
-				{!editing && meta ? (
-					<span className="truncate text-xs text-muted-foreground @max-[20rem]:hidden">
-						{meta}
-					</span>
-				) : null}
-				<div className="ml-auto flex shrink-0 items-center gap-0.5">
-					{editing ? <WidgetTools slot={slot} title={title} /> : actions}
-				</div>
-			</header>
+			{editing ? (
+				<>
+					<WidgetEditHeader slot={slot} headingId={headingId} />
+					<WidgetSizeControl slot={slot} title={title} />
+				</>
+			) : (
+				<header className="flex min-h-9 items-center gap-2">
+					<h2 id={headingId} className="truncate text-base font-semibold">
+						{title}
+					</h2>
+					{meta ? (
+						<span className="truncate text-xs text-muted-foreground @max-[20rem]:hidden">
+							{meta}
+						</span>
+					) : null}
+					<div className="ml-auto flex shrink-0 items-center gap-0.5">
+						{actions}
+					</div>
+				</header>
+			)}
 			<div className="mt-2" inert={editing}>
 				{children}
 			</div>
