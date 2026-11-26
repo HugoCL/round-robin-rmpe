@@ -1,13 +1,16 @@
 "use client"
 
+import { DismissableLayer } from "@radix-ui/react-dismissable-layer"
 import * as React from "react"
 
 /**
+ * Interop between ui-sdk popups and the popups still on Radix (tooltip,
+ * popover, alert dialog, sheet, drawer). Remove once every popup is ui-sdk.
+ *
  * ui-sdk popups render in the browser's top layer, above anything a Radix
- * portal puts in `document.body`. While some popups are still Radix, a ui-sdk
- * popup renders a `PortalLayer` and a Radix tooltip or popover opened from
- * inside it portals there instead, so it shows on top.
- * Remove once tooltip and popover are ui-sdk.
+ * portal puts in `document.body`. A ui-sdk dialog renders a `PortalLayer`, and
+ * a Radix tooltip or popover opened from inside it portals there instead, so it
+ * shows on top.
  */
 const PortalContainerContext = React.createContext<HTMLElement | null>(null)
 
@@ -49,4 +52,16 @@ function usePortalContainer(): HTMLElement | undefined {
   return React.useContext(PortalContainerContext) ?? undefined
 }
 
-export { PortalLayer, usePortalContainer }
+/**
+ * Radix only lets its topmost layer handle Escape, and it listens on the
+ * document before ui-sdk does, so Escape in a ui-sdk menu, select or dialog
+ * opened inside a Radix sheet, drawer, alert dialog or popover would close
+ * that instead. While a ui-sdk popup is open it renders this empty Radix layer,
+ * which becomes the topmost one and does nothing on Escape or outside presses,
+ * so the key reaches ui-sdk and closes the popup alone.
+ */
+function RadixLayerBridge() {
+  return <DismissableLayer hidden data-slot="radix-layer-bridge" />
+}
+
+export { PortalLayer, RadixLayerBridge, usePortalContainer }
