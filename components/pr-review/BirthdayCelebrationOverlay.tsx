@@ -170,7 +170,7 @@ export function BirthdayCelebrationOverlay({
 							type="button"
 							variant="default"
 							size="lg"
-							className="mt-6 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+							className="mt-6 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary-hover font-medium"
 							onClick={onDismiss}
 						>
 							{t("dismissCelebrate")}

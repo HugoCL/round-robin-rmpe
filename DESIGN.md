@@ -5,6 +5,8 @@ colors:
   primary: "oklch(0.52 0.19 258)"
   primary-light: "oklch(0.67 0.16 255)"
   primary-foreground: "oklch(1 0 0)"
+  primary-hover: "oklch(0.46 0.19 258)"
+  dark-primary-hover: "oklch(0.73 0.14 255)"
   background: "oklch(0.985 0.004 254)"
   foreground: "oklch(0.205 0.01 258)"
   surface-card: "oklch(0.995 0.002 254)"
@@ -200,7 +202,7 @@ The body carries a subtle top-bloom (`radial-gradient` at 9% primary) that tints
 All buttons share `rounded-full` (9999px). This is a system-wide convention — not a single exception. Pill shape is the only shape.
 
 - **Primary** (solid blue): `bg-primary text-primary-foreground rounded-full px-6 py-2.5`. The Assign PR button stretches full-width in its container. No icon except where it aids clarity (Plus for create actions).
-- **Hover / Focus**: Darker primary (`oklch(0.46 0.19 258)`). Focus: `ring-2 ring-primary/50`. No scale transform on primary — transform reserved for icon-hint secondary CTAs.
+- **Hover / Focus**: `--primary-hover` (`bg-primary-hover`): a darker blue in light mode (`oklch(0.46 0.19 258)`) and a lighter one in dark mode (`oklch(0.73 0.14 255)`), so the hover always adds contrast to the label on it. Never a translucent primary (`bg-primary/80`), which washes out toward the page. Focus: `ring-2 ring-primary/50`. No scale transform on primary — transform reserved for icon-hint secondary CTAs.
 - **Outline**: `border border-border/70 bg-background/70 rounded-full`. The dominant secondary variant. In the header bar only "Mi semana" keeps it: an occasional lookup, so the border marks a secondary action.
 - **Ghost**: `bg-transparent hover:bg-muted/40 rounded-full`. Icon actions in icon bars (ThemeToggle, the header menu), and the header controls that read as text: the team switcher, the second crumb after "La Lista /", and your status ("Disponible · te toca en 2 PRs"). The hover background shows where to click. On a team you are not part of, the status slot holds "Unirme al equipo" instead, in primary text because it is an action; it opens a popover that confirms before joining. Your own status popover ends with "Salir del equipo", quiet until pressed, which confirms in place with a destructive button. The team switcher is a menu, not a select: "Tus equipos", then "Otros equipos", then "Crear equipo".
 - **Destructive**: Red palette. Confined to confirmation dialogs; never appears inline as a primary action.

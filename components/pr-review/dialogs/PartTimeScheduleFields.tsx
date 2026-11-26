@@ -78,7 +78,7 @@ export function PartTimeScheduleFields({
 							<ToggleGroupItem
 								key={day}
 								value={day}
-								className="min-w-0 flex-1 px-1.5 data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:data-[state=on]:bg-primary/95"
+								className="min-w-0 flex-1 px-1.5 data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:data-[state=on]:bg-primary-hover"
 								aria-label={t(`weekdays.${day}`)}
 							>
 								{t(`weekdays.${day}`)}

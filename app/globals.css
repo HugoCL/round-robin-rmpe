@@ -34,6 +34,7 @@
 	--color-secondary: var(--secondary);
 	--color-primary-foreground: var(--primary-foreground);
 	--color-primary: var(--primary);
+	--color-primary-hover: var(--primary-hover);
 	--color-popover-foreground: var(--popover-foreground);
 	--color-popover: var(--popover);
 	--color-card-foreground: var(--card-foreground);
@@ -56,6 +57,7 @@
 	--popover-foreground: oklch(0.145 0 0);
 	--primary: oklch(0.52 0.19 258);
 	--primary-foreground: oklch(1 0 0);
+	--primary-hover: oklch(0.46 0.19 258);
 	--secondary: oklch(0.955 0.008 255);
 	--secondary-foreground: oklch(0.28 0.02 258);
 	--muted: oklch(0.962 0.006 255);
@@ -94,6 +96,8 @@
 	--primary: oklch(0.67 0.16 255);
 	/* White on this lighter blue is 2.9:1; the page's own dark ink reaches 6.3:1. */
 	--primary-foreground: oklch(0.17 0.01 260);
+	/* Lighter, not darker: the ink on it is dark, so lifting the blue adds contrast. */
+	--primary-hover: oklch(0.73 0.14 255);
 	--secondary: oklch(0.26 0.015 260);
 	--secondary-foreground: oklch(0.985 0 0);
 	--muted: oklch(0.24 0.014 260);
