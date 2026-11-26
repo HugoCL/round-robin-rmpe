@@ -13,6 +13,7 @@ import {
 	GOOGLE_CHAT_REVIEWER_PLACEHOLDER,
 	getDefaultPRChatMessageTemplate,
 } from "@/lib/googleChatMessageTemplate";
+import { cn } from "@/lib/utils";
 import { OptionSwitch } from "./assignment/OptionControls";
 
 export interface ChatMessageCustomizerProps {
@@ -290,7 +291,10 @@ export function ChatMessageCustomizer({
 										<Badge
 											key={mod.id}
 											variant={isActive ? "default" : "outline"}
-											className="inline-flex min-h-9 cursor-pointer items-center rounded-full px-3 text-xs transition-colors hover:bg-primary/80"
+											className={cn(
+												"inline-flex min-h-9 cursor-pointer items-center rounded-full px-3 text-xs transition-colors",
+												isActive ? "hover:bg-primary-hover" : "hover:bg-muted",
+											)}
 											onClick={() => {
 												setSelectedMods((prev) =>
 													prev.includes(mod.id)
