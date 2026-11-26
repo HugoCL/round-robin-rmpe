@@ -63,7 +63,7 @@ export function openForceAssign() {
 }
 
 const OVERLAY_SELECTOR =
-	'[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]';
+	'[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]';
 
 /**
  * A dialog, popover or menu is open (tooltips excluded, they open on hover):
@@ -72,10 +72,12 @@ const OVERLAY_SELECTOR =
 export function isOverlayOpen(target: EventTarget | null) {
 	if (target instanceof Element && target.closest(OVERLAY_SELECTOR))
 		return true;
-	// Radix marks an open overlay with data-state="open", ui-sdk with data-open.
+	// Radix (the sheet and drawer) marks an open overlay with data-state="open",
+	// ui-sdk with data-open. A ui-sdk tooltip has role="tooltip", so it never
+	// counts.
 	return Boolean(
 		document.querySelector(
-			':is([role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]):is([data-state="open"], [data-open]), [data-radix-popper-content-wrapper]:not(:has([role="tooltip"]))',
+			':is([role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]):is([data-state="open"], [data-open])',
 		),
 	);
 }
