@@ -209,7 +209,7 @@ export function FeedHistory() {
 													<Button
 														variant="ghost"
 														size="icon-xs"
-														className="text-muted-foreground hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:data-[state=open]:opacity-100"
+														className="text-muted-foreground hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:data-open:opacity-100"
 														aria-label={
 															prNumber
 																? t("history.undoEntryPr", {

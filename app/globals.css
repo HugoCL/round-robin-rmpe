@@ -143,6 +143,7 @@
 	   defaults, as a portal did. */
 	:where(
 		[data-slot="dialog-content"],
+		[data-slot="alert-dialog-content"],
 		[data-slot="menu-content"],
 		[data-slot="select-content"],
 		[data-slot="toast-region"],

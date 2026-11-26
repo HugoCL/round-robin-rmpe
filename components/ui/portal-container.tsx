@@ -41,8 +41,8 @@ function OutsideDrawer({ children }: { children: React.ReactNode }) {
 
 /**
  * Makes an open ui-sdk popup count as the topmost Radix layer, as a Radix popup
- * opened there would. Radix tracks its open sheets, drawers, alert dialogs and
- * popovers in two stacks, and only the top of each acts:
+ * opened there would. Radix tracks its open sheets and drawers in two stacks,
+ * and only the top of each acts:
  *
  * - Layers: only the topmost one handles Escape, and it listens on the
  *   document before ui-sdk does. The bridge is an empty layer that does nothing

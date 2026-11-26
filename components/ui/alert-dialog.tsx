@@ -1,41 +1,54 @@
 "use client"
 
-import { AlertDialog as AlertDialogPrimitive } from "radix-ui"
+import {
+  AlertDialogBackdrop as AlertDialogBackdropPrimitive,
+  AlertDialogClose as AlertDialogClosePrimitive,
+  AlertDialogContent as AlertDialogContentPrimitive,
+  AlertDialogDescription as AlertDialogDescriptionPrimitive,
+  AlertDialog as AlertDialogPrimitive,
+  AlertDialogTitle as AlertDialogTitlePrimitive,
+  AlertDialogTrigger as AlertDialogTriggerPrimitive,
+} from "@ui-sdk/react/alert-dialog"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import { type RadixFocusProps, useRadixFocus } from "@/components/ui/dialog"
+import { OutsideDrawer, RadixLayerBridge } from "@/components/ui/portal-container"
+import { type AsChildProps, asChildProps } from "@/lib/as-child"
 import { cn } from "@/lib/utils"
 
-function AlertDialog({
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
+/**
+ * Radix's AlertDialog API on ui-sdk's. Always modal; an outside press doesn't
+ * close it, Escape does. Opening focuses the first Close part (Cancel), as
+ * Radix did.
+ */
+function AlertDialog(props: React.ComponentProps<typeof AlertDialogPrimitive>) {
+  return <AlertDialogPrimitive {...props} />
 }
 
 function AlertDialogTrigger({
+  asChild,
+  children,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
+}: Omit<React.ComponentProps<typeof AlertDialogTriggerPrimitive>, "children"> &
+  AsChildProps & { children?: React.ReactNode }) {
   return (
-    <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
+    <AlertDialogTriggerPrimitive {...props} {...asChildProps(asChild, children)} />
   )
 }
 
-function AlertDialogPortal({
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) {
-  return (
-    <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
-  )
+/** Kept for call sites from the Radix version: ui-sdk renders in place. */
+function AlertDialogPortal({ children }: { children?: React.ReactNode }) {
+  return <>{children}</>
 }
 
 function AlertDialogOverlay({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
+}: React.ComponentProps<typeof AlertDialogBackdropPrimitive>) {
   return (
-    <AlertDialogPrimitive.Overlay
-      data-slot="alert-dialog-overlay"
+    <AlertDialogBackdropPrimitive
       className={cn(
-        "fixed inset-0 z-50 bg-background/72 backdrop-blur-xs duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:duration-0",
+        "pointer-events-auto fixed inset-0 z-50 bg-background/72 backdrop-blur-xs duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:duration-0",
         className
       )}
       {...props}
@@ -46,23 +59,47 @@ function AlertDialogOverlay({
 function AlertDialogContent({
   className,
   size = "default",
+  children,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
+  initialFocus,
+  finalFocus,
+  ref,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Content> & {
-  size?: "default" | "sm"
-}) {
+}: Omit<React.ComponentProps<typeof AlertDialogContentPrimitive>, "children"> &
+  RadixFocusProps & {
+    children?: React.ReactNode
+    size?: "default" | "sm"
+  }) {
+  const contentRef = React.useRef<HTMLElement | null>(null)
+  const focus = useRadixFocus({ onOpenAutoFocus, onCloseAutoFocus }, contentRef)
+  const setRefs = React.useCallback(
+    (el: HTMLElement | null) => {
+      contentRef.current = el
+      if (typeof ref === "function") ref(el as HTMLDivElement)
+      else if (ref) ref.current = el as HTMLDivElement
+    },
+    [ref]
+  )
+
   return (
-    <AlertDialogPortal>
+    <OutsideDrawer>
       <AlertDialogOverlay />
-      <AlertDialogPrimitive.Content
-        data-slot="alert-dialog-content"
+      <AlertDialogContentPrimitive
+        ref={setRefs}
+        initialFocus={initialFocus ?? focus.initialFocus}
+        finalFocus={finalFocus ?? focus.finalFocus}
         data-size={size}
         className={cn(
-          "calm-shell group/alert-dialog-content fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-6 bg-background/96 p-6 text-foreground duration-200 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
+          "calm-shell group/alert-dialog-content pointer-events-auto fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-6 bg-background/96 p-6 text-foreground duration-200 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
           className
         )}
         {...props}
-      />
-    </AlertDialogPortal>
+      >
+        <RadixLayerBridge modal />
+        {children}
+      </AlertDialogContentPrimitive>
+    </OutsideDrawer>
   )
 }
 
@@ -117,10 +154,9 @@ function AlertDialogMedia({
 function AlertDialogTitle({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+}: React.ComponentProps<typeof AlertDialogTitlePrimitive>) {
   return (
-    <AlertDialogPrimitive.Title
-      data-slot="alert-dialog-title"
+    <AlertDialogTitlePrimitive
       className={cn(
         "text-lg leading-tight font-semibold text-foreground sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2",
         className
@@ -133,10 +169,9 @@ function AlertDialogTitle({
 function AlertDialogDescription({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
+}: React.ComponentProps<typeof AlertDialogDescriptionPrimitive>) {
   return (
-    <AlertDialogPrimitive.Description
-      data-slot="alert-dialog-description"
+    <AlertDialogDescriptionPrimitive
       className={cn(
         "text-sm leading-relaxed text-balance text-muted-foreground md:text-pretty *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
         className
@@ -146,40 +181,34 @@ function AlertDialogDescription({
   )
 }
 
+type AlertDialogButtonProps = Omit<
+  React.ComponentProps<typeof Button>,
+  "asChild" | "type"
+>
+
+/**
+ * A Close part that looks like our Button. The click handler goes through the
+ * Button, which ignores its return value: ui-sdk's `action` would keep the
+ * dialog open and pending while a returned Promise runs.
+ */
+function AlertDialogButton(props: AlertDialogButtonProps) {
+  return <AlertDialogClosePrimitive render={<Button type="button" {...props} />} />
+}
+
 function AlertDialogAction({
-  className,
   variant = "default",
   size = "default",
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
-  Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
-  return (
-    <Button variant={variant} size={size} asChild>
-      <AlertDialogPrimitive.Action
-        data-slot="alert-dialog-action"
-        className={cn(className)}
-        {...props}
-      />
-    </Button>
-  )
+}: AlertDialogButtonProps) {
+  return <AlertDialogButton variant={variant} size={size} {...props} />
 }
 
 function AlertDialogCancel({
-  className,
   variant = "outline",
   size = "default",
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> &
-  Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
-  return (
-    <Button variant={variant} size={size} asChild>
-      <AlertDialogPrimitive.Cancel
-        data-slot="alert-dialog-cancel"
-        className={cn(className)}
-        {...props}
-      />
-    </Button>
-  )
+}: AlertDialogButtonProps) {
+  return <AlertDialogButton variant={variant} size={size} {...props} />
 }
 
 export {

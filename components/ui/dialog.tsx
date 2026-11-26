@@ -84,7 +84,10 @@ function DialogCloseButton() {
   )
 }
 
-/** The Radix focus hooks, mapped onto ui-sdk's `initialFocus`/`finalFocus`. */
+/**
+ * The Radix focus hooks, mapped onto ui-sdk's `initialFocus`/`finalFocus`.
+ * Shared with the alert dialog.
+ */
 type RadixFocusProps = {
   onOpenAutoFocus?: (event: Event) => void
   onCloseAutoFocus?: (event: Event) => void
@@ -278,4 +281,6 @@ export {
   DialogTitle,
   DialogTrigger,
   focusDialogItself,
+  type RadixFocusProps,
+  useRadixFocus,
 }
