@@ -15,7 +15,7 @@ colors:
   muted-foreground: "oklch(0.48 0.02 256)"
   border: "oklch(0.9 0.01 255)"
   input: "oklch(0.925 0.008 255)"
-  ring: "oklch(0.69 0.12 258)"
+  ring: "oklch(0.62 0.13 258)"
   destructive: "oklch(0.58 0.22 27)"
   dark-background: "oklch(0.17 0.01 260)"
   dark-foreground: "oklch(0.965 0.004 255)"
@@ -140,7 +140,7 @@ One accent, one hue family, two luminance modes. The blue is never decorative â€
 
 ### Primary
 - **Instrument Blue** (`oklch(0.52 0.19 258)`, light mode): The one accent. Assign PR button, focus rings, active chip backgrounds, link hover. Never used for decoration. Dark mode shifts to `oklch(0.67 0.16 255)` to maintain contrast on dark surfaces, and text on it turns dark (`oklch(0.17 0.01 260)`, 6.3:1): white on that blue is only 2.9:1.
-- **Ring Blue** (`oklch(0.69 0.12 258)`): Focus rings only. Lower chroma than the primary to read as a guide, not a shout.
+- **Ring Blue** (`oklch(0.62 0.13 258)` light / `oklch(0.62 0.11 255)` dark): Focus rings only. Lower chroma than the primary to read as a guide, not a shout, but dark enough that the ring's solid edge clears 3:1 against the page (3.5:1 light, 5.3:1 dark).
 
 ### Neutral
 - **Cloud Surface** (`oklch(0.985 0.004 254)`): Page background, light mode. Hue-tinted (chroma 0.004) â€” never pure white.
