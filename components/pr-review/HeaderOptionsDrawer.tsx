@@ -226,7 +226,7 @@ export function HeaderOptionsDrawer({
 						{bodyContent}
 					</div>
 					<DrawerFooter className="shrink-0">
-						<DrawerClose asChild>{footerAction}</DrawerClose>
+						<DrawerClose render={footerAction} />
 					</DrawerFooter>
 				</DrawerContent>
 			</Drawer>
@@ -249,7 +249,7 @@ export function HeaderOptionsDrawer({
 					{bodyContent}
 				</div>
 				<DialogFooter className="shrink-0 border-t border-border/60 pt-4">
-					<DialogClose asChild>{footerAction}</DialogClose>
+					<DialogClose render={footerAction} />
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

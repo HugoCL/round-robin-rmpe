@@ -26,7 +26,7 @@ import {
 
 interface TeamSettingsDialogProps {
 	teamSlug?: string;
-	trigger?: React.ReactNode;
+	trigger?: React.ReactElement;
 }
 
 export function TeamSettingsDialog({
@@ -116,14 +116,16 @@ export function TeamSettingsDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger asChild>
-				{trigger || (
-					<Button variant="outline" size="sm">
-						<Settings className="h-4 w-4 mr-2" />
-						{t("teamSettings.title")}
-					</Button>
-				)}
-			</DialogTrigger>
+			<DialogTrigger
+				render={
+					trigger ?? (
+						<Button variant="outline" size="sm">
+							<Settings className="h-4 w-4 mr-2" />
+							{t("teamSettings.title")}
+						</Button>
+					)
+				}
+			/>
 			<DialogContent className="sm:max-w-[500px]">
 				<DialogHeader>
 					<DialogTitle>{t("teamSettings.title")}</DialogTitle>

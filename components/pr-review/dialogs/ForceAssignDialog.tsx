@@ -40,7 +40,7 @@ import { usePRReview } from "../PRReviewContext";
 
 interface ForceAssignDialogProps {
 	/** `null` renders no trigger: the dialog is then opened through `open`. */
-	trigger?: React.ReactNode;
+	trigger?: React.ReactElement | null;
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
 	/** The PR already filled in the assignment card; the dialog opens with it. */
@@ -272,14 +272,16 @@ export function ForceAssignDialog({
 	return (
 		<Dialog open={isOpen} onOpenChange={setOpen}>
 			{trigger === null ? null : (
-				<DialogTrigger asChild>
-					{trigger || (
-						<Button variant="outline" className="w-full">
-							<UserCheck className="h-4 w-4 mr-2" />
-							{t("pr.forceAssign")} PR
-						</Button>
-					)}
-				</DialogTrigger>
+				<DialogTrigger
+					render={
+						trigger ?? (
+							<Button variant="outline" className="w-full">
+								<UserCheck className="h-4 w-4 mr-2" />
+								{t("pr.forceAssign")} PR
+							</Button>
+						)
+					}
+				/>
 			)}
 			<DialogContent className="sm:max-w-135">
 				<DialogHeader>

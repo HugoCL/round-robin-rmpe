@@ -1,7 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { type ComponentType, type ReactNode, useId, useState } from "react";
+import {
+	type ComponentType,
+	type ReactElement,
+	type ReactNode,
+	useId,
+	useState,
+} from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -177,7 +183,7 @@ export function EditReviewerDialog({
 		Title: ComponentType<{ className?: string; children?: ReactNode }>,
 		Description: ComponentType<{
 			className?: string;
-			asChild?: boolean;
+			render?: ReactElement;
 			children?: ReactNode;
 		}>,
 	) => (
@@ -188,11 +194,9 @@ export function EditReviewerDialog({
 			<div className="min-w-0 flex-1">
 				<p className="calm-kicker mb-1">{t("reviewer.editKicker")}</p>
 				<Title className="truncate">{displayName}</Title>
-				<Description asChild>
-					<div className="mt-0.5">
-						<p className="truncate">{reviewer.email}</p>
-						{statusLine ? <p className="mt-0.5 text-xs">{statusLine}</p> : null}
-					</div>
+				<Description render={<div className="mt-0.5" />}>
+					<p className="truncate">{reviewer.email}</p>
+					{statusLine ? <p className="mt-0.5 text-xs">{statusLine}</p> : null}
 				</Description>
 			</div>
 		</div>
