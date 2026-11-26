@@ -107,7 +107,17 @@ function dayCellClassName(state: CalendarDayState, marks: DayMarks) {
     .join(" ")
 }
 
-type CalendarProps = Omit<React.ComponentProps<typeof CalendarPrimitive>, "children">
+type CalendarProps = Omit<
+  React.ComponentProps<typeof CalendarPrimitive>,
+  "children"
+> & {
+  /**
+   * A range's start whose end isn't picked yet, for a caller that cancels the
+   * calendar's own start (`onAnchorChange`) and keeps the range itself. It is
+   * drawn as a single selected day, like the calendar's own pending start.
+   */
+  pendingStart?: string | null
+}
 
 /**
  * ui-sdk's Calendar with La Lista's look (the shadcn day picker it replaced):
@@ -121,6 +131,7 @@ function Calendar({
   locale: localeProp,
   weekStartsOn,
   showOutsideDays = true,
+  pendingStart,
   ...props
 }: CalendarProps) {
   const appLocale = useLocale()
@@ -176,7 +187,12 @@ function Calendar({
               </CalendarWeekdays>
               <CalendarWeeks className="[&>tr]:mt-2 [&>tr]:flex [&>tr]:w-full">
                 {(cell) => {
-                  const marks = markDay(cell.date, calendar.mode, calendar.value, calendar.anchor)
+                  const marks = markDay(
+                    cell.date,
+                    calendar.mode,
+                    calendar.value,
+                    calendar.anchor ?? pendingStart ?? null
+                  )
                   return (
                     <CalendarDay
                       value={cell.date}
