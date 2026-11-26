@@ -11,6 +11,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
+	focusDialogItself,
 } from "@/components/ui/dialog";
 import {
 	Drawer,
@@ -320,7 +321,12 @@ export function EditReviewerDialog({
 	if (isMobile) {
 		return (
 			<Drawer open={open} onOpenChange={handleOpenChange}>
-				<DrawerContent className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[side=bottom]:max-h-[92dvh]">
+				{/* Focus stays off the fields: focusing a filled one would select its
+				    text and raise the phone's keyboard as the drawer opens. */}
+				<DrawerContent
+					className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[side=bottom]:max-h-[92dvh]"
+					onOpenAutoFocus={focusDialogItself}
+				>
 					<DrawerHeader className="shrink-0 text-left group-data-[side=bottom]/drawer-content:text-left">
 						{header(DrawerTitle, DrawerDescription)}
 					</DrawerHeader>
