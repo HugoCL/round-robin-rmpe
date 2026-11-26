@@ -12,8 +12,9 @@ import { clerkLocalization } from "@/lib/clerkAppearance";
 
 export const viewport: Viewport = {
 	themeColor: [
-		{ media: "(prefers-color-scheme: light)", color: "#f7f8fb" },
-		{ media: "(prefers-color-scheme: dark)", color: "#17181d" },
+		// --background in each theme, so the browser chrome meets the page.
+		{ media: "(prefers-color-scheme: light)", color: "#f8fafd" },
+		{ media: "(prefers-color-scheme: dark)", color: "#0d1014" },
 	],
 	width: "device-width",
 	initialScale: 1,

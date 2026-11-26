@@ -133,8 +133,13 @@
 	[role="button"]:not([aria-disabled="true"]) {
 		cursor: pointer;
 	}
+	::selection {
+		background-color: color-mix(in oklab, var(--primary) 24%, transparent);
+	}
 	body {
 		@apply bg-background text-foreground;
+		caret-color: var(--primary);
+		accent-color: var(--primary);
 		background-image:
 			radial-gradient(
 				circle at top,
