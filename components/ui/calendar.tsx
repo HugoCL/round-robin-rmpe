@@ -171,7 +171,7 @@ function Calendar({
           </div>
           <div className="flex w-full flex-col gap-4">
             <div className="flex h-(--cell-size) w-full items-center justify-center px-(--cell-size)">
-              <CalendarHeading className="font-medium select-none text-sm">
+              <CalendarHeading className="font-medium select-none text-sm [font-family:inherit] [letter-spacing:inherit]">
                 {(heading) =>
                   format(fromCalendarDate(`${heading.month}-01`), "LLLL y", {
                     locale: dateLocale,
@@ -206,6 +206,9 @@ function Calendar({
                   return (
                     <CalendarDay
                       value={cell.date}
+                      tabIndex={
+                        cell.date.slice(0, 7) === calendar.month ? undefined : -1
+                      }
                       className={(day) => dayCellClassName(day, marks)}
                     >
                       {(day) => (
