@@ -155,6 +155,11 @@
 	h6 {
 		font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
 		letter-spacing: -0.02em;
+		/* Style only, not text-wrap: the shorthand would undo `truncate`. */
+		text-wrap-style: balance;
+	}
+	p {
+		text-wrap-style: pretty;
 	}
 }
 
