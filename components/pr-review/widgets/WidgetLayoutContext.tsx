@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
 import {
 	createContext,
@@ -10,10 +11,12 @@ import {
 	useMemo,
 	useRef,
 	useState,
+	useSyncExternalStore,
 } from "react";
 import { flushSync } from "react-dom";
 import { useFeatureEnabled } from "@/components/AppConfigProvider";
 import { ToastAction } from "@/components/ui/toast";
+import { api } from "@/convex/_generated/api";
 import { toast } from "@/hooks/use-toast";
 import {
 	DEFAULT_WIDGET_LAYOUT,
@@ -22,17 +25,36 @@ import {
 	LANE_COUNT,
 	moveWidget,
 	removeWidget,
+	setWidgetSize,
 	WIDGET_IDS,
 	type WidgetId,
 	type WidgetLayout,
+	type WidgetSize,
+	widgetSize,
 } from "@/lib/widgetLayout";
 import { usePRReview } from "../PRReviewContext";
 
 type DropTarget = { lane: number; before: WidgetId | null };
 
 interface WidgetLayoutContextValue {
-	/** The widgets each lane shows: the stored layout minus what this team cannot show. */
+	/**
+	 * What each lane shows: the stored layout minus what this team cannot show
+	 * and, while it is pinned, minus the assignment card.
+	 */
 	lanes: WidgetId[][];
+	/**
+	 * Below lg the lanes stack into one column. The assignment card is then
+	 * pinned first, wherever the layout has it: on a phone it is the page.
+	 */
+	stacked: boolean;
+	/**
+	 * False against a backend from before sizes and the movable card (a preview
+	 * build ahead of it): it could save neither, so neither is on offer and the
+	 * card stays pinned.
+	 */
+	canResize: boolean;
+	cardPinned: boolean;
+	sizeOf: (id: WidgetId) => WidgetSize;
 	/** Widgets this team can show that are not in the view. */
 	addable: WidgetId[];
 	isShown: (id: WidgetId) => boolean;
@@ -43,6 +65,7 @@ interface WidgetLayoutContextValue {
 	move: (id: WidgetId, to: DropTarget) => Promise<void>;
 	add: (id: WidgetId) => Promise<void>;
 	remove: (id: WidgetId) => Promise<void>;
+	resize: (id: WidgetId, size: WidgetSize) => void;
 	reset: () => void;
 	draggingId: WidgetId | null;
 	setDraggingId: (id: WidgetId | null) => void;
@@ -77,6 +100,15 @@ function transition(update: () => void): Promise<void> {
 	return viewTransition.updateCallbackDone;
 }
 
+// Tailwind's lg, in rem like the classes that stack the lanes.
+const LANES_QUERY = "(min-width: 64rem)";
+
+function subscribeToLanes(onChange: () => void) {
+	const query = window.matchMedia(LANES_QUERY);
+	query.addEventListener("change", onChange);
+	return () => query.removeEventListener("change", onChange);
+}
+
 export function WidgetLayoutProvider({
 	stored,
 	onChange,
@@ -93,9 +125,19 @@ export function WidgetLayoutProvider({
 	const eventsEnabled = useFeatureEnabled("events");
 	const birthdaysEnabled = useFeatureEnabled("birthdays");
 	const crossTeamEnabled = useFeatureEnabled("crossTeamAssignment");
+	const canResize =
+		useQuery(api.queries.getMyUserPreferences, {})?.widgetSizes === true;
 	const [editing, setEditing] = useState(false);
 	const [draggingId, setDraggingId] = useState<WidgetId | null>(null);
 	const [announcement, setAnnouncement] = useState("");
+	// Read during render, not after mount: the card must not start in one
+	// place and jump to another.
+	const stacked = useSyncExternalStore(
+		subscribeToLanes,
+		() => !window.matchMedia(LANES_QUERY).matches,
+		() => false,
+	);
+	const cardPinned = stacked || !canResize;
 
 	const layout = stored ?? DEFAULT_WIDGET_LAYOUT;
 
@@ -146,6 +188,7 @@ export function WidgetLayoutProvider({
 	// it was on a team (or after a feature toggle) that can show it.
 	const available = useMemo(() => {
 		const unavailable: Record<WidgetId, boolean> = {
+			assignment: cardPinned,
 			history: false,
 			rotation: false,
 			absences: false,
@@ -159,6 +202,7 @@ export function WidgetLayoutProvider({
 		};
 		return new Set(WIDGET_IDS.filter((id) => !unavailable[id]));
 	}, [
+		cardPinned,
 		hasTags,
 		isForeignTeamView,
 		eventsEnabled,
@@ -209,6 +253,18 @@ export function WidgetLayoutProvider({
 		},
 		[commit, offerUndo, t],
 	);
+	const resize = useCallback(
+		(id: WidgetId, size: WidgetSize) => {
+			if (widgetSize(latest.current, id) === size) return;
+			const next = setWidgetSize(latest.current, id, size);
+			if (next === latest.current) return;
+			setAnnouncement(
+				t("resized", { name: t(`titles.${id}`), size: t(`size.${size}`) }),
+			);
+			void commit(next);
+		},
+		[commit, t],
+	);
 	const reset = useCallback(() => {
 		const previous = latest.current;
 		void commit(DEFAULT_WIDGET_LAYOUT);
@@ -227,6 +283,10 @@ export function WidgetLayoutProvider({
 	const value = useMemo<WidgetLayoutContextValue>(
 		() => ({
 			lanes,
+			stacked,
+			canResize,
+			cardPinned,
+			sizeOf: (id) => widgetSize(layout, id),
 			addable,
 			isShown: (id) => lanes.some((lane) => lane.includes(id)),
 			isCustomized: stored !== undefined,
@@ -239,11 +299,27 @@ export function WidgetLayoutProvider({
 			move,
 			add,
 			remove,
+			resize,
 			reset,
 			draggingId,
 			setDraggingId,
 		}),
-		[lanes, addable, stored, editing, move, add, remove, reset, draggingId],
+		[
+			lanes,
+			stacked,
+			canResize,
+			cardPinned,
+			layout,
+			addable,
+			stored,
+			editing,
+			move,
+			add,
+			remove,
+			resize,
+			reset,
+			draggingId,
+		],
 	);
 
 	return (

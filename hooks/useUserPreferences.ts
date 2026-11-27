@@ -5,7 +5,11 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "@/hooks/use-toast";
-import { normalizeWidgetLayout, type WidgetLayout } from "@/lib/widgetLayout";
+import {
+	DEFAULT_WIDGET_LAYOUT,
+	resolveWidgetLayoutWrite,
+	type WidgetLayout,
+} from "@/lib/widgetLayout";
 
 export type UserPreferences = {
 	showAssignments: boolean;
@@ -93,8 +97,7 @@ function isSamePreferenceState(a: UserPreferences, b: UserPreferences) {
 		a.hideMultiAssignmentSection === b.hideMultiAssignmentSection &&
 		a.enableAgentSetupExperiment === b.enableAgentSetupExperiment &&
 		a.defaultAgentTeamSlug === b.defaultAgentTeamSlug &&
-		JSON.stringify(a.widgetLayout?.lanes) ===
-			JSON.stringify(b.widgetLayout?.lanes)
+		JSON.stringify(a.widgetLayout) === JSON.stringify(b.widgetLayout)
 	);
 }
 
@@ -157,9 +160,11 @@ export function useUserPreferences() {
 			enableAgentSetupExperiment:
 				preferenceQuery.enableAgentSetupExperiment === true,
 			defaultAgentTeamSlug: preferenceQuery.defaultAgentTeamSlug,
-			widgetLayout: preferenceQuery.widgetLayout
-				? normalizeWidgetLayout(preferenceQuery.widgetLayout)
-				: undefined,
+			// A backend from before this client's resets stores the default
+			// spelled out; either way the default view is `undefined` here.
+			widgetLayout: resolveWidgetLayoutWrite(
+				preferenceQuery.widgetLayout ?? DEFAULT_WIDGET_LAYOUT,
+			),
 		};
 	}, [preferenceQuery]);
 
@@ -235,7 +240,15 @@ export function useUserPreferences() {
 			pendingWritesRef.current += 1;
 			setIsSaving(true);
 			try {
-				await updatePreferencesMutation(resolvedPatch);
+				await updatePreferencesMutation({
+					...resolvedPatch,
+					// Spelled out, not null: to the server null is an older client's
+					// default order, which leaves the card and the sizes as stored.
+					widgetLayout:
+						resolvedPatch.widgetLayout === null
+							? DEFAULT_WIDGET_LAYOUT
+							: resolvedPatch.widgetLayout,
+				});
 			} catch (error) {
 				console.error("Failed to update user preferences:", error);
 				writeFailedRef.current = true;

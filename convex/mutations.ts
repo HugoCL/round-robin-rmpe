@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import {
 	AGENT_ASSIGNMENT_CHAT_LOCALE,
 	shouldQueueAgentAssignmentChat,
@@ -27,7 +27,7 @@ import {
 	isIncludedInTagRotations,
 } from "../lib/reviewerEligibility";
 import { pickTeamOwnerCandidate, resolveReviewerRole } from "../lib/teamRoles";
-import { normalizeWidgetLayout } from "../lib/widgetLayout";
+import { resolveWidgetLayoutWrite } from "../lib/widgetLayout";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -60,6 +60,8 @@ import {
 import { widgetLayoutValidator } from "./schema";
 
 const GLOBAL_REVIEWED_PR_COUNTER_KEY = "reviewed_pr_total";
+type StoredWidgetLayout = Infer<typeof widgetLayoutValidator>;
+
 type UserPreferenceFlags = {
 	showAssignments: boolean;
 	myAssignmentsOnly: boolean;
@@ -68,14 +70,14 @@ type UserPreferenceFlags = {
 	hideMultiAssignmentSection: boolean;
 	enableAgentSetupExperiment: boolean;
 	defaultAgentTeamSlug?: string;
-	widgetLayout?: { lanes: string[][] };
+	widgetLayout?: StoredWidgetLayout;
 };
 
 type UserPreferencePatch = Partial<
 	Omit<UserPreferenceFlags, "defaultAgentTeamSlug" | "widgetLayout">
 > & {
 	defaultAgentTeamSlug?: string | null;
-	widgetLayout?: { lanes: string[][] } | null;
+	widgetLayout?: StoredWidgetLayout | null;
 };
 
 type AssignmentSource = "ui" | "agent";
@@ -239,6 +241,7 @@ async function maybeScheduleAgentAssignmentChat(
 
 function resolvePreferencePatch(
 	patch: UserPreferencePatch,
+	storedWidgetLayout?: StoredWidgetLayout,
 ): Partial<UserPreferenceFlags> {
 	const resolved: Partial<UserPreferenceFlags> = {};
 	if (typeof patch.showAssignments === "boolean") {
@@ -264,10 +267,10 @@ function resolvePreferencePatch(
 			patch.defaultAgentTeamSlug?.trim() || undefined;
 	}
 	if (patch.widgetLayout !== undefined) {
-		resolved.widgetLayout =
-			patch.widgetLayout === null
-				? undefined
-				: normalizeWidgetLayout(patch.widgetLayout);
+		resolved.widgetLayout = resolveWidgetLayoutWrite(
+			patch.widgetLayout,
+			storedWidgetLayout,
+		);
 	}
 	return resolved;
 }
@@ -738,7 +741,7 @@ export const updateMyUserPreferences = mutation({
 		// device is never overwritten. Only real launch ids are kept.
 		const seen = primary?.seenLaunches ?? [];
 		const patch = {
-			...resolvePreferencePatch(args),
+			...resolvePreferencePatch(args, primary?.widgetLayout),
 			...(seenLaunch !== undefined &&
 			isLaunchSpotlightId(seenLaunch) &&
 			!seen.includes(seenLaunch)

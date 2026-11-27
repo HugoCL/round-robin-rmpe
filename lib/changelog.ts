@@ -101,6 +101,17 @@ export const changelogTypeColors: Record<ChangelogType, string> = {
 export const changelogEntries: ChangelogEntry[] = [
 	// ⬇️ Agrega nuevas entradas aquí (las más recientes primero) ⬇️
 	{
+		date: "2026-11-26",
+		type: "improvement",
+		title: "Widgets en tamaño compacto o amplio, y la asignación donde quieras",
+		description:
+			"En «Personalizar», cada widget ahora tiene tamaños: Compacto deja lo esencial (a quién le toca y los dos que siguen, tu semana en una frase, quién falta) y Amplio muestra más (diez entradas del historial, las fechas de cada ausencia, más cumpleaños). Además puedes mover la tarjeta de asignación a otro carril con las mismas flechas o arrastrándola. En el teléfono sigue siempre arriba.",
+		video: {
+			src: "/changelog/widget-sizes.mp4",
+			poster: "/changelog/widget-sizes.jpg",
+		},
+	},
+	{
 		date: "2026-11-23",
 		type: "feature",
 		title: "Arma tu propia vista de la lista",

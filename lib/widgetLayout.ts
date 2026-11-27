@@ -1,4 +1,8 @@
+/** The assignment card. It moves like a widget but is always in the view. */
+export const ASSIGNMENT_ID = "assignment" as const;
+
 export const WIDGET_IDS = [
+	ASSIGNMENT_ID,
 	"history",
 	"rotation",
 	"myWeek",
@@ -15,12 +19,43 @@ export type WidgetId = (typeof WIDGET_IDS)[number];
 
 export const LANE_COUNT = 3;
 
-/** Always exactly LANE_COUNT lanes; a widget appears at most once. */
-export type WidgetLayout = { lanes: WidgetId[][] };
+export const WIDGET_SIZES = ["small", "medium", "large"] as const;
+
+export type WidgetSize = (typeof WIDGET_SIZES)[number];
+
+export const DEFAULT_WIDGET_SIZE: WidgetSize = "medium";
+
+/**
+ * The sizes each widget has a form for. A lane fixes the width, so a size is
+ * how much the widget shows: small is its headline, large adds rows or detail.
+ */
+export const WIDGET_SIZE_OPTIONS: Record<WidgetId, readonly WidgetSize[]> = {
+	assignment: ["medium"],
+	history: ["small", "medium", "large"],
+	rotation: ["small", "medium"],
+	myWeek: ["small", "medium"],
+	absences: ["small", "medium", "large"],
+	events: ["medium"],
+	myReviews: ["small", "medium"],
+	teamLoad: ["small", "medium"],
+	tags: ["medium"],
+	birthdays: ["small", "medium", "large"],
+	otherTeams: ["medium"],
+};
+
+/**
+ * Always exactly LANE_COUNT lanes; a widget appears at most once and the
+ * assignment card exactly once. `sizes` holds only the widgets that are not at
+ * the default size, and is absent when there are none.
+ */
+export type WidgetLayout = {
+	lanes: WidgetId[][];
+	sizes?: Partial<Record<WidgetId, WidgetSize>>;
+};
 
 export const DEFAULT_WIDGET_LAYOUT: WidgetLayout = {
 	lanes: [
-		["history"],
+		[ASSIGNMENT_ID, "history"],
 		["rotation", "absences"],
 		["myWeek", "myReviews", "events"],
 	],
@@ -33,16 +68,51 @@ function isWidgetId(value: unknown): value is WidgetId {
 }
 
 function cloneLayout(layout: WidgetLayout): WidgetLayout {
-	return { lanes: layout.lanes.map((lane) => [...lane]) };
+	return withSizes(
+		layout.lanes.map((lane) => [...lane]),
+		layout.sizes,
+	);
+}
+
+/** Keeps `sizes` off the layout when it is empty, so equal layouts serialise the same. */
+function withSizes(
+	lanes: WidgetId[][],
+	sizes: WidgetLayout["sizes"],
+): WidgetLayout {
+	return sizes && Object.keys(sizes).length > 0
+		? { lanes, sizes: { ...sizes } }
+		: { lanes };
+}
+
+function normalizeSizes(raw: unknown): WidgetLayout["sizes"] {
+	if (typeof raw !== "object" || raw === null) return undefined;
+	const sizes: Partial<Record<WidgetId, WidgetSize>> = {};
+	// In WIDGET_IDS order, whatever order the stored keys come in.
+	for (const id of WIDGET_IDS) {
+		const size = (raw as Record<string, unknown>)[id];
+		const supported = WIDGET_SIZE_OPTIONS[id].find((option) => option === size);
+		if (supported && supported !== DEFAULT_WIDGET_SIZE) sizes[id] = supported;
+	}
+	return sizes;
 }
 
 /**
  * Boundary parser for stored or client-sent data. Unknown ids and duplicates
  * (first occurrence wins) are dropped, lanes beyond LANE_COUNT merge into the
- * last lane and missing lanes are filled with []. Anything that is not
- * `{ lanes: unknown[] }` yields the default layout.
+ * last lane and missing lanes are filled with []. A layout without the
+ * assignment card (every layout stored before it could move) gets it back at
+ * the top of the first lane. Sizes a widget has no form for are dropped.
+ * Anything that is not `{ lanes: unknown[] }` yields the default layout.
+ *
+ * `stored` is what the person has saved, for a write. A client from before
+ * the card could move (a tab left open across the release) sends lanes with
+ * no card and no sizes; such a write keeps the card's lane and the sizes from
+ * `stored` instead of putting both back to their defaults.
  */
-export function normalizeWidgetLayout(raw: unknown): WidgetLayout {
+export function normalizeWidgetLayout(
+	raw: unknown,
+	stored?: unknown,
+): WidgetLayout {
 	const rawLanes =
 		typeof raw === "object" && raw !== null
 			? (raw as { lanes?: unknown }).lanes
@@ -60,7 +130,40 @@ export function normalizeWidgetLayout(raw: unknown): WidgetLayout {
 			lane.push(id);
 		}
 	});
-	return { lanes };
+	if (seen.has(ASSIGNMENT_ID)) {
+		return withSizes(lanes, normalizeSizes((raw as { sizes?: unknown }).sizes));
+	}
+	const previous = stored === undefined ? null : normalizeWidgetLayout(stored);
+	const place = previous && findWidget(previous, ASSIGNMENT_ID);
+	if (!place) {
+		lanes[0].unshift(ASSIGNMENT_ID);
+		return withSizes(lanes, normalizeSizes((raw as { sizes?: unknown }).sizes));
+	}
+	lanes[place.lane].splice(place.index, 0, ASSIGNMENT_ID);
+	return withSizes(lanes, previous.sizes);
+}
+
+/**
+ * What a write stores: nothing for the default view. `null` is how a client
+ * from before the card says "my default order", which says nothing about the
+ * card or the sizes, so both stay as stored. This client resets by sending
+ * the whole default layout.
+ */
+export function resolveWidgetLayoutWrite(
+	sent: unknown,
+	stored?: unknown,
+): WidgetLayout | undefined {
+	const layout = normalizeWidgetLayout(
+		sent === null
+			? {
+					lanes: DEFAULT_WIDGET_LAYOUT.lanes.map((lane) =>
+						lane.filter((id) => id !== ASSIGNMENT_ID),
+					),
+				}
+			: sent,
+		stored,
+	);
+	return isDefaultWidgetLayout(layout) ? undefined : layout;
 }
 
 export function findWidget(
@@ -90,7 +193,7 @@ export function moveWidget(
 ): WidgetLayout {
 	if (to.before === id) return layout;
 
-	const next = removeWidget(layout, id);
+	const next = liftWidget(layout, id);
 	const laneIndex = Number.isFinite(to.lane)
 		? Math.min(Math.max(Math.trunc(to.lane), 0), LANE_COUNT - 1)
 		: 0;
@@ -101,12 +204,42 @@ export function moveWidget(
 	return next;
 }
 
+/** Takes `id` out of its lane, keeping its size for the place it lands next. */
+function liftWidget(layout: WidgetLayout, id: WidgetId): WidgetLayout {
+	return withSizes(
+		layout.lanes.map((lane) => lane.filter((w) => w !== id)),
+		layout.sizes,
+	);
+}
+
+/** Removes `id` and forgets its size. The assignment card cannot be removed. */
 export function removeWidget(layout: WidgetLayout, id: WidgetId): WidgetLayout {
-	return { lanes: layout.lanes.map((lane) => lane.filter((w) => w !== id)) };
+	if (id === ASSIGNMENT_ID) return layout;
+	const { [id]: _removed, ...sizes } = layout.sizes ?? {};
+	return liftWidget(withSizes(layout.lanes, sizes), id);
+}
+
+export function widgetSize(layout: WidgetLayout, id: WidgetId): WidgetSize {
+	return layout.sizes?.[id] ?? DEFAULT_WIDGET_SIZE;
+}
+
+/** A size the widget has no form for is a no-op. */
+export function setWidgetSize(
+	layout: WidgetLayout,
+	id: WidgetId,
+	size: WidgetSize,
+): WidgetLayout {
+	if (!WIDGET_SIZE_OPTIONS[id].includes(size)) return layout;
+	// Through the parser, so the keys come out in the order the server stores.
+	return withSizes(
+		layout.lanes,
+		normalizeSizes({ ...layout.sizes, [id]: size }),
+	);
 }
 
 export function isDefaultWidgetLayout(layout: WidgetLayout): boolean {
 	return (
+		Object.keys(layout.sizes ?? {}).length === 0 &&
 		layout.lanes.length === DEFAULT_WIDGET_LAYOUT.lanes.length &&
 		layout.lanes.every(
 			(lane, i) =>

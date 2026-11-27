@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import {
 	legacyChatThreadLinks,
 	mergeChatThreadLinks,
@@ -41,6 +41,7 @@ type EnrichedAssignment = {
 
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalQuery, type QueryCtx, query } from "./_generated/server";
+import type { widgetLayoutValidator } from "./schema";
 
 // Helper: resolve team by slug and optionally create a default one for single-tenant upgrade
 async function getTeamBySlugOrThrow(ctx: QueryCtx, teamSlug: string) {
@@ -107,6 +108,8 @@ type LandingAssignmentTickerItem = {
 	assigneeName: string;
 	timestamp: number;
 };
+type StoredWidgetLayout = Infer<typeof widgetLayoutValidator>;
+
 type UserPreferenceFlags = {
 	showAssignments: boolean;
 	myAssignmentsOnly: boolean;
@@ -115,7 +118,7 @@ type UserPreferenceFlags = {
 	hideMultiAssignmentSection: boolean;
 	enableAgentSetupExperiment: boolean;
 	defaultAgentTeamSlug?: string;
-	widgetLayout?: { lanes: string[][] };
+	widgetLayout?: StoredWidgetLayout;
 };
 
 const USER_PREFERENCE_DEFAULTS: UserPreferenceFlags = {
@@ -1020,6 +1023,9 @@ export const getMyUserPreferences = query({
 			return {
 				...USER_PREFERENCE_DEFAULTS,
 				seenLaunches: [],
+				// A build of the app ahead of its backend reads this before it offers
+				// what an older backend could not save.
+				widgetSizes: true,
 				isAuthenticated: false,
 				exists: false,
 			};
@@ -1037,6 +1043,9 @@ export const getMyUserPreferences = query({
 			return {
 				...USER_PREFERENCE_DEFAULTS,
 				seenLaunches: [],
+				// A build of the app ahead of its backend reads this before it offers
+				// what an older backend could not save.
+				widgetSizes: true,
 				isAuthenticated: true,
 				exists: false,
 			};
@@ -1052,6 +1061,9 @@ export const getMyUserPreferences = query({
 			defaultAgentTeamSlug: existing.defaultAgentTeamSlug,
 			widgetLayout: existing.widgetLayout,
 			seenLaunches: existing.seenLaunches ?? [],
+			// A build of the app ahead of its backend reads this before it offers
+			// what an older backend could not save.
+			widgetSizes: true,
 			isAuthenticated: true,
 			exists: true,
 		};

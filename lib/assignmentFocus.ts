@@ -3,9 +3,15 @@ export const PR_URL_INPUT_ID = "assignment-pr-url";
 /** The form holds only the PR field: Enter in any other card input must not assign. */
 export const ASSIGNMENT_FORM_ID = "assignment-form";
 
+/**
+ * The card is inert while the view is being customized: what a click cannot
+ * reach, a shortcut must not reach either.
+ */
+const isInert = (element: Element) => element.closest("[inert]") !== null;
+
 export function focusPrUrlInput() {
 	const input = document.getElementById(PR_URL_INPUT_ID);
-	if (!(input instanceof HTMLInputElement)) return false;
+	if (!(input instanceof HTMLInputElement) || isInert(input)) return false;
 	input.focus();
 	input.select();
 	return true;
@@ -30,6 +36,7 @@ export function isTypingTarget(target: EventTarget | null) {
  */
 export function submitAssignmentOrFocus() {
 	const form = document.getElementById(ASSIGNMENT_FORM_ID);
+	if (form && isInert(form)) return false;
 	// Assign sits outside the form but belongs to it through `form=`, so it is
 	// listed in `form.elements`; when it is disabled the field shows why.
 	const submitter =
@@ -57,7 +64,12 @@ export const FORCE_ASSIGN_TRIGGER_ID = "assignment-force-assign";
 /** Opens the force-assign dialog through its link, so the card owns the state. */
 export function openForceAssign() {
 	const trigger = document.getElementById(FORCE_ASSIGN_TRIGGER_ID);
-	if (!(trigger instanceof HTMLButtonElement) || trigger.disabled) return false;
+	if (
+		!(trigger instanceof HTMLButtonElement) ||
+		trigger.disabled ||
+		isInert(trigger)
+	)
+		return false;
 	trigger.click();
 	return true;
 }
