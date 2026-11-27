@@ -32,6 +32,9 @@
 		"lightTheme": "Light theme",
 		"save": "Save",
 		"cancel": "Cancel",
+		"back": "Back",
+		"next": "Next",
+		"finish": "Finish",
 		"delete": "Delete",
 		"edit": "Edit",
 		"add": "Add",
@@ -439,15 +442,15 @@
 	},
 	"settingsPage": {
 		"title": "Personal settings",
-		"description": "Adjust your preferences and connect your MCP agent to assign PRs from Claude Code.",
+		"description": "Adjust your preferences and connect your MCP agent to assign PRs from Claude Code, Codex, or another client.",
 		"backHome": "Back home"
 	},
 	"agentSetup": {
 		"title": "MCP agent",
-		"drawerDescription": "Three steps: pick a team, generate a token, run one command in Claude Code.",
+		"drawerDescription": "Three steps: pick a team, generate a token, connect your MCP client.",
 		"navbarLabel": "MCP agent",
 		"openSetup": "Open setup",
-		"settingsRowDescription": "Connect Claude Code to assign PRs and check the rotation from your terminal.",
+		"settingsRowDescription": "Connect Claude Code, Codex, or another MCP client to assign PRs and check the rotation.",
 		"connectTab": "Connect",
 		"tokensTab": "Tokens",
 		"wizardProgress": "Setup progress",
@@ -465,7 +468,7 @@
 		"defaultTeamDescription": "This team is used unless you name another one in the conversation.",
 		"generateTokenTitle": "Personal token",
 		"tokenLabel": "Token label",
-		"tokenLabelPlaceholder": "Claude Code on my laptop",
+		"tokenLabelPlaceholder": "Agent on my laptop",
 		"generateToken": "Generate token",
 		"generatingToken": "Generating token…",
 		"tokenOnceHint": "The token is shown only once.",
@@ -478,13 +481,33 @@
 		"revokeToken": "Revoke token",
 		"revokingToken": "Revoking…",
 		"revoked": "Revoked",
-		"installTitle": "Connection in Claude Code",
-		"installDescription": "One command registers La Lista as a remote MCP server.",
-		"mcpInstallCommandTitle": "Install command",
-		"mcpInstallStepOne": "The command already carries the token you generated above.",
-		"mcpInstallStepTwo": "Copy it and run it in your terminal, with Claude Code installed.",
-		"mcpInstallStepThree": "Restart Claude Code: the La Lista tools show up.",
-		"commandNeedsToken": "Without a token the command is incomplete.",
+		"installTitle": "Connect your client",
+		"installDescription": "Pick your client and register La Lista as a remote MCP server.",
+		"clientPickerLabel": "MCP client",
+		"clients": {
+			"claude-code": {
+				"label": "Claude Code",
+				"snippetTitle": "Install command",
+				"stepOne": "The command already carries the token you generated.",
+				"stepTwo": "Copy it and run it in your terminal, with Claude Code installed.",
+				"stepThree": "Restart Claude Code and the La Lista tools show up."
+			},
+			"codex": {
+				"label": "Codex",
+				"snippetTitle": "Config block",
+				"stepOne": "Paste it into <code>~/.codex/config.toml</code>. Create the file if it doesn't exist.",
+				"stepTwo": "If a <code>[mcp_servers.la-lista]</code> table already exists, replace it. A duplicate table breaks the file.",
+				"stepThree": "Restart Codex. <code>codex mcp list</code> should show <code>la-lista</code>."
+			},
+			"other": {
+				"label": "Other client",
+				"snippetTitle": "Connection details",
+				"stepOne": "Works with any client that accepts remote MCP servers over Streamable HTTP.",
+				"stepTwo": "Add the URL and the Authorization header as they are.",
+				"stepThree": "If the client asks only for the token, paste what comes after <code>Bearer</code>."
+			}
+		},
+		"commandNeedsToken": "The token is missing. Generate it in step 2.",
 		"commandTokenPlaceholder": "YOUR_TOKEN",
 		"copySnippet": "Copy",
 		"copiedSnippet": "Copied",
