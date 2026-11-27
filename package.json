@@ -58,6 +58,7 @@
 		"@radix-ui/react-toggle": "^1.1.18",
 		"@radix-ui/react-toggle-group": "^1.1.19",
 		"@radix-ui/react-tooltip": "^1.2.16",
+		"@sentry/nextjs": "^11.7.0",
 		"@tailwindcss/postcss": "^4.3.3",
 		"ai": "^7.0.70",
 		"autoprefixer": "^10.5.4",
