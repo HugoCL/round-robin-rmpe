@@ -27,7 +27,7 @@ import type { Reviewer } from "@/lib/types";
 interface DeleteReviewerDialogProps {
 	reviewers: Reviewer[];
 	onDeleteReviewer: (id: Id<"reviewers">) => Promise<void>;
-	trigger?: React.ReactNode;
+	trigger?: React.ReactElement;
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
 }
@@ -69,7 +69,7 @@ export function DeleteReviewerDialog({
 				if (!nextOpen) setSelectedReviewerId("");
 			}}
 		>
-			{trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
+			{trigger ? <DialogTrigger render={trigger} /> : null}
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
 					<DialogTitle>{t("reviewer.deleteTitle")}</DialogTitle>

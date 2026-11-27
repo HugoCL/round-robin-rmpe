@@ -28,7 +28,7 @@ interface AddReviewerDialogProps {
 		googleChatUserId?: string,
 		partTimeSchedule?: PartTimeSchedule,
 	) => Promise<boolean>;
-	trigger?: React.ReactNode;
+	trigger?: React.ReactElement;
 }
 
 export function AddReviewerDialog({
@@ -101,16 +101,16 @@ export function AddReviewerDialog({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
-			<DialogTrigger asChild>
-				<span className="inline-flex">
-					{trigger || (
+			<DialogTrigger
+				render={
+					trigger ?? (
 						<Button variant="outline" size="sm">
 							<UserPlus className="h-4 w-4 mr-2" />
 							{t("pr.addReviewer")}
 						</Button>
-					)}
-				</span>
-			</DialogTrigger>
+					)
+				}
+			/>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
 					<DialogTitle>{t("reviewer.addNew")}</DialogTitle>

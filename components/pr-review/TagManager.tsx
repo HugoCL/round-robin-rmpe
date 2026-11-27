@@ -18,7 +18,7 @@ import { TagAssignmentsCard } from "./tag-manager/TagAssignmentsCard";
 import { TagEditorCard } from "./tag-manager/TagEditorCard";
 import { useTagManagerController } from "./tag-manager/useTagManagerController";
 
-export function TagManager({ trigger }: { trigger?: React.ReactNode }) {
+export function TagManager({ trigger }: { trigger?: React.ReactElement }) {
 	const t = useTranslations();
 	const { reviewers, onDataUpdate, teamSlug } = usePRReview();
 	const [isOpen, setIsOpen] = useState(false);
@@ -64,9 +64,9 @@ export function TagManager({ trigger }: { trigger?: React.ReactNode }) {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
-			<DialogTrigger asChild>
-				<span className="inline-flex">
-					{trigger ?? (
+			<DialogTrigger
+				render={
+					trigger ?? (
 						<Button
 							variant="outline"
 							size="sm"
@@ -75,9 +75,9 @@ export function TagManager({ trigger }: { trigger?: React.ReactNode }) {
 							<Tag className="h-4 w-4 mr-2" />
 							{t("common.manage")} {t("pr.tags")}
 						</Button>
-					)}
-				</span>
-			</DialogTrigger>
+					)
+				}
+			/>
 			<DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-[700px]">
 				<DialogHeader>
 					<DialogTitle>

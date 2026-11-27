@@ -71,8 +71,12 @@ export function SurveysAdminPage() {
 							{t("adminUnauthorizedDescription")}
 						</p>
 						<div className="flex justify-center pt-1">
-							<Button asChild variant="outline" className="rounded-full">
-								<Link href={`/${locale}`}>{tCommon("team.backHome")}</Link>
+							<Button
+								render={<Link href={`/${locale}`} />}
+								variant="outline"
+								className="rounded-full"
+							>
+								{tCommon("team.backHome")}
 							</Button>
 						</div>
 					</div>

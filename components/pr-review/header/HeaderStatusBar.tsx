@@ -182,34 +182,36 @@ export function HeaderStatusBar() {
 		<div className="flex min-w-0 flex-wrap items-center gap-2">
 			{currentReviewer ? (
 				<Popover open={statusOpen} onOpenChange={setStatusOpen}>
-					<PopoverTrigger asChild>
-						{/* Your status reads as text, not as one more bordered control. On
-						    its own phone row it starts at the page edge, like the name above. */}
-						<Button
-							variant="ghost"
-							size="sm"
-							className={cn(PILL_CLASS, "hover:bg-muted/40 max-sm:-ml-3")}
-						>
-							<span
-								aria-hidden="true"
-								className={cn(
-									"size-2 shrink-0 rounded-full",
-									isAbsent
-										? "bg-amber-500"
-										: outOfPool
-											? "bg-muted-foreground"
-											: "bg-emerald-500",
-								)}
+					{/* Your status reads as text, not as one more bordered control. On
+					    its own phone row it starts at the page edge, like the name above. */}
+					<PopoverTrigger
+						render={
+							<Button
+								variant="ghost"
+								size="sm"
+								className={cn(PILL_CLASS, "hover:bg-muted/40 max-sm:-ml-3")}
 							/>
-							<span>{statusLabel}</span>
-							{turnLabel ? (
-								<span className="text-muted-foreground">· {turnLabel}</span>
-							) : null}
-							<ChevronDown
-								className="size-4 text-muted-foreground"
-								aria-hidden="true"
-							/>
-						</Button>
+						}
+					>
+						<span
+							aria-hidden="true"
+							className={cn(
+								"size-2 shrink-0 rounded-full",
+								isAbsent
+									? "bg-amber-500"
+									: outOfPool
+										? "bg-muted-foreground"
+										: "bg-emerald-500",
+							)}
+						/>
+						<span>{statusLabel}</span>
+						{turnLabel ? (
+							<span className="text-muted-foreground">· {turnLabel}</span>
+						) : null}
+						<ChevronDown
+							className="size-4 text-muted-foreground"
+							aria-hidden="true"
+						/>
 					</PopoverTrigger>
 					<PopoverContent align="start" className="gap-3">
 						<p className="font-medium">{currentReviewer.name}</p>
@@ -310,26 +312,28 @@ export function HeaderStatusBar() {
 			{/* The My week widget shows the same numbers; one place is enough. */}
 			{showsMyWeekWidget ? null : (
 				<Popover>
-					<PopoverTrigger asChild>
-						<Button
-							variant="outline"
-							size="sm"
-							aria-label={t("headerStatus.myWeek")}
-							className={cn(
-								PILL_CLASS,
-								"border-border/70 bg-transparent max-sm:size-9 max-sm:px-0",
-							)}
-						>
-							<CalendarDays
-								className="size-4 text-muted-foreground"
-								aria-hidden="true"
+					<PopoverTrigger
+						render={
+							<Button
+								variant="outline"
+								size="sm"
+								aria-label={t("headerStatus.myWeek")}
+								className={cn(
+									PILL_CLASS,
+									"border-border/70 bg-transparent max-sm:size-9 max-sm:px-0",
+								)}
 							/>
-							<span className="max-sm:sr-only">{t("headerStatus.myWeek")}</span>
-							<ChevronDown
-								className="size-4 text-muted-foreground max-sm:hidden"
-								aria-hidden="true"
-							/>
-						</Button>
+						}
+					>
+						<CalendarDays
+							className="size-4 text-muted-foreground"
+							aria-hidden="true"
+						/>
+						<span className="max-sm:sr-only">{t("headerStatus.myWeek")}</span>
+						<ChevronDown
+							className="size-4 text-muted-foreground max-sm:hidden"
+							aria-hidden="true"
+						/>
 					</PopoverTrigger>
 					<PopoverContent align="start" className="gap-3">
 						<p className="font-medium">{t("headerStatus.thisWeek")}</p>

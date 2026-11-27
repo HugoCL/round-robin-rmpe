@@ -1,13 +1,13 @@
 "use client"
 
+import { Toggle as TogglePrimitive } from "@ui-sdk/react/toggle"
 import { cva, type VariantProps } from "class-variance-authority"
-import { Toggle as TogglePrimitive } from "radix-ui"
-import * as React from "react"
+import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
 const toggleVariants = cva(
-  "group/toggle inline-flex items-center justify-center gap-1 rounded-4xl text-sm font-medium whitespace-nowrap transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 aria-pressed:bg-muted dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/toggle inline-flex items-center justify-center gap-1 rounded-4xl text-sm font-medium whitespace-nowrap transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 aria-pressed:bg-muted dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -27,17 +27,38 @@ const toggleVariants = cva(
   }
 )
 
+type ToggleProps = Omit<
+  React.ComponentProps<typeof TogglePrimitive>,
+  "onPressedChange"
+> &
+  VariantProps<typeof toggleVariants> & {
+    onPressedChange?: (pressed: boolean) => void
+  }
+
+/**
+ * ui-sdk's Toggle with La Lista's look. It forwards every prop and the ref,
+ * so it can be a tooltip trigger's `render` element. `onPressedChange` gets
+ * only the new state, and its return value is ignored. Inside a group a
+ * disabled toggle stays focusable with `aria-disabled`, so the disabled look
+ * also follows `data-disabled`.
+ */
 function Toggle({
   className,
   variant = "default",
   size = "default",
+  onPressedChange,
   ...props
-}: React.ComponentProps<typeof TogglePrimitive.Root> &
-  VariantProps<typeof toggleVariants>) {
+}: ToggleProps) {
   return (
-    <TogglePrimitive.Root
-      data-slot="toggle"
+    <TogglePrimitive
       className={cn(toggleVariants({ variant, size, className }))}
+      onPressedChange={
+        onPressedChange
+          ? (pressed) => {
+              onPressedChange(pressed)
+            }
+          : undefined
+      }
       {...props}
     />
   )

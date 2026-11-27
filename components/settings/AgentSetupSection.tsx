@@ -414,7 +414,7 @@ export function AgentSetupSection() {
 									<ToggleGroupItem
 										key={client}
 										value={client}
-										className="px-3 text-sm data-[state=on]:bg-primary/12 data-[state=on]:font-medium data-[state=on]:text-primary"
+										className="px-3 text-sm data-[pressed]:bg-primary/12 data-[pressed]:font-medium data-[pressed]:text-primary"
 									>
 										{t(`agentSetup.clients.${client}.label`)}
 									</ToggleGroupItem>

@@ -92,16 +92,18 @@ export function HeaderMenu() {
 			{/* Non-modal: a modal menu that opens a dialog can leave the page with
 			    `pointer-events: none` after both close. */}
 			<DropdownMenu modal={false}>
-				<DropdownMenuTrigger asChild>
-					<IconActionButton label={t("common.menu")} className="relative">
-						<Menu />
-						{pendingNotices.count > 0 ? (
-							<span
-								aria-hidden="true"
-								className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary"
-							/>
-						) : null}
-					</IconActionButton>
+				<DropdownMenuTrigger
+					render={
+						<IconActionButton label={t("common.menu")} className="relative" />
+					}
+				>
+					<Menu />
+					{pendingNotices.count > 0 ? (
+						<span
+							aria-hidden="true"
+							className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary"
+						/>
+					) : null}
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-64">
 					<DropdownMenuGroup>
@@ -143,11 +145,11 @@ export function HeaderMenu() {
 							{t("shortcuts.help")}
 						</DropdownMenuItem>
 						{suggestionsEnabled ? (
-							<DropdownMenuItem asChild>
-								<Link href={`/${locale}/suggestions`}>
-									<Lightbulb />
-									{t("suggestions.shortcut")}
-								</Link>
+							<DropdownMenuItem
+								render={<Link href={`/${locale}/suggestions`} />}
+							>
+								<Lightbulb />
+								{t("suggestions.shortcut")}
 							</DropdownMenuItem>
 						) : null}
 					</DropdownMenuGroup>
@@ -158,18 +160,16 @@ export function HeaderMenu() {
 							<DropdownMenuGroup>
 								<DropdownMenuLabel>{t("headerMenu.admin")}</DropdownMenuLabel>
 								{surveysEnabled ? (
-									<DropdownMenuItem asChild>
-										<Link href={`/${locale}/surveys`}>
-											<ClipboardList />
-											{t("survey.shortcut")}
-										</Link>
+									<DropdownMenuItem
+										render={<Link href={`/${locale}/surveys`} />}
+									>
+										<ClipboardList />
+										{t("survey.shortcut")}
 									</DropdownMenuItem>
 								) : null}
-								<DropdownMenuItem asChild>
-									<Link href={`/${locale}/admin`}>
-										<ShieldCheck />
-										{t("admin.shortcut")}
-									</Link>
+								<DropdownMenuItem render={<Link href={`/${locale}/admin`} />}>
+									<ShieldCheck />
+									{t("admin.shortcut")}
 								</DropdownMenuItem>
 							</DropdownMenuGroup>
 						</>

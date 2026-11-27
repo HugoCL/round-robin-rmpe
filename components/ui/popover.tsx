@@ -1,48 +1,76 @@
 "use client"
 
-import { Popover as PopoverPrimitive } from "radix-ui"
+import {
+  PopoverContent as PopoverContentPrimitive,
+  Popover as PopoverPrimitive,
+  PopoverTrigger as PopoverTriggerPrimitive,
+} from "@ui-sdk/react/popover"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Popover({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />
+/** The element a `PopoverAnchor` placed, for the content to open against. */
+const PopoverAnchorContext = React.createContext<{
+  anchor: HTMLElement | null
+  setAnchor: (anchor: HTMLElement | null) => void
+} | null>(null)
+
+/**
+ * Radix's Popover API on ui-sdk's. Both default to non-modal: the page stays
+ * usable, and focus or a press leaving the popover closes it.
+ */
+function Popover(props: React.ComponentProps<typeof PopoverPrimitive>) {
+  const [anchor, setAnchor] = React.useState<HTMLElement | null>(null)
+  const value = React.useMemo(() => ({ anchor, setAnchor }), [anchor])
+  return (
+    <PopoverAnchorContext.Provider value={value}>
+      <PopoverPrimitive {...props} />
+    </PopoverAnchorContext.Provider>
+  )
 }
 
-function PopoverTrigger({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
+function PopoverTrigger(
+  props: React.ComponentProps<typeof PopoverTriggerPrimitive>
+) {
+  return <PopoverTriggerPrimitive {...props} />
 }
 
 function PopoverContent({
   className,
+  side = "bottom",
   align = "center",
   sideOffset = 4,
+  // Radix's default; ui-sdk keeps a gap from the viewport edge otherwise.
+  collisionPadding = 0,
+  anchor,
+  children,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+}: Omit<React.ComponentProps<typeof PopoverContentPrimitive>, "children"> & {
+  children?: React.ReactNode
+}) {
+  const anchored = React.useContext(PopoverAnchorContext)?.anchor
   return (
-    <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Content
-        data-slot="popover-content"
-        align={align}
-        sideOffset={sideOffset}
-        className={cn(
-          "calm-panel z-50 flex w-72 origin-(--radix-popover-content-transform-origin) flex-col gap-4 bg-background/96 p-4 text-sm text-foreground outline-hidden duration-200 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
-          className
-        )}
-        {...props}
-      />
-    </PopoverPrimitive.Portal>
+    <PopoverContentPrimitive
+      side={side}
+      align={align}
+      sideOffset={sideOffset}
+      collisionPadding={collisionPadding}
+      anchor={anchor ?? anchored ?? undefined}
+      className={cn(
+        "calm-panel z-50 flex w-72 origin-(--transform-origin) flex-col gap-4 bg-background/96 p-4 text-sm text-foreground outline-hidden duration-200 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:duration-0",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </PopoverContentPrimitive>
   )
 }
 
-function PopoverAnchor({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
-  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />
+/** Positions the popover against this element instead of its trigger. */
+function PopoverAnchor(props: React.ComponentProps<"div">) {
+  const setAnchor = React.useContext(PopoverAnchorContext)?.setAnchor
+  return <div data-slot="popover-anchor" ref={setAnchor} {...props} />
 }
 
 function PopoverHeader({ className, ...props }: React.ComponentProps<"div">) {

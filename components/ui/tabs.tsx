@@ -1,24 +1,57 @@
 "use client"
 
+import {
+  TabsList as TabsListPrimitive,
+  TabsPanel,
+  Tabs as TabsPrimitive,
+  TabsTab,
+} from "@ui-sdk/react/tabs"
 import { cva, type VariantProps } from "class-variance-authority"
-import { Tabs as TabsPrimitive } from "radix-ui"
-import * as React from "react"
+import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+type TabsProps = Omit<
+  React.ComponentProps<typeof TabsPrimitive>,
+  "value" | "defaultValue" | "onValueChange"
+> & {
+  value?: string
+  defaultValue?: string
+  onValueChange?: (value: string) => void
+  activationMode?: "automatic" | "manual"
+}
+
+/**
+ * ui-sdk's Tabs with Radix's API: string values, `activationMode`, and
+ * `forceMount` on the content. Arrow keys wrap and select, as in Radix.
+ * ui-sdk marks the selected tab and panel with a bare `data-selected`, and a
+ * disabled tab stays focusable with `aria-disabled` (styled by
+ * `data-disabled`).
+ */
 function Tabs({
   className,
   orientation = "horizontal",
+  activationMode = "automatic",
+  loop = true,
+  onValueChange,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+}: TabsProps) {
   return (
-    <TabsPrimitive.Root
-      data-slot="tabs"
-      data-orientation={orientation}
+    <TabsPrimitive
+      orientation={orientation}
+      activation={activationMode}
+      loop={loop}
       className={cn(
         "group/tabs flex gap-2 data-horizontal:flex-col",
         className
       )}
+      onValueChange={
+        onValueChange
+          ? (next) => {
+              if (next !== null) onValueChange(next)
+            }
+          : undefined
+      }
       {...props}
     />
   )
@@ -43,11 +76,10 @@ function TabsList({
   className,
   variant = "default",
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.List> &
+}: React.ComponentProps<typeof TabsListPrimitive> &
   VariantProps<typeof tabsListVariants>) {
   return (
-    <TabsPrimitive.List
-      data-slot="tabs-list"
+    <TabsListPrimitive
       data-variant={variant}
       className={cn(tabsListVariants({ variant }), className)}
       {...props}
@@ -58,15 +90,14 @@ function TabsList({
 function TabsTrigger({
   className,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+}: React.ComponentProps<typeof TabsTab>) {
   return (
-    <TabsPrimitive.Trigger
-      data-slot="tabs-trigger"
+    <TabsTab
       className={cn(
-        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap text-foreground/60 transition-[color,background-color,border-color,box-shadow] group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start group-data-vertical/tabs:px-2.5 group-data-vertical/tabs:py-1.5 hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
-        "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
-        "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
+        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap text-foreground/60 transition-[color,background-color,border-color,box-shadow] group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start group-data-vertical/tabs:px-2.5 group-data-vertical/tabs:py-1.5 hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[selected]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[selected]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[selected]:bg-transparent",
+        "data-[selected]:bg-background data-[selected]:text-foreground dark:data-[selected]:border-input dark:data-[selected]:bg-input/30 dark:data-[selected]:text-foreground",
+        "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[selected]:after:opacity-100",
         className
       )}
       {...props}
@@ -74,14 +105,22 @@ function TabsTrigger({
   )
 }
 
+/**
+ * The panel is a Tab stop, as in Radix (ui-sdk makes it one only when it holds
+ * nothing focusable).
+ */
 function TabsContent({
   className,
+  forceMount,
+  keepMounted,
+  tabIndex = 0,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Content>) {
+}: React.ComponentProps<typeof TabsPanel> & { forceMount?: boolean }) {
   return (
-    <TabsPrimitive.Content
-      data-slot="tabs-content"
+    <TabsPanel
       className={cn("flex-1 text-sm outline-none", className)}
+      keepMounted={keepMounted ?? forceMount}
+      tabIndex={tabIndex}
       {...props}
     />
   )

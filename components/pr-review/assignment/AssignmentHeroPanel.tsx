@@ -260,23 +260,25 @@ export function AssignmentHeroPanel({
 					{onPickSomeoneElse ? (
 						<TooltipProvider>
 							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										id={FORCE_ASSIGN_TRIGGER_ID}
-										type="button"
-										variant="link"
-										disabled={isAssigning}
-										onClick={onPickSomeoneElse}
-										className="h-auto p-0 text-sm text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground lg:text-base"
-									>
-										{t("pr.forceAssignLink")}
-									</Button>
+								<TooltipTrigger
+									render={
+										<Button
+											id={FORCE_ASSIGN_TRIGGER_ID}
+											type="button"
+											variant="link"
+											disabled={isAssigning}
+											onClick={onPickSomeoneElse}
+											className="h-auto p-0 text-sm text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground lg:text-base"
+										/>
+									}
+								>
+									{t("pr.forceAssignLink")}
 								</TooltipTrigger>
 								<TooltipContent>
-									<p className="flex items-center gap-2">
+									<span className="flex items-center gap-2">
 										{t("pr.forceAssignLinkHint")}
 										<Kbd>F</Kbd>
-									</p>
+									</span>
 								</TooltipContent>
 							</Tooltip>
 						</TooltipProvider>

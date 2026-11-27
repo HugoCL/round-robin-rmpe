@@ -1,3 +1,5 @@
+@layer ui-sdk;
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -135,6 +137,44 @@
 	}
 	::selection {
 		background-color: color-mix(in oklab, var(--primary) 24%, transparent);
+	}
+	/* ui-sdk popups render in place, not in a portal at <body>, so they would
+	   inherit the text styles around their trigger. Start them from the page's
+	   defaults, as a portal did. */
+	:where(
+		[data-slot="dialog-content"],
+		[data-slot="drawer-content"],
+		[data-slot="alert-dialog-content"],
+		[data-slot="menu-content"],
+		[data-slot="select-content"],
+		[data-slot="toast-region"],
+		[data-slot="tooltip-content"],
+		[data-slot="popover-content"]
+	) {
+		font-family: --theme(
+			--default-font-family,
+			-apple-system,
+			BlinkMacSystemFont,
+			"Segoe UI",
+			Roboto,
+			"Helvetica Neue",
+			"Noto Sans",
+			Arial,
+			sans-serif,
+			"Apple Color Emoji",
+			"Segoe UI Emoji",
+			"Segoe UI Symbol",
+			"Noto Color Emoji"
+		);
+		font-size: 1rem;
+		font-style: normal;
+		font-weight: 400;
+		letter-spacing: normal;
+		line-height: 1.5;
+		text-align: start;
+		text-indent: 0;
+		text-transform: none;
+		white-space: normal;
 	}
 	body {
 		@apply bg-background text-foreground;

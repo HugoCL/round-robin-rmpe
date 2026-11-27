@@ -1,7 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { type ComponentType, type ReactNode, useId, useState } from "react";
+import {
+	type ComponentType,
+	type ReactElement,
+	type ReactNode,
+	useId,
+	useState,
+} from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +17,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
+	focusDialogItself,
 } from "@/components/ui/dialog";
 import {
 	Drawer,
@@ -176,7 +183,7 @@ export function EditReviewerDialog({
 		Title: ComponentType<{ className?: string; children?: ReactNode }>,
 		Description: ComponentType<{
 			className?: string;
-			asChild?: boolean;
+			render?: ReactElement;
 			children?: ReactNode;
 		}>,
 	) => (
@@ -187,11 +194,9 @@ export function EditReviewerDialog({
 			<div className="min-w-0 flex-1">
 				<p className="calm-kicker mb-1">{t("reviewer.editKicker")}</p>
 				<Title className="truncate">{displayName}</Title>
-				<Description asChild>
-					<div className="mt-0.5">
-						<p className="truncate">{reviewer.email}</p>
-						{statusLine ? <p className="mt-0.5 text-xs">{statusLine}</p> : null}
-					</div>
+				<Description render={<div className="mt-0.5" />}>
+					<p className="truncate">{reviewer.email}</p>
+					{statusLine ? <p className="mt-0.5 text-xs">{statusLine}</p> : null}
 				</Description>
 			</div>
 		</div>
@@ -320,8 +325,13 @@ export function EditReviewerDialog({
 	if (isMobile) {
 		return (
 			<Drawer open={open} onOpenChange={handleOpenChange}>
-				<DrawerContent className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:max-h-[92dvh]">
-					<DrawerHeader className="shrink-0 text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left">
+				{/* Focus stays off the fields: focusing a filled one would select its
+				    text and raise the phone's keyboard as the drawer opens. */}
+				<DrawerContent
+					className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[side=bottom]:max-h-[92dvh]"
+					onOpenAutoFocus={focusDialogItself}
+				>
+					<DrawerHeader className="shrink-0 text-left group-data-[side=bottom]/drawer-content:text-left">
 						{header(DrawerTitle, DrawerDescription)}
 					</DrawerHeader>
 					<form

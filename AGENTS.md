@@ -8,7 +8,7 @@
 * **Language:** TypeScript
 * **Backend & Database:** Convex (Real-time database and serverless functions)
 * **Authentication:** Clerk
-* **Styling:** Tailwind CSS, shadcn/ui (Radix UI), `class-variance-authority`
+* **Styling:** Tailwind CSS, `class-variance-authority`; UI primitives on [UI SDK](https://ui-sdk.dev) (`@ui-sdk/react` + `@ui-sdk/core`, beta), styled with La Lista's classes (they started as shadcn/ui). See "UI primitives: UI SDK" below.
 * **Internationalization:** `next-intl`
 * **Linting & Formatting:** Biome
 * **AI Integration:** Vercel AI SDK
@@ -35,7 +35,7 @@
   * `actions/`: Server Actions (e.g., AI generation).
   * `api/`: API routes (e.g., for AI streaming).
 * `components/`: React components.
-  * `ui/`: Reusable UI components (shadcn/ui).
+  * `ui/`: Reusable UI components (UI SDK wrappers).
   * `pr-review/`: Domain-specific components for the review tool.
 * `convex/`: Convex backend code.
   * `schema.ts`: Database schema definition.
@@ -103,6 +103,29 @@
 * **State Management:** Use Convex `useQuery` and `useMutation` for server state. Use React `useState` / `useReducer` for local UI state.
 * **Internationalization:** All user-facing text must be localized using `next-intl`. Add keys to `messages/{locale}.json`.
 * **Imports:** Use absolute imports via the `@/` alias (e.g., `@/components/ui/button`).
+
+## UI primitives: UI SDK
+
+The wrappers in `components/ui/` are [UI SDK](https://ui-sdk.dev) (Vercel) primitives: unstyled, accessible parts that handle focus, keyboard, selection, popups and ARIA. The look stays La Lista's own Tailwind classes; UI SDK only brings behavior. Every primitive there is on it, including the toast stack, the form controls and Calendar (Badge renders through `renderElement`). The app no longer depends on Radix, vaul or daypicker; only `chrome-extension/` keeps its own Radix.
+
+* Before using a UI SDK component, read `node_modules/@ui-sdk/react/docs/llms.txt`, then only the component pages you need (`docs/components/<name>.md`), plus `popups.md`, `styling-and-animation.md`, `forms.md` and `parts-and-composition.md` for anything that opens or submits. Always read the copy in `node_modules` (the installed version), not docs from the web or another repo. To build a component it does not ship, search `docs/core.md` by heading (it is large) and read `rendering.md` next to it.
+* Import each component from its entry (`@ui-sdk/react/dialog`), never from a package root.
+* Keep the exported names and props of the `components/ui/*` wrappers so call sites stay unchanged; map Radix-only props inside the wrapper. There is no `asChild`: to render a part as another element, pass that element to `render` and keep the children on the part (`<DropdownMenuItem render={<Link href={href} />}>{label}</DropdownMenuItem>`, `<DialogTrigger render={<Button variant="outline" />}>…</DialogTrigger>`). The element's own props win over the part's, so don't give it the `role`, `tabIndex` or `aria-*` the part manages. A component passed to `render` must forward its props and `ref` to its DOM element (`Button`, `IconActionButton` and `Toggle` do). Put a trigger on the real button, never on a wrapping `span`: the span would take the trigger's role without the button's name. When the element is itself a UI SDK part (our `Button`), the DOM shows its `data-slot` (`button`), not the trigger's, so don't select triggers by `data-slot`.
+* Do not import `@ui-sdk/core/web.css`: it restyles bare `a`, `code`, `kbd` and `hr` app-wide, and La Lista keeps its own look. `app/globals.css` declares `@layer ui-sdk;` on its first line so Tailwind utilities win over the small CSS UI SDK injects.
+* Style parts by `data-slot` and state attributes (`data-open`, `data-closed`, `data-checked`, `data-highlighted`, `data-side`) and the CSS variables each component page lists (`--transform-origin`, `--anchor-width`, `--available-height`). The shadcn `data-open:`/`data-closed:`/`data-checked:`/`data-disabled:` Tailwind variants match both Radix's `data-state` and UI SDK's bare attributes.
+* UI SDK popups (dialog, alert dialog, sheet, drawer, menu, select, popover, tooltip, toast) render in place in the DOM and paint in the browser's top layer, without portals. Popups opened from inside one another stack on their own: Escape and outside presses reach the topmost, and a dialog opened from a drawer or sheet (inside its DOM or next to it) takes presses, focus and typing.
+* Their parts are children of whatever element renders them, so don't render a popup inside a `space-y-*` container: its margins land on the popup's fixed parts and on the sibling before them (a drawer grew 8px when a dialog inside it opened). Flex or grid `gap` is fine.
+* The sheet is a UI SDK Dialog pinned to an edge, with the same CSS slide and fade it had. The drawer is UI SDK's Drawer with `driver="pointer"` (it follows a finger as vaul did and rests exactly at the edge; in testing, the touch default, native scroll snapping, rested a fraction of a pixel off and synthesized touch swipes didn't move it). Its viewport pins and slides the content: style its size and surface by `data-side`, and never give the content margins, `translate`, or position, or the backdrop an opacity or fade.
+* Because they render in place, `globals.css` resets the inherited text styles of ui-sdk popup roots to the page defaults, and menus, selects, popovers and tooltips default to `collisionPadding={0}` as Radix did. A new ui-sdk popup wrapper needs its `data-slot` added to that reset.
+* Every UI SDK part sets its own `data-slot` (`input`, `textarea`, `toggle`, `tabs-tab`, `tabs-panel`, `radio`, `label`), and a caller's `data-slot` is dropped. Select a part by the slot UI SDK gives it.
+* Tabs mark the selected tab and panel with a bare `data-selected`, so their classes use `data-[selected]:` (shadcn's `data-selected:` only matches `="true"`). Toggles use `data-[pressed]:` or `aria-pressed:`, not `data-[state=on]:`.
+* Switch, Checkbox and Radio render a visually hidden native input right after the button, so it can take part in forms. The wrappers keep Radix's Enter behavior: Enter toggles a switch, and does nothing on a checkbox or radio. UI SDK would submit the surrounding form instead. Change callbacks (`onCheckedChange`, `onValueChange`, `onPressedChange`) get only the new value, as in Radix.
+* `Field` is UI SDK's field. Its label names the control and its description describes it, by context, and a caller's `htmlFor`/`id` pair still wins. `data-invalid` and `data-disabled` on a `Field` stay styling hooks. UI SDK's `invalid` and `disabled` props are opt-in. In a form that validates natively (no `noValidate`), a failed submit marks a `required` control inside a `Field` with `aria-invalid`. `FieldError` always shows (`match`), because callers render it only when there is an error.
+* The Button wrapper keeps native semantics: `type` defaults to `"submit"`, and `onClick`'s return value is ignored so a Promise doesn't turn on ui-sdk's pending state (which also swallows errors into state). Menu item `onSelect`, toast actions and alert dialog Action/Cancel (Close parts rendered as our Button) follow the same rule. Opt into pending per call site only on purpose.
+* Tooltip: `TooltipProvider` only sets the delay for the tooltips inside it (ui-sdk groups tooltips without a provider). `sideOffset` excludes the arrow, as in Radix (the wrapper adds its 10px). The content renders as a `span`, so a trigger can sit in a `<p>`. `WithTooltip` keeps a span host as the trigger: it takes the hover of a disabled button (`disabled:pointer-events-none`) and carries `className`. Focus that a ui-sdk popup returns to a trigger doesn't open its tooltip.
+* The packages are pinned (exact) to `0.1.0-beta.16`, the newest beta past pnpm's `minimumReleaseAge` on 2026-11-26. Bump `@ui-sdk/react` and `@ui-sdk/core` together, to the same version, and never loosen the pnpm policy to get a newer one.
+* Calendar values are ISO dates (`"2026-11-26"`); `toCalendarDate` and `fromCalendarDate` in `calendar.tsx` convert local `Date`s. The wrapper keeps the old day picker's look and rules (marks derived from the value, the app's locale and week start, a day of the next or previous month picked without turning the month); its comments say how. Days the user can't pick go in `unavailable`. MarkAbsentDialog keeps the range rules itself (`handleDayPress`) and passes the start still waiting for its end as `pendingStart`. In a popover, open on the selected day (or today) with `initialFocus='[data-slot="calendar-day"][tabindex="0"]'`.
+* The shadcn CLI is no longer used to add or update primitives: `shadcn add` would bring Radix code back. The `shadcn` package stays only for `shadcn/tailwind.css` (custom variants and utilities) imported in `globals.css`, and `components.json` keeps `"style": "radix-maia"` because the CLI has no UI SDK style to name.
 
 ## Launch Videos
 

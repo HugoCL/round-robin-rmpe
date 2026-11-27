@@ -81,8 +81,8 @@ export default function OnboardingPage() {
 					<p className="text-muted-foreground">
 						{t("onboarding.adminDescription")}
 					</p>
-					<Button asChild>
-						<Link href={`/${locale}`}>{t("onboarding.goHome")}</Link>
+					<Button render={<Link href={`/${locale}`} />}>
+						{t("onboarding.goHome")}
 					</Button>
 				</div>
 			</div>
@@ -160,10 +160,11 @@ export default function OnboardingPage() {
 						<p className="text-sm text-muted-foreground">
 							{t("onboarding.createHelper")}
 						</p>
-						<Button asChild variant="outline">
-							<Link href={`/${locale}/create-team`}>
-								{t("onboarding.createCta")}
-							</Link>
+						<Button
+							render={<Link href={`/${locale}/create-team`} />}
+							variant="outline"
+						>
+							{t("onboarding.createCta")}
 						</Button>
 					</CardContent>
 				</Card>

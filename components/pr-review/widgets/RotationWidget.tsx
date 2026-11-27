@@ -134,22 +134,24 @@ export function RotationWidget() {
 			actions={
 				tags.length > 0 ? (
 					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								variant="ghost"
-								size="sm"
-								className="-mr-2 rounded-full text-muted-foreground"
-							>
-								{tag ? (
-									<span
-										className="size-2 rounded-full"
-										style={{ backgroundColor: tag.color }}
-										aria-hidden="true"
-									/>
-								) : null}
-								{tag?.name ?? t("pr.assignmentModeRegularShort")}
-								<ChevronDown data-icon="inline-end" />
-							</Button>
+						<DropdownMenuTrigger
+							render={
+								<Button
+									variant="ghost"
+									size="sm"
+									className="-mr-2 rounded-full text-muted-foreground"
+								/>
+							}
+						>
+							{tag ? (
+								<span
+									className="size-2 rounded-full"
+									style={{ backgroundColor: tag.color }}
+									aria-hidden="true"
+								/>
+							) : null}
+							{tag?.name ?? t("pr.assignmentModeRegularShort")}
+							<ChevronDown data-icon="inline-end" />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="w-52">
 							<DropdownMenuRadioGroup

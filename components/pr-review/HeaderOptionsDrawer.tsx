@@ -210,7 +210,7 @@ export function HeaderOptionsDrawer({
 	if (isMobile) {
 		return (
 			<Drawer open={open} onOpenChange={setOpen}>
-				{/* The body scrolls, not the drawer: vaul's backdrop extension hangs off
+				{/* The body scrolls, not the drawer: the block that covers a drag past the edge hangs off
 				    the drawer's bottom edge and would cover whatever scrolls past it. */}
 				<DrawerContent
 					className="max-h-[90vh] overflow-hidden"
@@ -226,7 +226,7 @@ export function HeaderOptionsDrawer({
 						{bodyContent}
 					</div>
 					<DrawerFooter className="shrink-0">
-						<DrawerClose asChild>{footerAction}</DrawerClose>
+						<DrawerClose render={footerAction} />
 					</DrawerFooter>
 				</DrawerContent>
 			</Drawer>
@@ -249,7 +249,7 @@ export function HeaderOptionsDrawer({
 					{bodyContent}
 				</div>
 				<DialogFooter className="shrink-0 border-t border-border/60 pt-4">
-					<DialogClose asChild>{footerAction}</DialogClose>
+					<DialogClose render={footerAction} />
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

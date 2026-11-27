@@ -42,10 +42,10 @@ export function AgentSetupDialog() {
 		return (
 			<Drawer open={open} onOpenChange={setAgentSetupDialogOpen}>
 				<DrawerContent
-					className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:max-h-[92dvh]"
+					className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden p-0 data-[side=bottom]:max-h-[92dvh]"
 					onOpenAutoFocus={focusDialogItself}
 				>
-					<DrawerHeader className="shrink-0 text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left">
+					<DrawerHeader className="shrink-0 text-left group-data-[side=bottom]/drawer-content:text-left">
 						<DrawerTitle>{title}</DrawerTitle>
 						<DrawerDescription>{description}</DrawerDescription>
 					</DrawerHeader>
@@ -53,8 +53,8 @@ export function AgentSetupDialog() {
 						<AgentSetupBody />
 					</div>
 					<DrawerFooter className="shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
-						<DrawerClose asChild>
-							<Button variant="outline">{t("common.close")}</Button>
+						<DrawerClose render={<Button variant="outline" />}>
+							{t("common.close")}
 						</DrawerClose>
 					</DrawerFooter>
 				</DrawerContent>

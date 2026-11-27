@@ -127,25 +127,21 @@ export default function Page() {
 
 							<div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
 								<Button
-									asChild
+									render={<Link href={`/${locale}/create-team`} />}
 									size="lg"
 									className="min-h-11 w-full rounded-full px-5 sm:w-auto"
 								>
-									<Link href={`/${locale}/create-team`}>
-										<Plus className="h-4 w-4" />
-										{t("team.createButton")}
-									</Link>
+									<Plus className="h-4 w-4" />
+									{t("team.createButton")}
 								</Button>
 								<Button
-									asChild
+									render={<Link href={`/${locale}/suggestions`} />}
 									variant="outline"
 									size="lg"
 									className="min-h-11 w-full rounded-full border-border/70 bg-background/70 px-5 sm:w-auto"
 								>
-									<Link href={`/${locale}/suggestions`}>
-										<Lightbulb className="h-4 w-4" />
-										{t("suggestions.openBoard")}
-									</Link>
+									<Lightbulb className="h-4 w-4" />
+									{t("suggestions.openBoard")}
 								</Button>
 							</div>
 						</div>
@@ -165,10 +161,11 @@ export default function Page() {
 									{t("onboarding.description")}
 								</p>
 							</div>
-							<Button asChild className="rounded-full px-5">
-								<Link href={`/${locale}/onboarding`}>
-									{t("onboarding.continueCta")}
-								</Link>
+							<Button
+								render={<Link href={`/${locale}/onboarding`} />}
+								className="rounded-full px-5"
+							>
+								{t("onboarding.continueCta")}
 							</Button>
 						</div>
 					</section>
@@ -193,11 +190,12 @@ export default function Page() {
 						<p className="text-sm text-muted-foreground">
 							{t("team.switcher.emptyDescription")}
 						</p>
-						<Button asChild className="w-fit rounded-full px-5">
-							<Link href={`/${locale}/create-team`}>
-								<Plus className="h-4 w-4" />
-								{t("team.createTitle")}
-							</Link>
+						<Button
+							render={<Link href={`/${locale}/create-team`} />}
+							className="w-fit rounded-full px-5"
+						>
+							<Plus className="h-4 w-4" />
+							{t("team.createTitle")}
 						</Button>
 					</div>
 				) : (

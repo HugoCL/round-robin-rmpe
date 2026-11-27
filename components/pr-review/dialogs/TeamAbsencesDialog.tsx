@@ -68,14 +68,18 @@ const PART_TIME_OFF_CLASS =
 const BAR_BASE_CLASS =
 	"relative z-[1] my-1.5 min-w-0 self-stretch outline-offset-2 transition-colors";
 
-export function TeamAbsencesDialog({ trigger }: { trigger: React.ReactNode }) {
+export function TeamAbsencesDialog({
+	trigger,
+}: {
+	trigger: React.ReactElement;
+}) {
 	const t = useTranslations();
 	const [isOpen, setIsOpen] = useState(false);
 
 	return (
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
 			{/* The trigger must be the focusable button itself so focus returns to it on close. */}
-			<DialogTrigger asChild>{trigger}</DialogTrigger>
+			<DialogTrigger render={trigger} />
 			<DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-4 sm:max-w-4xl">
 				<DialogHeader>
 					<DialogTitle>{t("absenceTimeline.title")}</DialogTitle>

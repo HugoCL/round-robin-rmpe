@@ -1,15 +1,26 @@
 "use client"
 
+import {
+  FieldDescription as FieldDescriptionPrimitive,
+  FieldError as FieldErrorPrimitive,
+  FieldGroup as FieldGroupPrimitive,
+  FieldLabel as FieldLabelPrimitive,
+  FieldLegend as FieldLegendPrimitive,
+  Field as FieldPrimitive,
+  FieldSet as FieldSetPrimitive,
+} from "@ui-sdk/react/field"
 import { cva, type VariantProps } from "class-variance-authority"
 import { useMemo } from "react"
-import { Label } from "@/components/ui/label"
+import { labelClassName } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
-function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
+function FieldSet({
+  className,
+  ...props
+}: React.ComponentProps<typeof FieldSetPrimitive>) {
   return (
-    <fieldset
-      data-slot="field-set"
+    <FieldSetPrimitive
       className={cn(
         "flex flex-col gap-6 has-[>[data-slot=checkbox-group]]:gap-3 has-[>[data-slot=radio-group]]:gap-3",
         className
@@ -23,10 +34,11 @@ function FieldLegend({
   className,
   variant = "legend",
   ...props
-}: React.ComponentProps<"legend"> & { variant?: "legend" | "label" }) {
+}: React.ComponentProps<typeof FieldLegendPrimitive> & {
+  variant?: "legend" | "label"
+}) {
   return (
-    <legend
-      data-slot="field-legend"
+    <FieldLegendPrimitive
       data-variant={variant}
       className={cn(
         "mb-3 font-medium data-[variant=label]:text-sm data-[variant=legend]:text-base",
@@ -37,10 +49,12 @@ function FieldLegend({
   )
 }
 
-function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
+function FieldGroup({
+  className,
+  ...props
+}: React.ComponentProps<typeof FieldGroupPrimitive>) {
   return (
-    <div
-      data-slot="field-group"
+    <FieldGroupPrimitive
       className={cn(
         "group/field-group @container/field-group flex w-full flex-col gap-7 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4",
         className
@@ -68,15 +82,21 @@ const fieldVariants = cva(
   }
 )
 
+/**
+ * ui-sdk's Field: the label names the control inside it and the description
+ * and error describe it, by context; a caller's `htmlFor`/`id` pair still
+ * wins. `data-invalid` and `data-disabled` stay styling hooks for callers, as
+ * before; ui-sdk's own `invalid` and `disabled` are opt-in.
+ */
 function Field({
   className,
   orientation = "vertical",
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
+}: React.ComponentProps<typeof FieldPrimitive> &
+  VariantProps<typeof fieldVariants>) {
   return (
-    <div
+    <FieldPrimitive
       role="group"
-      data-slot="field"
       data-orientation={orientation}
       className={cn(fieldVariants({ orientation }), className)}
       {...props}
@@ -100,11 +120,11 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
 function FieldLabel({
   className,
   ...props
-}: React.ComponentProps<typeof Label>) {
+}: React.ComponentProps<typeof FieldLabelPrimitive>) {
   return (
-    <Label
-      data-slot="field-label"
+    <FieldLabelPrimitive
       className={cn(
+        labelClassName,
         "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-data-checked:border-primary/30 has-data-checked:bg-primary/5 has-[>[data-slot=field]]:rounded-xl has-[>[data-slot=field]]:border *:data-[slot=field]:p-4 dark:has-data-checked:border-primary/20 dark:has-data-checked:bg-primary/10",
         "has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col",
         className
@@ -127,10 +147,12 @@ function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
+function FieldDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof FieldDescriptionPrimitive>) {
   return (
-    <p
-      data-slot="field-description"
+    <FieldDescriptionPrimitive
       className={cn(
         "text-left text-sm leading-normal font-normal text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5",
         "last:mt-0 nth-last-2:-mt-1",
@@ -177,7 +199,8 @@ function FieldError({
   children,
   errors,
   ...props
-}: React.ComponentProps<"div"> & {
+}: Omit<React.ComponentProps<typeof FieldErrorPrimitive>, "match" | "children"> & {
+  children?: React.ReactNode
   errors?: Array<{ message?: string } | undefined>
 }) {
   const content = useMemo(() => {
@@ -211,15 +234,17 @@ function FieldError({
     return null
   }
 
+  // Rendered only with something to say, so it always shows (`match`)
+  // instead of waiting for the browser's validation.
   return (
-    <div
+    <FieldErrorPrimitive
       role="alert"
-      data-slot="field-error"
+      match
       className={cn("text-sm font-normal text-destructive", className)}
       {...props}
     >
       {content}
-    </div>
+    </FieldErrorPrimitive>
   )
 }
 

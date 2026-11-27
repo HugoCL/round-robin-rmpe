@@ -1,8 +1,6 @@
 "use client";
 
-import type { DateRange } from "@daypicker/react";
 import { format, parse } from "date-fns";
-import { enUS, es } from "date-fns/locale";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -54,6 +52,9 @@ export function formatDateKeyDay(key: string, locale: string): string {
 		year: year === new Date().getFullYear() ? undefined : "numeric",
 	}).format(new Date(Date.UTC(year, month - 1, day)));
 }
+
+/** A picked range; until its end is picked, `to` is unset and it covers its start. */
+type DateRange = { from: Date | undefined; to?: Date };
 
 function dateKeyToCalendarDate(key: string): Date {
 	return parse(key, DATE_KEY_FORMAT, new Date());
@@ -128,7 +129,6 @@ function MarkAbsentDialogBody({
 	const [returnTime, setReturnTime] = useState("");
 
 	const timeId = useId();
-	const dateLocale = locale.startsWith("es") ? es : enUS;
 
 	// Check if current user is marking themselves as absent
 	const isSelf =
@@ -217,8 +217,7 @@ function MarkAbsentDialogBody({
 		submitError === null &&
 		optionError === null;
 
-	const isDayDisabled = (date: Date) => {
-		const key = format(date, DATE_KEY_FORMAT);
+	const isDayUnavailable = (key: string) => {
 		if (compareDateKeys(key, todayKey) < 0) return true;
 		if (
 			isActiveEdit &&
@@ -249,6 +248,52 @@ function MarkAbsentDialogBody({
 			setReturnOption("none");
 		}
 		setRange(next);
+	};
+
+	const rangeHasUnavailableDay = (startKey: string, endKey: string) => {
+		for (
+			let key = startKey;
+			compareDateKeys(key, endKey) <= 0;
+			key = addDaysToDateKey(key, 1)
+		) {
+			if (isDayUnavailable(key)) return true;
+		}
+		return false;
+	};
+
+	// Every press on a day lands here: the calendar's own two-press range is
+	// cancelled, so picking follows the rules it always had. A press on a whole
+	// range starts a new one there (on the only selected day, it clears it);
+	// the next press ends it, before or after the start; a range over another
+	// absence starts again on the pressed day. An active absence keeps its start.
+	const handleDayPress = (key: string) => {
+		const day = dateKeyToCalendarDate(key);
+		if (isActiveEdit) {
+			handleSelect(undefined, day);
+			return;
+		}
+		const from = range?.from ? format(range.from, DATE_KEY_FORMAT) : null;
+		const to = range?.to ? format(range.to, DATE_KEY_FORMAT) : null;
+		let next: [string, string | null] | null;
+		if (!from || to) {
+			next = from && from === to && key === from ? null : [key, null];
+		} else if (compareDateKeys(key, from) < 0) {
+			next = [key, from];
+		} else {
+			next = [from, key];
+		}
+		if (next?.[1] && rangeHasUnavailableDay(next[0], next[1])) {
+			next = [key, null];
+		}
+		handleSelect(
+			next
+				? {
+						from: dateKeyToCalendarDate(next[0]),
+						to: next[1] ? dateKeyToCalendarDate(next[1]) : undefined,
+					}
+				: undefined,
+			day,
+		);
 	};
 
 	const handleOptionChange = (option: ReturnOption, checked: boolean) => {
@@ -430,14 +475,16 @@ function MarkAbsentDialogBody({
 				>
 					<Calendar
 						mode="range"
-						selected={range}
-						onSelect={handleSelect}
-						disabled={isDayDisabled}
-						excludeDisabled
-						resetOnSelect={!isActiveEdit}
-						defaultMonth={range?.from ?? dateKeyToCalendarDate(todayKey)}
-						today={dateKeyToCalendarDate(todayKey)}
-						locale={dateLocale}
+						value={keyRange ? [keyRange.startDate, keyRange.endDate] : null}
+						pendingStart={range?.from && !range.to ? keyRange?.startDate : null}
+						onAnchorChange={(anchor, details) => {
+							if (!anchor) return;
+							details.cancel();
+							handleDayPress(anchor);
+						}}
+						unavailable={isDayUnavailable}
+						defaultMonth={(keyRange?.startDate ?? todayKey).slice(0, 7)}
+						today={todayKey}
 						className="rounded-xl border border-border/60"
 					/>
 				</div>

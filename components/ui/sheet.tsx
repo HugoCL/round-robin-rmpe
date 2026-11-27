@@ -2,42 +2,49 @@
 
 import { Cancel01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import {
+  DialogBackdrop as SheetBackdropPrimitive,
+  DialogClose as SheetClosePrimitive,
+  DialogContent as SheetContentPrimitive,
+  DialogDescription as SheetDescriptionPrimitive,
+  Dialog as SheetPrimitive,
+  DialogTitle as SheetTitlePrimitive,
+  DialogTrigger as SheetTriggerPrimitive,
+} from "@ui-sdk/react/dialog"
 import { useTranslations } from "next-intl"
-import { Dialog as SheetPrimitive } from "radix-ui"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import { type RadixFocusProps, useRadixFocus } from "@/components/ui/dialog"
 import { WithTooltip } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+/**
+ * A side panel: a ui-sdk dialog pinned to an edge, sliding in with CSS like the
+ * dialog's zoom. A dialog rather than ui-sdk's Drawer, whose spring and drag
+ * would change how the panel moves.
+ */
+function Sheet(props: React.ComponentProps<typeof SheetPrimitive>) {
+  return <SheetPrimitive {...props} />
 }
 
-function SheetTrigger({
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+function SheetTrigger(
+  props: React.ComponentProps<typeof SheetTriggerPrimitive>
+) {
+  return <SheetTriggerPrimitive {...props} />
 }
 
-function SheetClose({
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Close>) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
-}
-
-function SheetPortal({
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Portal>) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
+function SheetClose(
+  props: React.ComponentProps<typeof SheetClosePrimitive>
+) {
+  return <SheetClosePrimitive {...props} />
 }
 
 function SheetOverlay({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Overlay>) {
+}: React.ComponentProps<typeof SheetBackdropPrimitive>) {
   return (
-    <SheetPrimitive.Overlay
-      data-slot="sheet-overlay"
+    <SheetBackdropPrimitive
       className={cn(
         "fixed inset-0 z-50 bg-background/72 backdrop-blur-xs duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:duration-0",
         className
@@ -52,11 +59,11 @@ function SheetCloseButton() {
 
   return (
     <WithTooltip label={t("close")} className="absolute top-4 right-4">
-      <SheetPrimitive.Close data-slot="sheet-close" asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={t("close")}>
-          <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
-        </Button>
-      </SheetPrimitive.Close>
+      <SheetClose
+        render={<Button variant="ghost" size="icon-sm" aria-label={t("close")} />}
+      >
+        <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
+      </SheetClose>
     </WithTooltip>
   )
 }
@@ -66,27 +73,47 @@ function SheetContent({
   children,
   side = "right",
   showCloseButton = true,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
+  initialFocus,
+  finalFocus,
+  ref,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Content> & {
-  side?: "top" | "right" | "bottom" | "left"
-  showCloseButton?: boolean
-}) {
+}: Omit<React.ComponentProps<typeof SheetContentPrimitive>, "children"> &
+  RadixFocusProps & {
+    children?: React.ReactNode
+    side?: "top" | "right" | "bottom" | "left"
+    showCloseButton?: boolean
+  }) {
+  const contentRef = React.useRef<HTMLElement | null>(null)
+  const focus = useRadixFocus({ onOpenAutoFocus, onCloseAutoFocus }, contentRef)
+  const setRefs = React.useCallback(
+    (el: HTMLElement | null) => {
+      contentRef.current = el
+      if (typeof ref === "function") ref(el as HTMLDivElement)
+      else if (ref) ref.current = el as HTMLDivElement
+    },
+    [ref]
+  )
+
   return (
-    <SheetPortal>
+    <>
       <SheetOverlay />
-      <SheetPrimitive.Content
-        data-slot="sheet-content"
+      <SheetContentPrimitive
+        ref={setRefs}
+        initialFocus={initialFocus ?? focus.initialFocus}
+        finalFocus={finalFocus ?? focus.finalFocus}
         data-side={side}
         className={cn(
-          "calm-shell fixed z-50 flex flex-col border-0 data-[side=right]:border-l data-[side=left]:border-r data-[side=top]:border-b data-[side=bottom]:border-t bg-background/96 bg-clip-padding text-sm text-foreground transition duration-200 ease-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:rounded-b-none data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:rounded-l-none data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:rounded-r-none data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:rounded-t-none data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-[side=bottom]:data-open:slide-in-from-bottom-10 data-[side=left]:data-open:slide-in-from-left-10 data-[side=right]:data-open:slide-in-from-right-10 data-[side=top]:data-open:slide-in-from-top-10 data-closed:animate-out data-closed:fade-out-0 data-[side=bottom]:data-closed:slide-out-to-bottom-10 data-[side=left]:data-closed:slide-out-to-left-10 data-[side=right]:data-closed:slide-out-to-right-10 data-[side=top]:data-closed:slide-out-to-top-10 motion-reduce:duration-0",
+          "calm-shell fixed inset-auto z-50 m-0 flex flex-col border-0 data-[side=right]:border-l data-[side=left]:border-r data-[side=top]:border-b data-[side=bottom]:border-t bg-background/96 bg-clip-padding text-sm text-foreground transition duration-200 ease-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:rounded-b-none data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:rounded-l-none data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:rounded-r-none data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:rounded-t-none data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-[side=bottom]:data-open:slide-in-from-bottom-10 data-[side=left]:data-open:slide-in-from-left-10 data-[side=right]:data-open:slide-in-from-right-10 data-[side=top]:data-open:slide-in-from-top-10 data-closed:animate-out data-closed:fade-out-0 data-[side=bottom]:data-closed:slide-out-to-bottom-10 data-[side=left]:data-closed:slide-out-to-left-10 data-[side=right]:data-closed:slide-out-to-right-10 data-[side=top]:data-closed:slide-out-to-top-10 motion-reduce:duration-0",
           className
         )}
         {...props}
       >
         {children}
         {showCloseButton ? <SheetCloseButton /> : null}
-      </SheetPrimitive.Content>
-    </SheetPortal>
+      </SheetContentPrimitive>
+    </>
   )
 }
 
@@ -119,10 +146,9 @@ function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
 function SheetTitle({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Title>) {
+}: React.ComponentProps<typeof SheetTitlePrimitive>) {
   return (
-    <SheetPrimitive.Title
-      data-slot="sheet-title"
+    <SheetTitlePrimitive
       className={cn(
         "text-lg leading-tight font-semibold text-foreground",
         className
@@ -135,10 +161,9 @@ function SheetTitle({
 function SheetDescription({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Description>) {
+}: React.ComponentProps<typeof SheetDescriptionPrimitive>) {
   return (
-    <SheetPrimitive.Description
-      data-slot="sheet-description"
+    <SheetDescriptionPrimitive
       className={cn("text-sm leading-relaxed text-muted-foreground", className)}
       {...props}
     />

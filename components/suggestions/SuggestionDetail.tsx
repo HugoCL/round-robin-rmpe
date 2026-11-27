@@ -208,10 +208,11 @@ export function SuggestionDetail({ suggestionId }: { suggestionId: string }) {
 					<p className="text-sm text-muted-foreground">
 						{t("suggestions.notFoundDescription")}
 					</p>
-					<Button asChild className="w-fit rounded-full px-5">
-						<Link href={`/${locale}/suggestions`}>
-							{t("suggestions.backToBoard")}
-						</Link>
+					<Button
+						render={<Link href={`/${locale}/suggestions`} />}
+						className="w-fit rounded-full px-5"
+					>
+						{t("suggestions.backToBoard")}
 					</Button>
 				</section>
 			</div>
@@ -230,11 +231,13 @@ export function SuggestionDetail({ suggestionId }: { suggestionId: string }) {
 	return (
 		<div className="container mx-auto max-w-5xl px-4 py-8 space-y-6">
 			<div>
-				<Button variant="ghost" asChild className="rounded-full">
-					<Link href={`/${locale}/suggestions`}>
-						<ArrowLeft className="h-4 w-4" />
-						{t("suggestions.backToBoard")}
-					</Link>
+				<Button
+					variant="ghost"
+					render={<Link href={`/${locale}/suggestions`} />}
+					className="rounded-full"
+				>
+					<ArrowLeft className="h-4 w-4" />
+					{t("suggestions.backToBoard")}
 				</Button>
 			</div>
 

@@ -98,19 +98,23 @@ export function AssignmentActionsRow({
 				<TooltipProvider>
 					<AlertDialog>
 						<Tooltip>
-							<TooltipTrigger asChild>
-								<AlertDialogTrigger asChild>
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon-lg"
-										className="size-11 shrink-0 text-muted-foreground hover:text-foreground"
-										disabled={isAssigning || !canUndo}
-										aria-label={undoCopy.label}
-									>
-										<Undo2 aria-hidden="true" />
-									</Button>
-								</AlertDialogTrigger>
+							<TooltipTrigger
+								render={
+									<AlertDialogTrigger
+										render={
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon-lg"
+												className="size-11 shrink-0 text-muted-foreground hover:text-foreground"
+												disabled={isAssigning || !canUndo}
+												aria-label={undoCopy.label}
+											/>
+										}
+									/>
+								}
+							>
+								<Undo2 aria-hidden="true" />
 							</TooltipTrigger>
 							<TooltipContent>
 								<p className="flex items-center gap-2">
