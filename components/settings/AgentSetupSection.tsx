@@ -16,12 +16,15 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { api } from "@/convex/_generated/api";
 import { toast } from "@/hooks/use-toast";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import {
-	buildClaudeMcpInstallCommand,
+	buildMcpInstallSnippet,
 	DEFAULT_MCP_ORIGIN,
+	MCP_CLIENTS,
+	type McpClient,
 } from "@/lib/agent-mcp-install";
 import { setAgentSetupDialogOpen } from "@/lib/agent-setup-dialog-store";
 import { cn } from "@/lib/utils";
@@ -89,6 +92,7 @@ export function AgentSetupSection() {
 	const [revealedToken, setRevealedToken] = useState<string | null>(null);
 	const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
 	const [activeStep, setActiveStep] = useState(1);
+	const [mcpClient, setMcpClient] = useState<McpClient>("claude-code");
 	const [isGeneratingToken, startGenerateTransition] = useTransition();
 	const [revokingTokenId, setRevokingTokenId] = useState<string | null>(null);
 
@@ -99,14 +103,16 @@ export function AgentSetupSection() {
 	const defaultTeamSlug = preferences.defaultAgentTeamSlug;
 	const mcpOrigin = origin || DEFAULT_MCP_ORIGIN;
 	const hasFreshToken = Boolean(revealedToken);
-	const claudeMcpInstallCommand = useMemo(
+	const mcpInstallSnippet = useMemo(
 		() =>
-			buildClaudeMcpInstallCommand(
+			buildMcpInstallSnippet(
+				mcpClient,
 				mcpOrigin,
 				revealedToken ?? t("agentSetup.commandTokenPlaceholder"),
 			),
-		[mcpOrigin, revealedToken, t],
+		[mcpClient, mcpOrigin, revealedToken, t],
 	);
+	const mcpInstallCopyKey = `mcp-install-${mcpClient}`;
 	const activeTokens = tokens.filter((token) => !token.revokedAt);
 	const wizardSteps = [
 		t("agentSetup.wizardTeam"),
@@ -391,17 +397,37 @@ export function AgentSetupSection() {
 									{t("agentSetup.installDescription")}
 								</p>
 							</div>
-							<div className="mt-6">
+							<ToggleGroup
+								type="single"
+								variant="outline"
+								size="sm"
+								spacing={1}
+								value={mcpClient}
+								onValueChange={(value) => {
+									const next = MCP_CLIENTS.find((client) => client === value);
+									if (next) setMcpClient(next);
+								}}
+								aria-label={t("agentSetup.clientPickerLabel")}
+								className="mt-6 flex-wrap"
+							>
+								{MCP_CLIENTS.map((client) => (
+									<ToggleGroupItem
+										key={client}
+										value={client}
+										className="px-3 text-sm data-[state=on]:bg-primary/12 data-[state=on]:font-medium data-[state=on]:text-primary"
+									>
+										{t(`agentSetup.clients.${client}.label`)}
+									</ToggleGroupItem>
+								))}
+							</ToggleGroup>
+							<div className="mt-4">
 								<CodeSnippet
-									title={t("agentSetup.mcpInstallCommandTitle")}
-									code={claudeMcpInstallCommand}
+									title={t(`agentSetup.clients.${mcpClient}.snippetTitle`)}
+									code={mcpInstallSnippet}
 									onCopy={() =>
-										void copyText(
-											"mcp-install-command",
-											claudeMcpInstallCommand,
-										)
+										void copyText(mcpInstallCopyKey, mcpInstallSnippet)
 									}
-									copied={copiedSnippet === "mcp-install-command"}
+									copied={copiedSnippet === mcpInstallCopyKey}
 									copyLabel={t("agentSetup.copySnippet")}
 									copiedLabel={t("agentSetup.copiedSnippet")}
 									disabled={!hasFreshToken}
@@ -409,20 +435,24 @@ export function AgentSetupSection() {
 								/>
 							</div>
 							<ul className="mt-4 space-y-1.5">
-								{[
-									t("agentSetup.mcpInstallStepOne"),
-									t("agentSetup.mcpInstallStepTwo"),
-									t("agentSetup.mcpInstallStepThree"),
-								].map((note) => (
+								{(["stepOne", "stepTwo", "stepThree"] as const).map((step) => (
 									<li
-										key={note}
+										key={step}
 										className="flex min-w-0 gap-2.5 text-sm text-muted-foreground"
 									>
 										<span
 											className="mt-2 size-1.5 shrink-0 rounded-full bg-border"
 											aria-hidden="true"
 										/>
-										<span className="min-w-0">{note}</span>
+										<span className="min-w-0">
+											{t.rich(`agentSetup.clients.${mcpClient}.${step}`, {
+												code: (chunks) => (
+													<code className="wrap-break-word font-mono text-xs text-foreground">
+														{chunks}
+													</code>
+												),
+											})}
+										</span>
 									</li>
 								))}
 							</ul>

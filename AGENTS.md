@@ -146,7 +146,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - `assertCanAdministerTeamById` grandfathers teams with zero owners down to member level, so the owner requirement activates per team as the backfill reaches it rather than all at once on deploy. Pass `grandfatherOwnerlessTeams: false` for anything that must not be reachable that way; granting a role is the one such case.
 - The email access policy falls back to `EMAIL_ACCESS_ALLOWED_PATTERN` / `EMAIL_ACCESS_ALLOWED_DOMAINS` while no policy is stored, so an instance can deploy closed without a seeding step. A stored policy always wins, and an unparseable variable denies everyone but admins rather than opening the instance.
 - Do not hold Convex `FunctionReference` values in a module-level const inside a `convex/` module: it makes the generated `api` type circular and silently degrades inference across the app to `any`. Resolve refs inside the handler (see `convex/adminOps.ts`).
-- Agent MCP is served at `/api/mcp` with personal Bearer tokens; settings documents install via a single copyable `claude mcp add --transport http` one-liner (not manual `settings.json` JSON).
+- Agent MCP is served at `/api/mcp` with personal Bearer tokens. The setup wizard's client picker builds each install snippet in `lib/agent-mcp-install.ts`. Claude Code gets a copyable `claude mcp add --transport http` one-liner. Codex gets a `[mcp_servers.la-lista]` table for `~/.codex/config.toml`, because `codex mcp add` has no static-header flag. Other clients get the URL plus the `Authorization: Bearer` header.
 - Daily `cleanupOldRecords` cron deletes completed/cancelled events and other old assignment records after 7 days.
 
 <!-- convex-ai-start -->
