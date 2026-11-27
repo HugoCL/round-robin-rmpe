@@ -495,14 +495,14 @@
 			"codex": {
 				"label": "Codex",
 				"snippetTitle": "Config block",
-				"stepOne": "Paste it into <code>~/.codex/config.toml</code>. Create the file if it doesn't exist.",
+				"stepOne": "Paste it at the end of <code>~/.codex/config.toml</code>, after your other settings. Create the file if it doesn't exist.",
 				"stepTwo": "If a <code>[mcp_servers.la-lista]</code> table already exists, replace it. A duplicate table breaks the file.",
 				"stepThree": "Restart Codex. <code>codex mcp list</code> should show <code>la-lista</code>."
 			},
 			"other": {
 				"label": "Other client",
 				"snippetTitle": "Connection details",
-				"stepOne": "Works with any client that accepts remote MCP servers over Streamable HTTP.",
+				"stepOne": "Works with any client that accepts remote MCP servers over Streamable HTTP with a Bearer token.",
 				"stepTwo": "Add the URL and the Authorization header as they are.",
 				"stepThree": "If the client asks only for the token, paste what comes after <code>Bearer</code>."
 			}

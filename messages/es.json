@@ -536,14 +536,14 @@
 			"codex": {
 				"label": "Codex",
 				"snippetTitle": "Bloque de configuración",
-				"stepOne": "Pégalo en <code>~/.codex/config.toml</code>. Si el archivo no existe, créalo.",
+				"stepOne": "Pégalo al final de <code>~/.codex/config.toml</code>, después de tus otros ajustes. Si el archivo no existe, créalo.",
 				"stepTwo": "Si ya hay una tabla <code>[mcp_servers.la-lista]</code>, reemplázala. Una tabla duplicada rompe el archivo.",
 				"stepThree": "Reinicia Codex. <code>codex mcp list</code> debería mostrar <code>la-lista</code>."
 			},
 			"other": {
 				"label": "Otro cliente",
 				"snippetTitle": "Datos de conexión",
-				"stepOne": "Sirve para cualquier cliente que acepte servidores MCP remotos por Streamable HTTP.",
+				"stepOne": "Sirve para cualquier cliente que acepte servidores MCP remotos por Streamable HTTP con un token Bearer.",
 				"stepTwo": "Agrega la URL y el header Authorization tal cual.",
 				"stepThree": "Si el cliente pide solo el token, pega lo que va después de <code>Bearer</code>."
 			}
