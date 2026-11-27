@@ -5,6 +5,8 @@ colors:
   primary: "oklch(0.52 0.19 258)"
   primary-light: "oklch(0.67 0.16 255)"
   primary-foreground: "oklch(1 0 0)"
+  primary-hover: "oklch(0.46 0.19 258)"
+  dark-primary-hover: "oklch(0.73 0.14 255)"
   background: "oklch(0.985 0.004 254)"
   foreground: "oklch(0.205 0.01 258)"
   surface-card: "oklch(0.995 0.002 254)"
@@ -13,7 +15,7 @@ colors:
   muted-foreground: "oklch(0.48 0.02 256)"
   border: "oklch(0.9 0.01 255)"
   input: "oklch(0.925 0.008 255)"
-  ring: "oklch(0.69 0.12 258)"
+  ring: "oklch(0.62 0.13 258)"
   destructive: "oklch(0.58 0.22 27)"
   dark-background: "oklch(0.17 0.01 260)"
   dark-foreground: "oklch(0.965 0.004 255)"
@@ -138,7 +140,7 @@ One accent, one hue family, two luminance modes. The blue is never decorative �
 
 ### Primary
 - **Instrument Blue** (`oklch(0.52 0.19 258)`, light mode): The one accent. Assign PR button, focus rings, active chip backgrounds, link hover. Never used for decoration. Dark mode shifts to `oklch(0.67 0.16 255)` to maintain contrast on dark surfaces, and text on it turns dark (`oklch(0.17 0.01 260)`, 6.3:1): white on that blue is only 2.9:1.
-- **Ring Blue** (`oklch(0.69 0.12 258)`): Focus rings only. Lower chroma than the primary to read as a guide, not a shout.
+- **Ring Blue** (`oklch(0.62 0.13 258)` light / `oklch(0.62 0.11 255)` dark): Focus rings only. Lower chroma than the primary to read as a guide, not a shout, but dark enough that the ring's solid edge clears 3:1 against the page (3.5:1 light, 5.3:1 dark).
 
 ### Neutral
 - **Cloud Surface** (`oklch(0.985 0.004 254)`): Page background, light mode. Hue-tinted (chroma 0.004) — never pure white.
@@ -200,7 +202,7 @@ The body carries a subtle top-bloom (`radial-gradient` at 9% primary) that tints
 All buttons share `rounded-full` (9999px). This is a system-wide convention — not a single exception. Pill shape is the only shape.
 
 - **Primary** (solid blue): `bg-primary text-primary-foreground rounded-full px-6 py-2.5`. The Assign PR button stretches full-width in its container. No icon except where it aids clarity (Plus for create actions).
-- **Hover / Focus**: Darker primary (`oklch(0.46 0.19 258)`). Focus: `ring-2 ring-primary/50`. No scale transform on primary — transform reserved for icon-hint secondary CTAs.
+- **Hover / Focus**: `--primary-hover` (`bg-primary-hover`): a darker blue in light mode (`oklch(0.46 0.19 258)`) and a lighter one in dark mode (`oklch(0.73 0.14 255)`), so the hover always adds contrast to the label on it. Never a translucent primary (`bg-primary/80`), which washes out toward the page. Focus: a solid `--ring` edge (`border-ring`) plus a 3px `ring-ring/50` glow. No scale transform on primary — transform reserved for icon-hint secondary CTAs.
 - **Outline**: `border border-border/70 bg-background/70 rounded-full`. The dominant secondary variant. In the header bar only "Mi semana" keeps it: an occasional lookup, so the border marks a secondary action.
 - **Ghost**: `bg-transparent hover:bg-muted/40 rounded-full`. Icon actions in icon bars (ThemeToggle, the header menu), and the header controls that read as text: the team switcher, the second crumb after "La Lista /", and your status ("Disponible · te toca en 2 PRs"). The hover background shows where to click. On a team you are not part of, the status slot holds "Unirme al equipo" instead, in primary text because it is an action; it opens a popover that confirms before joining. Your own status popover ends with "Salir del equipo", quiet until pressed, which confirms in place with a destructive button. The team switcher is a menu, not a select: "Tus equipos", then "Otros equipos", then "Crear equipo".
 - **Destructive**: Red palette. Confined to confirmation dialogs; never appears inline as a primary action.
@@ -242,7 +244,7 @@ A big launch is announced once per person by `LaunchSpotlight`: a card with the 
 
 ### Inputs / Fields
 - **Style**: `rounded-2xl border border-border/70 bg-background/70` (`calm-input-surface`). Filled with a soft translucent background, not an outlined-only field.
-- **Focus**: `ring-2 ring-primary/50` — a soft glow, not a hard 2px border swap.
+- **Focus**: the edge turns `--ring` (`border-ring`) under a 3px `ring-ring/50` glow, the same as buttons.
 - **Select**: Same surface treatment. `SelectTrigger` matches the input surface.
 
 ### Labels / Kickers

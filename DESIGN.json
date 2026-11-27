@@ -19,6 +19,13 @@
 					"oklch(0.88 0.07 255)"
 				]
 			},
+			"primary-hover": {
+				"role": "primary",
+				"displayName": "Instrument Blue hover",
+				"canonical": "oklch(0.46 0.19 258)",
+				"darkCanonical": "oklch(0.73 0.14 255)",
+				"purpose": "Hover fill of solid primary controls (--primary-hover). Darker in light mode, lighter in dark mode, so the label on it always gains contrast."
+			},
 			"primary-light": {
 				"role": "primary",
 				"displayName": "Instrument Blue (dark mode)",
@@ -209,7 +216,7 @@
 			"refersTo": "button-primary",
 			"description": "The main action trigger. Full-width as Assign PR; auto-width for create/navigation actions.",
 			"html": "<button class=\"ds-btn-primary\">Assign PR</button>",
-			"css": ".ds-btn-primary { background: oklch(0.52 0.19 258); color: oklch(1 0 0); padding: 10px 24px; font-size: 0.875rem; font-weight: 500; border: none; border-radius: 9999px; cursor: pointer; transition: background 150ms ease-out, box-shadow 150ms ease-out; } .ds-btn-primary:hover { background: oklch(0.46 0.19 258); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px oklch(0.985 0.004 254), 0 0 0 4px oklch(0.69 0.12 258 / 0.5); } .ds-btn-primary:active { background: oklch(0.42 0.19 258); }"
+			"css": ".ds-btn-primary { background: oklch(0.52 0.19 258); color: oklch(1 0 0); padding: 10px 24px; font-size: 0.875rem; font-weight: 500; border: none; border-radius: 9999px; cursor: pointer; transition: background 150ms ease-out, box-shadow 150ms ease-out; } .ds-btn-primary:hover { background: oklch(0.46 0.19 258); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px oklch(0.985 0.004 254), 0 0 0 4px oklch(0.62 0.13 258 / 0.5); } .ds-btn-primary:active { background: oklch(0.42 0.19 258); }"
 		},
 		{
 			"name": "Outline Button",
@@ -217,7 +224,7 @@
 			"refersTo": "button-outline",
 			"description": "Secondary utility controls: header icon pill buttons, drawer triggers, export actions.",
 			"html": "<button class=\"ds-btn-outline\"><span>Manage Reviewers</span></button>",
-			"css": ".ds-btn-outline { background: oklch(0.985 0.004 254 / 0.7); color: oklch(0.205 0.01 258); padding: 8px 16px; font-size: 0.75rem; font-weight: 400; border: 1px solid oklch(0.9 0.01 255 / 0.7); border-radius: 9999px; cursor: pointer; transition: background 150ms ease-out, border-color 150ms ease-out; } .ds-btn-outline:hover { background: oklch(0.962 0.006 255 / 0.5); border-color: oklch(0.9 0.01 255); } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 2px oklch(0.985 0.004 254), 0 0 0 4px oklch(0.69 0.12 258 / 0.5); }"
+			"css": ".ds-btn-outline { background: oklch(0.985 0.004 254 / 0.7); color: oklch(0.205 0.01 258); padding: 8px 16px; font-size: 0.75rem; font-weight: 400; border: 1px solid oklch(0.9 0.01 255 / 0.7); border-radius: 9999px; cursor: pointer; transition: background 150ms ease-out, border-color 150ms ease-out; } .ds-btn-outline:hover { background: oklch(0.962 0.006 255 / 0.5); border-color: oklch(0.9 0.01 255); } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 2px oklch(0.985 0.004 254), 0 0 0 4px oklch(0.62 0.13 258 / 0.5); }"
 		},
 		{
 			"name": "Action Chip",

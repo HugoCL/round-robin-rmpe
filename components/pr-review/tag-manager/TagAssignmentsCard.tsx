@@ -112,7 +112,7 @@ export function TagAssignmentsCard({
 												/>
 												<Label
 													htmlFor={`${tag._id}-${reviewer._id}`}
-													className={`cursor-pointer text-sm ${reviewer.effectiveIsAbsent ? "opacity-60" : ""}`}
+													className={`cursor-pointer text-sm ${reviewer.effectiveIsAbsent ? "text-muted-foreground" : ""}`}
 												>
 													{reviewer.name}
 													{reviewer.effectiveIsAbsent && (

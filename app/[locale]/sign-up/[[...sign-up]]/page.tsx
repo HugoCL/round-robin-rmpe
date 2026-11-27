@@ -45,7 +45,7 @@ export default async function SignUpPage({
 									</p>
 								) : null}
 								<cite className="mt-5 block text-sm font-medium text-white/75 not-italic">
-									— {quote.author}
+									{quote.author}
 								</cite>
 							</blockquote>
 						</div>

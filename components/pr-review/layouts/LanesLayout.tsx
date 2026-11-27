@@ -20,7 +20,14 @@ type DropTarget = { lane: number; before: WidgetId | null };
 const LANE_CLASS = [
 	"lg:row-span-2 2xl:row-span-1",
 	"",
-	"max-2xl:mt-6 max-2xl:border-t max-2xl:border-border/70 max-2xl:pt-5 lg:col-start-2 2xl:col-start-3",
+	"lg:col-start-2 2xl:col-start-3",
+];
+
+/** The hairline above a lane wherever it sits under another lane. */
+const LANE_DIVIDER = [
+	"",
+	"max-lg:mt-6 max-lg:border-t max-lg:border-border/70 max-lg:pt-5",
+	"max-2xl:mt-6 max-2xl:border-t max-2xl:border-border/70 max-2xl:pt-5",
 ];
 
 /**
@@ -109,6 +116,7 @@ export function LanesLayout() {
 							className={cn(
 								"flex min-w-0 flex-col",
 								LANE_CLASS[lane],
+								(ids.length > 0 || editing) && LANE_DIVIDER[lane],
 								editing && "min-h-24",
 							)}
 						>

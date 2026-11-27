@@ -76,7 +76,7 @@ export function RotationWidget() {
 	const row = (reviewer: Reviewer, place: "next" | "in" | "out") => (
 		<li
 			key={reviewer._id}
-			className={cn(widgetRowClass, place === "out" && "opacity-65")}
+			className={cn(widgetRowClass, place === "out" && "text-muted-foreground")}
 		>
 			<Avatar size="sm">
 				<AvatarFallback>{getInitials(reviewer.name)}</AvatarFallback>

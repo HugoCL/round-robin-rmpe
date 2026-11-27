@@ -231,12 +231,19 @@ function TeamAbsencesTimeline() {
 									key={row.reviewerId}
 									className={cn(
 										"grid items-stretch border-b",
-										!row.inPool && "opacity-60",
+										!row.inPool && "[&>*:not(:first-child)]:opacity-60",
 									)}
 									style={{ gridTemplateColumns: GRID_COLUMNS }}
 								>
 									<div className="sticky left-0 z-10 flex min-w-0 items-center bg-background pr-2 text-sm">
-										<span className="truncate">{reviewer.name}</span>
+										<span
+											className={cn(
+												"truncate",
+												!row.inPool && "text-muted-foreground",
+											)}
+										>
+											{reviewer.name}
+										</span>
 									</div>
 									{days.map((day, index) => {
 										const style = { gridColumn: index + 2, gridRow: 1 };
