@@ -483,15 +483,15 @@
 	},
 	"settingsPage": {
 		"title": "Ajustes personales",
-		"description": "Ajusta tus preferencias y conecta tu agente MCP para asignar PRs desde Claude Code.",
+		"description": "Ajusta tus preferencias y conecta tu agente MCP para asignar PRs desde Claude Code, Codex u otro cliente.",
 		"backHome": "Volver al inicio"
 	},
 	"agentSetup": {
 		"title": "Agente MCP",
-		"drawerDescription": "Tres pasos: eliges equipo, generas un token y corres un comando en Claude Code.",
+		"drawerDescription": "Tres pasos: eliges equipo, generas un token y conectas tu cliente MCP.",
 		"navbarLabel": "Agente MCP",
 		"openSetup": "Abrir configuración",
-		"settingsRowDescription": "Conecta Claude Code para asignar PRs y consultar la rotación desde la terminal.",
+		"settingsRowDescription": "Conecta Claude Code, Codex u otro cliente MCP para asignar PRs y consultar la rotación.",
 		"connectTab": "Conectar",
 		"tokensTab": "Tokens",
 		"wizardProgress": "Progreso de la configuración",
@@ -509,7 +509,7 @@
 		"defaultTeamDescription": "Se usa este equipo, salvo que nombres otro en la conversación.",
 		"generateTokenTitle": "Token personal",
 		"tokenLabel": "Etiqueta del token",
-		"tokenLabelPlaceholder": "Claude Code en mi laptop",
+		"tokenLabelPlaceholder": "Agente en mi laptop",
 		"generateToken": "Generar token",
 		"generatingToken": "Generando token…",
 		"tokenOnceHint": "El token se muestra una sola vez.",
@@ -522,13 +522,33 @@
 		"revokeToken": "Revocar token",
 		"revokingToken": "Revocando…",
 		"revoked": "Revocado",
-		"installTitle": "Conexión en Claude Code",
-		"installDescription": "Un comando registra La Lista como servidor MCP remoto.",
-		"mcpInstallCommandTitle": "Comando de instalación",
-		"mcpInstallStepOne": "El comando ya trae el token que generaste arriba.",
-		"mcpInstallStepTwo": "Cópialo y córrelo en tu terminal, con Claude Code ya instalado.",
-		"mcpInstallStepThree": "Reinicia Claude Code: las herramientas de La Lista quedan disponibles.",
-		"commandNeedsToken": "Sin token, el comando queda incompleto.",
+		"installTitle": "Conexión con tu cliente",
+		"installDescription": "Elige tu cliente y registra La Lista como servidor MCP remoto.",
+		"clientPickerLabel": "Cliente MCP",
+		"clients": {
+			"claude-code": {
+				"label": "Claude Code",
+				"snippetTitle": "Comando de instalación",
+				"stepOne": "El comando ya trae el token que generaste.",
+				"stepTwo": "Cópialo y córrelo en tu terminal, con Claude Code ya instalado.",
+				"stepThree": "Reinicia Claude Code y las herramientas de La Lista quedan disponibles."
+			},
+			"codex": {
+				"label": "Codex",
+				"snippetTitle": "Bloque de configuración",
+				"stepOne": "Pégalo al final de <code>~/.codex/config.toml</code>, después de tus otros ajustes. Si el archivo no existe, créalo.",
+				"stepTwo": "Si ya hay una tabla <code>[mcp_servers.la-lista]</code>, reemplázala. Una tabla duplicada rompe el archivo.",
+				"stepThree": "Reinicia Codex. <code>codex mcp list</code> debería mostrar <code>la-lista</code>."
+			},
+			"other": {
+				"label": "Otro cliente",
+				"snippetTitle": "Datos de conexión",
+				"stepOne": "Sirve para cualquier cliente que acepte servidores MCP remotos por Streamable HTTP con un token Bearer.",
+				"stepTwo": "Agrega la URL y el header Authorization tal cual.",
+				"stepThree": "Si el cliente pide solo el token, pega lo que va después de <code>Bearer</code>."
+			}
+		},
+		"commandNeedsToken": "Falta el token. Genéralo en el paso 2.",
 		"commandTokenPlaceholder": "TU_TOKEN",
 		"copySnippet": "Copiar",
 		"copiedSnippet": "Copiado",

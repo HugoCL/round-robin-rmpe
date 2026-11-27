@@ -53,9 +53,12 @@ fairly. The interface is available in Spanish (default) and English.
 
 - **MCP server** at `/api/mcp` (Streamable HTTP) with personal Bearer tokens.
   Tools: `la_lista_get_context`, `la_lista_preview_assignment` and
-  `la_lista_assign_pr`. Tokens are created in the app and installed with a single
-  `claude mcp add --transport http` command. A plain REST version lives under
-  `/api/agent/*`.
+  `la_lista_assign_pr`. Tokens are created in the app, whose setup wizard prints
+  the install step per client. Claude Code gets a
+  `claude mcp add --transport http` command. Codex gets a `[mcp_servers.la-lista]` table for
+  `~/.codex/config.toml` with the token in `http_headers`. Any other client gets
+  the URL and the `Authorization: Bearer` header. A plain REST version lives
+  under `/api/agent/*`.
 - **Chrome extension** (Manifest V3) that assigns a reviewer from any GitHub pull
   request page. See [chrome-extension/README.md](chrome-extension/README.md).
 
